@@ -113,15 +113,20 @@ async function mapTile(kind, z) {
   TILEC.set(k, buf);
   return buf;
 }
-let tilePng = null, gridPng = null;
+let tilePng = null, gridPng = null, sonoPng = null;
+const hashCode = str => { let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0; return h; };
 
 async function handle(route) {
   const req = route.request(), u = new URL(req.url()), host = u.hostname, p = u.pathname, q = Object.fromEntries(u.searchParams);
+  // Comme en vrai : les fichiers son d'iNaturalist et de xeno-canto ne sont pas lisibles par fetch() (pas de CORS), seulement par <audio>
+  if (req.resourceType() === "fetch" && ((host === "static.inaturalist.org" && p.startsWith("/sounds/")) || (host === "xeno-canto.org" && /\/download$/.test(p)))) return route.abort("failed");
   if (host === "plumage.test") {
-    let f = p === "/" ? "/index.html" : p;
+    let f = p === "/" ? "/index.html" : decodeURIComponent(p);
+    if (process.env.MOCK_NO_CDN && f.startsWith("/vendor/")) return route.fulfill({ status: 404, body: "" });
     const file = path.join(DIST, f);
-    if (!fs.existsSync(file)) return route.fulfill({ status: 404, body: "nope" });
-    const ct = f.endsWith(".html") ? "text/html; charset=utf-8" : f.endsWith(".png") ? "image/png" : f.endsWith(".svg") ? "image/svg+xml" : f.endsWith(".webmanifest") ? "application/manifest+json" : "application/octet-stream";
+    if (!fs.existsSync(file) || fs.statSync(file).isDirectory()) return route.fulfill({ status: 404, body: "nope" });
+    const ext = f.split(".").pop();
+    const ct = { html: "text/html; charset=utf-8", png: "image/png", svg: "image/svg+xml", webmanifest: "application/manifest+json", js: "application/javascript", css: "text/css", woff: "font/woff", woff2: "font/woff2", txt: "text/plain" }[ext] || "application/octet-stream";
     return route.fulfill({ status: 200, contentType: ct, body: fs.readFileSync(file) });
   }
   if (host === "fonts.googleapis.com") {
@@ -142,7 +147,7 @@ async function handle(route) {
     if (m && process.env.MOCK_BAD_IMG && m[2] !== "square" && Math.floor(+m[1] / 10) % 2 === 0) return route.fulfill({ status: 404, body: "" });
     if (m) return route.fulfill({ status: 200, contentType: "image/jpeg", headers: { "access-control-allow-origin": "*" }, body: await bird(+m[1], m[2] === "large" || m[2] === "original" ? "large" : m[2] === "square" ? "square" : "medium") });
     m = p.match(/^\/sounds\/(\d+)\.wav$/);
-    if (m) { if (!wavCache.has(m[1])) wavCache.set(m[1], wav(+m[1])); return route.fulfill({ status: 200, contentType: "audio/wav", headers: { "access-control-allow-origin": "*" }, body: wavCache.get(m[1]) }); }
+    if (m) { if (!wavCache.has(m[1])) wavCache.set(m[1], wav(+m[1])); return route.fulfill({ status: 200, contentType: "audio/wav", body: wavCache.get(m[1]) }); }
     return route.fulfill({ status: 404, body: "" });
   }
   if (host === "cdnjs.cloudflare.com" && process.env.MOCK_NO_CDN) return route.abort();
@@ -177,6 +182,36 @@ async function handle(route) {
     const kind = host !== "server.arcgisonline.com" ? "relief" : /World_Imagery/.test(p) ? "sat" : /World_Topo_Map/.test(p) ? "topo" : /World_Ocean_Base/.test(p) ? "ocean" : /World_Physical/.test(p) ? "phys" : "lab";
     const z = (p.match(/\/(\d+)\/\d+\/\d+(\.\w+)?$/) || [])[1] || "?";
     return route.fulfill({ status: 200, contentType: "image/png", body: await mapTile(kind, z) });
+  }
+  if (host === "commons.wikimedia.org" && p === "/w/api.php") {
+    const m = /intitle:"([^"]+)"/.exec(q.gsrsearch || ""), sci = m ? m[1] : "";
+    const sp = allSp.find(x => x.sci === sci);
+    if (!sp || process.env.MOCK_NO_COMMONS) return json(route, { batchcomplete: true });
+    const kinds = [["song", "chant"], ["call", "cri"], ["alarm call", "alarme"]];
+    const pages = kinds.map(([en], k) => {
+      const fn = `${sci.replace(/ /g, "_")}_-_${en.replace(/ /g, "_")}_${k}.ogg`, base = `https://upload.wikimedia.org/wikipedia/commons/a/a${k}/${fn}`;
+      return { ns: 6, title: "File:" + fn.replace(/_/g, " "), videoinfo: [{ url: base, descriptionurl: "https://commons.wikimedia.org/wiki/File:" + fn, mime: "application/ogg", size: 300000, derivatives: [{ src: base, type: 'audio/ogg; codecs="vorbis"' }, { src: base.replace("/commons/", "/commons/transcoded/") + "/" + fn + ".mp3", type: "audio/mpeg", transcodekey: "mp3" }], extmetadata: { Artist: { value: `<a href="#">Enregistreur ${k}</a>` }, LicenseShortName: { value: "CC BY-SA 4.0" }, ImageDescription: { value: `${en} of ${sci}` } } }] };
+    });
+    return json(route, { batchcomplete: true, query: { pages } });
+  }
+  if (host === "upload.wikimedia.org") {
+    const seed = hashCode(p) % 997;
+    if (!wavCache.has("w" + seed)) wavCache.set("w" + seed, wav(seed));
+    return route.fulfill({ status: 200, contentType: "audio/mpeg", headers: { "access-control-allow-origin": "*" }, body: wavCache.get("w" + seed) });
+  }
+  if (host === "xeno-canto.org" && p.startsWith("/api/3/recordings")) {
+    const m = /sp:"([^"]+)"/.exec(q.query || ""), sp = allSp.find(x => x.sci === (m ? m[1] : ""));
+    const recs = sp ? [["song", "A"], ["call", "A"], ["alarm call", "B"]].map(([ty, ql], k) => ({ id: String(sp.id * 10 + k), gen: sp.sci.split(" ")[0], sp: sp.sci.split(" ")[1], en: sp.fr, rec: "Audio XC " + k, cnt: "France", loc: "Ouessant", type: ty, q: ql, length: "0:" + (12 + k), lic: "//creativecommons.org/licenses/by-nc-sa/4.0/", url: "//xeno-canto.org/" + (sp.id * 10 + k), file: "https://xeno-canto.org/" + (sp.id * 10 + k) + "/download", also: [""], sono: { small: "//xeno-canto.org/sounds/uploaded/ABC/ffts/XC" + (sp.id * 10 + k) + "-small.png", med: "//xeno-canto.org/sounds/uploaded/ABC/ffts/XC" + (sp.id * 10 + k) + "-med.png", large: "//xeno-canto.org/sounds/uploaded/ABC/ffts/XC" + (sp.id * 10 + k) + "-large.png", full: "//xeno-canto.org/sounds/uploaded/ABC/ffts/XC" + (sp.id * 10 + k) + "-full.png" } })) : [];
+    return json(route, { numRecordings: String(recs.length), numSpecies: "1", page: 1, numPages: 1, recordings: recs });
+  }
+  if (host === "xeno-canto.org" && /\/download$/.test(p)) {
+    const seed = +p.split("/")[1] % 997;
+    if (!wavCache.has("x" + seed)) wavCache.set("x" + seed, wav(seed));
+    return route.fulfill({ status: 200, contentType: "audio/mpeg", body: wavCache.get("x" + seed) });
+  }
+  if (host === "xeno-canto.org" && p.endsWith(".png")) {
+    sonoPng = sonoPng || await sharp(Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="230"><rect width="1000" height="230" fill="#fff"/>${Array.from({ length: 60 }, (_, i) => `<path d="M${20 + i * 16} ${150 - (i % 5) * 18} q 5 -40 10 -60" stroke="#222" stroke-width="3" fill="none"/>`).join("")}<text x="10" y="220" font-size="12" fill="#555">XC sono</text></svg>`)).png().toBuffer();
+    return route.fulfill({ status: 200, contentType: "image/png", body: sonoPng });
   }
   if (host !== "api.inaturalist.org") return route.abort();
 

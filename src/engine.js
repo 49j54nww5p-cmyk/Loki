@@ -12,6 +12,7 @@ const MODES = [
   { k: "geo", n: "Géo", d: "Où sommes-nous ?", ic: "globe", c: "#3D7BFF" },
   { k: "racines", n: "Racines", d: "Décode le latin", ic: "root", c: "#B6F25A" },
   { k: "ecrire", n: "Écrire", d: "Tape le nom", ic: "keyboard", c: "#7DD3FC" },
+  { k: "sortie", n: "Sortie", d: "Prépare-la", ic: "binoc", c: "#3BE59D" },
   { k: "perso", n: "Sur mesure", d: "Tout régler", ic: "sliders", c: "#FFCB5C" }
 ];
 
@@ -74,6 +75,12 @@ async function prepare(ses) {
   if (ses.kind === "quiz") {
     const stims = c.stim && c.stim.length ? c.stim : ["photo"];
     const onlySound = stims.every(s => s === "son" || s === "soncho");
+    if (c.trip) {
+      const tr = (S.trips || []).find(x => x.id === c.trip);
+      const list = (tr?.sp || []).map(a => ({ id: a[0], sci: a[1], fr: a[2], img: a[3] ? { sq: a[3], md: a[4] || a[3], attr: "", lic: "" } : null, a: [], c: a[5] || 0 })).filter(t => t.img);
+      list.forEach(t => { t.f = fam(t) || S.sp[t.id]?.f || 0; t.o = ord(t) || S.sp[t.id]?.o || 0; lexAdd(t); });
+      ses.pool = { list, byId: new Map(list.map(t => [t.id, t])) };
+    } else
     ses.pool = await getPool({ zone: ses.zone, taxa: c.taxa, freq: c.freq, size: c.size, sounds: c.sounds || onlySound });
     if (ses.pool.list.length < 2) { const e = new Error("EMPTY"); e.code = "EMPTY"; throw e; }
     if ((c.target === "family" || c.target === "order") && !TAXO.ok) toast("Familles indisponibles hors ligne : questions par espèce.");
@@ -150,7 +157,8 @@ function planMini(ses) {
 function planReview(ses) {
   return dueList().slice(0, 15).map(d => {
     const t = ses.pool.byId.get(d.id) || fromRec(d.id);
-    return t ? { t, stim: d.mod === "son" ? "son" : d.mod === "nom" ? pick(["fr", "la"]) : pick(["photo", "photo", "field"]), review: true } : null;
+    const r = S.sp[d.id], needField = r && mastery(r).photos >= 2 && !(r.fk || []).length;
+    return t ? { t, stim: d.mod === "son" ? "son" : d.mod === "nom" ? pick(["fr", "la"]) : needField ? "field" : pick(["photo", "photo", "field"]), review: true } : null;
   }).filter(Boolean);
 }
 function interleave(specs) {
@@ -222,6 +230,10 @@ async function buildQ(ses, spec) {
   if (!q.t) return null;
   if ((q.level === "family" || q.level === "order") && !(TAXO.ok && fam(q.t))) q.level = "species";
   if (q.pair) { q.level = "species"; q.format = "qcm"; }
+  if (q.stim === "photo" && q.level === "species" && !q.pair) {
+    const r = S.sp[q.t.id];
+    if (r && mastery(r).photos >= 2 && !(r.fk || []).length && Math.random() < .7) { q.stim = "field"; q.transfer = true; }
+  }
   if (q.stim === "son") { q.snd = await soundFor(q.t, ses.zone); if (!q.snd) q.stim = "photo"; }
   if (q.stim === "field") { q.photo = await fieldPhoto(q.t, ses.zone); if (!q.photo) q.stim = "photo"; }
   if (q.stim === "photo" || q.stim === "soncho") { q.photo = await refPhoto(q.t); if (!q.photo) return null; }
@@ -412,10 +424,10 @@ function ensureLeaflet() {
   if (LEAFP) return LEAFP;
   LEAFP = new Promise((res, rej) => {
     const css = document.createElement("link");
-    css.rel = "stylesheet"; css.href = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";
+    css.rel = "stylesheet"; css.href = "vendor/leaflet/leaflet.css";
     document.head.appendChild(css);
     const js = document.createElement("script");
-    js.src = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
+    js.src = "vendor/leaflet/leaflet.js";
     js.onload = () => res(); js.onerror = () => { LEAFP = null; rej(new Error("carte")); };
     document.head.appendChild(js);
   });
@@ -510,7 +522,19 @@ function settle(res) {
     r.n++; if (ok) { r.ok++; r.lastOk = dayKey(); }
     r.last = dayKey();
     const mod = (q.stim === "son" || q.stim === "soncho") ? "son" : (q.stim === "fr" || q.stim === "la") ? "nom" : "photo";
-    if (q.level === "species") srsUpdate(r, mod, ok, (q.hintsUsed || 0) > 0);
+    if (q.level === "species") {
+      srsUpdate(r, mod, ok, (q.hintsUsed || 0) > 0);
+      const pk = q.photo && (q.stim === "photo" || q.stim === "field") ? photoKey(q.photo.lg || q.photo.md) : 0;
+      const su = q.stim === "son" ? q.snd?.url : q.stim === "soncho" ? (q.choices || []).find(c => c.t?.id === q.t.id)?.snd?.url : "";
+      if (pk) r.ps = pushU(r.ps, pk, 20);
+      if (ok && !(q.hintsUsed > 0)) {
+        if (q.stim === "field" && pk) r.fk = pushU(r.fk, pk);
+        else if (pk) r.pk = pushU(r.pk, pk);
+        if (su) r.sk = pushU(r.sk, sndKey(su));
+        if (pk || su) r.od = pushU(r.od, todayNum(), 8);
+      }
+      logAttempt(q.t.id, ok, q.stim === "field" ? "f" : mod === "son" ? "s" : mod === "nom" ? "n" : "p", pk || (su ? sndKey(su) : 0));
+    }
     else { const f = fam(q.t); if (f) { const s = S.fam[f] || (S.fam[f] = { n: 0, ok: 0 }); s.n++; if (ok) s.ok++; } }
     bump(q.level === "family" ? "fam" : q.level === "genus" ? "genre" : q.level === "order" ? "ordre" : mod, ok);
     if (q.format === "type") bump("type", ok);

@@ -13,6 +13,9 @@ const html = fs.readFileSync(path.join(SRC, "shell.html"), "utf8")
   .replace("/*__JS__*/", () => js);
 fs.writeFileSync(path.join(DIST, "index.html"), html);
 if (!process.env.OUT) fs.writeFileSync(path.join(DIST, "app.js"), js); // pour vérification de syntaxe
+// Polices et Leaflet hébergés avec l'appli (aucun appel à Google Fonts ni à un CDN)
+const copyDir = (from, to) => { fs.mkdirSync(to, { recursive: true }); for (const f of fs.readdirSync(from)) { const a = path.join(from, f), b = path.join(to, f); if (fs.statSync(a).isDirectory()) copyDir(a, b); else fs.copyFileSync(a, b); } };
+copyDir(path.join(ROOT, "assets"), DIST);
 
 const bird = "M3 15.5c1.8.2 3.3-.3 4.6-1.4 1.5-1.3 2.6-3.7 5.6-4.4 2.4-.6 4.3.2 5.4 1.4l2.9-.3-2.3 1.9c0 3.7-3 6.8-7.3 6.8-2.7 0-4.9-1-6.5-2.6L3 15.5zM16.5 11.3a.85.85 0 1 0 0 1.7.85.85 0 0 0 0-1.7z";
 const icon = rx => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">

@@ -16,7 +16,7 @@ const ONLY = process.argv[2] || "all";
   const page = await ctx.newPage();
   const errors = [], log = [];
   page.on("pageerror", e => errors.push("pageerror: " + e.message + "\n" + (e.stack || "").split("\n").slice(0, 3).join("\n")));
-  page.on("console", m => { if (m.type() === "error") errors.push("console: " + m.text()); });
+  page.on("console", m => { if (m.type() === "error" && !/Failed to load resource/.test(m.text())) errors.push("console: " + m.text()); });
   const shot = async (name, full) => { await page.screenshot({ path: path.join(OUT, name + ".png"), fullPage: !!full }); log.push("shot " + name); };
   const wait = ms => page.waitForTimeout(ms);
   const qinfo = () => page.evaluate(() => { const q = SES && SES.q; if (!q) return null; return { kind: q.kind, stim: q.stim, format: q.format, level: q.level, key: q.answerKey, keys: (q.choices || []).map(c => c.key), done: q.done, typed: q.kind === "taxon" ? typedTargets(q)[0] : "" }; });

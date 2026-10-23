@@ -43,14 +43,14 @@ const dateFr = (d = new Date()) => d.toLocaleDateString("fr-FR", { weekday: "sho
 /* ---------- Stockage ---------- */
 const KEY = "plumage.v1";
 const defaults = () => ({
-  v: 1, created: Date.now(), xp: 0,
+  v: 2, created: Date.now(), xp: 0,
   streak: { cur: 0, best: 0, last: null, jokers: 1 },
   days: {}, sp: {}, fam: {}, stats: {}, badges: {}, counters: {},
-  best: { combo: 0 }, favs: [],
+  best: { combo: 0 }, favs: [], att: [], obs: [], trips: [], bk: { last: 0, snooze: 0 }, hint: { install: 0 },
   set: {
     zone: { id: 6753, name: "France" }, fmt: "qcm", names: "both", k: 5, diff: "moyen", photo: "ref",
     goal: 150, sfx: true, calm: false, sono: true, inat: "", xc: "", remind: "19:30", builder: null,
-    mapst: "relief", mapLab: true, mapIsl: true
+    mapst: "relief", mapLab: true, mapIsl: true, slow: false, loop: false
   }
 });
 function loadState() {
@@ -76,6 +76,22 @@ function save(now) {
   };
   if (now) go(); else saveTimer = setTimeout(go, 300);
 }
+/* v2 : la maîtrise demande des photos différentes. Les anciennes réussites comptent pour 2 photos au plus. */
+function migrate() {
+  if ((S.v || 1) >= 2) return;
+  for (const r of Object.values(S.sp)) {
+    if (r.pk) continue;
+    r.pk = []; r.fk = []; r.sk = [];
+    r.lg = Math.min(2, r.ok || 0);
+    const days = [];
+    if ((r.ok || 0) >= 2 && r.first) days.push(dayNum(r.first));
+    if (r.lastOk) days.push(dayNum(r.lastOk));
+    r.od = [...new Set(days)];
+  }
+  S.v = 2;
+  save();
+}
+migrate();
 document.addEventListener("visibilitychange", () => { if (document.hidden) save(true); });
 window.addEventListener("pagehide", () => save(true));
 
@@ -336,6 +352,21 @@ async function getPool(p) {
   return { list, byId: new Map(list.map(t => [t.id, t])) };
 }
 
+/* ---------- Sorties : espèces attendues ---------- */
+async function tripSpecies(zone, month, recent) {
+  const base = { taxon_id: 3, quality_grade: "research", locale: "fr", preferred_place_id: 6753, per_page: 200, ...zoneParams(zone) };
+  const key = "trip:" + qs({ ...base, m: month, r: recent ? 1 : 0, d: recent ? dayKey() : "" });
+  const list = await cached(key, recent ? DAY / 2 : 7 * DAY, async () => {
+    const conv = d => (d.results || []).filter(r => r.taxon && r.taxon.rank === "species").map(r => ({ ...mini(r.taxon), c: r.count }));
+    if (recent) return conv(await inat("/observations/species_counts", { ...base, d1: dayKey(new Date(Date.now() - 30 * DAY)) }));
+    let out = conv(await inat("/observations/species_counts", { ...base, month }));
+    if (out.length < 25) out = conv(await inat("/observations/species_counts", { ...base, month: [((month + 10) % 12) + 1, month, (month % 12) + 1].join(",") }));
+    return out;
+  });
+  (list || []).forEach(t => { t.f = fam(t); t.o = ord(t); lexAdd(t); });
+  return list || [];
+}
+
 /* ---------- Lexique (suggestions de saisie) ---------- */
 const LEX = new Map();
 function lexAdd(t) {
@@ -419,13 +450,20 @@ function familyStats() {
   return [...m.values()].filter(x => x.n >= 4).map(x => ({ ...x, p: x.ok / x.n }));
 }
 function carnetCsv() {
-  const rows = [["Nom français", "Nom latin", "Famille", "Ordre", "Fois vue", "Réussite (%)", "Étoiles", "Première rencontre", "Dernière réussite", "Vue sur le terrain", "Mon astuce"]];
-  for (const [id, r] of Object.entries(S.sp)) if (r.n > 0) rows.push([r.fr, r.sci, famName(r.f), ordName(r.o), r.n, Math.round(100 * r.ok / r.n), stars(r), r.first || "", r.lastOk || "", FIELD.ids.has(+id) ? "oui" : "", r.note || ""]);
+  const rows = [["Nom français", "Nom latin", "Famille", "Ordre", "Fois vue en quiz", "Réussite (%)", "Étoiles", "Photos reconnues", "Dont terrain", "Jours de réussite", "Première rencontre", "Dernière réussite", "Observée (date)", "Observée (lieu)", "Vue sur iNaturalist", "Mon astuce"]];
+  for (const [id, r] of Object.entries(S.sp)) {
+    if (!(r.n > 0 || r.nobs > 0)) continue;
+    const m = mastery(r);
+    rows.push([r.fr, r.sci, famName(r.f), ordName(r.o), r.n || 0, r.n ? Math.round(100 * r.ok / r.n) : "", m.lvl, m.photos, m.field, m.days, r.first || "", r.lastOk || "", r.seen?.[0] || "", r.seen?.[1] || "", FIELD.ids.has(+id) ? "oui" : "", r.note || ""]);
+  }
   return "\ufeff" + rows.map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(";")).join("\r\n");
 }
 
 /* ---------- Médias ---------- */
 const DET = new Map();
+const photoKey = u => { const m = String(u || "").match(/\/photos\/(\d+)\//); return m ? +m[1] : (u ? hashStr(String(u)) : 0); };
+const sndKey = u => u ? hashStr(String(u).split("?")[0]) : 0;
+const pushU = (a, v, max = 12) => { a = a || []; if (v != null && v !== 0 && !a.includes(v)) { a.push(v); if (a.length > max) a.shift(); } return a; };
 let V2 = true;
 function photoObj(ph) {
   const base = ph.url || ph.medium_url || ph.square_url || "";
@@ -453,7 +491,10 @@ async function refPhoto(t) {
   try { list = (await photosFor([t.id]))[0]; } catch (e) { if (!t.img) throw e; }
   if (!list.length && t.img) list = [{ lg: sizeUrl(t.img.md, "large"), md: t.img.md, attr: t.img.attr, lic: t.img.lic }];
   if (!list.length) return null;
-  const pool = list.slice(0, 14).filter(p => p.lg !== LASTPH.get(t.id));
+  const r = S.sp[t.id], seen = new Set(r?.ps || []), won = new Set([...(r?.pk || []), ...(r?.fk || [])]);
+  const cands = list.slice(0, 14).filter(p => p.lg !== LASTPH.get(t.id));
+  const unseen = cands.filter(p => !seen.has(photoKey(p.lg || p.md))), notWon = cands.filter(p => !won.has(photoKey(p.lg || p.md)));
+  const pool = unseen.length ? unseen : notWon.length ? notWon : cands;
   const ph = pick(pool.length ? pool : list);
   LASTPH.set(t.id, ph.lg);
   return ph;
@@ -511,12 +552,49 @@ async function xcSound(t) {
     const ok = (d.recordings || []).filter(r => r.file && !(r.also || []).filter(Boolean).length && !badSnd(fix(r.file)));
     if (!ok.length) return null;
     const r = pick(ok.slice(0, 25));
-    return { url: fix(r.file), type: "audio/mpeg", attr: "© " + (r.rec || "") + " · xeno-canto", lic: r.lic || "", place: [r.loc, r.cnt].filter(Boolean).join(", "), date: r.date || "", uri: fix(r.url), agree: 9 };
+    return { url: fix(r.file), type: "audio/mpeg", attr: "© " + (r.rec || "") + " · xeno-canto", lic: r.lic || "", place: [r.loc, r.cnt].filter(Boolean).join(", "), date: r.date || "", uri: fix(r.url), agree: 9, src: "xeno-canto", kind: xcKind(r.type), sono: fix(r.sono?.full || r.sono?.large || r.sono?.med || "") };
   } catch (e) { return null; }
+}
+/* Wikimedia Commons : enregistrements libres, servis avec CORS → spectrogramme calculable sur place */
+const SNDKIND = [[/flight ?call|cri en vol|flugruf/i, "cri en vol"], [/alarm|alarme|warn/i, "alarme"], [/drum|tambour/i, "tambourinage"], [/song|chant|singing|gesang|canto/i, "chant"], [/\bcalls?\b|\bcri|\bruf\b|contact/i, "cri"]];
+const kindOf = s => { for (const [re, k] of SNDKIND) if (re.test(s || "")) return k; return ""; };
+const stripHtml = s => String(s || "").replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#0?39;/g, "'").replace(/\s+/g, " ").trim();
+function commonsSounds(t) {
+  return memo("cms:" + t.id, async () => cached("cms:" + t.sci, 7 * DAY, async () => {
+    const q = `intitle:"${t.sci}" filetype:audio`;
+    const url = "https://commons.wikimedia.org/w/api.php?action=query&format=json&formatversion=2&origin=*&generator=search&gsrnamespace=6&gsrlimit=16&gsrsearch=" + encodeURIComponent(q)
+      + "&prop=videoinfo&viprop=url|mime|size|derivatives|extmetadata&viextmetadatafilter=Artist|LicenseShortName|ImageDescription";
+    const d = await getJSON(url, { tries: 1, timeout: 12000 });
+    const [g, sp] = t.sci.toLowerCase().split(" ");
+    const out = [];
+    for (const pg of d?.query?.pages || []) {
+      const vi = (pg.videoinfo || [])[0], title = String(pg.title || "").replace(/^File:/i, "");
+      if (!vi || !vi.url || (vi.size || 0) > 3e6) continue;
+      const tl = title.toLowerCase().replace(/_/g, " ");
+      if (!tl.includes(g) || !tl.includes(sp)) continue;
+      const cands = [{ src: vi.url, type: String(vi.mime || "").split(";")[0], size: vi.size || 0 }, ...(vi.derivatives || []).map(x => ({ src: x.src, type: String(x.type || "").split(";")[0], size: 0 }))];
+      if (!(vi.derivatives || []).length && /\.(ogg|oga|opus|flac|wav)$/i.test(vi.url)) {
+        const fn = vi.url.split("/").pop();
+        cands.push({ src: vi.url.replace("/wikipedia/commons/", "/wikipedia/commons/transcoded/") + "/" + fn + ".mp3", type: "audio/mpeg", size: 0 });
+      }
+      const order = ["audio/mpeg", "audio/mp3", "audio/mp4", "audio/x-m4a", "audio/aac", "audio/wav", "audio/x-wav", "audio/wave", "audio/ogg", "application/ogg", "audio/webm", "audio/flac"];
+      const best = cands.filter(c => c.src && order.includes(c.type) && canPlay({ file_content_type: c.type }) && !(c.size > 6e6))
+        .sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type))[0];
+      if (!best || badSnd(best.src)) continue;
+      const em = vi.extmetadata || {}, who = stripHtml(em.Artist?.value).slice(0, 60), lic = stripHtml(em.LicenseShortName?.value);
+      const desc = stripHtml(em.ImageDescription?.value).slice(0, 200);
+      out.push({ url: best.src, type: best.type, attr: [who ? "© " + who : "", lic, "Wikimedia Commons"].filter(Boolean).join(" · "), lic, place: "", date: "", uri: vi.descriptionurl || ("https://commons.wikimedia.org/wiki/" + encodeURIComponent(pg.title || "")), page: vi.descriptionurl || "", agree: 5, src: "Wikimédia", kind: kindOf(title + " " + desc), title });
+    }
+    return out;
+  })).then(x => (x || []).filter(s => !badSnd(s.url)));
 }
 async function soundFor(t, zone) {
   const x = await xcSound(t);
   if (x) return x;
+  if (S.set.sono) {
+    const c = await commonsSounds(t).catch(() => []);
+    if (c.length) return pick(c.slice(0, 8));
+  }
   const base = { taxon_id: t.id, sounds: "true", quality_grade: "research", order_by: "random", per_page: 25 + rnd(6), fields: SNDFIELDS };
   const tries = zone && (zone.id || zone.lat != null) ? [{ ...base, ...zoneParams(zone) }, base] : [base];
   let loose = [];
@@ -526,7 +604,9 @@ async function soundFor(t, zone) {
     if (strict.length) return pick(strict.slice(0, 5));
     if (!loose.length) loose = goodSounds(d?.results, 1);
   }
-  return loose.length ? pick(loose.slice(0, 3)) : null;
+  if (loose.length) return pick(loose.slice(0, 3));
+  if (!S.set.sono) { const c = await commonsSounds(t).catch(() => []); if (c.length) return pick(c.slice(0, 8)); }
+  return null;
 }
 async function soundsList(t, n = 4) {
   const d = await obsSearch({ taxon_id: t.id, sounds: "true", quality_grade: "research", per_page: 30, fields: SNDFIELDS });
@@ -591,6 +671,7 @@ function wikiDesc(t) {
   });
 }
 const clip = (s, n) => { s = String(s || "").replace(/\s+/g, " ").trim(); if (s.length <= n) return s; const cut = s.slice(0, n); const dot = cut.lastIndexOf(". "); return (dot > n * .5 ? cut.slice(0, dot + 1) : cut.replace(/\s\S*$/, "") + "…"); };
+const xcKind = ty => String(ty || "").split(",").map(x => XCTYPE[x.trim().toLowerCase()] || x.trim()).filter(Boolean).join(", ");
 const XCTYPE = { song: "chant", call: "cri", "flight call": "cri en vol", "alarm call": "alarme", drumming: "tambourinage", "begging call": "quémande", subsong: "babil", "nocturnal flight call": "cri nocturne" };
 async function xcList(t) {
   if (!S.set.xc) return null;
@@ -598,7 +679,7 @@ async function xcList(t) {
   const d = await getJSON(url, { tries: 1, timeout: 12000 });
   const fix = u => u ? (u.startsWith("//") ? "https:" + u : u) : "";
   return (d.recordings || []).filter(r => r.file).sort((a, b) => String(a.q || "E").localeCompare(String(b.q || "E"))).slice(0, 6)
-    .map(r => ({ url: fix(r.file), kind: String(r.type || "").split(",").map(x => XCTYPE[x.trim().toLowerCase()] || x.trim()).filter(Boolean).join(", "), place: [r.loc, r.cnt].filter(Boolean).join(", "), attr: r.rec ? "© " + r.rec + " · xeno-canto" : "xeno-canto", len: r.length || "", page: fix(r.url), q: r.q || "" }));
+    .map(r => ({ url: fix(r.file), kind: xcKind(r.type), place: [r.loc, r.cnt].filter(Boolean).join(", "), attr: r.rec ? "© " + r.rec + " · xeno-canto" : "xeno-canto", len: r.length || "", page: fix(r.url), q: r.q || "", src: "xeno-canto", sono: fix(r.sono?.full || r.sono?.large || r.sono?.med || "") }));
 }
 async function resolveTaxon(sci, fr) {
   return memo("res:" + sci, async () => {
@@ -636,10 +717,47 @@ function rec(t) {
   }
   return r;
 }
-function stars(r) {
-  if (!r || !r.box) return 0;
-  const b = Math.max(0, ...Object.values(r.box));
-  return b >= 5 ? 3 : b >= 3 ? 2 : b >= 1 ? 1 : 0;
+/* Maîtrise = reconnaître l'espèce dans des situations différentes, pas mémoriser une image :
+   3 photos différentes dont 1 de terrain, sur 3 jours différents, sans échec récent. */
+function mastery(r) {
+  const m = { photos: 0, field: 0, sounds: 0, days: 0, lvl: 0 };
+  if (!r) return m;
+  m.field = (r.fk || []).length;
+  m.photos = Math.max((r.pk || []).length + m.field, r.lg || 0);
+  m.sounds = (r.sk || []).length;
+  m.days = (r.od || []).length;
+  const box = r.box ? (r.box.photo ?? Math.max(0, ...Object.values(r.box))) : 0;
+  if (m.photos >= 3 && m.field >= 1 && m.days >= 3 && box >= 3) m.lvl = 3;
+  else if (m.photos >= 2 && m.days >= 2) m.lvl = 2;
+  else if ((r.ok || 0) >= 1) m.lvl = 1;
+  return m;
+}
+function stars(r) { return r ? mastery(r).lvl : 0; }
+function masteryTodo(m) {
+  if (m.lvl === 3) return "";
+  const need = [];
+  if (m.photos < 3) need.push(`${3 - m.photos} photo${3 - m.photos > 1 ? "s" : ""} de plus`);
+  if (m.field < 1) need.push("1 photo de terrain");
+  if (m.days < 3) need.push(`${3 - m.days} jour${3 - m.days > 1 ? "s" : ""} de plus`);
+  return need.length ? "Pour la maîtriser : " + need.join(", ") + "." : "Presque : reconnais-la encore une fois sans erreur.";
+}
+/* Journal compact de chaque tentative : [minute, espèce, réussite, type (p photo, f terrain, s son, n nom), clé du média] */
+function logAttempt(id, ok, m, k) {
+  const a = S.att || (S.att = []);
+  a.push([Math.floor(Date.now() / 60000), id, ok ? 1 : 0, m, k || 0]);
+  if (a.length > 6000) a.splice(0, a.length - 6000);
+}
+/* Rétention différée : après une réussite, l'espèce est-elle encore reconnue quand elle revient lo à hi jours plus tard ? */
+function retention(lo, hi) {
+  const last = new Map();
+  let n = 0, ok = 0;
+  for (const [t, id, o, m] of S.att || []) {
+    const key = id + (m === "s" ? "s" : m === "n" ? "n" : "p");
+    const prev = last.get(key);
+    if (prev && prev[1]) { const gap = (t - prev[0]) / 1440; if (gap >= lo && gap < hi) { n++; if (o) ok++; } }
+    last.set(key, [t, o]);
+  }
+  return { n, p: n ? ok / n : null };
 }
 function srsUpdate(r, mod, ok, soft) {
   let b = r.box[mod] ?? 0;

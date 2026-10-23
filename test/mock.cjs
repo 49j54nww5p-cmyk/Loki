@@ -130,6 +130,10 @@ async function handle(route) {
     if (m) { if (!wavCache.has(m[1])) wavCache.set(m[1], wav(+m[1])); return route.fulfill({ status: 200, contentType: "audio/wav", headers: { "access-control-allow-origin": "*" }, body: wavCache.get(m[1]) }); }
     return route.fulfill({ status: 404, body: "" });
   }
+  if (host === "cdnjs.cloudflare.com") {
+    const f = p.endsWith(".css") ? "leaflet.css" : "leaflet.js";
+    return route.fulfill({ status: 200, contentType: f.endsWith(".css") ? "text/css" : "application/javascript", body: fs.readFileSync(path.join(__dirname, "vendor/lf/dist", f)) });
+  }
   if (host.endsWith("basemaps.cartocdn.com")) {
     tilePng = tilePng || await sharp({ create: { width: 256, height: 256, channels: 3, background: { r: 18, g: 22, b: 33 } } }).png().toBuffer();
     return route.fulfill({ status: 200, contentType: "image/png", body: tilePng });
@@ -174,6 +178,11 @@ async function handle(route) {
   if (p.startsWith("/v2/taxa/") || /^\/v1\/taxa\/[\d,]+$/.test(p)) {
     const ids = p.split("/").pop().split(",").map(Number);
     return json(route, { total_results: ids.length, results: ids.map(id => ({ id, taxon_photos: [0, 1, 2, 3].map(k => ({ photo: { id: id * 10 + k, url: photo(id * 10 + k), medium_url: photo(id * 10 + k, "medium"), large_url: photo(id * 10 + k, "large"), attribution: "(c) Photographe " + (id + k) + ", certains droits réservés (CC BY)", license_code: "cc-by" } })) })) });
+  }
+  if ((p === "/v2/observations" || p === "/v1/observations") && q.taxon_id === "3") {
+    const n = +q.per_page || 1, base = q.lat ? [+q.lat, +q.lng] : [44.7 + Math.random() * 3, -1.2 + Math.random() * 4];
+    const results = Array.from({ length: Math.min(n, 12) }, (_, k) => { const sp = species[(k * 7 + 3) % species.length]; return { id: 9000 + k, location: (base[0] + k * .01) + "," + (base[1] - k * .01), place_guess: "Lanton, Gironde, France", taxon: { id: sp.id, name: sp.sci, rank: "species", preferred_common_name: sp.fr }, photos: [{ url: photo(sp.id * 10), attribution: "(c) X" }] }; });
+    return json(route, { total_results: results.length, results });
   }
   if (p === "/v2/observations" || p === "/v1/observations") {
     const id = +q.taxon_id, n = Math.min(+q.per_page || 5, 4);

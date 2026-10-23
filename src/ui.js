@@ -197,7 +197,7 @@ function promptIcon(q) {
   return { photo: "frame", field: "eye", son: "wave", soncho: "wave", fr: "quill", la: "quill" }[q.stim] || "frame";
 }
 function stageHtml(q) {
-  if (q.kind === "geo") return `<div class="geo-grid" id="geogrid">${q.sp.map(s => `<figure><img src="${esc(s.img)}" alt=""><figcaption>${esc(s.fr)}</figcaption></figure>`).join("")}</div>`;
+  if (q.kind === "geo") return `<div class="gstrip" id="gstrip">${q.sp.map((s, i) => `<figure><img src="${esc(s.img)}" alt="Oiseau ${i + 1}"><span class="k">${i + 1}</span><figcaption>${esc(s.fr)}</figcaption></figure>`).join("")}</div>`;
   if (q.kind === "root") return `<div class="namecard"><div><span class="eyebrow">Racine latine</span><div class="big latin">${esc(q.w)}</div>${q.ex ? `<div class="ex">dans <span class="latin">${esc(q.ex.sci)}</span></div>` : ""}</div></div>`;
   const bonus = q.bonus ? `<span class="tag-bonus">${ic("spark")}Rareté ×2</span>` : "";
   if (q.stim === "son") return `<div class="sound" id="sound">${bonus}
@@ -234,7 +234,8 @@ function typePlaceholder(q) {
 }
 function answersHtml(q) {
   const ch = q.choices || [];
-  if (q.format === "type") return `<form class="typer" id="typer" autocomplete="off"><input id="ans" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" placeholder="${esc(typePlaceholder(q))}" aria-label="Ta réponse"><button class="btn primary" type="submit" aria-label="Valider">${ic("check")}</button></form><button class="skip" data-act="skip">Je ne sais pas</button>`;
+  if (q.format === "map") return `<div class="gmap" id="gmap"></div><button class="btn primary wide" id="gok" data-act="geook" disabled style="margin-top:10px">${ic("pin")}Touche la carte pour placer ton pin</button>`;
+  if (q.format === "type") return `<form class="typer" id="typer" autocomplete="off"><input id="ans" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" placeholder="${esc(typePlaceholder(q))}" aria-label="Ta réponse"><button class="btn primary" type="submit" aria-label="Valider">${ic("check")}</button></form><div class="sugg" id="sugg"></div><button class="skip" data-act="skip">Je ne sais pas</button>`;
   if (q.format === "flash") return `<div class="flashbox"><button class="btn ghost wide" data-act="reveal" style="height:62px">${ic("eye")}Voir la réponse</button></div>`;
   if (q.format === "audio") return ch.map((c, i) => `<div class="achoice" data-k="${c.key}" style="animation-delay:${i * 50}ms"><button class="pl" data-act="aplay" data-i="${i}" aria-label="Écouter l'enregistrement ${String.fromCharCode(65 + i)}">${ic("play")}</button><div class="wv" aria-hidden="true">${Array.from({ length: 14 }, (_, j) => `<i style="height:${30 + ((j * 37 + i * 11) % 60)}%"></i>`).join("")}</div><button class="pick" data-act="pick" data-k="${c.key}">${String.fromCharCode(65 + i)} · Lui</button></div>`).join("");
   if (q.format === "tiles") {
@@ -268,12 +269,12 @@ function mountQuestion(q) {
       img.src = q.photo.lg || q.photo.md;
     }
     setAmbient(q.photo.md);
-  } else if (q.kind === "geo") setAmbient(q.sp[0]?.img);
+  } else if (q.kind === "geo") { setAmbient(q.sp[0]?.img); mountGeoMap(q); }
   else setAmbient(null);
   if (q.stim === "son" && q.snd) {
     sndLoad(q.snd.url, $("#sono")).then(mode => { if (mode && SES?.q === q && !q.done) sndPlay(true); });
   }
-  if (q.format === "type") { const inp = $("#ans"); if (inp && window.matchMedia && matchMedia("(hover:hover)").matches) inp.focus(); }
+  if (q.format === "type") { loadLexicon(); const inp = $("#ans"); if (inp && window.matchMedia && matchMedia("(hover:hover)").matches) inp.focus(); }
   if (ses.cfg.timer === 10) startQTimer(q, 10000);
   if (ses.deadline) startChallengeBar();
 }
@@ -339,8 +340,10 @@ function fbHtml(q, res, gain) {
   const head = `<div class="grab"></div><div class="verdict"><span class="vi">${ic(res.ok ? "check" : res.partial ? "bulb" : "x")}</span><b>${verdict}</b>${gain ? `<span class="gain">+${gain} XP</span>` : ""}</div>`;
   const next = `<button class="btn primary wide next" data-act="next">${last || over ? "Voir le bilan" : "Suivant"}${ic("arrow")}</button>`;
   if (q.kind === "geo") {
-    const c = CONTINENTS.find(x => x.k === q.cont);
-    return `${head}<div class="spcard" style="cursor:default"><span class="t"><b>${ic("globe", "s")} ${esc(c ? c.n : "")}</b><span class="chips">${q.sp.map(s => `<span class="chip">${esc(s.fr)}</span>`).join("")}</span></span></div>${next}`;
+    const km = res.geoKm, tier = geoTier(km);
+    return `<div class="grab"></div><div class="verdict"><span class="vi">${ic(km <= 1500 ? "check" : "pin")}</span><b>${esc(tier[2])}</b><span class="gain">+${gain} XP</span></div>
+    <div class="dnote" style="font-size:15px;color:var(--text)">${ic("pin", "xs")} À <b>${fmt(km)} km</b> · ${esc(q.place || "")}</div>
+    <div class="chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">${q.sp.map(s => `<span class="chip">${esc(s.fr)}</span>`).join("")}</div>${next}`;
   }
   if (q.kind === "root") {
     return `${head}<div class="decode"><span class="dchip"><span class="latin">${esc(q.w)}</span>${esc(q.mean)}</span></div>${q.note ? `<div class="dnote">${esc(q.note)}</div>` : ""}${q.ex ? `<div class="dnote">Exemple : ${esc(q.ex.fr || "")} · <span class="latin">${esc(q.ex.sci)}</span></div>` : ""}${next}`;
@@ -391,6 +394,74 @@ function showFeedback(q, res, gain) {
   if (nb && window.matchMedia && matchMedia("(hover:hover)").matches) nb.focus({ preventScroll: true });
 }
 function hideFeedback() { const f = $("#fb"); if (f) f.remove(); }
+
+/* ---------- Suggestions de saisie ---------- */
+let SUGT = 0, SUGQ = "";
+function suggItems(q, v) {
+  if (q.level === "family") {
+    const n = norm(v);
+    return [...TAXO.fam.values()].filter(f => norm(f.fr + " " + f.vern + " " + f.sci).split(" ").some(w => w.startsWith(n)) || norm(f.fr).includes(n)).slice(0, 8)
+      .map(f => ({ key: "f" + f.id, main: f.fr, sub: f.vern }));
+  }
+  if (q.level === "order" || q.level === "genus") return [];
+  const mode = q.stim === "fr" ? "la" : q.stim === "la" ? "fr" : q.names;
+  return lexSearch(v, 8).map(e => ({ key: "s" + e.id, img: e.img, main: mode === "la" ? e.sci : (e.fr || e.sci), sub: mode === "both" && e.fr ? e.sci : "", latin: mode === "la", t: e }));
+}
+function renderSugg(q, v) {
+  const box = $("#sugg");
+  if (!box) return;
+  const items = v.trim().length < 2 ? [] : suggItems(q, v);
+  box.innerHTML = items.map(it => `<button type="button" class="sitem" data-act="sugg" data-k="${it.key}">${it.img ? `<img src="${esc(it.img)}" alt="">` : `<span class="noimg">${ic("tree", "s")}</span>`}<span class="tx">${it.latin ? `<span class="latin" style="font-size:18px">${esc(it.main)}</span>` : `<b>${esc(it.main)}</b>`}${it.sub ? `<small class="latin">${esc(it.sub)}</small>` : ""}</span></button>`).join("");
+  return items.length;
+}
+function suggest(v) {
+  const q = SES?.q;
+  if (!q || q.done) return;
+  SUGQ = v;
+  const n = renderSugg(q, v);
+  clearTimeout(SUGT);
+  if (q.level === "species" && v.trim().length >= 3 && n < 5) {
+    SUGT = setTimeout(() => lexRemote(v.trim()).then(() => { if (SUGQ === v && SES?.q === q && !q.done) renderSugg(q, v); }).catch(() => {}), 350);
+  }
+}
+
+/* ---------- Carte Géo ---------- */
+let GMAP = null;
+function mountGeoMap(q) {
+  const el = $("#gmap");
+  if (!el || !window.L) return;
+  if (GMAP) { try { GMAP.remove(); } catch (e) { /* rien */ } }
+  const map = GMAP = L.map(el, { worldCopyJump: true, zoomControl: false, attributionControl: true, minZoom: 1 }).setView([25, 5], 1);
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", { subdomains: "abcd", maxZoom: 12, attribution: "© OpenStreetMap © CARTO" }).addTo(map);
+  q.guessM = null;
+  map.on("click", e => {
+    if (q.done) return;
+    q.guess = [e.latlng.lat, ((e.latlng.lng + 540) % 360) - 180];
+    if (q.guessM) q.guessM.setLatLng(e.latlng);
+    else q.guessM = L.circleMarker(e.latlng, { radius: 9, color: "#fff", weight: 3, fillColor: "#FF8B3D", fillOpacity: 1 }).addTo(map);
+    const b = $("#gok");
+    if (b) { b.disabled = false; b.innerHTML = ic("check") + "Valider"; }
+  });
+  setTimeout(() => map.invalidateSize(), 50);
+}
+function geoValidate() {
+  const q = SES?.q;
+  if (!q || q.done || !q.guess) return;
+  const km = haversine(q.guess, [q.lat, q.lng]), tier = geoTier(km);
+  $$(".gstrip").forEach(g => g.classList.add("reveal"));
+  $(".view.quiz")?.classList.add("georeveal");
+  if (GMAP) {
+    GMAP.invalidateSize();
+    const t = [q.lat, q.lng];
+    L.circleMarker(t, { radius: 10, color: "#fff", weight: 3, fillColor: "#1FD1F2", fillOpacity: 1 }).addTo(GMAP);
+    L.circle(t, { radius: 10000, color: "#1FD1F2", weight: 1, fillOpacity: .12 }).addTo(GMAP);
+    L.polyline([q.guess, t], { color: "#FFCB5C", weight: 2, dashArray: "6 6" }).addTo(GMAP);
+    GMAP.fitBounds(L.latLngBounds([q.guess, t]).pad(.35), { maxZoom: 8 });
+  }
+  $("#gok")?.remove();
+  settle({ ok: km <= 1500, geoKm: km, geoPts: tier[1] });
+  window.scrollTo(0, 0);
+}
 
 /* ---------- Bilan ---------- */
 VIEWS.result = ({ ses, n, ok, badges, msgs }) => {
@@ -564,6 +635,8 @@ VIEWS.settings = () => `<section class="view settings">
   <div class="group">
     <div class="set"><span class="lab"><b>Noms affichés</b><small>Le latin en petit aide à le retenir sans effort.</small></span></div>
     <div class="set" style="border-top:0;padding-top:0">${seg("names", [["both", "FR + latin"], ["fr", "Français"], ["la", "Latin"]])}</div>
+    <div class="set"><span class="lab"><b>Réponse par défaut</b><small>Saisie : tu tapes le nom, avec suggestions.</small></span></div>
+    <div class="set" style="border-top:0;padding-top:0">${seg("fmt", [["qcm", "Choix multiple"], ["type", "Saisie"]])}</div>
     <div class="set"><span class="lab"><b>Choix par question</b><small>De 2 (facile) à 6.</small></span><div class="stepper"><button data-act="setk" data-d="-1" aria-label="Moins">${ic("minus")}</button><output>${S.set.k}</output><button data-act="setk" data-d="1" aria-label="Plus">${ic("plus")}</button></div></div>
     <div class="set"><span class="lab"><b>Leurres</b><small>Expert : les espèces que les gens confondent vraiment sur iNaturalist.</small></span></div>
     <div class="set" style="border-top:0;padding-top:0">${seg("diff", [["facile", "Facile"], ["moyen", "Moyen"], ["expert", "Expert"]])}</div>
@@ -774,8 +847,9 @@ function unlockAudio() {
 }
 async function sndLoad(url, cv) {
   sndStop();
-  SND.url = url; SND.buf = null; SND.mode = "el"; SND.offset = 0; SND.dur = 0; SND.row = null;
+  SND.url = url; SND.buf = null; SND.mode = "el"; SND.offset = 0; SND.dur = 0; SND.row = null; SND.loading = true; SND.want = false;
   setSndUI();
+  const done = mode => { if (SND.url === url) { SND.loading = false; if (SND.want) { SND.want = false; sndPlay(); } } return mode; };
   if (S.set.sono && cv) {
     try {
       const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 12000);
@@ -791,7 +865,7 @@ async function sndLoad(url, cv) {
       SND.buf = buf; SND.mode = "buf"; SND.dur = Math.min(buf.duration, 30);
       drawSono(cv, buf);
       cv.onclick = e => { const b = cv.getBoundingClientRect(), f = clamp((e.clientX - b.left) / b.width, 0, 1); if (SND.playing) sndPause(); SND.offset = f * SND.dur; sndPlay(); };
-      return "buf";
+      return done("buf");
     } catch (e) { /* CORS ou décodage : lecture simple */ }
   }
   if (SND.url !== url) return null;
@@ -805,12 +879,32 @@ async function sndLoad(url, cv) {
     d.querySelector(".i").style.cssText = "width:54px;height:54px;color:var(--orange)";
     cv.replaceWith(d);
   }
-  return "el";
+  return done("el");
+}
+/* Bascule sur la lecture simple si l'audio Web reste bloqué (iPhone) */
+function sndToElement() {
+  const el = audioEl();
+  if (SND.src) { const s = SND.src; SND.src = null; try { s.stop(); } catch (e) { /* rien */ } }
+  SND.playing = false; SND.mode = "el";
+  el.src = SND.url;
+  try { el.load(); } catch (e) { /* rien */ }
+  const p = el.play();
+  if (p && p.catch) p.catch(() => { SND.playing = false; setSndUI(true); toast("Son bloqué : touche encore ▶."); });
 }
 function sndPlay(auto) {
+  if (SND.loading) { SND.want = true; setSndUI(true); return; }
   const a = ac();
   if (SND.mode === "buf" && SND.buf && a) {
     if (SND.playing) { sndPause(); return; }
+    if (a.state !== "running") {
+      const r = a.resume ? a.resume() : null;
+      Promise.resolve(r).catch(() => {}).then(() => sleep(250)).then(() => {
+        if (a.state === "running") { if (!SND.playing) sndPlay(auto); }
+        else if (!auto) sndToElement();
+        else setSndUI(true);
+      });
+      return;
+    }
     const src = a.createBufferSource();
     src.buffer = SND.buf;
     src.connect(a.destination);
@@ -1006,6 +1100,16 @@ const ACT = {
   aplay: el => { const q = SES?.q; const c = q?.choices?.[+el.dataset.i]; if (c?.snd) playRow(c.snd.url, el.closest(".achoice")); },
   fplay: el => { const s = FICHE.snds?.[+el.dataset.i]; if (s) { FICHE.playing = true; playRow(s.url, el.closest(".srow")); } },
   next: () => nextQuestion(),
+  geook: () => geoValidate(),
+  sugg: el => {
+    const q = SES?.q;
+    if (!q || q.done) return;
+    const k = el.dataset.k, ok = k === q.answerKey;
+    const e = LEX.get(+k.slice(1));
+    const chosen = k[0] === "s" && e ? { t: { id: e.id, sci: e.sci, fr: e.fr, f: e.f, img: e.img ? { sq: e.img, md: sizeUrl(e.img, "medium") } : null } } : null;
+    $("#ans")?.blur();
+    settle({ ok, chosen, typed: el.textContent.trim() });
+  },
   badsnd: el => {
     const u = SES?.q?.snd?.url;
     if (!u) return;
@@ -1097,6 +1201,7 @@ let NOTET = 0;
 function onInput(e) {
   const t = e.target;
   if (t.id === "csearch") { CARNET.q = t.value; $("#cgrid").innerHTML = carnetGrid(); }
+  else if (t.id === "ans") suggest(t.value);
   else if (t.id === "psearch") { clearTimeout(PLACET); const v = t.value; PLACET = setTimeout(() => runPlaceSearch(v), 350); }
   else if (t.id === "fsearch") renderFamPicker(t.value);
   else if (t.id === "mynote") {

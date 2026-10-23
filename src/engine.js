@@ -11,12 +11,13 @@ const MODES = [
   { k: "duel", n: "Duels", d: "Les sosies", ic: "duel", c: "#FF6FA3" },
   { k: "geo", n: "Géo", d: "Où sommes-nous ?", ic: "globe", c: "#3D7BFF" },
   { k: "racines", n: "Racines", d: "Décode le latin", ic: "root", c: "#B6F25A" },
+  { k: "ecrire", n: "Écrire", d: "Tape le nom", ic: "keyboard", c: "#7DD3FC" },
   { k: "perso", n: "Sur mesure", d: "Tout régler", ic: "sliders", c: "#FFCB5C" }
 ];
 
 function photoStim() { return S.set.photo === "field" ? ["field"] : S.set.photo === "mix" ? ["photo", "field"] : ["photo"]; }
 function baseCfg() {
-  return { kind: "quiz", zone: S.set.zone, freq: "common", size: 120, target: "species", names: S.set.names, format: "qcm", k: S.set.k, diff: S.set.diff, len: 10, timer: 0 };
+  return { kind: "quiz", zone: S.set.zone, freq: "common", size: 120, target: "species", names: S.set.names, format: S.set.fmt || "qcm", k: S.set.k, diff: S.set.diff, len: 10, timer: 0 };
 }
 function modeCfg(k) {
   const b = baseCfg();
@@ -24,15 +25,16 @@ function modeCfg(k) {
     case "photo": return { ...b, title: "Photo", icon: "frame", stim: photoStim() };
     case "chant": return { ...b, title: "Chants", icon: "wave", stim: ["son"], format: "tiles", k: 4, sounds: true, size: 80 };
     case "latin": return { ...b, title: "Latin", icon: "quill", stim: ["fr", "la"] };
+    case "ecrire": return { ...b, title: "Écrire", icon: "keyboard", stim: photoStim(), format: "type" };
     case "famille": return { ...b, title: "Familles", icon: "tree", stim: photoStim(), target: "family", size: 200 };
-    case "geo": return { kind: "geo", title: "Géo", icon: "globe", len: 10, k: 6 };
+    case "geo": return { kind: "geo", title: "Géo", icon: "globe", len: 5 };
     case "racines": return { kind: "root", title: "Racines latines", icon: "root", len: 10, k: 4 };
     default: return null;
   }
 }
-const dailyCfg = () => ({ kind: "serie", title: "Série du jour", icon: "spark", zone: S.set.zone, len: 12, names: S.set.names, diff: S.set.diff, k: S.set.k });
-const miniCfg = () => ({ kind: "mini", title: "Mini-série", icon: "bolt", zone: S.set.zone, len: 3, names: S.set.names, diff: S.set.diff, k: S.set.k });
-const reviewCfg = () => ({ kind: "review", title: "Révisions", icon: "replay", zone: S.set.zone, names: S.set.names, diff: S.set.diff, k: S.set.k });
+const dailyCfg = () => ({ kind: "serie", format: S.set.fmt || "qcm", title: "Série du jour", icon: "spark", zone: S.set.zone, len: 12, names: S.set.names, diff: S.set.diff, k: S.set.k });
+const miniCfg = () => ({ kind: "mini", format: S.set.fmt || "qcm", title: "Mini-série", icon: "bolt", zone: S.set.zone, len: 3, names: S.set.names, diff: S.set.diff, k: S.set.k });
+const reviewCfg = () => ({ kind: "review", format: S.set.fmt || "qcm", title: "Révisions", icon: "replay", zone: S.set.zone, names: S.set.names, diff: S.set.diff, k: S.set.k });
 const duelCfg = pair => ({ kind: "duel", title: "Duel", icon: "duel", zone: S.set.zone, pair, len: 8, names: S.set.names, k: 2 });
 
 function newSession(cfg) {
@@ -107,7 +109,7 @@ async function prepare(ses) {
     ses.len = ses.plan.length;
     photosFor([A.id, B.id]).catch(() => {});
   } else if (ses.kind === "geo") {
-    ses.geo = await geoData();
+    await ensureLeaflet();
   } else if (ses.kind === "root") {
     ses.pool = { list: Object.keys(S.sp).map(fromRec).filter(Boolean), byId: new Map() };
   }
@@ -350,17 +352,62 @@ async function geoData() {
     return out;
   });
 }
-function buildGeo(ses) {
-  const data = ses.geo || {};
-  const keys = CONTINENTS.map(c => c.k).filter(k => (data[k] || []).length >= 4);
-  if (keys.length < 2) return null;
-  const k = pick(keys.filter(x => x !== ses.lastGeo).length ? keys.filter(x => x !== ses.lastGeo) : keys);
-  ses.lastGeo = k;
-  const sp = sample(data[k].slice(0, 70), 4).map(([id, fr, sci, img, attr]) => ({ id, fr, sci, img, attr }));
-  sp.forEach(s => preload(s.img));
-  const choices = CONTINENTS.filter(c => keys.includes(c.k)).map(c => ({ key: "c" + c.k, label: c.n }));
-  return { kind: "geo", cont: k, sp, choices, answerKey: "c" + k, format: "qcm", level: "geo", k: choices.length, hintsUsed: 0,
-    hints: sp.slice(0, 2).map(s => ({ ic: "bird", tx: "Il y a un " + s.fr.toLowerCase() })) };
+const GEOFIELDS = "id,location,place_guess,taxon.id,taxon.name,taxon.rank,taxon.preferred_common_name,photos.url,photos.attribution";
+function parseLoc(o) {
+  if (o.location) { const [la, ln] = String(o.location).split(",").map(Number); if (isFinite(la) && isFinite(ln)) return [la, ln]; }
+  const c = o.geojson?.coordinates;
+  return c ? [c[1], c[0]] : null;
+}
+async function buildGeo(ses) {
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const c = Math.random() < .55 ? pick(CONTINENTS) : null;
+    const seed = await obsSearch({ taxon_id: 3, photos: "true", quality_grade: "research", order_by: "random", per_page: 1, ...(c ? { place_id: c.id } : {}), fields: GEOFIELDS }, true).catch(() => null);
+    const o = seed?.results?.[0];
+    const loc = o && parseLoc(o);
+    if (!loc) continue;
+    const near = await obsSearch({ taxon_id: 3, photos: "true", quality_grade: "research", lat: loc[0].toFixed(4), lng: loc[1].toFixed(4), radius: 10, order_by: "random", per_page: 60, locale: "fr", fields: GEOFIELDS }, true).catch(() => null);
+    const seen = new Set(), sp = [], pts = [];
+    for (const n of near?.results || []) {
+      const t = n.taxon, ph = (n.photos || []).find(p => p && p.url);
+      if (!t || !ph || t.rank !== "species" || seen.has(t.id)) continue;
+      seen.add(t.id);
+      sp.push({ id: t.id, fr: cap(t.preferred_common_name || t.name), sci: t.name, img: sizeUrl(ph.url, "medium"), attr: ph.attribution || "" });
+      const l = parseLoc(n); if (l) pts.push(l);
+      if (sp.length >= 5) break;
+    }
+    if (sp.length < 5) continue;
+    sp.forEach(s => preload(s.img));
+    const lat = pts.reduce((a, p) => a + p[0], 0) / pts.length || loc[0], lng = pts.reduce((a, p) => a + p[1], 0) / pts.length || loc[1];
+    const place = (near.results.find(n => n.place_guess) || o).place_guess || "";
+    const country = place.split(",").pop().trim();
+    const hints = [{ ic: "globe", tx: lat >= 0 ? "Hémisphère nord" : "Hémisphère sud" }];
+    if (country) hints.push({ ic: "pin", tx: "Pays : " + country });
+    return { kind: "geo", lat, lng, place, sp, format: "map", level: "geo", hintsUsed: 0, hints, answerKey: "map" };
+  }
+  return null;
+}
+function haversine(a, b) {
+  const R = 6371, r = x => x * Math.PI / 180;
+  const dLa = r(b[0] - a[0]), dLn = r(b[1] - a[1]);
+  const h = Math.sin(dLa / 2) ** 2 + Math.cos(r(a[0])) * Math.cos(r(b[0])) * Math.sin(dLn / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+const GEOTIERS = [[25, 100, "Pile dessus !"], [100, 80, "Tout près !"], [300, 60, "Bien vu !"], [750, 40, "Pas mal !"], [1500, 25, "Bonne région"], [3000, 15, "Bon continent"], [6000, 8, "C'est loin…"], [Infinity, 3, "À l'autre bout du monde"]];
+const geoTier = km => GEOTIERS.find(t => km <= t[0]);
+let LEAFP = null;
+function ensureLeaflet() {
+  if (window.L) return Promise.resolve();
+  if (LEAFP) return LEAFP;
+  LEAFP = new Promise((res, rej) => {
+    const css = document.createElement("link");
+    css.rel = "stylesheet"; css.href = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";
+    document.head.appendChild(css);
+    const js = document.createElement("script");
+    js.src = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
+    js.onload = () => res(); js.onerror = () => { LEAFP = null; rej(new Error("carte")); };
+    document.head.appendChild(js);
+  });
+  return LEAFP;
 }
 
 /* ---------- Racines ---------- */
@@ -417,6 +464,7 @@ function checkTyped(str, q) {
   return { ok: false };
 }
 function xpFor(ses, q, res, ms) {
+  if (q.kind === "geo") return res.geoPts || 0;
   if (!res.ok) return res.partial ? 3 : 0;
   let x = q.kind === "root" ? 7 : 10;
   const nC = q.choices?.length || q.k || 5;

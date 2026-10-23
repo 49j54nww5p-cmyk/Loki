@@ -582,3 +582,25 @@ textarea.io{width:100%;min-height:90px;margin-top:10px;padding:10px;border-radiu
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
 body.calm *,body.calm *::before,body.calm *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+
+.tiles .tile:last-child:nth-child(odd){grid-column:1/-1;min-height:84px;flex-direction:row;align-items:center}
+.sugg{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.sitem{display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 12px 6px 6px;border-radius:15px;text-align:left;background:rgba(255,255,255,.05);border:1px solid var(--line)}
+.sitem:active{transform:scale(.98)}
+.sitem img,.sitem .noimg{width:40px;height:40px;border-radius:11px;object-fit:cover;background:var(--card-2);flex:none;display:grid;place-items:center;color:var(--teal)}
+.sitem .tx{display:flex;flex-direction:column;min-width:0}
+.sitem b{font-weight:650;font-size:15.5px;line-height:1.2}
+.sitem small{font-size:15px;color:var(--muted);line-height:1.2}
+
+.gstrip{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 calc(-1 * var(--gutter-r)) 0 0;padding-right:var(--gutter-r)}
+.gstrip::-webkit-scrollbar{display:none}
+.gstrip figure{position:relative;flex:none;width:72%;aspect-ratio:4/3;margin:0;border-radius:20px;overflow:hidden;scroll-snap-align:start;background:var(--card-2)}
+.gstrip img{width:100%;height:100%;object-fit:cover}
+.gstrip .k{position:absolute;top:8px;left:8px;display:grid;place-items:center;width:26px;height:26px;border-radius:9px;font:600 12px var(--f-display);background:rgba(6,10,19,.7)}
+.gstrip figcaption{position:absolute;left:0;right:0;bottom:0;padding:18px 10px 8px;font-size:13px;font-weight:650;background:linear-gradient(180deg,transparent,rgba(6,10,19,.9));opacity:0;transition:opacity .4s}
+.gstrip.reveal figcaption{opacity:1}
+.gmap{height:min(46vh,340px);border-radius:20px;overflow:hidden;border:1px solid var(--line-2);background:#0B0F1A}
+.gmap .leaflet-control-attribution{background:rgba(6,10,19,.6)!important;color:var(--faint)!important;font-size:9px}
+.gmap .leaflet-control-attribution a{color:var(--muted)!important}
+
+.georeveal .gstrip,.georeveal .prompt,.georeveal .hints{display:none}

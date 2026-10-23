@@ -604,6 +604,28 @@ textarea.io{width:100%;min-height:90px;margin-top:10px;padding:10px;border-radiu
 }
 body.calm *,body.calm *::before,body.calm *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 
+.tiles .tile:last-child:nth-child(odd){grid-column:1/-1;min-height:84px;flex-direction:row;align-items:center}
+.sugg{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.sitem{display:flex;align-items:center;gap:10px;min-height:52px;padding:6px 12px 6px 6px;border-radius:15px;text-align:left;background:rgba(255,255,255,.05);border:1px solid var(--line)}
+.sitem:active{transform:scale(.98)}
+.sitem img,.sitem .noimg{width:40px;height:40px;border-radius:11px;object-fit:cover;background:var(--card-2);flex:none;display:grid;place-items:center;color:var(--teal)}
+.sitem .tx{display:flex;flex-direction:column;min-width:0}
+.sitem b{font-weight:650;font-size:15.5px;line-height:1.2}
+.sitem small{font-size:15px;color:var(--muted);line-height:1.2}
+
+.gstrip{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 calc(-1 * var(--gutter-r)) 0 0;padding-right:var(--gutter-r)}
+.gstrip::-webkit-scrollbar{display:none}
+.gstrip figure{position:relative;flex:none;width:72%;aspect-ratio:4/3;margin:0;border-radius:20px;overflow:hidden;scroll-snap-align:start;background:var(--card-2)}
+.gstrip img{width:100%;height:100%;object-fit:cover}
+.gstrip .k{position:absolute;top:8px;left:8px;display:grid;place-items:center;width:26px;height:26px;border-radius:9px;font:600 12px var(--f-display);background:rgba(6,10,19,.7)}
+.gstrip figcaption{position:absolute;left:0;right:0;bottom:0;padding:18px 10px 8px;font-size:13px;font-weight:650;background:linear-gradient(180deg,transparent,rgba(6,10,19,.9));opacity:0;transition:opacity .4s}
+.gstrip.reveal figcaption{opacity:1}
+.gmap{height:min(46vh,340px);border-radius:20px;overflow:hidden;border:1px solid var(--line-2);background:#0B0F1A}
+.gmap .leaflet-control-attribution{background:rgba(6,10,19,.6)!important;color:var(--faint)!important;font-size:9px}
+.gmap .leaflet-control-attribution a{color:var(--muted)!important}
+
+.georeveal .gstrip,.georeveal .prompt,.georeveal .hints{display:none}
+
 </style>
 </head>
 <body>
@@ -1264,7 +1286,7 @@ const defaults = () => ({
   days: {}, sp: {}, fam: {}, stats: {}, badges: {}, counters: {},
   best: { combo: 0 }, favs: [],
   set: {
-    zone: { id: 6753, name: "France" }, names: "both", k: 5, diff: "moyen", photo: "ref",
+    zone: { id: 6753, name: "France" }, fmt: "qcm", names: "both", k: 5, diff: "moyen", photo: "ref",
     sfx: true, calm: false, sono: true, inat: "", xc: "", remind: "19:30", builder: null
   }
 });
@@ -1547,7 +1569,53 @@ async function getPool(p) {
     list = list.filter(t => !seen.has(t.id)).slice(0, size);
   }
   if (p.freq === "rare") list = list.slice(0, size);
+  list.forEach(lexAdd);
   return { list, byId: new Map(list.map(t => [t.id, t])) };
+}
+
+/* ---------- Lexique (suggestions de saisie) ---------- */
+const LEX = new Map();
+function lexAdd(t) {
+  if (!t || !t.id || !t.sci) return;
+  if (!LEX.has(t.id)) LEX.set(t.id, { id: t.id, sci: t.sci, fr: t.fr || "", img: t.img?.sq || t.img || "", f: t.f || 0, n: norm((t.fr || "") + " " + t.sci) });
+}
+let LEXP = null;
+function loadLexicon() {
+  for (const [id, r] of Object.entries(S.sp)) lexAdd({ id: +id, sci: r.sci, fr: r.fr, img: r.img, f: r.f });
+  if (LEXP) return LEXP;
+  LEXP = cached("lex1", 30 * DAY, async () => {
+    const out = [];
+    for (const page of [1, 2]) {
+      const d = await inat("/observations/species_counts", { taxon_id: 3, place_id: 6753, locale: "fr", preferred_place_id: 6753, per_page: 500, page });
+      for (const r of d.results || []) if (r.taxon && r.taxon.rank === "species") out.push([r.taxon.id, r.taxon.name, cap(r.taxon.preferred_common_name || ""), r.taxon.default_photo?.square_url || ""]);
+      if ((d.results || []).length < 500) break;
+    }
+    return out;
+  }).then(list => { for (const [id, sci, fr, img] of list || []) lexAdd({ id, sci, fr, img }); return true; })
+    .catch(() => { LEXP = null; return false; });
+  return LEXP;
+}
+function lexSearch(qs_, n = 8) {
+  const toks = norm(qs_).split(" ").filter(Boolean);
+  if (!toks.length) return [];
+  const res = [];
+  for (const e of LEX.values()) {
+    const words = e.n.split(" ");
+    let score = 0, ok = true;
+    for (const tk of toks) {
+      const i = words.findIndex(w => w.startsWith(tk));
+      if (i < 0) { if (e.n.includes(tk)) score += 1; else { ok = false; break; } }
+      else score += i === 0 ? 4 : 2;
+    }
+    if (ok) res.push([score - e.n.length / 100, e]);
+  }
+  return res.sort((a, b) => b[0] - a[0]).slice(0, n).map(x => x[1]);
+}
+async function lexRemote(q) {
+  const d = await inat("/taxa/autocomplete", { q, taxon_id: 3, rank: "species", per_page: 8, locale: "fr", preferred_place_id: 6753 });
+  const out = (d.results || []).filter(r => r.rank === "species").map(r => mini(r));
+  out.forEach(lexAdd);
+  return out;
 }
 
 /* ---------- Médias ---------- */
@@ -1818,12 +1886,13 @@ const MODES = [
   { k: "duel", n: "Duels", d: "Les sosies", ic: "duel", c: "#FF6FA3" },
   { k: "geo", n: "Géo", d: "Où sommes-nous ?", ic: "globe", c: "#3D7BFF" },
   { k: "racines", n: "Racines", d: "Décode le latin", ic: "root", c: "#B6F25A" },
+  { k: "ecrire", n: "Écrire", d: "Tape le nom", ic: "keyboard", c: "#7DD3FC" },
   { k: "perso", n: "Sur mesure", d: "Tout régler", ic: "sliders", c: "#FFCB5C" }
 ];
 
 function photoStim() { return S.set.photo === "field" ? ["field"] : S.set.photo === "mix" ? ["photo", "field"] : ["photo"]; }
 function baseCfg() {
-  return { kind: "quiz", zone: S.set.zone, freq: "common", size: 120, target: "species", names: S.set.names, format: "qcm", k: S.set.k, diff: S.set.diff, len: 10, timer: 0 };
+  return { kind: "quiz", zone: S.set.zone, freq: "common", size: 120, target: "species", names: S.set.names, format: S.set.fmt || "qcm", k: S.set.k, diff: S.set.diff, len: 10, timer: 0 };
 }
 function modeCfg(k) {
   const b = baseCfg();
@@ -1831,15 +1900,16 @@ function modeCfg(k) {
     case "photo": return { ...b, title: "Photo", icon: "frame", stim: photoStim() };
     case "chant": return { ...b, title: "Chants", icon: "wave", stim: ["son"], format: "tiles", k: 4, sounds: true, size: 80 };
     case "latin": return { ...b, title: "Latin", icon: "quill", stim: ["fr", "la"] };
+    case "ecrire": return { ...b, title: "Écrire", icon: "keyboard", stim: photoStim(), format: "type" };
     case "famille": return { ...b, title: "Familles", icon: "tree", stim: photoStim(), target: "family", size: 200 };
-    case "geo": return { kind: "geo", title: "Géo", icon: "globe", len: 10, k: 6 };
+    case "geo": return { kind: "geo", title: "Géo", icon: "globe", len: 5 };
     case "racines": return { kind: "root", title: "Racines latines", icon: "root", len: 10, k: 4 };
     default: return null;
   }
 }
-const dailyCfg = () => ({ kind: "serie", title: "Série du jour", icon: "spark", zone: S.set.zone, len: 12, names: S.set.names, diff: S.set.diff, k: S.set.k });
-const miniCfg = () => ({ kind: "mini", title: "Mini-série", icon: "bolt", zone: S.set.zone, len: 3, names: S.set.names, diff: S.set.diff, k: S.set.k });
-const reviewCfg = () => ({ kind: "review", title: "Révisions", icon: "replay", zone: S.set.zone, names: S.set.names, diff: S.set.diff, k: S.set.k });
+const dailyCfg = () => ({ kind: "serie", format: S.set.fmt || "qcm", title: "Série du jour", icon: "spark", zone: S.set.zone, len: 12, names: S.set.names, diff: S.set.diff, k: S.set.k });
+const miniCfg = () => ({ kind: "mini", format: S.set.fmt || "qcm", title: "Mini-série", icon: "bolt", zone: S.set.zone, len: 3, names: S.set.names, diff: S.set.diff, k: S.set.k });
+const reviewCfg = () => ({ kind: "review", format: S.set.fmt || "qcm", title: "Révisions", icon: "replay", zone: S.set.zone, names: S.set.names, diff: S.set.diff, k: S.set.k });
 const duelCfg = pair => ({ kind: "duel", title: "Duel", icon: "duel", zone: S.set.zone, pair, len: 8, names: S.set.names, k: 2 });
 
 function newSession(cfg) {
@@ -1914,7 +1984,7 @@ async function prepare(ses) {
     ses.len = ses.plan.length;
     photosFor([A.id, B.id]).catch(() => {});
   } else if (ses.kind === "geo") {
-    ses.geo = await geoData();
+    await ensureLeaflet();
   } else if (ses.kind === "root") {
     ses.pool = { list: Object.keys(S.sp).map(fromRec).filter(Boolean), byId: new Map() };
   }
@@ -2157,17 +2227,62 @@ async function geoData() {
     return out;
   });
 }
-function buildGeo(ses) {
-  const data = ses.geo || {};
-  const keys = CONTINENTS.map(c => c.k).filter(k => (data[k] || []).length >= 4);
-  if (keys.length < 2) return null;
-  const k = pick(keys.filter(x => x !== ses.lastGeo).length ? keys.filter(x => x !== ses.lastGeo) : keys);
-  ses.lastGeo = k;
-  const sp = sample(data[k].slice(0, 70), 4).map(([id, fr, sci, img, attr]) => ({ id, fr, sci, img, attr }));
-  sp.forEach(s => preload(s.img));
-  const choices = CONTINENTS.filter(c => keys.includes(c.k)).map(c => ({ key: "c" + c.k, label: c.n }));
-  return { kind: "geo", cont: k, sp, choices, answerKey: "c" + k, format: "qcm", level: "geo", k: choices.length, hintsUsed: 0,
-    hints: sp.slice(0, 2).map(s => ({ ic: "bird", tx: "Il y a un " + s.fr.toLowerCase() })) };
+const GEOFIELDS = "id,location,place_guess,taxon.id,taxon.name,taxon.rank,taxon.preferred_common_name,photos.url,photos.attribution";
+function parseLoc(o) {
+  if (o.location) { const [la, ln] = String(o.location).split(",").map(Number); if (isFinite(la) && isFinite(ln)) return [la, ln]; }
+  const c = o.geojson?.coordinates;
+  return c ? [c[1], c[0]] : null;
+}
+async function buildGeo(ses) {
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const c = Math.random() < .55 ? pick(CONTINENTS) : null;
+    const seed = await obsSearch({ taxon_id: 3, photos: "true", quality_grade: "research", order_by: "random", per_page: 1, ...(c ? { place_id: c.id } : {}), fields: GEOFIELDS }, true).catch(() => null);
+    const o = seed?.results?.[0];
+    const loc = o && parseLoc(o);
+    if (!loc) continue;
+    const near = await obsSearch({ taxon_id: 3, photos: "true", quality_grade: "research", lat: loc[0].toFixed(4), lng: loc[1].toFixed(4), radius: 10, order_by: "random", per_page: 60, locale: "fr", fields: GEOFIELDS }, true).catch(() => null);
+    const seen = new Set(), sp = [], pts = [];
+    for (const n of near?.results || []) {
+      const t = n.taxon, ph = (n.photos || []).find(p => p && p.url);
+      if (!t || !ph || t.rank !== "species" || seen.has(t.id)) continue;
+      seen.add(t.id);
+      sp.push({ id: t.id, fr: cap(t.preferred_common_name || t.name), sci: t.name, img: sizeUrl(ph.url, "medium"), attr: ph.attribution || "" });
+      const l = parseLoc(n); if (l) pts.push(l);
+      if (sp.length >= 5) break;
+    }
+    if (sp.length < 5) continue;
+    sp.forEach(s => preload(s.img));
+    const lat = pts.reduce((a, p) => a + p[0], 0) / pts.length || loc[0], lng = pts.reduce((a, p) => a + p[1], 0) / pts.length || loc[1];
+    const place = (near.results.find(n => n.place_guess) || o).place_guess || "";
+    const country = place.split(",").pop().trim();
+    const hints = [{ ic: "globe", tx: lat >= 0 ? "Hémisphère nord" : "Hémisphère sud" }];
+    if (country) hints.push({ ic: "pin", tx: "Pays : " + country });
+    return { kind: "geo", lat, lng, place, sp, format: "map", level: "geo", hintsUsed: 0, hints, answerKey: "map" };
+  }
+  return null;
+}
+function haversine(a, b) {
+  const R = 6371, r = x => x * Math.PI / 180;
+  const dLa = r(b[0] - a[0]), dLn = r(b[1] - a[1]);
+  const h = Math.sin(dLa / 2) ** 2 + Math.cos(r(a[0])) * Math.cos(r(b[0])) * Math.sin(dLn / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+const GEOTIERS = [[25, 100, "Pile dessus !"], [100, 80, "Tout près !"], [300, 60, "Bien vu !"], [750, 40, "Pas mal !"], [1500, 25, "Bonne région"], [3000, 15, "Bon continent"], [6000, 8, "C'est loin…"], [Infinity, 3, "À l'autre bout du monde"]];
+const geoTier = km => GEOTIERS.find(t => km <= t[0]);
+let LEAFP = null;
+function ensureLeaflet() {
+  if (window.L) return Promise.resolve();
+  if (LEAFP) return LEAFP;
+  LEAFP = new Promise((res, rej) => {
+    const css = document.createElement("link");
+    css.rel = "stylesheet"; css.href = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";
+    document.head.appendChild(css);
+    const js = document.createElement("script");
+    js.src = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
+    js.onload = () => res(); js.onerror = () => { LEAFP = null; rej(new Error("carte")); };
+    document.head.appendChild(js);
+  });
+  return LEAFP;
 }
 
 /* ---------- Racines ---------- */
@@ -2224,6 +2339,7 @@ function checkTyped(str, q) {
   return { ok: false };
 }
 function xpFor(ses, q, res, ms) {
+  if (q.kind === "geo") return res.geoPts || 0;
   if (!res.ok) return res.partial ? 3 : 0;
   let x = q.kind === "root" ? 7 : 10;
   const nC = q.choices?.length || q.k || 5;
@@ -2556,7 +2672,7 @@ function promptIcon(q) {
   return { photo: "frame", field: "eye", son: "wave", soncho: "wave", fr: "quill", la: "quill" }[q.stim] || "frame";
 }
 function stageHtml(q) {
-  if (q.kind === "geo") return `<div class="geo-grid" id="geogrid">${q.sp.map(s => `<figure><img src="${esc(s.img)}" alt=""><figcaption>${esc(s.fr)}</figcaption></figure>`).join("")}</div>`;
+  if (q.kind === "geo") return `<div class="gstrip" id="gstrip">${q.sp.map((s, i) => `<figure><img src="${esc(s.img)}" alt="Oiseau ${i + 1}"><span class="k">${i + 1}</span><figcaption>${esc(s.fr)}</figcaption></figure>`).join("")}</div>`;
   if (q.kind === "root") return `<div class="namecard"><div><span class="eyebrow">Racine latine</span><div class="big latin">${esc(q.w)}</div>${q.ex ? `<div class="ex">dans <span class="latin">${esc(q.ex.sci)}</span></div>` : ""}</div></div>`;
   const bonus = q.bonus ? `<span class="tag-bonus">${ic("spark")}Rareté ×2</span>` : "";
   if (q.stim === "son") return `<div class="sound" id="sound">${bonus}
@@ -2593,7 +2709,8 @@ function typePlaceholder(q) {
 }
 function answersHtml(q) {
   const ch = q.choices || [];
-  if (q.format === "type") return `<form class="typer" id="typer" autocomplete="off"><input id="ans" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" placeholder="${esc(typePlaceholder(q))}" aria-label="Ta réponse"><button class="btn primary" type="submit" aria-label="Valider">${ic("check")}</button></form><button class="skip" data-act="skip">Je ne sais pas</button>`;
+  if (q.format === "map") return `<div class="gmap" id="gmap"></div><button class="btn primary wide" id="gok" data-act="geook" disabled style="margin-top:10px">${ic("pin")}Touche la carte pour placer ton pin</button>`;
+  if (q.format === "type") return `<form class="typer" id="typer" autocomplete="off"><input id="ans" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" placeholder="${esc(typePlaceholder(q))}" aria-label="Ta réponse"><button class="btn primary" type="submit" aria-label="Valider">${ic("check")}</button></form><div class="sugg" id="sugg"></div><button class="skip" data-act="skip">Je ne sais pas</button>`;
   if (q.format === "flash") return `<div class="flashbox"><button class="btn ghost wide" data-act="reveal" style="height:62px">${ic("eye")}Voir la réponse</button></div>`;
   if (q.format === "audio") return ch.map((c, i) => `<div class="achoice" data-k="${c.key}" style="animation-delay:${i * 50}ms"><button class="pl" data-act="aplay" data-i="${i}" aria-label="Écouter l'enregistrement ${String.fromCharCode(65 + i)}">${ic("play")}</button><div class="wv" aria-hidden="true">${Array.from({ length: 14 }, (_, j) => `<i style="height:${30 + ((j * 37 + i * 11) % 60)}%"></i>`).join("")}</div><button class="pick" data-act="pick" data-k="${c.key}">${String.fromCharCode(65 + i)} · Lui</button></div>`).join("");
   if (q.format === "tiles") {
@@ -2627,12 +2744,12 @@ function mountQuestion(q) {
       img.src = q.photo.lg || q.photo.md;
     }
     setAmbient(q.photo.md);
-  } else if (q.kind === "geo") setAmbient(q.sp[0]?.img);
+  } else if (q.kind === "geo") { setAmbient(q.sp[0]?.img); mountGeoMap(q); }
   else setAmbient(null);
   if (q.stim === "son" && q.snd) {
     sndLoad(q.snd.url, $("#sono")).then(mode => { if (mode && SES?.q === q && !q.done) sndPlay(true); });
   }
-  if (q.format === "type") { const inp = $("#ans"); if (inp && window.matchMedia && matchMedia("(hover:hover)").matches) inp.focus(); }
+  if (q.format === "type") { loadLexicon(); const inp = $("#ans"); if (inp && window.matchMedia && matchMedia("(hover:hover)").matches) inp.focus(); }
   if (ses.cfg.timer === 10) startQTimer(q, 10000);
   if (ses.deadline) startChallengeBar();
 }
@@ -2698,8 +2815,10 @@ function fbHtml(q, res, gain) {
   const head = `<div class="grab"></div><div class="verdict"><span class="vi">${ic(res.ok ? "check" : res.partial ? "bulb" : "x")}</span><b>${verdict}</b>${gain ? `<span class="gain">+${gain} XP</span>` : ""}</div>`;
   const next = `<button class="btn primary wide next" data-act="next">${last || over ? "Voir le bilan" : "Suivant"}${ic("arrow")}</button>`;
   if (q.kind === "geo") {
-    const c = CONTINENTS.find(x => x.k === q.cont);
-    return `${head}<div class="spcard" style="cursor:default"><span class="t"><b>${ic("globe", "s")} ${esc(c ? c.n : "")}</b><span class="chips">${q.sp.map(s => `<span class="chip">${esc(s.fr)}</span>`).join("")}</span></span></div>${next}`;
+    const km = res.geoKm, tier = geoTier(km);
+    return `<div class="grab"></div><div class="verdict"><span class="vi">${ic(km <= 1500 ? "check" : "pin")}</span><b>${esc(tier[2])}</b><span class="gain">+${gain} XP</span></div>
+    <div class="dnote" style="font-size:15px;color:var(--text)">${ic("pin", "xs")} À <b>${fmt(km)} km</b> · ${esc(q.place || "")}</div>
+    <div class="chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">${q.sp.map(s => `<span class="chip">${esc(s.fr)}</span>`).join("")}</div>${next}`;
   }
   if (q.kind === "root") {
     return `${head}<div class="decode"><span class="dchip"><span class="latin">${esc(q.w)}</span>${esc(q.mean)}</span></div>${q.note ? `<div class="dnote">${esc(q.note)}</div>` : ""}${q.ex ? `<div class="dnote">Exemple : ${esc(q.ex.fr || "")} · <span class="latin">${esc(q.ex.sci)}</span></div>` : ""}${next}`;
@@ -2750,6 +2869,74 @@ function showFeedback(q, res, gain) {
   if (nb && window.matchMedia && matchMedia("(hover:hover)").matches) nb.focus({ preventScroll: true });
 }
 function hideFeedback() { const f = $("#fb"); if (f) f.remove(); }
+
+/* ---------- Suggestions de saisie ---------- */
+let SUGT = 0, SUGQ = "";
+function suggItems(q, v) {
+  if (q.level === "family") {
+    const n = norm(v);
+    return [...TAXO.fam.values()].filter(f => norm(f.fr + " " + f.vern + " " + f.sci).split(" ").some(w => w.startsWith(n)) || norm(f.fr).includes(n)).slice(0, 8)
+      .map(f => ({ key: "f" + f.id, main: f.fr, sub: f.vern }));
+  }
+  if (q.level === "order" || q.level === "genus") return [];
+  const mode = q.stim === "fr" ? "la" : q.stim === "la" ? "fr" : q.names;
+  return lexSearch(v, 8).map(e => ({ key: "s" + e.id, img: e.img, main: mode === "la" ? e.sci : (e.fr || e.sci), sub: mode === "both" && e.fr ? e.sci : "", latin: mode === "la", t: e }));
+}
+function renderSugg(q, v) {
+  const box = $("#sugg");
+  if (!box) return;
+  const items = v.trim().length < 2 ? [] : suggItems(q, v);
+  box.innerHTML = items.map(it => `<button type="button" class="sitem" data-act="sugg" data-k="${it.key}">${it.img ? `<img src="${esc(it.img)}" alt="">` : `<span class="noimg">${ic("tree", "s")}</span>`}<span class="tx">${it.latin ? `<span class="latin" style="font-size:18px">${esc(it.main)}</span>` : `<b>${esc(it.main)}</b>`}${it.sub ? `<small class="latin">${esc(it.sub)}</small>` : ""}</span></button>`).join("");
+  return items.length;
+}
+function suggest(v) {
+  const q = SES?.q;
+  if (!q || q.done) return;
+  SUGQ = v;
+  const n = renderSugg(q, v);
+  clearTimeout(SUGT);
+  if (q.level === "species" && v.trim().length >= 3 && n < 5) {
+    SUGT = setTimeout(() => lexRemote(v.trim()).then(() => { if (SUGQ === v && SES?.q === q && !q.done) renderSugg(q, v); }).catch(() => {}), 350);
+  }
+}
+
+/* ---------- Carte Géo ---------- */
+let GMAP = null;
+function mountGeoMap(q) {
+  const el = $("#gmap");
+  if (!el || !window.L) return;
+  if (GMAP) { try { GMAP.remove(); } catch (e) { /* rien */ } }
+  const map = GMAP = L.map(el, { worldCopyJump: true, zoomControl: false, attributionControl: true, minZoom: 1 }).setView([25, 5], 1);
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", { subdomains: "abcd", maxZoom: 12, attribution: "© OpenStreetMap © CARTO" }).addTo(map);
+  q.guessM = null;
+  map.on("click", e => {
+    if (q.done) return;
+    q.guess = [e.latlng.lat, ((e.latlng.lng + 540) % 360) - 180];
+    if (q.guessM) q.guessM.setLatLng(e.latlng);
+    else q.guessM = L.circleMarker(e.latlng, { radius: 9, color: "#fff", weight: 3, fillColor: "#FF8B3D", fillOpacity: 1 }).addTo(map);
+    const b = $("#gok");
+    if (b) { b.disabled = false; b.innerHTML = ic("check") + "Valider"; }
+  });
+  setTimeout(() => map.invalidateSize(), 50);
+}
+function geoValidate() {
+  const q = SES?.q;
+  if (!q || q.done || !q.guess) return;
+  const km = haversine(q.guess, [q.lat, q.lng]), tier = geoTier(km);
+  $$(".gstrip").forEach(g => g.classList.add("reveal"));
+  $(".view.quiz")?.classList.add("georeveal");
+  if (GMAP) {
+    GMAP.invalidateSize();
+    const t = [q.lat, q.lng];
+    L.circleMarker(t, { radius: 10, color: "#fff", weight: 3, fillColor: "#1FD1F2", fillOpacity: 1 }).addTo(GMAP);
+    L.circle(t, { radius: 10000, color: "#1FD1F2", weight: 1, fillOpacity: .12 }).addTo(GMAP);
+    L.polyline([q.guess, t], { color: "#FFCB5C", weight: 2, dashArray: "6 6" }).addTo(GMAP);
+    GMAP.fitBounds(L.latLngBounds([q.guess, t]).pad(.35), { maxZoom: 8 });
+  }
+  $("#gok")?.remove();
+  settle({ ok: km <= 1500, geoKm: km, geoPts: tier[1] });
+  window.scrollTo(0, 0);
+}
 
 /* ---------- Bilan ---------- */
 VIEWS.result = ({ ses, n, ok, badges, msgs }) => {
@@ -2923,6 +3110,8 @@ VIEWS.settings = () => `<section class="view settings">
   <div class="group">
     <div class="set"><span class="lab"><b>Noms affichés</b><small>Le latin en petit aide à le retenir sans effort.</small></span></div>
     <div class="set" style="border-top:0;padding-top:0">${seg("names", [["both", "FR + latin"], ["fr", "Français"], ["la", "Latin"]])}</div>
+    <div class="set"><span class="lab"><b>Réponse par défaut</b><small>Saisie : tu tapes le nom, avec suggestions.</small></span></div>
+    <div class="set" style="border-top:0;padding-top:0">${seg("fmt", [["qcm", "Choix multiple"], ["type", "Saisie"]])}</div>
     <div class="set"><span class="lab"><b>Choix par question</b><small>De 2 (facile) à 6.</small></span><div class="stepper"><button data-act="setk" data-d="-1" aria-label="Moins">${ic("minus")}</button><output>${S.set.k}</output><button data-act="setk" data-d="1" aria-label="Plus">${ic("plus")}</button></div></div>
     <div class="set"><span class="lab"><b>Leurres</b><small>Expert : les espèces que les gens confondent vraiment sur iNaturalist.</small></span></div>
     <div class="set" style="border-top:0;padding-top:0">${seg("diff", [["facile", "Facile"], ["moyen", "Moyen"], ["expert", "Expert"]])}</div>
@@ -3133,8 +3322,9 @@ function unlockAudio() {
 }
 async function sndLoad(url, cv) {
   sndStop();
-  SND.url = url; SND.buf = null; SND.mode = "el"; SND.offset = 0; SND.dur = 0; SND.row = null;
+  SND.url = url; SND.buf = null; SND.mode = "el"; SND.offset = 0; SND.dur = 0; SND.row = null; SND.loading = true; SND.want = false;
   setSndUI();
+  const done = mode => { if (SND.url === url) { SND.loading = false; if (SND.want) { SND.want = false; sndPlay(); } } return mode; };
   if (S.set.sono && cv) {
     try {
       const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 12000);
@@ -3150,7 +3340,7 @@ async function sndLoad(url, cv) {
       SND.buf = buf; SND.mode = "buf"; SND.dur = Math.min(buf.duration, 30);
       drawSono(cv, buf);
       cv.onclick = e => { const b = cv.getBoundingClientRect(), f = clamp((e.clientX - b.left) / b.width, 0, 1); if (SND.playing) sndPause(); SND.offset = f * SND.dur; sndPlay(); };
-      return "buf";
+      return done("buf");
     } catch (e) { /* CORS ou décodage : lecture simple */ }
   }
   if (SND.url !== url) return null;
@@ -3164,12 +3354,32 @@ async function sndLoad(url, cv) {
     d.querySelector(".i").style.cssText = "width:54px;height:54px;color:var(--orange)";
     cv.replaceWith(d);
   }
-  return "el";
+  return done("el");
+}
+/* Bascule sur la lecture simple si l'audio Web reste bloqué (iPhone) */
+function sndToElement() {
+  const el = audioEl();
+  if (SND.src) { const s = SND.src; SND.src = null; try { s.stop(); } catch (e) { /* rien */ } }
+  SND.playing = false; SND.mode = "el";
+  el.src = SND.url;
+  try { el.load(); } catch (e) { /* rien */ }
+  const p = el.play();
+  if (p && p.catch) p.catch(() => { SND.playing = false; setSndUI(true); toast("Son bloqué : touche encore ▶."); });
 }
 function sndPlay(auto) {
+  if (SND.loading) { SND.want = true; setSndUI(true); return; }
   const a = ac();
   if (SND.mode === "buf" && SND.buf && a) {
     if (SND.playing) { sndPause(); return; }
+    if (a.state !== "running") {
+      const r = a.resume ? a.resume() : null;
+      Promise.resolve(r).catch(() => {}).then(() => sleep(250)).then(() => {
+        if (a.state === "running") { if (!SND.playing) sndPlay(auto); }
+        else if (!auto) sndToElement();
+        else setSndUI(true);
+      });
+      return;
+    }
     const src = a.createBufferSource();
     src.buffer = SND.buf;
     src.connect(a.destination);
@@ -3365,6 +3575,16 @@ const ACT = {
   aplay: el => { const q = SES?.q; const c = q?.choices?.[+el.dataset.i]; if (c?.snd) playRow(c.snd.url, el.closest(".achoice")); },
   fplay: el => { const s = FICHE.snds?.[+el.dataset.i]; if (s) { FICHE.playing = true; playRow(s.url, el.closest(".srow")); } },
   next: () => nextQuestion(),
+  geook: () => geoValidate(),
+  sugg: el => {
+    const q = SES?.q;
+    if (!q || q.done) return;
+    const k = el.dataset.k, ok = k === q.answerKey;
+    const e = LEX.get(+k.slice(1));
+    const chosen = k[0] === "s" && e ? { t: { id: e.id, sci: e.sci, fr: e.fr, f: e.f, img: e.img ? { sq: e.img, md: sizeUrl(e.img, "medium") } : null } } : null;
+    $("#ans")?.blur();
+    settle({ ok, chosen, typed: el.textContent.trim() });
+  },
   badsnd: el => {
     const u = SES?.q?.snd?.url;
     if (!u) return;
@@ -3456,6 +3676,7 @@ let NOTET = 0;
 function onInput(e) {
   const t = e.target;
   if (t.id === "csearch") { CARNET.q = t.value; $("#cgrid").innerHTML = carnetGrid(); }
+  else if (t.id === "ans") suggest(t.value);
   else if (t.id === "psearch") { clearTimeout(PLACET); const v = t.value; PLACET = setTimeout(() => runPlaceSearch(v), 350); }
   else if (t.id === "fsearch") renderFamPicker(t.value);
   else if (t.id === "mynote") {

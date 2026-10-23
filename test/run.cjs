@@ -66,9 +66,9 @@ const ONLY = process.argv[2] || "all";
     await shot("03-result");
     await shot("03-result-full", true);
   }
-  const modes = ONLY === "all" ? ["chant", "latin", "famille", "geo", "racines", "photo"] : ONLY === "serie" ? [] : [ONLY];
+  const modes = ONLY === "all" ? ["chant", "latin", "famille", "racines", "photo", "ecrire"] : ONLY === "serie" ? [] : [ONLY];
   for (const m of modes) {
-    if (!["chant", "latin", "famille", "geo", "racines", "photo"].includes(m)) continue;
+    if (!["chant", "latin", "famille", "racines", "photo", "ecrire"].includes(m)) continue;
     await home();
     await page.click(`[data-act=mode][data-mode=${m}]`);
     await play(3, "10-" + m, m === "chant" ? 2 : 1);

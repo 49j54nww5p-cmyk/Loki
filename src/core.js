@@ -48,7 +48,7 @@ const defaults = () => ({
   days: {}, sp: {}, fam: {}, stats: {}, badges: {}, counters: {},
   best: { combo: 0 }, favs: [],
   set: {
-    zone: { id: 6753, name: "France" }, names: "both", k: 5, diff: "moyen", photo: "ref",
+    zone: { id: 6753, name: "France" }, fmt: "qcm", names: "both", k: 5, diff: "moyen", photo: "ref",
     sfx: true, calm: false, sono: true, inat: "", xc: "", remind: "19:30", builder: null
   }
 });
@@ -331,7 +331,53 @@ async function getPool(p) {
     list = list.filter(t => !seen.has(t.id)).slice(0, size);
   }
   if (p.freq === "rare") list = list.slice(0, size);
+  list.forEach(lexAdd);
   return { list, byId: new Map(list.map(t => [t.id, t])) };
+}
+
+/* ---------- Lexique (suggestions de saisie) ---------- */
+const LEX = new Map();
+function lexAdd(t) {
+  if (!t || !t.id || !t.sci) return;
+  if (!LEX.has(t.id)) LEX.set(t.id, { id: t.id, sci: t.sci, fr: t.fr || "", img: t.img?.sq || t.img || "", f: t.f || 0, n: norm((t.fr || "") + " " + t.sci) });
+}
+let LEXP = null;
+function loadLexicon() {
+  for (const [id, r] of Object.entries(S.sp)) lexAdd({ id: +id, sci: r.sci, fr: r.fr, img: r.img, f: r.f });
+  if (LEXP) return LEXP;
+  LEXP = cached("lex1", 30 * DAY, async () => {
+    const out = [];
+    for (const page of [1, 2]) {
+      const d = await inat("/observations/species_counts", { taxon_id: 3, place_id: 6753, locale: "fr", preferred_place_id: 6753, per_page: 500, page });
+      for (const r of d.results || []) if (r.taxon && r.taxon.rank === "species") out.push([r.taxon.id, r.taxon.name, cap(r.taxon.preferred_common_name || ""), r.taxon.default_photo?.square_url || ""]);
+      if ((d.results || []).length < 500) break;
+    }
+    return out;
+  }).then(list => { for (const [id, sci, fr, img] of list || []) lexAdd({ id, sci, fr, img }); return true; })
+    .catch(() => { LEXP = null; return false; });
+  return LEXP;
+}
+function lexSearch(qs_, n = 8) {
+  const toks = norm(qs_).split(" ").filter(Boolean);
+  if (!toks.length) return [];
+  const res = [];
+  for (const e of LEX.values()) {
+    const words = e.n.split(" ");
+    let score = 0, ok = true;
+    for (const tk of toks) {
+      const i = words.findIndex(w => w.startsWith(tk));
+      if (i < 0) { if (e.n.includes(tk)) score += 1; else { ok = false; break; } }
+      else score += i === 0 ? 4 : 2;
+    }
+    if (ok) res.push([score - e.n.length / 100, e]);
+  }
+  return res.sort((a, b) => b[0] - a[0]).slice(0, n).map(x => x[1]);
+}
+async function lexRemote(q) {
+  const d = await inat("/taxa/autocomplete", { q, taxon_id: 3, rank: "species", per_page: 8, locale: "fr", preferred_place_id: 6753 });
+  const out = (d.results || []).filter(r => r.rank === "species").map(r => mini(r));
+  out.forEach(lexAdd);
+  return out;
 }
 
 /* ---------- Médias ---------- */

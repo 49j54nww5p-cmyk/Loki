@@ -134,6 +134,11 @@ async function handle(route) {
     const f = p.endsWith(".css") ? "leaflet.css" : "leaflet.js";
     return route.fulfill({ status: 200, contentType: f.endsWith(".css") ? "text/css" : "application/javascript", body: fs.readFileSync(path.join(__dirname, "vendor/lf/dist", f)) });
   }
+  if (host === "tile.openstreetmap.org") {
+    const z = p.split("/")[1];
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><rect width="256" height="256" fill="#AAD3DF"/><path d="M20 60 C 80 20, 160 40, 230 90 L 220 200 C 150 230, 70 220, 30 180 Z" fill="#F2EFE9" stroke="#C9B8A3"/><text x="70" y="130" font-size="20" font-family="sans-serif" fill="#555">Pays ${z}</text></svg>`;
+    return route.fulfill({ status: 200, contentType: "image/png", body: await sharp(Buffer.from(svg)).png().toBuffer() });
+  }
   if (host.endsWith("basemaps.cartocdn.com")) {
     tilePng = tilePng || await sharp({ create: { width: 256, height: 256, channels: 3, background: { r: 18, g: 22, b: 33 } } }).png().toBuffer();
     return route.fulfill({ status: 200, contentType: "image/png", body: tilePng });

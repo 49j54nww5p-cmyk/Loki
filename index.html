@@ -626,6 +626,10 @@ body.calm *,body.calm *::before,body.calm *::after{animation-duration:.01ms!impo
 
 .georeveal .gstrip,.georeveal .prompt,.georeveal .hints{display:none}
 
+/* Fonds OpenStreetMap assombris pour coller au thème */
+.gmap .leaflet-tile-pane,.tilemap img.base{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.45)}
+.gmap.leaflet-container{background:#0B0F1A}
+
 </style>
 </head>
 <body>
@@ -2907,7 +2911,7 @@ function mountGeoMap(q) {
   if (!el || !window.L) return;
   if (GMAP) { try { GMAP.remove(); } catch (e) { /* rien */ } }
   const map = GMAP = L.map(el, { worldCopyJump: true, zoomControl: false, attributionControl: true, minZoom: 1 }).setView([25, 5], 1);
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", { subdomains: "abcd", maxZoom: 12, attribution: "© OpenStreetMap © CARTO" }).addTo(map);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 12, attribution: "© OpenStreetMap" }).addTo(map);
   q.guessM = null;
   map.on("click", e => {
     if (q.done) return;
@@ -3141,7 +3145,7 @@ VIEWS.settings = () => `<section class="view settings">
     <div class="set"><span class="lab"><b>Importer</b><small>Restaure une sauvegarde sur ce téléphone.</small></span><label class="btn ghost" style="cursor:pointer">${ic("up")}Importer<input type="file" id="importf" accept="application/json,.json" hidden></label></div>
     <div class="set"><span class="lab"><b>Tout effacer</b><small>Remet l'appli à zéro sur cet appareil.</small></span><button class="btn ghost" data-act="reset" id="resetBtn">${ic("trash")}Effacer</button></div>
   </div>
-  <p class="foot">Photos, sons et données : <a href="https://www.inaturalist.org" target="_blank" rel="noopener">iNaturalist</a> et ses observateurs (licence indiquée sur chaque média). Descriptions : Wikipédia (CC BY-SA). Fonds de carte : © OpenStreetMap, © CARTO. Faune France n'ouvre pas ses données, d'où un simple lien depuis les fiches. Ta progression reste sur cet appareil.</p>
+  <p class="foot">Photos, sons et données : <a href="https://www.inaturalist.org" target="_blank" rel="noopener">iNaturalist</a> et ses observateurs (licence indiquée sur chaque média). Descriptions : Wikipédia (CC BY-SA). Fonds de carte : © contributeurs OpenStreetMap. Faune France n'ouvre pas ses données, d'où un simple lien depuis les fiches. Ta progression reste sur cet appareil.</p>
 </section>`;
 
 /* ---------- Calques ---------- */
@@ -3225,7 +3229,7 @@ function openFiche(t) {
     <div class="fsec"><h3>${ic("edit")}Mon astuce</h3><textarea class="mynote" id="mynote" data-id="${t.id}" placeholder="Un moyen mnémotechnique, un détail qui t'aide à la reconnaître…">${esc(r?.note || "")}</textarea></div>
     ${r?.n ? `<div class="fsec"><h3>${ic("chart")}Ma maîtrise</h3><div class="stats4"><div><b>${r.n}</b><small>fois vue</small></div><div><b>${Math.round(100 * r.ok / r.n)} %</b><small>réussite</small></div><div><b>${s}/3</b><small>étoiles</small></div></div></div>` : ""}
     <div class="fsec"><h3>${ic("cal")}Présence par mois<span class="seg"><button class="on" data-act="phz" data-z="fr">France</button><button data-act="phz" data-z="zone">Ma zone</button></span></h3><div class="pheno" id="pheno"></div></div>
-    <div class="fsec"><h3>${ic("map")}Observations<span class="seg"><button class="on" data-act="mapz" data-v="fr">France</button><button data-act="mapz" data-v="eu">Europe</button><button data-act="mapz" data-v="w">Monde</button></span></h3><div id="fmap"></div><div class="mapcap">Fond © OpenStreetMap · © CARTO — points : observations iNaturalist</div></div>
+    <div class="fsec"><h3>${ic("map")}Observations<span class="seg"><button class="on" data-act="mapz" data-v="fr">France</button><button data-act="mapz" data-v="eu">Europe</button><button data-act="mapz" data-v="w">Monde</button></span></h3><div id="fmap"></div><div class="mapcap">Fond © OpenStreetMap — points : observations iNaturalist</div></div>
     <div class="fsec"><h3>${ic("wave")}Chants & cris</h3><div class="slist" id="fsnd"><div class="spin" style="margin:6px auto"></div></div></div>
     <div class="fsec" id="fwiki" hidden><h3>${ic("book")}Description</h3><p id="fwikiTx"></p></div>
     <div class="fsec"><h3>${ic("duel")}Ressemble à</h3><div class="simil" id="fsim"><div class="spin" style="margin:6px auto"></div></div></div>
@@ -3279,11 +3283,10 @@ function renderPheno(t, zone) {
 }
 function renderMap(t, view) {
   const V = { fr: { z: 5, xs: [15, 16], ys: [10, 11] }, eu: { z: 3, xs: [3, 4, 5], ys: [1, 2, 3] }, w: { z: 1, xs: [0, 1], ys: [0, 1] } }[view];
-  const r2 = (window.devicePixelRatio || 1) > 1 ? "@2x" : "";
   let cells = "";
   V.ys.forEach((y, ry) => V.xs.forEach((x, rx) => {
     const area = `${ry + 1}/${rx + 1}`;
-    cells += `<img src="https://${"abcd"[(x + y) % 4]}.basemaps.cartocdn.com/dark_nolabels/${V.z}/${x}/${y}${r2}.png" alt="" style="grid-area:${area}" loading="lazy">`;
+    cells += `<img class="base" src="https://tile.openstreetmap.org/${V.z}/${x}/${y}.png" alt="" style="grid-area:${area}" loading="lazy">`;
     cells += `<img class="ov" src="https://api.inaturalist.org/v1/grid/${V.z}/${x}/${y}.png?taxon_id=${t.id}&color=%231FD1F2&quality_grade=research" alt="" style="grid-area:${area}" loading="lazy" onerror="this.remove()">`;
   }));
   const box = $("#fmap");

@@ -604,3 +604,7 @@ body.calm *,body.calm *::before,body.calm *::after{animation-duration:.01ms!impo
 .gmap .leaflet-control-attribution a{color:var(--muted)!important}
 
 .georeveal .gstrip,.georeveal .prompt,.georeveal .hints{display:none}
+
+/* Fonds OpenStreetMap assombris pour coller au thème */
+.gmap .leaflet-tile-pane,.tilemap img.base{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.45)}
+.gmap.leaflet-container{background:#0B0F1A}

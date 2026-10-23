@@ -17,7 +17,7 @@ Sur iPhone : ouvre le lien dans Safari, bouton Partager, puis « Sur l'écran d'
 ## Données
 
 - iNaturalist (API publique) : photos, sons, listes d'espèces, espèces souvent confondues, présence par mois, cartes. Chaque média garde sa licence et son auteur.
-- Wikipédia (résumés), xeno-canto (optionnel, avec ta clé), fonds de carte © OpenStreetMap / © CARTO.
+- Wikipédia (résumés), xeno-canto (optionnel, avec ta clé), fonds de carte © contributeurs OpenStreetMap.
 - La progression reste dans le navigateur de l'appareil (export / import dans Réglages).
 
 ## Développement

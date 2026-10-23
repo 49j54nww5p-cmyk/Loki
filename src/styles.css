@@ -849,3 +849,4 @@ body.vwopen{overflow:hidden}
 .src .sh a{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,.05);color:var(--cyan)}
 .src p{margin:6px 0 4px;font-size:13.5px;line-height:1.45;color:#D3DAF0}
 .src small{font-size:12px;color:var(--muted)}
+.tag-field.age{color:#1A0C02;background:linear-gradient(120deg,var(--lime),var(--teal))}

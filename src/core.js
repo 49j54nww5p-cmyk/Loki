@@ -331,6 +331,7 @@ async function getPool(p) {
   if ((p.freq === "mine" || p.freq === "lifers") && !S.set.inat) { const e = new Error("NOINAT"); e.code = "NOINAT"; throw e; }
   if (p.freq === "mine") params.user_login = S.set.inat;
   if (p.sounds) params.sounds = "true";
+  if (p.age) { params.term_id = 1; params.term_value_id = AGEV[p.age]; }
   const size = clamp(p.size || 120, 10, 500);
   params.per_page = (p.freq === "all" || p.freq === "lifers") ? 500 : Math.min(500, p.freq === "rare" ? Math.max(size, 150) : size);
   const key = "pool:" + qs(params);
@@ -498,6 +499,25 @@ async function refPhoto(t) {
   const ph = pick(pool.length ? pool : list);
   LASTPH.set(t.id, ph.lg);
   return ph;
+}
+/* Classes d'âge : annotation iNaturalist « Life Stage » (terme 1) : adulte = 2, juvénile = 8 */
+const AGEV = { adult: 2, juv: 8 };
+const AGEN = { adult: "Adulte", juv: "Juvénile" };
+async function agePhoto(t, zone, age) {
+  const fields = "id,uri,place_guess,observed_on,photos.url,photos.attribution,photos.license_code";
+  const base = { taxon_id: t.id, photos: "true", quality_grade: "research", term_id: 1, term_value_id: AGEV[age], order_by: "random", per_page: 10, fields };
+  const tries = zone && (zone.id || zone.lat != null) ? [{ ...base, ...zoneParams(zone) }, base] : [base];
+  const seen = new Set(S.sp[t.id]?.ps || []);
+  for (const p of tries) {
+    const d = await obsSearch(p, true).catch(() => null);
+    const cands = [];
+    for (const o of d?.results || []) {
+      const ph = (o.photos || []).find(x => x && x.url);
+      if (ph) cands.push({ ...photoObj(ph), field: true, age, place: o.place_guess || "", date: o.observed_on || "", uri: o.uri || "" });
+    }
+    if (cands.length) { const fresh = cands.filter(c => !seen.has(photoKey(c.lg || c.md))); return pick(fresh.length ? fresh : cands); }
+  }
+  return null;
 }
 async function fieldPhoto(t, zone) {
   const fields = "id,uri,place_guess,observed_on,photos.url,photos.attribution,photos.license_code";

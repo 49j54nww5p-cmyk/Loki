@@ -81,7 +81,7 @@ async function prepare(ses) {
       list.forEach(t => { t.f = fam(t) || S.sp[t.id]?.f || 0; t.o = ord(t) || S.sp[t.id]?.o || 0; lexAdd(t); });
       ses.pool = { list, byId: new Map(list.map(t => [t.id, t])) };
     } else
-    ses.pool = await getPool({ zone: ses.zone, taxa: c.taxa, freq: c.freq, size: c.size, sounds: c.sounds || onlySound });
+    ses.pool = await getPool({ zone: ses.zone, taxa: c.taxa, freq: c.freq, size: c.size, sounds: c.sounds || onlySound, age: c.age || "" });
     if (ses.pool.list.length < 2) { const e = new Error("EMPTY"); e.code = "EMPTY"; throw e; }
     if ((c.target === "family" || c.target === "order") && !TAXO.ok) toast("Familles indisponibles hors ligne : questions par espèce.");
     if (stims.some(s => s === "photo" || s === "soncho")) photosFor(sample(ses.pool.list, 20).map(t => t.id)).catch(() => {});
@@ -235,8 +235,13 @@ async function buildQ(ses, spec) {
     if (r && mastery(r).photos >= 2 && !(r.fk || []).length && Math.random() < .7) { q.stim = "field"; q.transfer = true; }
   }
   if (q.stim === "son") { q.snd = await soundFor(q.t, ses.zone); if (!q.snd) q.stim = "photo"; }
-  if (q.stim === "field") { q.photo = await fieldPhoto(q.t, ses.zone); if (!q.photo) q.stim = "photo"; }
-  if (q.stim === "photo" || q.stim === "soncho") { q.photo = await refPhoto(q.t); if (!q.photo) return null; }
+  if (c.age && (q.stim === "photo" || q.stim === "field" || q.stim === "soncho")) {
+    q.photo = await agePhoto(q.t, ses.zone, c.age);
+    if (!q.photo) return null;
+    if (q.stim === "photo") q.stim = "field";
+  }
+  if (q.stim === "field" && !q.photo) { q.photo = await fieldPhoto(q.t, ses.zone); if (!q.photo) q.stim = "photo"; }
+  if ((q.stim === "photo" || q.stim === "soncho") && !q.photo) { q.photo = await refPhoto(q.t); if (!q.photo) return null; }
   if ((q.stim === "fr" || q.stim === "la") && q.format === "tiles") q.format = "qcm";
   if (q.level !== "species" && q.format === "tiles") q.format = "qcm";
   if (q.stim === "soncho") {
@@ -248,6 +253,12 @@ async function buildQ(ses, spec) {
     else q.format = "audio";
   }
   if (!q.choices && (q.format === "qcm" || q.format === "tiles")) q.choices = await makeChoices(ses, q);
+  if (c.age && q.format === "tiles" && q.choices) {
+    /* Vignettes : chaque choix montre aussi un oiseau de la bonne classe d'âge */
+    const phs = await Promise.all(q.choices.map(ch => ch.t ? agePhoto(ch.t, ses.zone, c.age).catch(() => null) : null));
+    if (phs.every(Boolean)) q.choices = q.choices.map((ch, i) => ({ ...ch, t: { ...ch.t, img: { ...(ch.t.img || {}), sq: phs[i].md, md: phs[i].md } } }));
+    else q.format = "qcm";
+  }
   q.answerKey = keyOf(q.t, q.level);
   q.hints = hintsFor(q);
   return q;

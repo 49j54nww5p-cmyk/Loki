@@ -252,7 +252,7 @@ function stageHtml(q) {
     <span class="ret tl"></span><span class="ret tr"></span><span class="ret bl"></span><span class="ret br"></span>
     <span class="zb">${ic("zoom")}</span>
     <div class="spinner"><div class="spin"></div></div>
-    ${q.stim === "field" ? `<span class="tag-field">${ic("eye")}Terrain</span>` : ""}${bonus}
+    ${q.photo?.age ? `<span class="tag-field age">${ic("spark")}${AGEN[q.photo.age]}</span>` : q.stim === "field" ? `<span class="tag-field">${ic("eye")}Terrain</span>` : ""}${bonus}
     ${q.stim === "soncho" ? `<figcaption class="credit" style="font-size:13px;font-weight:700;color:#fff">${esc(nameFr(q.t))}</figcaption>` : `<figcaption class="credit">${esc(p.attr || "")}</figcaption>`}
   </figure>`;
 }
@@ -440,7 +440,7 @@ function fbHtml(q, res, gain) {
   ${r?.note ? `<div class="note-own">${ic("edit", "xs")} ${esc(r.note)}</div>` : ""}
   ${chosen ? compareHtml(t, chosen, q) : ""}
   ${(() => { const other = chosen && duelTip(t.sci, chosen.sci) ? chosen : q.pair ? q.pair.find(x => x.id !== t.id) : null; const h = other ? tipHtml(t, other, other === chosen ? "Pour ne plus les confondre" : "Comment les distinguer") : ""; if (h) q.tipShown = true; return h ? `<div class="lsec tipbox">${h}</div>` : ""; })()}
-  ${q.photo?.field && (q.photo.place || q.photo.date) ? `<div class="dnote">${ic("pin", "xs")} ${esc(q.photo.place || "")}${q.photo.date ? " · " + esc(dateLong(q.photo.date)) : ""}</div>` : ""}
+  ${q.photo?.field && (q.photo.place || q.photo.date || q.photo.age) ? `<div class="dnote">${ic("pin", "xs")} ${q.photo.age ? `<b>${AGEN[q.photo.age]}</b> · ` : ""}${esc(q.photo.place || "")}${q.photo.date ? " · " + esc(dateLong(q.photo.date)) : ""}${q.photo.uri ? ` · <a href="${esc(q.photo.uri)}" target="_blank" rel="noopener">voir l'observation</a>` : ""}</div>` : ""}
   ${q.snd ? `<div class="dnote" style="display:flex;align-items:center;gap:8px">${ic("wave", "xs")}<span style="flex:1">${esc([q.snd.place, q.snd.attr].filter(Boolean).join(" · "))}</span><button class="chip warn" data-act="badsnd">${ic("x", "xs")}Mauvais son</button></div>` : ""}
   <div class="learn" id="learn" data-id="${t.id}"><div class="lsec"><div class="lh">${ic("book", "xs")}Pour la reconnaître</div><div class="lsk"></div><div class="lsk short"></div></div></div>
   ${next}`;
@@ -950,11 +950,12 @@ MOUNT.result = () => {
 };
 
 /* ---------- Constructeur « Sur mesure » ---------- */
-const defaultB = () => ({ zone: S.set.zone, guilds: [], fams: [], freq: "common", size: 100, stim: ["photo"], target: "species", names: S.set.names, format: "qcm", k: S.set.k, diff: S.set.diff, len: 10, timer: 0 });
+const defaultB = () => ({ zone: S.set.zone, guilds: [], fams: [], freq: "common", size: 100, stim: ["photo"], age: "all", target: "species", names: S.set.names, format: "qcm", k: S.set.k, diff: S.set.diff, len: 10, timer: 0 });
 const BOPT = {
   freq: [["common", "Communs", "star"], ["season", "De saison", "cal"], ["all", "Tous", "list"], ["rare", "Raretés", "spark"], ["exotic", "Exotiques", "pin"], ["mine", "Mes obs. iNat", "eye"], ["lifers", "À découvrir", "binoc"]],
   size: [[25, "Top 25"], [50, "Top 50"], [100, "Top 100"], [200, "Top 200"]],
   stim: [["photo", "Photo", "frame"], ["field", "Terrain", "eye"], ["son", "Chant", "wave"], ["soncho", "Quel chant ?", "vol"], ["fr", "Nom FR", "type"], ["la", "Nom latin", "quill"]],
+  age: [["all", "Tous les âges", "bird"], ["juv", "Juvéniles", "spark"], ["adult", "Adultes", "star"]],
   target: [["species", "Espèce", "bird"], ["genus", "Genre", "quill"], ["family", "Famille", "tree"], ["order", "Ordre", "tree"]],
   names: [["both", "FR + latin"], ["fr", "Français"], ["la", "Latin"]],
   format: [["qcm", "Choix", "list"], ["tiles", "Vignettes", "grid"], ["type", "Saisie", "keyboard"], ["flash", "Flashcard", "cards"]],
@@ -962,7 +963,7 @@ const BOPT = {
   len: [[5, "5"], [10, "10"], [20, "20"], [0, "∞"]],
   timer: [[0, "Sans"], [10, "10 s / question"], [60, "Défi 60 s"]]
 };
-const getB = () => (S.set.builder = S.set.builder || defaultB());
+const getB = () => { const B = S.set.builder = S.set.builder || defaultB(); if (!B.age) B.age = "all"; return B; };
 function optRow(field, list, multi, wrap) {
   const B = getB();
   return `<div class="row ${wrap ? "wrap" : ""}">${list.map(([v, l, i]) => {
@@ -981,6 +982,8 @@ VIEWS.builder = () => {
     ${famChips ? `<div class="selfam">${famChips}</div>` : ""}</div>
   <div class="opt"><div class="opt-h">${ic("star")}Lesquels</div>${optRow("freq", BOPT.freq)}${["common", "rare", "lifers"].includes(B.freq) ? `<div style="margin-top:8px">${optRow("size", BOPT.size)}</div>` : ""}</div>
   <div class="opt"><div class="opt-h">${ic("eye")}Question<span class="val">plusieurs choix possibles</span></div>${optRow("stim", BOPT.stim, true, true)}</div>
+  <div class="opt"><div class="opt-h">${ic("cal")}Âge des oiseaux<span class="val">${B.age === "juv" ? "juvéniles" : B.age === "adult" ? "adultes" : "tous"}</span></div>${optRow("age", BOPT.age)}
+    ${B.age !== "all" ? `<p class="muted note" style="margin-top:6px">Photos d'observations iNaturalist annotées « ${B.age === "juv" ? "juvénile" : "adulte"} » par les observateurs : seules les espèces qui en ont dans la zone sont proposées. S'applique aux questions avec photo.</p>` : ""}</div>
   <div class="opt"><div class="opt-h">${ic("check")}Réponse attendue</div>${optRow("target", BOPT.target)}</div>
   <div class="opt"><div class="opt-h">${ic("type")}Noms affichés</div>${optRow("names", BOPT.names)}</div>
   <div class="opt"><div class="opt-h">${ic("list")}Format</div>${optRow("format", BOPT.format)}
@@ -993,7 +996,7 @@ VIEWS.builder = () => {
 function builderTitle(B) {
   const grp = B.guilds.length === 1 && !B.fams.length ? B.guilds[0] : B.fams.length === 1 && !B.guilds.length ? famName(B.fams[0]) : B.guilds.length + B.fams.length ? "Groupes" : "Oiseaux";
   const st = B.stim.map(s => (BOPT.stim.find(x => x[0] === s) || [])[1]).filter(Boolean).join("+");
-  return `${grp} · ${st} · ${zoneLabel(B.zone)}`;
+  return `${grp}${B.age && B.age !== "all" ? " · " + (B.age === "juv" ? "Juvéniles" : "Adultes") : ""} · ${st} · ${zoneLabel(B.zone)}`;
 }
 async function builderCfg(B) {
   let taxa = [...B.fams];
@@ -1003,7 +1006,7 @@ async function builderCfg(B) {
   }
   taxa = [...new Set(taxa)];
   const onlySound = B.stim.every(s => s === "son" || s === "soncho");
-  return { kind: "quiz", title: builderTitle(B), icon: "sliders", zone: B.zone, taxa, freq: B.freq, size: B.size, sounds: onlySound, stim: B.stim.slice(), target: B.target, names: B.names, format: B.format, k: B.k, diff: B.diff, len: B.timer === 60 ? 0 : B.len, timer: B.timer };
+  return { kind: "quiz", title: builderTitle(B), icon: "sliders", zone: B.zone, taxa, freq: B.freq, size: B.size, sounds: onlySound, stim: B.stim.slice(), age: B.age && B.age !== "all" ? B.age : "", target: B.target, names: B.names, format: B.format, k: B.k, diff: B.diff, len: B.timer === 60 ? 0 : B.len, timer: B.timer };
 }
 
 /* ---------- Préparer une sortie ---------- */

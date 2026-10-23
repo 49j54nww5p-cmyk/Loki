@@ -869,6 +869,7 @@ body.vwopen{overflow:hidden}
 .src .sh a{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,.05);color:var(--cyan)}
 .src p{margin:6px 0 4px;font-size:13.5px;line-height:1.45;color:#D3DAF0}
 .src small{font-size:12px;color:var(--muted)}
+.tag-field.age{color:#1A0C02;background:linear-gradient(120deg,var(--lime),var(--teal))}
 
 </style>
 </head>
@@ -1906,6 +1907,7 @@ async function getPool(p) {
   if ((p.freq === "mine" || p.freq === "lifers") && !S.set.inat) { const e = new Error("NOINAT"); e.code = "NOINAT"; throw e; }
   if (p.freq === "mine") params.user_login = S.set.inat;
   if (p.sounds) params.sounds = "true";
+  if (p.age) { params.term_id = 1; params.term_value_id = AGEV[p.age]; }
   const size = clamp(p.size || 120, 10, 500);
   params.per_page = (p.freq === "all" || p.freq === "lifers") ? 500 : Math.min(500, p.freq === "rare" ? Math.max(size, 150) : size);
   const key = "pool:" + qs(params);
@@ -2073,6 +2075,25 @@ async function refPhoto(t) {
   const ph = pick(pool.length ? pool : list);
   LASTPH.set(t.id, ph.lg);
   return ph;
+}
+/* Classes d'âge : annotation iNaturalist « Life Stage » (terme 1) : adulte = 2, juvénile = 8 */
+const AGEV = { adult: 2, juv: 8 };
+const AGEN = { adult: "Adulte", juv: "Juvénile" };
+async function agePhoto(t, zone, age) {
+  const fields = "id,uri,place_guess,observed_on,photos.url,photos.attribution,photos.license_code";
+  const base = { taxon_id: t.id, photos: "true", quality_grade: "research", term_id: 1, term_value_id: AGEV[age], order_by: "random", per_page: 10, fields };
+  const tries = zone && (zone.id || zone.lat != null) ? [{ ...base, ...zoneParams(zone) }, base] : [base];
+  const seen = new Set(S.sp[t.id]?.ps || []);
+  for (const p of tries) {
+    const d = await obsSearch(p, true).catch(() => null);
+    const cands = [];
+    for (const o of d?.results || []) {
+      const ph = (o.photos || []).find(x => x && x.url);
+      if (ph) cands.push({ ...photoObj(ph), field: true, age, place: o.place_guess || "", date: o.observed_on || "", uri: o.uri || "" });
+    }
+    if (cands.length) { const fresh = cands.filter(c => !seen.has(photoKey(c.lg || c.md))); return pick(fresh.length ? fresh : cands); }
+  }
+  return null;
 }
 async function fieldPhoto(t, zone) {
   const fields = "id,uri,place_guess,observed_on,photos.url,photos.attribution,photos.license_code";
@@ -2485,7 +2506,7 @@ async function prepare(ses) {
       list.forEach(t => { t.f = fam(t) || S.sp[t.id]?.f || 0; t.o = ord(t) || S.sp[t.id]?.o || 0; lexAdd(t); });
       ses.pool = { list, byId: new Map(list.map(t => [t.id, t])) };
     } else
-    ses.pool = await getPool({ zone: ses.zone, taxa: c.taxa, freq: c.freq, size: c.size, sounds: c.sounds || onlySound });
+    ses.pool = await getPool({ zone: ses.zone, taxa: c.taxa, freq: c.freq, size: c.size, sounds: c.sounds || onlySound, age: c.age || "" });
     if (ses.pool.list.length < 2) { const e = new Error("EMPTY"); e.code = "EMPTY"; throw e; }
     if ((c.target === "family" || c.target === "order") && !TAXO.ok) toast("Familles indisponibles hors ligne : questions par espèce.");
     if (stims.some(s => s === "photo" || s === "soncho")) photosFor(sample(ses.pool.list, 20).map(t => t.id)).catch(() => {});
@@ -2639,8 +2660,13 @@ async function buildQ(ses, spec) {
     if (r && mastery(r).photos >= 2 && !(r.fk || []).length && Math.random() < .7) { q.stim = "field"; q.transfer = true; }
   }
   if (q.stim === "son") { q.snd = await soundFor(q.t, ses.zone); if (!q.snd) q.stim = "photo"; }
-  if (q.stim === "field") { q.photo = await fieldPhoto(q.t, ses.zone); if (!q.photo) q.stim = "photo"; }
-  if (q.stim === "photo" || q.stim === "soncho") { q.photo = await refPhoto(q.t); if (!q.photo) return null; }
+  if (c.age && (q.stim === "photo" || q.stim === "field" || q.stim === "soncho")) {
+    q.photo = await agePhoto(q.t, ses.zone, c.age);
+    if (!q.photo) return null;
+    if (q.stim === "photo") q.stim = "field";
+  }
+  if (q.stim === "field" && !q.photo) { q.photo = await fieldPhoto(q.t, ses.zone); if (!q.photo) q.stim = "photo"; }
+  if ((q.stim === "photo" || q.stim === "soncho") && !q.photo) { q.photo = await refPhoto(q.t); if (!q.photo) return null; }
   if ((q.stim === "fr" || q.stim === "la") && q.format === "tiles") q.format = "qcm";
   if (q.level !== "species" && q.format === "tiles") q.format = "qcm";
   if (q.stim === "soncho") {
@@ -2652,6 +2678,12 @@ async function buildQ(ses, spec) {
     else q.format = "audio";
   }
   if (!q.choices && (q.format === "qcm" || q.format === "tiles")) q.choices = await makeChoices(ses, q);
+  if (c.age && q.format === "tiles" && q.choices) {
+    /* Vignettes : chaque choix montre aussi un oiseau de la bonne classe d'âge */
+    const phs = await Promise.all(q.choices.map(ch => ch.t ? agePhoto(ch.t, ses.zone, c.age).catch(() => null) : null));
+    if (phs.every(Boolean)) q.choices = q.choices.map((ch, i) => ({ ...ch, t: { ...ch.t, img: { ...(ch.t.img || {}), sq: phs[i].md, md: phs[i].md } } }));
+    else q.format = "qcm";
+  }
   q.answerKey = keyOf(q.t, q.level);
   q.hints = hintsFor(q);
   return q;
@@ -3294,7 +3326,7 @@ function stageHtml(q) {
     <span class="ret tl"></span><span class="ret tr"></span><span class="ret bl"></span><span class="ret br"></span>
     <span class="zb">${ic("zoom")}</span>
     <div class="spinner"><div class="spin"></div></div>
-    ${q.stim === "field" ? `<span class="tag-field">${ic("eye")}Terrain</span>` : ""}${bonus}
+    ${q.photo?.age ? `<span class="tag-field age">${ic("spark")}${AGEN[q.photo.age]}</span>` : q.stim === "field" ? `<span class="tag-field">${ic("eye")}Terrain</span>` : ""}${bonus}
     ${q.stim === "soncho" ? `<figcaption class="credit" style="font-size:13px;font-weight:700;color:#fff">${esc(nameFr(q.t))}</figcaption>` : `<figcaption class="credit">${esc(p.attr || "")}</figcaption>`}
   </figure>`;
 }
@@ -3482,7 +3514,7 @@ function fbHtml(q, res, gain) {
   ${r?.note ? `<div class="note-own">${ic("edit", "xs")} ${esc(r.note)}</div>` : ""}
   ${chosen ? compareHtml(t, chosen, q) : ""}
   ${(() => { const other = chosen && duelTip(t.sci, chosen.sci) ? chosen : q.pair ? q.pair.find(x => x.id !== t.id) : null; const h = other ? tipHtml(t, other, other === chosen ? "Pour ne plus les confondre" : "Comment les distinguer") : ""; if (h) q.tipShown = true; return h ? `<div class="lsec tipbox">${h}</div>` : ""; })()}
-  ${q.photo?.field && (q.photo.place || q.photo.date) ? `<div class="dnote">${ic("pin", "xs")} ${esc(q.photo.place || "")}${q.photo.date ? " · " + esc(dateLong(q.photo.date)) : ""}</div>` : ""}
+  ${q.photo?.field && (q.photo.place || q.photo.date || q.photo.age) ? `<div class="dnote">${ic("pin", "xs")} ${q.photo.age ? `<b>${AGEN[q.photo.age]}</b> · ` : ""}${esc(q.photo.place || "")}${q.photo.date ? " · " + esc(dateLong(q.photo.date)) : ""}${q.photo.uri ? ` · <a href="${esc(q.photo.uri)}" target="_blank" rel="noopener">voir l'observation</a>` : ""}</div>` : ""}
   ${q.snd ? `<div class="dnote" style="display:flex;align-items:center;gap:8px">${ic("wave", "xs")}<span style="flex:1">${esc([q.snd.place, q.snd.attr].filter(Boolean).join(" · "))}</span><button class="chip warn" data-act="badsnd">${ic("x", "xs")}Mauvais son</button></div>` : ""}
   <div class="learn" id="learn" data-id="${t.id}"><div class="lsec"><div class="lh">${ic("book", "xs")}Pour la reconnaître</div><div class="lsk"></div><div class="lsk short"></div></div></div>
   ${next}`;
@@ -3992,11 +4024,12 @@ MOUNT.result = () => {
 };
 
 /* ---------- Constructeur « Sur mesure » ---------- */
-const defaultB = () => ({ zone: S.set.zone, guilds: [], fams: [], freq: "common", size: 100, stim: ["photo"], target: "species", names: S.set.names, format: "qcm", k: S.set.k, diff: S.set.diff, len: 10, timer: 0 });
+const defaultB = () => ({ zone: S.set.zone, guilds: [], fams: [], freq: "common", size: 100, stim: ["photo"], age: "all", target: "species", names: S.set.names, format: "qcm", k: S.set.k, diff: S.set.diff, len: 10, timer: 0 });
 const BOPT = {
   freq: [["common", "Communs", "star"], ["season", "De saison", "cal"], ["all", "Tous", "list"], ["rare", "Raretés", "spark"], ["exotic", "Exotiques", "pin"], ["mine", "Mes obs. iNat", "eye"], ["lifers", "À découvrir", "binoc"]],
   size: [[25, "Top 25"], [50, "Top 50"], [100, "Top 100"], [200, "Top 200"]],
   stim: [["photo", "Photo", "frame"], ["field", "Terrain", "eye"], ["son", "Chant", "wave"], ["soncho", "Quel chant ?", "vol"], ["fr", "Nom FR", "type"], ["la", "Nom latin", "quill"]],
+  age: [["all", "Tous les âges", "bird"], ["juv", "Juvéniles", "spark"], ["adult", "Adultes", "star"]],
   target: [["species", "Espèce", "bird"], ["genus", "Genre", "quill"], ["family", "Famille", "tree"], ["order", "Ordre", "tree"]],
   names: [["both", "FR + latin"], ["fr", "Français"], ["la", "Latin"]],
   format: [["qcm", "Choix", "list"], ["tiles", "Vignettes", "grid"], ["type", "Saisie", "keyboard"], ["flash", "Flashcard", "cards"]],
@@ -4004,7 +4037,7 @@ const BOPT = {
   len: [[5, "5"], [10, "10"], [20, "20"], [0, "∞"]],
   timer: [[0, "Sans"], [10, "10 s / question"], [60, "Défi 60 s"]]
 };
-const getB = () => (S.set.builder = S.set.builder || defaultB());
+const getB = () => { const B = S.set.builder = S.set.builder || defaultB(); if (!B.age) B.age = "all"; return B; };
 function optRow(field, list, multi, wrap) {
   const B = getB();
   return `<div class="row ${wrap ? "wrap" : ""}">${list.map(([v, l, i]) => {
@@ -4023,6 +4056,8 @@ VIEWS.builder = () => {
     ${famChips ? `<div class="selfam">${famChips}</div>` : ""}</div>
   <div class="opt"><div class="opt-h">${ic("star")}Lesquels</div>${optRow("freq", BOPT.freq)}${["common", "rare", "lifers"].includes(B.freq) ? `<div style="margin-top:8px">${optRow("size", BOPT.size)}</div>` : ""}</div>
   <div class="opt"><div class="opt-h">${ic("eye")}Question<span class="val">plusieurs choix possibles</span></div>${optRow("stim", BOPT.stim, true, true)}</div>
+  <div class="opt"><div class="opt-h">${ic("cal")}Âge des oiseaux<span class="val">${B.age === "juv" ? "juvéniles" : B.age === "adult" ? "adultes" : "tous"}</span></div>${optRow("age", BOPT.age)}
+    ${B.age !== "all" ? `<p class="muted note" style="margin-top:6px">Photos d'observations iNaturalist annotées « ${B.age === "juv" ? "juvénile" : "adulte"} » par les observateurs : seules les espèces qui en ont dans la zone sont proposées. S'applique aux questions avec photo.</p>` : ""}</div>
   <div class="opt"><div class="opt-h">${ic("check")}Réponse attendue</div>${optRow("target", BOPT.target)}</div>
   <div class="opt"><div class="opt-h">${ic("type")}Noms affichés</div>${optRow("names", BOPT.names)}</div>
   <div class="opt"><div class="opt-h">${ic("list")}Format</div>${optRow("format", BOPT.format)}
@@ -4035,7 +4070,7 @@ VIEWS.builder = () => {
 function builderTitle(B) {
   const grp = B.guilds.length === 1 && !B.fams.length ? B.guilds[0] : B.fams.length === 1 && !B.guilds.length ? famName(B.fams[0]) : B.guilds.length + B.fams.length ? "Groupes" : "Oiseaux";
   const st = B.stim.map(s => (BOPT.stim.find(x => x[0] === s) || [])[1]).filter(Boolean).join("+");
-  return `${grp} · ${st} · ${zoneLabel(B.zone)}`;
+  return `${grp}${B.age && B.age !== "all" ? " · " + (B.age === "juv" ? "Juvéniles" : "Adultes") : ""} · ${st} · ${zoneLabel(B.zone)}`;
 }
 async function builderCfg(B) {
   let taxa = [...B.fams];
@@ -4045,7 +4080,7 @@ async function builderCfg(B) {
   }
   taxa = [...new Set(taxa)];
   const onlySound = B.stim.every(s => s === "son" || s === "soncho");
-  return { kind: "quiz", title: builderTitle(B), icon: "sliders", zone: B.zone, taxa, freq: B.freq, size: B.size, sounds: onlySound, stim: B.stim.slice(), target: B.target, names: B.names, format: B.format, k: B.k, diff: B.diff, len: B.timer === 60 ? 0 : B.len, timer: B.timer };
+  return { kind: "quiz", title: builderTitle(B), icon: "sliders", zone: B.zone, taxa, freq: B.freq, size: B.size, sounds: onlySound, stim: B.stim.slice(), age: B.age && B.age !== "all" ? B.age : "", target: B.target, names: B.names, format: B.format, k: B.k, diff: B.diff, len: B.timer === 60 ? 0 : B.len, timer: B.timer };
 }
 
 /* ---------- Préparer une sortie ---------- */

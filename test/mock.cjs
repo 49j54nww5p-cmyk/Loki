@@ -178,7 +178,7 @@ async function handle(route) {
   if (p === "/v2/observations" || p === "/v1/observations") {
     const id = +q.taxon_id, n = Math.min(+q.per_page || 5, 4);
     const results = Array.from({ length: n }, (_, k) => ({
-      id: id * 100 + k, uri: "https://www.inaturalist.org/observations/" + (id * 100 + k), place_guess: ["Lanton, Gironde", "Ouessant, Finistère", "Camargue", "Baie de Somme"][k % 4], observed_on: "2025-0" + (k + 4) + "-1" + k,
+      id: id * 100 + k, uri: "https://www.inaturalist.org/observations/" + (id * 100 + k), num_identification_agreements: k === 0 ? 0 : 3, num_identification_disagreements: 0, place_guess: ["Lanton, Gironde", "Ouessant, Finistère", "Camargue", "Baie de Somme"][k % 4], observed_on: "2025-0" + (k + 4) + "-1" + k,
       photos: q.photos ? [{ id: id * 10 + 5 + k, url: photo(id * 10 + 5 + (k % 4)), attribution: "(c) Naturaliste " + k + " (CC BY-NC)", license_code: "cc-by-nc" }] : undefined,
       sounds: q.sounds ? [{ id: k, file_url: `https://static.inaturalist.org/sounds/${id * 10 + k}.wav`, file_content_type: "audio/wav", attribution: "(c) Audio " + k + " (CC BY)", license_code: "cc-by" }] : undefined
     }));

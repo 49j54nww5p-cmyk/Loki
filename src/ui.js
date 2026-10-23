@@ -362,7 +362,7 @@ function fbHtml(q, res, gain) {
   ${r?.note ? `<div class="note-own">${ic("edit", "xs")} ${esc(r.note)}</div>` : ""}
   ${chosen ? compareHtml(t, chosen, q) : ""}
   ${q.photo?.field && (q.photo.place || q.photo.date) ? `<div class="dnote">${ic("pin", "xs")} ${esc(q.photo.place || "")}${q.photo.date ? " · " + esc(dateLong(q.photo.date)) : ""}</div>` : ""}
-  ${q.snd ? `<div class="dnote">${ic("wave", "xs")} ${esc([q.snd.place, q.snd.attr].filter(Boolean).join(" · "))}</div>` : ""}
+  ${q.snd ? `<div class="dnote" style="display:flex;align-items:center;gap:8px">${ic("wave", "xs")}<span style="flex:1">${esc([q.snd.place, q.snd.attr].filter(Boolean).join(" · "))}</span><button class="chip warn" data-act="badsnd">${ic("x", "xs")}Mauvais son</button></div>` : ""}
   ${next}`;
 }
 function showFeedback(q, res, gain) {
@@ -1006,6 +1006,14 @@ const ACT = {
   aplay: el => { const q = SES?.q; const c = q?.choices?.[+el.dataset.i]; if (c?.snd) playRow(c.snd.url, el.closest(".achoice")); },
   fplay: el => { const s = FICHE.snds?.[+el.dataset.i]; if (s) { FICHE.playing = true; playRow(s.url, el.closest(".srow")); } },
   next: () => nextQuestion(),
+  badsnd: el => {
+    const u = SES?.q?.snd?.url;
+    if (!u) return;
+    S.badSnd = [...(S.badSnd || []).filter(x => x !== u), u].slice(-500);
+    save();
+    el.disabled = true; el.innerHTML = ic("check", "xs") + "Écarté";
+    toast("Ce son ne reviendra plus.");
+  },
   skip: () => { const q = SES?.q; if (q && !q.done) settle({ ok: false, typed: "" }); },
   reveal: () => { const q = SES?.q; if (!q || q.done) return; $("#answers").innerHTML = revealHtml(q); },
   self: el => settle({ ok: el.dataset.v === "1", self: true }),

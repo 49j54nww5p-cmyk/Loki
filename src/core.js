@@ -392,24 +392,57 @@ function canPlay(s) {
   if (!ty) return true;
   try { return AUDTEST.canPlayType(ty) !== ""; } catch (e) { return true; }
 }
-const SNDFIELDS = "id,uri,place_guess,observed_on,sounds.file_url,sounds.file_content_type,sounds.attribution,sounds.license_code";
+const SNDFIELDS = "id,uri,place_guess,observed_on,num_identification_agreements,num_identification_disagreements,sounds.id,sounds.file_url,sounds.file_content_type,sounds.attribution,sounds.license_code,sounds.hidden,sounds.flags";
 function sndObj(o, s) {
-  return { url: s.file_url, type: s.file_content_type || "", attr: s.attribution || "", lic: s.license_code || "", place: o.place_guess || "", date: o.observed_on || "", uri: o.uri || ("https://www.inaturalist.org/observations/" + o.id) };
+  return { url: s.file_url, type: s.file_content_type || "", attr: s.attribution || "", lic: s.license_code || "", place: o.place_guess || "", date: o.observed_on || "", uri: o.uri || ("https://www.inaturalist.org/observations/" + o.id), agree: o.num_identification_agreements || 0 };
+}
+const badSnd = u => (S.badSnd || []).includes(u);
+/* Filtre des sons : identification confirmée par plusieurs personnes, aucun désaccord,
+   un seul enregistrement dans l'observation, ni masqué ni signalé, ni rejeté par toi. */
+function goodSounds(results, minAgree) {
+  const out = [];
+  for (const o of results || []) {
+    const snds = (o.sounds || []).filter(s => s && s.file_url);
+    if (snds.length !== 1) continue;
+    const s = snds[0];
+    if (s.hidden || (s.flags || []).length) continue;
+    if ((o.num_identification_agreements || 0) < minAgree || (o.num_identification_disagreements || 0) > 0) continue;
+    if (!canPlay(s) || badSnd(s.file_url)) continue;
+    out.push(sndObj(o, s));
+  }
+  return out.sort((a, b) => b.agree - a.agree);
+}
+async function xcSound(t) {
+  if (!S.set.xc) return null;
+  try {
+    const url = "https://xeno-canto.org/api/3/recordings?query=" + encodeURIComponent(`sp:"${t.sci}" q:A`) + "&key=" + encodeURIComponent(S.set.xc);
+    const d = await getJSON(url, { tries: 1, timeout: 10000 });
+    const fix = u => u ? (u.startsWith("//") ? "https:" + u : u) : "";
+    const ok = (d.recordings || []).filter(r => r.file && !(r.also || []).filter(Boolean).length && !badSnd(fix(r.file)));
+    if (!ok.length) return null;
+    const r = pick(ok.slice(0, 25));
+    return { url: fix(r.file), type: "audio/mpeg", attr: "© " + (r.rec || "") + " · xeno-canto", lic: r.lic || "", place: [r.loc, r.cnt].filter(Boolean).join(", "), date: r.date || "", uri: fix(r.url), agree: 9 };
+  } catch (e) { return null; }
 }
 async function soundFor(t, zone) {
-  const base = { taxon_id: t.id, sounds: "true", quality_grade: "research", order_by: "random", per_page: 6 + rnd(5), fields: SNDFIELDS };
+  const x = await xcSound(t);
+  if (x) return x;
+  const base = { taxon_id: t.id, sounds: "true", quality_grade: "research", order_by: "random", per_page: 25 + rnd(6), fields: SNDFIELDS };
   const tries = zone && (zone.id || zone.lat != null) ? [{ ...base, ...zoneParams(zone) }, base] : [base];
+  let loose = [];
   for (const p of tries) {
     const d = await obsSearch(p, true).catch(() => null);
-    for (const o of d?.results || []) for (const s of o.sounds || []) if (s && s.file_url && canPlay(s)) return sndObj(o, s);
+    const strict = goodSounds(d?.results, 2);
+    if (strict.length) return pick(strict.slice(0, 5));
+    if (!loose.length) loose = goodSounds(d?.results, 1);
   }
-  return null;
+  return loose.length ? pick(loose.slice(0, 3)) : null;
 }
 async function soundsList(t, n = 4) {
-  const d = await obsSearch({ taxon_id: t.id, sounds: "true", quality_grade: "research", per_page: 10, fields: SNDFIELDS });
-  const out = [];
-  for (const o of d?.results || []) for (const s of o.sounds || []) if (s && s.file_url && canPlay(s) && out.length < n) out.push(sndObj(o, s));
-  return out;
+  const d = await obsSearch({ taxon_id: t.id, sounds: "true", quality_grade: "research", per_page: 30, fields: SNDFIELDS });
+  let out = goodSounds(d?.results, 2);
+  if (out.length < 2) out = goodSounds(d?.results, 1);
+  return out.slice(0, n);
 }
 async function similar(t, zone) {
   const go = async withZone => {

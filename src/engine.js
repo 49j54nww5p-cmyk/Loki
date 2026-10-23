@@ -13,6 +13,7 @@ const MODES = [
   { k: "racines", n: "Racines", d: "Décode le latin", ic: "root", c: "#B6F25A" },
   { k: "ecrire", n: "Écrire", d: "Tape le nom", ic: "keyboard", c: "#7DD3FC" },
   { k: "sortie", n: "Sortie", d: "Prépare-la", ic: "binoc", c: "#3BE59D" },
+  { k: "main", n: "Piaf en main", d: "Mue et âge", ic: "ring", c: "#E9B872" },
   { k: "perso", n: "Sur mesure", d: "Tout régler", ic: "sliders", c: "#FFCB5C" }
 ];
 
@@ -119,6 +120,9 @@ async function prepare(ses) {
     try { await ensureLeaflet(); } catch (e) { ses.geoQcm = true; }
   } else if (ses.kind === "root") {
     ses.pool = { list: Object.keys(S.sp).map(fromRec).filter(Boolean), byId: new Map() };
+  } else if (ses.kind === "hand") {
+    ses.plan = planHand(ses);
+    ses.len = ses.plan.length;
   }
 }
 
@@ -198,6 +202,7 @@ function randomSpec(ses) {
   const c = ses.cfg;
   if (ses.kind === "geo") return { kind: "geo" };
   if (ses.kind === "root") return { kind: "root" };
+  if (ses.kind === "hand") return { kind: "hand", ex: pick(ses.cfg.ex || HEX.map(e => e.k)), sp: ses.cfg.sp || null };
   const t = pickTarget(ses);
   if (!t) return null;
   if (ses.kind === "quiz") return { t, stim: pick(c.stim && c.stim.length ? c.stim : ["photo"]), level: c.target, format: c.format, k: c.k, diff: c.diff };
@@ -220,6 +225,7 @@ const keyOf = (t, level) => level === "genus" ? "g" + genus(t) : level === "fami
 async function buildQ(ses, spec) {
   if (spec.kind === "geo") return buildGeo(ses);
   if (spec.kind === "root") return buildRoot(ses);
+  if (spec.kind === "hand") return buildHand(ses, spec);
   if (spec.bonusRare) return buildRare(ses);
   const c = ses.cfg;
   const q = {
@@ -501,7 +507,7 @@ function checkTyped(str, q) {
 function xpFor(ses, q, res, ms) {
   if (q.kind === "geo") return q.format === "map" ? (res.geoPts || 0) : (res.ok ? 40 : 0);
   if (!res.ok) return res.partial ? 3 : 0;
-  let x = q.kind === "root" ? 7 : 10;
+  let x = q.kind === "root" ? 7 : q.kind === "hand" ? 9 : 10;
   const nC = q.choices?.length || q.k || 5;
   const fm = { qcm: .6 + .1 * nC, tiles: .6 + .1 * nC, audio: 1.3, type: 1.8, flash: .7 }[q.format] || 1;
   const sm = { photo: 1, field: 1.2, son: 1.4, soncho: 1, fr: 1, la: .9 }[q.stim] || 1;
@@ -561,6 +567,7 @@ function settle(res) {
     if (!ok) ses.missed.push(q.t);
   } else if (q.kind === "geo") { bump("geo", ok); if (ok) count("geook"); }
   else if (q.kind === "root") { bump("root", ok); if (ok) count("rootok"); }
+  else if (q.kind === "hand") { bump("hand", ok); if (ok) count("handok"); handRecord(q, ok); if (!ok && q.sp) (ses.hmiss || (ses.hmiss = [])).push(q.sp); }
   ses.results.push({ ok, part: !!res.partial, xp: gain, id: q.t?.id || null, kind: q.kind });
   const L = level();
   if (L.n > (ses.lvlNow || ses.lvl0)) {

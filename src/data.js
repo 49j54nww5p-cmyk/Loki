@@ -438,6 +438,7 @@ const BADGES = [
   { id: "rare", n: "Coche !", d: "Trouver une rareté bonus", ic: "spark" },
   { id: "roots50", n: "Étymologiste", d: "50 racines latines", ic: "root" },
   { id: "typing25", n: "Sans filet", d: "25 bonnes réponses tapées", ic: "keyboard" },
+  { id: "bague50", n: "Bague d'or", d: "50 bonnes réponses en Piaf en main", ic: "ring" },
   { id: "early", n: "Lève-tôt", d: "Jouer avant 8 h", ic: "sun" },
   { id: "night", n: "Oiseau de nuit", d: "Jouer après 22 h", ic: "moon" }
 ];

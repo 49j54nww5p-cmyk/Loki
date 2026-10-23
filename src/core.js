@@ -46,7 +46,7 @@ const defaults = () => ({
   v: 2, created: Date.now(), xp: 0,
   streak: { cur: 0, best: 0, last: null, jokers: 1 },
   days: {}, sp: {}, fam: {}, stats: {}, badges: {}, counters: {},
-  best: { combo: 0 }, favs: [], att: [], obs: [], trips: [], bk: { last: 0, snooze: 0 }, hint: { install: 0 },
+  best: { combo: 0 }, favs: [], att: [], obs: [], trips: [], bk: { last: 0, snooze: 0 }, hint: { install: 0 }, hand: { ex: {}, sp: {} },
   set: {
     zone: { id: 6753, name: "France" }, fmt: "qcm", names: "both", k: 5, diff: "moyen", photo: "ref",
     goal: 150, sfx: true, calm: false, sono: true, inat: "", xc: "", remind: "19:30", builder: null,
@@ -839,7 +839,7 @@ function checkBadges() {
     ear50: (c.ear || 0) >= 50, latin100: (c.latin || 0) >= 100, fam50: (c.famok || 0) >= 50,
     col50: n >= 50, col150: n >= 150, col300: n >= 300, master25: mastered >= 25,
     duel10: (c.duelwin || 0) >= 10, geo20: (c.geook || 0) >= 20, rare: (c.rare || 0) >= 1,
-    roots50: (c.rootok || 0) >= 50, typing25: (c.typeok || 0) >= 25, early: (c.early || 0) >= 1, night: (c.night || 0) >= 1
+    roots50: (c.rootok || 0) >= 50, typing25: (c.typeok || 0) >= 25, early: (c.early || 0) >= 1, night: (c.night || 0) >= 1, bague50: (c.handok || 0) >= 50
   };
   const got = [];
   for (const b of BADGES) if (!S.badges[b.id] && test[b.id]) { S.badges[b.id] = dayKey(); got.push(b); }

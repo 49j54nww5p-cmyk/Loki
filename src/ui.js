@@ -11,7 +11,7 @@ function go(v, data) {
   closeViewer(true);
   document.body.classList.remove("gfull");
   VIEW = v; VDATA = data;
-  document.body.classList.toggle("inquiz", ["quiz", "loading", "result", "error", "builder", "trip"].includes(v));
+  document.body.classList.toggle("inquiz", ["quiz", "loading", "result", "error", "builder", "trip", "hand", "handsp"].includes(v));
   const tabv = v === "about" ? "settings" : v;
   $$("#nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === tabv));
   if (v !== "quiz") setAmbient(null);
@@ -117,7 +117,7 @@ async function pickZone(zk, apply) {
 }
 
 /* ---------- Accueil ---------- */
-const MODEGROUPS = [["Reconnaître", "eye", ["photo", "chant", "ecrire", "duel"]], ["Comprendre", "book", ["latin", "famille", "racines"]], ["Explorer", "globe", ["geo", "sortie", "perso"]]];
+const MODEGROUPS = [["Reconnaître", "eye", ["photo", "chant", "ecrire", "duel"]], ["Comprendre", "book", ["latin", "famille", "racines", "main"]], ["Explorer", "globe", ["geo", "sortie", "perso"]]];
 const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const isStandalone = () => window.navigator.standalone === true || !!(window.matchMedia && matchMedia("(display-mode: standalone)").matches);
 const installCard = () => isIOS() && !isStandalone() && Date.now() - (S.hint?.install || 0) > 30 * DAY
@@ -219,6 +219,7 @@ VIEWS.error = ({ e }) => {
 
 /* ---------- Quiz ---------- */
 function promptText(q) {
+  if (q.kind === "hand") return q.prompt;
   if (q.kind === "geo") return "Où sommes-nous ?";
   if (q.kind === "root") return "Que veut dire ce mot ?";
   if (q.stim === "soncho") return "Lequel est son chant ?";
@@ -230,12 +231,14 @@ function promptText(q) {
   return "Quelle espèce ?";
 }
 function promptIcon(q) {
+  if (q.kind === "hand") return q.icon || "ring";
   if (q.kind === "geo") return "globe";
   if (q.kind === "root") return "root";
   if (q.level === "family" || q.level === "order") return "tree";
   return { photo: "frame", field: "eye", son: "wave", soncho: "wave", fr: "quill", la: "quill" }[q.stim] || "frame";
 }
 function stageHtml(q) {
+  if (q.kind === "hand") return handStage(q);
   if (q.kind === "geo") return `<div class="gstrip" id="gstrip">${q.sp.map((s, i) => `<figure data-act="zoom" data-grp="gs" data-src="${esc(s.lg || s.img)}" data-hd="${esc(s.hd || "")}" data-cap="Oiseau ${i + 1} / ${q.sp.length}" data-attr="${esc(s.attr || "")}"><img src="${esc(s.lg || s.img)}" data-alt="${esc(s.img)}" alt="Oiseau ${i + 1}" draggable="false"><span class="k">${i + 1}</span><span class="zb">${ic("zoom")}</span><figcaption>${esc(s.fr)}</figcaption></figure>`).join("")}</div>`;
   if (q.kind === "root") return `<div class="namecard"><div><span class="eyebrow">Racine latine</span><div class="big latin">${esc(q.w)}</div>${q.ex ? `<div class="ex">dans <span class="latin">${esc(q.ex.sci)}</span></div>` : ""}</div></div>`;
   const bonus = q.bonus ? `<span class="tag-bonus">${ic("spark")}Rareté ×2</span>` : "";
@@ -262,6 +265,7 @@ function choiceLabel(c) {
     if (c.mode === "fr") return `<b>${esc(c.fr)}</b>`;
     return `<b>${esc(c.fr)}</b>${c.fr !== c.sci ? `<span class="latin">${esc(c.sci)}</span>` : ""}`;
   }
+  if (/^[0-5]{10}$/.test(c.label || "")) return `<b class="mono">${esc(c.label)}</b>`;
   if (c.latin) return `<span class="latin solo">${esc(c.label)}</span>${c.sub ? `<small class="muted">${esc(c.sub)}</small>` : ""}`;
   return `<b>${esc(c.label)}</b>${c.sub ? `<small class="muted">${esc(c.sub)}</small>` : ""}`;
 }
@@ -275,6 +279,7 @@ function typePlaceholder(q) {
 }
 function answersHtml(q) {
   const ch = q.choices || [];
+  if (q.kind === "hand") { const h = handAnswers(q); if (h) return h; }
   if (q.format === "map") return window.L ? `<div class="gwrap" id="gwrap"><div class="gmap" id="gmap"></div>
     <div class="gctl"><button class="mbtn" data-act="mapfull" aria-label="Agrandir la carte">${ic("expand")}</button><button class="mbtn" data-act="mapmenu" aria-label="Fond de carte">${ic("layers")}</button></div>
     <div class="gthumbs">${q.sp.map((s, i) => `<button data-act="zoom" data-grp="gt" data-src="${esc(s.lg || s.img)}" data-hd="${esc(s.hd || "")}" data-cap="Oiseau ${i + 1} / ${q.sp.length}" data-attr="${esc(s.attr || "")}" aria-label="Photo ${i + 1}"><img src="${esc(s.img)}" alt="" draggable="false"></button>`).join("")}</div>
@@ -420,6 +425,7 @@ function fbHtml(q, res, gain) {
     <div class="dnote" style="font-size:15px;color:var(--text)">${ic("pin", "xs")} À <b>${fmt(km)} km</b> · ${esc(q.place || "")}${q.guessName ? ` <small class="muted">(pin sur ${esc(q.guessName)})</small>` : ""}</div>
     ${geoSpHtml(q)}${next}`;
   }
+  if (q.kind === "hand") return `${head}${handFb(q, res)}${next}`;
   if (q.kind === "root") {
     return `${head}<div class="decode"><span class="dchip"><span class="latin">${esc(q.w)}</span>${esc(q.mean)}</span></div>${q.note ? `<div class="dnote">${esc(q.note)}</div>` : ""}${q.ex ? `<div class="dnote">Exemple : ${esc(q.ex.fr || "")} · <span class="latin">${esc(q.ex.sci)}</span></div>` : ""}${next}`;
   }
@@ -929,7 +935,7 @@ function geoValidate() {
 VIEWS.result = ({ ses, n, ok, badges, msgs }) => {
   const C = 2 * Math.PI * 84, p = n ? ok / n : 0;
   const title = p === 1 ? "Sans faute !" : p >= .8 ? "Superbe série !" : p >= .5 ? "Belle progression" : "Chaque erreur compte";
-  const lead = p === 1 ? "Rien à redire, tu peux viser plus dur." : p >= .5 ? "Les erreurs reviendront en révision au bon moment." : "Tes erreurs reviendront vite en révision : c'est comme ça qu'on retient.";
+  const lead = ses.kind === "hand" ? (p === 1 ? "Rien à redire : tu peux passer à la station !" : "Ouvre les fiches des espèces ratées, puis rejoue.") : p === 1 ? "Rien à redire, tu peux viser plus dur." : p >= .5 ? "Les erreurs reviendront en révision au bon moment." : "Tes erreurs reviendront vite en révision : c'est comme ça qu'on retient.";
   const L = level();
   const missed = [...new Map(ses.missed.map(t => [t.id, t])).values()].slice(0, 8);
   return `<section class="view result">
@@ -937,17 +943,21 @@ VIEWS.result = ({ ses, n, ok, badges, msgs }) => {
     <div class="val"><b>${ok}<span style="font-size:24px;color:var(--muted)">/${n}</span></b><small>${esc(ses.title || "")}</small></div></div>
   <h1>${title}</h1><div class="lead">${lead}</div>
   ${msgs.map(m => `<div class="chip warn" style="margin-top:12px">${ic("shield")}${esc(m)}</div>`).join("")}
-  <div class="trio"><div class="xp"><b>+${fmt(ses.xp)}</b><small>XP</small></div><div><b>×${ses.maxCombo}</b><small>meilleur combo</small></div><div><b>${ses.newSp.length}</b><small>nouvelle${ses.newSp.length > 1 ? "s" : ""}</small></div></div>
+  <div class="trio"><div class="xp"><b>+${fmt(ses.xp)}</b><small>XP</small></div><div><b>×${ses.maxCombo}</b><small>meilleur combo</small></div>${ses.kind === "hand" ? `<div><b>${Math.round(p * 100)} %</b><small>réussite</small></div>` : `<div><b>${ses.newSp.length}</b><small>nouvelle${ses.newSp.length > 1 ? "s" : ""}</small></div>`}</div>
   <button class="lvlbar" data-act="tab" data-tab="progress"><span class="badge">${L.n}</span><span class="meta"><b>${esc(L.rank)}</b><small>${fmt(L.cur)} / ${fmt(L.need)} XP</small><span class="bar"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span></span></button>
   ${badges.length ? `<div class="sec" style="justify-content:center">${ic("trophy")}Badge${badges.length > 1 ? "s" : ""} débloqué${badges.length > 1 ? "s" : ""}</div><div class="newbadges">${badges.map(b => `<span class="chip warn">${ic(b.ic)}${esc(b.n)}</span>`).join("")}</div>` : ""}
+  ${ses.kind === "hand" && ses.hmiss?.length ? `<div class="sec" style="justify-content:center">${ic("replay")}Fiches à revoir</div><div class="missed">${[...new Set(ses.hmiss)].slice(0, 8).map(id => `<button class="mchip" data-act="hsp" data-sp="${id}">${featherPair(HSPI[id])}${esc(HSPI[id].fr)}</button>`).join("")}</div>` : ""}
   ${missed.length ? `<div class="sec" style="justify-content:center">${ic("replay")}À revoir</div><div class="missed">${missed.map(t => `<button class="mchip" data-act="fiche" data-id="${t.id}"><img src="${esc(imgOf(t))}" alt="">${esc(nameFr(t))}</button>`).join("")}</div>` : ""}
-  <div class="actions"><button class="btn ghost" data-act="home">${ic("back")}Accueil</button><button class="btn primary" data-act="again">${ic("replay")}Rejouer</button></div>
+  <div class="actions">${ses.kind === "hand" ? `<button class="btn ghost" data-act="hhub">${ic("back")}Piaf en main</button>` : `<button class="btn ghost" data-act="home">${ic("back")}Accueil</button>`}<button class="btn primary" data-act="again">${ic("replay")}Rejouer</button></div>
 </section>`;
 };
 MOUNT.result = () => {
   const c = $("#scoreProg");
   if (c) requestAnimationFrame(() => requestAnimationFrame(() => { c.style.strokeDashoffset = c.dataset.off; }));
 };
+
+/* ---------- Piaf en main ---------- */
+VIEWS.hand = () => handHubHtml();
 
 /* ---------- Constructeur « Sur mesure » ---------- */
 const defaultB = () => ({ zone: S.set.zone, guilds: [], fams: [], freq: "common", size: 100, stim: ["photo"], age: "all", target: "species", names: S.set.names, format: "qcm", k: S.set.k, diff: S.set.diff, len: 10, timer: 0 });
@@ -1146,6 +1156,10 @@ const SOURCES = [
   ["OpenStreetMap", "https://www.openstreetmap.org/copyright", "Le fond « Nuit », et le fond de secours quand un autre ne répond pas.", "© contributeurs OpenStreetMap, licence ODbL."],
   ["Leaflet", "https://leafletjs.com", "L'affichage des cartes interactives (hébergé avec l'appli).", "Licence BSD-2-Clause."],
   ["Polices Unbounded, Figtree, Instrument Serif", "https://fonts.google.com", "La typographie de l'appli (hébergée avec l'appli, sans appel à Google).", "SIL Open Font License 1.1."],
+  ["Ringers' DigiGuide (station d'Ottenby)", "https://ringersdigiguide.ottenby.se", "Piaf en main : les critères d'âge par espèce (limites de mue, usure, iris, rectrices) et l'étendue des mues, résumés et redessinés pour l'appli.", "Contenus de la station ornithologique d'Ottenby ; les dessins de l'appli sont originaux et schématiques."],
+  ["EURING", "https://euring.org", "Piaf en main : les codes d'âge (1 à 6…) et l'échelle du score de mue des primaires (0 à 5).", "Code d'échange EURING 2000+."],
+  ["BTO", "https://www.bto.org", "Piaf en main : la notation de la mue des primaires et les espèces à mue post-juvénile complète.", "British Trust for Ornithology."],
+  ["CRBPO (MNHN)", "https://crbpo.mnhn.fr", "Piaf en main : la notation française des âges (1A, +1A, 2A…) et les stratégies de mue présentées en formation.", "Centre de Recherches sur la Biologie des Populations d'Oiseaux."],
   ["Critères des sosies", "", "Les tableaux « Comment les distinguer » des Duels : résumé simplifié des critères classiques des guides de terrain, rédigé pour l'appli.", "En cas de doute, ton guide de terrain fait foi."],
   ["Racines latines", "", "Le petit dictionnaire qui décode les noms scientifiques, rédigé pour l'appli.", "—"],
   ["Faune France", "https://www.faune-france.org", "Un simple lien depuis les fiches : ses données ne sont pas ouvertes.", "—"],
@@ -1240,7 +1254,7 @@ VIEWS.progress = () => {
   const master = recs.filter(r => stars(r) === 3).length;
   const tot = Object.values(S.stats).reduce((a, s) => ({ n: a.n + s.n, ok: a.ok + s.ok }), { n: 0, ok: 0 });
   const td = S.days[dayKey()] || { xp: 0, q: 0 };
-  const cats = [["photo", "Photos", "frame"], ["son", "Chants", "wave"], ["nom", "Noms", "quill"], ["fam", "Familles", "tree"], ["type", "Saisie", "keyboard"], ["geo", "Géo", "globe"], ["root", "Racines", "root"]].filter(([k]) => S.stats[k]?.n);
+  const cats = [["photo", "Photos", "frame"], ["son", "Chants", "wave"], ["nom", "Noms", "quill"], ["fam", "Familles", "tree"], ["type", "Saisie", "keyboard"], ["geo", "Géo", "globe"], ["root", "Racines", "root"], ["hand", "Piaf en main", "ring"]].filter(([k]) => S.stats[k]?.n);
   const conf = topConfusions(5);
   const goal = S.set.goal || 150, gp = clamp(td.xp / goal, 0, 1);
   const w7 = periodStats(7), w30 = periodStats(30), prev7 = (() => { const a = periodStats(14); return { xp: a.xp - w7.xp, q: a.q - w7.q, ok: a.ok - w7.ok }; })();
@@ -1830,6 +1844,7 @@ const ACT = {
     if (k === "perso") { go("builder"); return; }
     if (k === "sortie") { TRIP.mode = "prep"; go("trip"); return; }
     if (k === "duel") { openDuelPicker(); return; }
+    if (k === "main") { go("hand"); return; }
     LASTCFG = modeCfg(k); startSession(LASTCFG);
   },
   histplay: el => { const h = (S.hist || [])[+el.dataset.i]; if (h?.cfg) { LASTCFG = { ...h.cfg }; startSession(LASTCFG); } },
@@ -1840,7 +1855,7 @@ const ACT = {
   otd: () => openFiche(OTD),
   again: () => { if (LASTCFG) startSession(LASTCFG); else go("home"); },
   retry: () => { if (LASTCFG) startSession(LASTCFG); else go("home"); },
-  quit: () => { if (SES && SES.results.length) endSession(true); else ACT.home(); },
+  quit: () => { if (SES && SES.results.length) endSession(true); else if (SES?.kind === "hand") { SES.ended = true; SES = null; go("hand"); } else ACT.home(); },
   pick: el => onPick(el.dataset.k),
   hint: el => {
     const q = SES?.q;
@@ -1899,7 +1914,14 @@ const ACT = {
     el.disabled = true; el.innerHTML = ic("check", "xs") + "Écarté";
     toast("Ce son ne reviendra plus.");
   },
-  skip: () => { const q = SES?.q; if (q && !q.done) settle({ ok: false, typed: "" }); },
+  skip: () => { const q = SES?.q; if (q && !q.done) { if (q.kind === "hand") handSkipReveal(q); settle({ ok: false, typed: "" }); } },
+  hgo: el => { LASTCFG = handCfg(el.dataset.ex, el.dataset.sp); startSession(LASTCFG); },
+  hsp: el => { const h = handSpPanel(el.dataset.sp); if (h) openLayer(h); },
+  hhub: () => { if (SES) { SES.ended = true; SES = null; } go("hand"); },
+  wtap: (el, e) => handTap(el, e),
+  ttap: (el, e) => handTap(el, e),
+  hval: () => handValidate(),
+  hzoom: el => handZoom(el),
   reveal: () => { const q = SES?.q; if (!q || q.done) return; $("#answers").innerHTML = revealHtml(q); },
   self: el => settle({ ok: el.dataset.v === "1", self: true }),
   fiche: el => { const t = taxonById(el.dataset.id); if (t) openFiche(t); },
@@ -1993,6 +2015,9 @@ function onKey(e) {
   if (e.key === "Escape") { if (!$("#layer").hidden) closeLayer(); return; }
   if (VIEW !== "quiz" || !$("#layer").hidden) return;
   const fbOpen = $("#fb");
+  const hq = SES?.q;
+  if (hq && hq.kind === "hand" && !fbOpen && hq.format === "score" && /^[0-5]$/.test(e.key)) { $(`#answers [data-act=pick][data-k="${e.key}"]`)?.click(); return; }
+  if (hq && hq.kind === "hand" && !fbOpen && hq.format === "tap" && e.key === "Enter") { e.preventDefault(); handValidate(); return; }
   if (/^[1-6]$/.test(e.key) && !fbOpen) { const btns = $$("#answers [data-act=pick]"); btns[+e.key - 1]?.click(); }
   else if ((e.key === "Enter" || e.key === " ") && fbOpen) { e.preventDefault(); nextQuestion(); }
   else if (e.key.toLowerCase() === "h" && !fbOpen) $("[data-act=hint]")?.click();

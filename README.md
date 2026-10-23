@@ -20,11 +20,14 @@ Sur iPhone : ouvre le lien dans Safari, bouton Partager, puis « Sur l'écran d'
 - **Chants** : spectrogramme sur chaque enregistrement quand c'est possible (Wikimedia Commons, xeno-canto), ralenti ×0,5, écoute en boucle, tri chant / cri / alarme
 - **Sauvegarde** : envoi en un geste vers Fichiers, iCloud ou un mail, avec rappel régulier
 - **Fiches espèces** : galerie, présence par mois, carte des observations, chants, description Wikipédia, espèces qui ressemblent, ton astuce perso
+- **Âge des oiseaux** (Sur mesure) : quiz limité aux juvéniles ou aux adultes, d'après les annotations iNaturalist
+- **Piaf en main** (entraînement au permis de baguage) : aile dessinée à toucher (topographie, numérotation P / S / tertiaires / rectrices), score de mue 0-5 et formule des primaires, âge par les limites de mue (1A, +1A, 2A, +2A avec code EURING), codes d'âge, stratégies de mue ; fiches âge pour 18 passereaux (jeune contre adulte, iris, rectrices)
 
 ## Données
 
 - iNaturalist (API publique) : photos, sons, listes d'espèces, espèces souvent confondues, présence par mois, cartes. Chaque média garde sa licence et son auteur.
 - Wikipédia (résumés), xeno-canto (optionnel, avec ta clé).
+- Piaf en main : critères résumés d'après le Ringers' DigiGuide (station d'Ottenby), EURING, le BTO et le CRBPO ; les dessins d'ailes sont originaux et schématiques.
 - Fonds de carte sans clé : NASA GIBS (Blue Marble), Esri (satellite, topo, océans, noms des lieux), © contributeurs OpenStreetMap. Si un fond ne répond pas, l'appli bascule seule sur un autre.
 - Sons : iNaturalist, Wikimedia Commons et xeno-canto (avec ta clé).
 - La progression reste dans le navigateur de l'appareil (sauvegarde / restauration dans Réglages). Pas de compte, pas de traceur : détails dans Réglages › Confidentialité et sources.

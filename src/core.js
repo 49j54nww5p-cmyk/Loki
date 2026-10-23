@@ -49,7 +49,8 @@ const defaults = () => ({
   best: { combo: 0 }, favs: [],
   set: {
     zone: { id: 6753, name: "France" }, fmt: "qcm", names: "both", k: 5, diff: "moyen", photo: "ref",
-    sfx: true, calm: false, sono: true, inat: "", xc: "", remind: "19:30", builder: null
+    goal: 150, sfx: true, calm: false, sono: true, inat: "", xc: "", remind: "19:30", builder: null,
+    mapst: "relief", mapLab: true, mapIsl: true
   }
 });
 function loadState() {
@@ -380,6 +381,49 @@ async function lexRemote(q) {
   return out;
 }
 
+/* ---------- Espèces vues sur le terrain (observations iNaturalist de l'utilisateur) ---------- */
+const FIELD = { ids: new Set(), who: "" };
+async function loadField() {
+  const who = S.set.inat;
+  if (!who) { FIELD.ids = new Set(); FIELD.who = ""; return FIELD.ids; }
+  if (FIELD.who === who) return FIELD.ids;
+  const list = await cached("mine:" + who, DAY, async () => {
+    const d = await inat("/observations/species_counts", { taxon_id: 3, user_login: who, per_page: 500 });
+    return (d.results || []).map(r => r.taxon?.id).filter(Boolean);
+  });
+  FIELD.ids = new Set(list || []); FIELD.who = who;
+  return FIELD.ids;
+}
+function ago(t) {
+  const m = Math.round((Date.now() - t) / 60000);
+  if (m < 2) return "à l'instant";
+  if (m < 60) return `il y a ${m} min`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `il y a ${h} h`;
+  const d = Math.round(h / 24);
+  return d === 1 ? "hier" : `il y a ${d} j`;
+}
+function periodStats(days) {
+  const tn = todayNum(), o = { xp: 0, q: 0, ok: 0, active: 0 };
+  for (let n = tn - days + 1; n <= tn; n++) { const d = S.days[keyOfNum(n)]; if (d) { o.xp += d.xp || 0; o.q += d.q || 0; o.ok += d.ok || 0; if (d.q) o.active++; } }
+  return o;
+}
+function familyStats() {
+  const m = new Map();
+  for (const r of Object.values(S.sp)) {
+    if (!r.n || !r.f) continue;
+    const x = m.get(r.f) || { f: r.f, n: 0, ok: 0, sp: 0 };
+    x.n += r.n; x.ok += r.ok; x.sp++;
+    m.set(r.f, x);
+  }
+  return [...m.values()].filter(x => x.n >= 4).map(x => ({ ...x, p: x.ok / x.n }));
+}
+function carnetCsv() {
+  const rows = [["Nom français", "Nom latin", "Famille", "Ordre", "Fois vue", "Réussite (%)", "Étoiles", "Première rencontre", "Dernière réussite", "Vue sur le terrain", "Mon astuce"]];
+  for (const [id, r] of Object.entries(S.sp)) if (r.n > 0) rows.push([r.fr, r.sci, famName(r.f), ordName(r.o), r.n, Math.round(100 * r.ok / r.n), stars(r), r.first || "", r.lastOk || "", FIELD.ids.has(+id) ? "oui" : "", r.note || ""]);
+  return "\ufeff" + rows.map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(";")).join("\r\n");
+}
+
 /* ---------- Médias ---------- */
 const DET = new Map();
 let V2 = true;
@@ -517,6 +561,36 @@ function wiki(t) {
     return null;
   });
 }
+/* Section « Description / Identification » de l'article Wikipédia (critères de reconnaissance) */
+function pickSection(txt, names) {
+  const re = /\n(==+)\s*([^=\n]+?)\s*==+\n/g, heads = [];
+  let m;
+  while ((m = re.exec(txt))) heads.push({ lvl: m[1].length, name: m[2].trim(), start: m.index, body: re.lastIndex });
+  for (const nm of names) {
+    const h = heads.find(x => norm(x.name).startsWith(norm(nm)));
+    if (!h) continue;
+    const next = heads.find(x => x.start > h.start && x.lvl <= h.lvl);
+    const body = txt.slice(h.body, next ? next.start : undefined).replace(/\n==+\s*[^=\n]+?\s*==+\n/g, "\n").replace(/\n{2,}/g, "\n").trim();
+    if (body.length > 60) return body;
+  }
+  return null;
+}
+function wikiDesc(t) {
+  return memo("wdesc:" + t.id, async () => {
+    const one = async title => {
+      const d = await getJSON("https://fr.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&redirects=1&format=json&origin=*&titles=" + encodeURIComponent(title), { tries: 1, timeout: 10000 });
+      const pg = Object.values(d?.query?.pages || {})[0];
+      if (!pg || pg.missing !== undefined || !pg.extract) throw new Error("vide");
+      return pg;
+    };
+    let pg = null;
+    try { pg = await one(t.sci); } catch (e) { if (t.fr) { try { pg = await one(t.fr); } catch (e2) { /* rien */ } } }
+    if (!pg) return null;
+    const sec = pickSection(pg.extract, ["Description", "Identification", "Morphologie", "Caractéristiques", "Aspect"]);
+    return sec ? { text: sec, url: "https://fr.m.wikipedia.org/wiki/" + encodeURIComponent(pg.title.replace(/ /g, "_")), title: pg.title } : null;
+  });
+}
+const clip = (s, n) => { s = String(s || "").replace(/\s+/g, " ").trim(); if (s.length <= n) return s; const cut = s.slice(0, n); const dot = cut.lastIndexOf(". "); return (dot > n * .5 ? cut.slice(0, dot + 1) : cut.replace(/\s\S*$/, "") + "…"); };
 const XCTYPE = { song: "chant", call: "cri", "flight call": "cri en vol", "alarm call": "alarme", drumming: "tambourinage", "begging call": "quémande", subsong: "babil", "nocturnal flight call": "cri nocturne" };
 async function xcList(t) {
   if (!S.set.xc) return null;

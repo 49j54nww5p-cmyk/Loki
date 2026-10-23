@@ -3,11 +3,13 @@
    ============================================================ */
 let VIEW = "home", VDATA = null, OTD = null, LASTCFG = null, SILENT = "";
 const OKW = ["Exact !", "Bien vu !", "Bravo !", "Parfait !", "Dans le mille !", "Yes !"];
-const BADW = ["Raté…", "Pas cette fois", "Oups !", "Presque…"];
+const BADW = ["Raté…", "Pas cette fois", "Oups !", "Raté, retiens-la !"];
 const VIEWS = {}, MOUNT = {};
 
 function go(v, data) {
   if (VIEW === "quiz" && v !== "quiz") { sndStop(); clearQTimer(); hideFeedback(); }
+  closeViewer(true);
+  document.body.classList.remove("gfull");
   VIEW = v; VDATA = data;
   document.body.classList.toggle("inquiz", ["quiz", "loading", "result", "error", "builder"].includes(v));
   $$("#nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === v));
@@ -50,6 +52,7 @@ function floatXp(n) {
 let FXID = 0;
 function stopFx() { FXID++; const cv = $("#fx"); if (cv) cv.getContext("2d").clearRect(0, 0, cv.width, cv.height); }
 function confetti(n = 90) {
+  if (VIEW !== "result" && VIEW !== "quiz") return;
   if (S.set.calm || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
   const id = ++FXID;
   const cv = $("#fx"), dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -115,7 +118,8 @@ async function pickZone(zk, apply) {
 /* ---------- Accueil ---------- */
 VIEWS.home = () => {
   const L = level(), st = liveStreak(), d = S.days[dayKey()], done = !!d?.serie, due = dueList().length;
-  const goal = done ? 1 : clamp((d?.xp || 0) / 150, 0, 1), C = 2 * Math.PI * 66;
+  const goal = done ? 1 : clamp((d?.xp || 0) / (S.set.goal || 150), 0, 1), C = 2 * Math.PI * 66;
+  const last = (S.hist || [])[0];
   const hot = !playedToday() && new Date().getHours() >= 17;
   return `<section class="view home">
   <header class="hud">
@@ -129,8 +133,8 @@ VIEWS.home = () => {
     <div class="orb-wrap"><button class="orb ${done ? "done" : ""}" data-act="daily" aria-label="Lancer la série du jour">
       <svg class="ring" viewBox="0 0 148 148" aria-hidden="true"><circle class="track" cx="74" cy="74" r="66"/><circle class="prog" cx="74" cy="74" r="66" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - goal)).toFixed(1)}"/></svg>
       <span class="core">${ic(done ? "check" : "play")}</span></button></div>
-    <h1>${done ? "Série bouclée !" : "12 questions, 4 minutes"}</h1>
-    <div class="sub">${done ? "Rejoue quand tu veux, ou change de mode." : `Photos, chants, latin et familles · ${esc(zoneLabel(S.set.zone))}`}</div>
+    <h1>${done ? "Série bouclée !" : "12 questions, sans chrono"}</h1>
+    <div class="sub">${done ? "Rejoue quand tu veux, ou change de mode." : `Environ 4 min · photos, chants, latin, familles · ${esc(zoneLabel(S.set.zone))}`}</div>
     <div class="mix" aria-hidden="true"><span>${ic("frame")}</span><span>${ic("wave")}</span><span>${ic("quill")}</span><span>${ic("tree")}</span><span>${ic("duel")}</span></div>
     <button class="otd" id="otd" data-act="otd" hidden><img alt=""><span><small>Oiseau du jour</small><b></b></span>${ic("arrow")}</button>
   </div>
@@ -138,6 +142,7 @@ VIEWS.home = () => {
     <button class="qbtn" data-act="mini"><span class="ic">${ic("bolt")}</span><span><b>Mini-série</b><small>3 questions, 1 min</small></span></button>
     <button class="qbtn due ${due ? "" : "zero"}" data-act="review"><span class="ic">${ic("replay")}</span><span><b>${due ? due + " à revoir" : "Révisions"}</b><small>${due ? "Répétition espacée" : "Rien à revoir"}</small></span></button>
   </div>
+  ${last ? `<button class="lastp" data-act="histplay" data-i="0"><span class="ic">${ic(last.cfg?.icon || "replay")}</span><span class="tx"><small>Dernière partie · ${esc(ago(last.t))}</small><b>${esc(last.title || "Partie")}</b><span>${last.ok}/${last.n} bonnes réponses · +${fmt(last.xp)} XP</span></span><span class="go">${ic("replay")}Rejouer</span></button>` : ""}
   <button class="lvlbar" data-act="tab" data-tab="progress"><span class="badge">${L.n}</span><span class="meta"><b>${esc(L.rank)}</b><small>${fmt(L.cur)} / ${fmt(L.need)} XP</small><span class="bar"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span></span></button>
   <div class="sec">${ic("playc")}Modes</div>
   <div class="tiles">${MODES.map((m, i) => `<button class="tile" style="--c:${m.c};animation-delay:${i * 35}ms" data-act="mode" data-mode="${m.k}"><span class="ic">${ic(m.ic)}</span><span><b>${m.n}</b><small>${m.d}</small></span></button>`).join("")}</div>
@@ -165,7 +170,9 @@ MOUNT.home = async () => {
 VIEWS.loading = d => `<section class="view loading"><div>
   <div class="lens"><span></span><span></span><span></span>${ic(d?.icon || "binoc")}</div>
   <b>${esc(d?.title || "Mise au point…")}</b><small>Mise au point sur iNaturalist…</small>
-  <button class="btn ghost" data-act="home" style="margin-top:24px">Annuler</button></div></section>`;
+  <div id="slow" hidden><small style="margin-top:14px;color:var(--gold)">Ça prend plus de temps que prévu (réseau lent ou iNaturalist chargé).</small><button class="btn primary" data-act="retry" style="margin-top:12px">${ic("replay")}Réessayer</button></div>
+  <button class="btn ghost" data-act="home" style="margin-top:14px">Annuler</button></div></section>`;
+MOUNT.loading = () => { const v = VDATA; setTimeout(() => { if (VIEW === "loading" && VDATA === v) { const s = $("#slow"); if (s) s.hidden = false; } }, 12000); };
 function showError(e, cfg, mid) { LASTCFG = cfg; go("error", { e, cfg, mid }); }
 VIEWS.error = ({ e }) => {
   const code = e?.code || e?.message;
@@ -197,7 +204,7 @@ function promptIcon(q) {
   return { photo: "frame", field: "eye", son: "wave", soncho: "wave", fr: "quill", la: "quill" }[q.stim] || "frame";
 }
 function stageHtml(q) {
-  if (q.kind === "geo") return `<div class="gstrip" id="gstrip">${q.sp.map((s, i) => `<figure><img src="${esc(s.img)}" alt="Oiseau ${i + 1}"><span class="k">${i + 1}</span><figcaption>${esc(s.fr)}</figcaption></figure>`).join("")}</div>`;
+  if (q.kind === "geo") return `<div class="gstrip" id="gstrip">${q.sp.map((s, i) => `<figure data-act="zoom" data-grp="gs" data-src="${esc(s.lg || s.img)}" data-hd="${esc(s.hd || "")}" data-cap="Oiseau ${i + 1} / ${q.sp.length}" data-attr="${esc(s.attr || "")}"><img src="${esc(s.lg || s.img)}" data-alt="${esc(s.img)}" alt="Oiseau ${i + 1}" draggable="false"><span class="k">${i + 1}</span><span class="zb">${ic("zoom")}</span><figcaption>${esc(s.fr)}</figcaption></figure>`).join("")}</div>`;
   if (q.kind === "root") return `<div class="namecard"><div><span class="eyebrow">Racine latine</span><div class="big latin">${esc(q.w)}</div>${q.ex ? `<div class="ex">dans <span class="latin">${esc(q.ex.sci)}</span></div>` : ""}</div></div>`;
   const bonus = q.bonus ? `<span class="tag-bonus">${ic("spark")}Rareté ×2</span>` : "";
   if (q.stim === "son") return `<div class="sound" id="sound">${bonus}
@@ -206,10 +213,11 @@ function stageHtml(q) {
   if (q.stim === "fr") return `<div class="namecard"><div><span class="eyebrow">Nom français</span><div class="big">${esc(q.t.fr || q.t.sci)}</div></div></div>`;
   if (q.stim === "la") return `<div class="namecard"><div><span class="eyebrow">Nom latin</span><div class="big latin">${esc(q.t.sci)}</div></div></div>`;
   const p = q.photo || {};
-  return `<figure class="shot" id="shot">
+  return `<figure class="shot" id="shot" data-act="zoom" data-grp="q" data-src="${esc(p.lg || p.md)}" data-hd="${esc(hdOf(p.lg || p.md))}" data-attr="${esc(p.attr || "")}">
     <img class="blur" src="${esc(p.md)}" alt="">
-    <img class="main" id="mainImg" alt="Oiseau à identifier">
+    <img class="main" id="mainImg" alt="Oiseau à identifier" draggable="false">
     <span class="ret tl"></span><span class="ret tr"></span><span class="ret bl"></span><span class="ret br"></span>
+    <span class="zb">${ic("zoom")}</span>
     <div class="spinner"><div class="spin"></div></div>
     ${q.stim === "field" ? `<span class="tag-field">${ic("eye")}Terrain</span>` : ""}${bonus}
     ${q.stim === "soncho" ? `<figcaption class="credit" style="font-size:13px;font-weight:700;color:#fff">${esc(nameFr(q.t))}</figcaption>` : `<figcaption class="credit">${esc(p.attr || "")}</figcaption>`}
@@ -234,13 +242,17 @@ function typePlaceholder(q) {
 }
 function answersHtml(q) {
   const ch = q.choices || [];
-  if (q.format === "map") return `<div class="gmap" id="gmap"></div><button class="btn primary wide" id="gok" data-act="geook" disabled style="margin-top:10px">${ic("pin")}Touche la carte pour placer ton pin</button>`;
+  if (q.format === "map") return window.L ? `<div class="gwrap" id="gwrap"><div class="gmap" id="gmap"></div>
+    <div class="gctl"><button class="mbtn" data-act="mapfull" aria-label="Agrandir la carte">${ic("expand")}</button><button class="mbtn" data-act="mapmenu" aria-label="Fond de carte">${ic("layers")}</button></div>
+    <div class="gthumbs">${q.sp.map((s, i) => `<button data-act="zoom" data-grp="gt" data-src="${esc(s.lg || s.img)}" data-hd="${esc(s.hd || "")}" data-cap="Oiseau ${i + 1} / ${q.sp.length}" data-attr="${esc(s.attr || "")}" aria-label="Photo ${i + 1}"><img src="${esc(s.img)}" alt="" draggable="false"></button>`).join("")}</div>
+    <div class="mmenu" id="mmenu" hidden>${mapMenuHtml()}</div></div>
+    <button class="btn primary wide" id="gok" data-act="geook" disabled style="margin-top:10px">${ic("pin")}<span>Place ton pin</span></button>` : `<p class="muted">Carte indisponible.</p><button class="btn primary wide" data-act="replaceq">${ic("shuffle")}Autre question</button>`;
   if (q.format === "type") return `<form class="typer" id="typer" autocomplete="off"><input id="ans" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" placeholder="${esc(typePlaceholder(q))}" aria-label="Ta réponse"><button class="btn primary" type="submit" aria-label="Valider">${ic("check")}</button></form><div class="sugg" id="sugg"></div><button class="skip" data-act="skip">Je ne sais pas</button>`;
   if (q.format === "flash") return `<div class="flashbox"><button class="btn ghost wide" data-act="reveal" style="height:62px">${ic("eye")}Voir la réponse</button></div>`;
   if (q.format === "audio") return ch.map((c, i) => `<div class="achoice" data-k="${c.key}" style="animation-delay:${i * 50}ms"><button class="pl" data-act="aplay" data-i="${i}" aria-label="Écouter l'enregistrement ${String.fromCharCode(65 + i)}">${ic("play")}</button><div class="wv" aria-hidden="true">${Array.from({ length: 14 }, (_, j) => `<i style="height:${30 + ((j * 37 + i * 11) % 60)}%"></i>`).join("")}</div><button class="pick" data-act="pick" data-k="${c.key}">${String.fromCharCode(65 + i)} · Lui</button></div>`).join("");
   if (q.format === "tiles") {
     const nm = c => q.names === "la" ? `<span class="latin">${esc(c.sci)}</span>` : esc(c.fr);
-    return `<div class="tgrid">${ch.map((c, i) => `<button class="tchoice" data-act="pick" data-k="${c.key}" style="animation-delay:${i * 45}ms"><img src="${esc(c.t.img?.md || "")}" alt="${esc(c.fr)}"><span class="k">${i + 1}</span><span class="nm">${nm(c)}</span></button>`).join("")}</div>`;
+    return `<div class="tgrid">${ch.map((c, i) => `<button class="tchoice" data-act="pick" data-k="${c.key}" style="animation-delay:${i * 45}ms"><img src="${esc(c.t.img?.md || "")}" alt="${esc(c.fr)}" data-fit draggable="false"><span class="k">${i + 1}</span><span class="nm">${nm(c)}</span></button>`).join("")}</div>`;
   }
   return ch.map((c, i) => `<button class="choice" data-act="pick" data-k="${c.key}" style="animation-delay:${i * 40}ms"><span class="k">${i + 1}</span><span class="lbl">${choiceLabel(c)}</span><svg class="i mark" aria-hidden="true"><use href="#i-check"/></svg></button>`).join("");
 }
@@ -265,12 +277,13 @@ function mountQuestion(q) {
     if (fig && img) {
       let tried = false;
       img.onload = () => fig.classList.add("loaded");
-      img.onerror = () => { if (!tried && q.photo.md && img.src !== q.photo.md) { tried = true; img.src = q.photo.md; } else fig.classList.add("loaded"); };
+      img.onerror = () => { if (!tried && q.photo.md && img.src !== q.photo.md) { tried = true; img.src = q.photo.md; fig.dataset.src = q.photo.md; fig.dataset.hd = ""; } else { img.style.visibility = "hidden"; fig.classList.add("loaded"); mediaFail(q, "Photo indisponible"); } };
       img.src = q.photo.lg || q.photo.md;
     }
     setAmbient(q.photo.md);
-  } else if (q.kind === "geo") { setAmbient(q.sp[0]?.img); mountGeoMap(q); }
+  } else if (q.kind === "geo") { setAmbient(q.sp[0]?.img); fitStrip(); mountGeoMap(q); }
   else setAmbient(null);
+  if (q.format === "tiles") fitImgs($("#answers"));
   if (q.stim === "son" && q.snd) {
     sndLoad(q.snd.url, $("#sono")).then(mode => { if (mode && SES?.q === q && !q.done) sndPlay(true); });
   }
@@ -279,6 +292,27 @@ function mountQuestion(q) {
   if (ses.deadline) startChallengeBar();
 }
 let QT = 0, CT = 0;
+function mediaFail(q, msg) {
+  if (!q || q.done || SES?.q !== q) return;
+  const host = $("#shot") || $("#sound");
+  if (!host || host.querySelector(".mfail")) return;
+  host.insertAdjacentHTML("beforeend", `<div class="mfail">${ic(q.stim === "son" ? "wave" : "frame")}<b>${esc(msg)}</b><button class="btn primary" data-act="replaceq">${ic("shuffle")}Autre question</button></div>`);
+}
+async function replaceQuestion() {
+  const ses = SES, q = ses?.q;
+  if (!q || q.done) return;
+  q.done = true;
+  clearQTimer();
+  sndStop();
+  $("#app").classList.add("waiting");
+  let q2 = null;
+  for (let i = 0; i < 4 && !q2; i++) { try { q2 = await buildQ(ses, randomSpec(ses)); } catch (e) { /* suivant */ } }
+  $("#app").classList.remove("waiting");
+  if (SES !== ses) return;
+  if (!q2) { q.done = false; toast("Impossible de charger une autre question. Vérifie ta connexion."); return; }
+  q2.idx = q.idx;
+  showQuestion(q2);
+}
 function startQTimer(q, ms) {
   clearQTimer();
   const bar = $("#tbar");
@@ -329,8 +363,9 @@ function revealHtml(q) {
 function compareHtml(t, c, q) {
   const a = (q.photo && q.stim !== "soncho" ? q.photo.md : "") || imgOf(t), b = imgOf(c);
   if (!b) return "";
-  return `<div class="compare"><figure class="right"><img src="${esc(a)}" alt=""><figcaption><small>Bonne réponse</small>${esc(nameFr(t))}</figcaption></figure>
-  <figure class="you"><img src="${esc(b)}" alt=""><figcaption><small>Ton choix</small>${esc(nameFr(c))}</figcaption></figure></div>`;
+  const big = u => sizeUrl(u, "large");
+  return `<div class="compare"><figure class="right" data-act="zoom" data-grp="cmp" data-src="${esc(big(a))}" data-cap="Bonne réponse · ${esc(nameFr(t))}" data-sci="${esc(t.fr ? t.sci : "")}" data-id="${t.id}"><img src="${esc(a)}" alt="" data-fit draggable="false"><figcaption><small>Bonne réponse</small>${esc(nameFr(t))}</figcaption></figure>
+  <figure class="you" data-act="zoom" data-grp="cmp" data-src="${esc(big(b))}" data-cap="Ton choix · ${esc(nameFr(c))}" data-sci="${esc(c.fr ? c.sci : "")}" data-id="${c.id}"><img src="${esc(b)}" alt="" data-fit draggable="false"><figcaption><small>Ton choix</small>${esc(nameFr(c))}</figcaption></figure></div>`;
 }
 function fbHtml(q, res, gain) {
   const ses = SES;
@@ -339,11 +374,16 @@ function fbHtml(q, res, gain) {
   const verdict = res.timeout ? "Temps écoulé" : res.ok ? pick(OKW) : res.partial ? "Presque !" : pick(BADW);
   const head = `<div class="grab"></div><div class="verdict"><span class="vi">${ic(res.ok ? "check" : res.partial ? "bulb" : "x")}</span><b>${verdict}</b>${gain ? `<span class="gain">+${gain} XP</span>` : ""}</div>`;
   const next = `<button class="btn primary wide next" data-act="next">${last || over ? "Voir le bilan" : "Suivant"}${ic("arrow")}</button>`;
+  if (q.kind === "geo" && q.format !== "map") {
+    const c = CONTINENTS.find(x => x.k === q.cont);
+    return `${head}<div class="dnote" style="font-size:15px;color:var(--text)">${ic("globe", "xs")} ${esc(c ? c.n : "")} · ${esc(q.place || "")}</div>
+    ${geoSpHtml(q)}${next}`;
+  }
   if (q.kind === "geo") {
     const km = res.geoKm, tier = geoTier(km);
     return `<div class="grab"></div><div class="verdict"><span class="vi">${ic(km <= 1500 ? "check" : "pin")}</span><b>${esc(tier[2])}</b><span class="gain">+${gain} XP</span></div>
-    <div class="dnote" style="font-size:15px;color:var(--text)">${ic("pin", "xs")} À <b>${fmt(km)} km</b> · ${esc(q.place || "")}</div>
-    <div class="chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">${q.sp.map(s => `<span class="chip">${esc(s.fr)}</span>`).join("")}</div>${next}`;
+    <div class="dnote" style="font-size:15px;color:var(--text)">${ic("pin", "xs")} À <b>${fmt(km)} km</b> · ${esc(q.place || "")}${q.guessName ? ` <small class="muted">(pin sur ${esc(q.guessName)})</small>` : ""}</div>
+    ${geoSpHtml(q)}${next}`;
   }
   if (q.kind === "root") {
     return `${head}<div class="decode"><span class="dchip"><span class="latin">${esc(q.w)}</span>${esc(q.mean)}</span></div>${q.note ? `<div class="dnote">${esc(q.note)}</div>` : ""}${q.ex ? `<div class="dnote">Exemple : ${esc(q.ex.fr || "")} · <span class="latin">${esc(q.ex.sci)}</span></div>` : ""}${next}`;
@@ -366,7 +406,20 @@ function fbHtml(q, res, gain) {
   ${chosen ? compareHtml(t, chosen, q) : ""}
   ${q.photo?.field && (q.photo.place || q.photo.date) ? `<div class="dnote">${ic("pin", "xs")} ${esc(q.photo.place || "")}${q.photo.date ? " · " + esc(dateLong(q.photo.date)) : ""}</div>` : ""}
   ${q.snd ? `<div class="dnote" style="display:flex;align-items:center;gap:8px">${ic("wave", "xs")}<span style="flex:1">${esc([q.snd.place, q.snd.attr].filter(Boolean).join(" · "))}</span><button class="chip warn" data-act="badsnd">${ic("x", "xs")}Mauvais son</button></div>` : ""}
+  <div class="learn" id="learn" data-id="${t.id}"><div class="lsec"><div class="lh">${ic("book", "xs")}Pour la reconnaître</div><div class="lsk"></div><div class="lsk short"></div></div></div>
   ${next}`;
+}
+let LEARNSIM = [];
+async function fillLearn(t) {
+  const [d, w, sim] = await Promise.all([wikiDesc(t).catch(() => null), wiki(t).catch(() => null), similar(t, null).catch(() => [])]);
+  const box = $("#learn");
+  if (!box || +box.dataset.id !== t.id) return;
+  const txt = d ? d.text : w ? w.text : "";
+  LEARNSIM = sim.filter(x => x.id !== t.id).slice(0, 3);
+  const parts = [];
+  if (txt) parts.push(`<div class="lsec"><div class="lh">${ic("book", "xs")}${d ? "Pour la reconnaître" : "En bref"}</div><p>${esc(clip(txt, 280))}</p><div class="lfoot"><small>Source : Wikipédia</small><button class="lmore" data-act="fiche" data-id="${t.id}">Fiche complète${ic("arrow", "xs")}</button></div></div>`);
+  if (LEARNSIM.length) parts.push(`<div class="lsec"><div class="lh">${ic("duel", "xs")}À ne pas confondre avec</div><div class="lsim">${LEARNSIM.map(s => `<button data-act="fiche" data-id="${s.id}"><img src="${esc(s.img?.sq || "")}" alt=""><span>${esc(nameFr(s))}</span></button>`).join("")}</div></div>`);
+  box.innerHTML = parts.join("");
 }
 function showFeedback(q, res, gain) {
   hideFeedback();
@@ -379,6 +432,8 @@ function showFeedback(q, res, gain) {
   el.style.overflowY = "auto";
   el.innerHTML = fbHtml(q, res, gain);
   document.body.appendChild(el);
+  fitImgs(el);
+  if (q.kind === "taxon") fillLearn(q.t);
   requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("show")));
   const cb = $("#combo");
   if (cb) {
@@ -394,6 +449,215 @@ function showFeedback(q, res, gain) {
   if (nb && window.matchMedia && matchMedia("(hover:hover)").matches) nb.focus({ preventScroll: true });
 }
 function hideFeedback() { const f = $("#fb"); if (f) f.remove(); }
+const geoSpHtml = q => `<div class="gsp">${q.sp.map(s => `<button data-act="zoom" data-grp="gr" data-src="${esc(s.lg || s.img)}" data-hd="${esc(s.hd || "")}" data-cap="${esc(s.fr)}" data-sci="${esc(s.fr !== s.sci ? s.sci : "")}" data-attr="${esc(s.attr || "")}" data-id="${s.id}"><img src="${esc(s.img)}" alt="" draggable="false"><span>${esc(s.fr)}</span></button>`).join("")}</div>`;
+function geoTaxon(id) {
+  const s = (SES?.q?.sp || []).find(x => x.id === id);
+  return s ? { id: s.id, sci: s.sci, fr: s.fr !== s.sci ? s.fr : "", a: [], img: { sq: s.img, md: s.img, attr: s.attr || "", lic: "" } } : null;
+}
+
+/* ---------- Photos : cadrage adaptatif ---------- */
+// Si le format de la photo est trop différent du cadre, on l'affiche entière (fond flouté) au lieu de la rogner.
+function fitImgs(root) {
+  $$("img[data-fit]", root || document).forEach(img => {
+    if (img.dataset.fitted) return;
+    const f = () => {
+      const box = img.parentElement;
+      if (!box || !img.naturalWidth || !box.clientHeight) return;
+      img.dataset.fitted = "1";
+      const r = img.naturalWidth / img.naturalHeight, rb = box.clientWidth / box.clientHeight;
+      const c = Math.abs(Math.log(r / rb)) > .3;
+      box.classList.toggle("fitc", c);
+      if (c) box.style.setProperty("--bgi", `url("${String(img.currentSrc || img.src).replace(/"/g, "%22")}")`);
+    };
+    if (img.complete && img.naturalWidth) f(); else img.addEventListener("load", f, { once: true });
+  });
+}
+// Bandeau Géo : chaque carte prend le format de sa photo (plus de têtes coupées)
+function fitStrip() {
+  $$("#gstrip img").forEach(img => {
+    const fig = img.closest("figure");
+    const f = () => { if (fig && img.naturalWidth) { fig.style.aspectRatio = String(clamp(img.naturalWidth / img.naturalHeight, .62, 1.9)); fig.classList.remove("ld"); } };
+    img.addEventListener("error", () => {
+      const alt = img.dataset.alt;
+      if (alt && img.src !== alt) { img.dataset.alt = ""; img.src = alt; if (fig) { fig.dataset.src = alt; fig.dataset.hd = ""; } }
+      else if (fig) { fig.classList.remove("ld"); fig.classList.add("broken"); }
+    });
+    if (img.complete && img.naturalWidth) f(); else { fig?.classList.add("ld"); img.addEventListener("load", f); }
+  });
+}
+
+/* ---------- Visionneuse HD (toucher une photo) ---------- */
+let VW = null;
+const hdOf = u => u ? sizeUrl(u, "original") : "";
+function zoomItems(el) {
+  const g = el.dataset.grp;
+  const els = g ? $$(`[data-act=zoom][data-grp="${g}"]`) : [el];
+  return {
+    items: els.map(x => ({ src: x.dataset.src, hd: x.dataset.hd || hdOf(x.dataset.src), cap: x.dataset.cap || "", sci: x.dataset.sci || "", attr: x.dataset.attr || "", id: +x.dataset.id || 0 })),
+    i: Math.max(0, els.indexOf(el))
+  };
+}
+function openViewer(items, i = 0) {
+  closeViewer(true);
+  if (!items.length || !items[i]?.src) return;
+  const el = document.createElement("div");
+  el.className = "viewer loading";
+  el.id = "viewer";
+  el.setAttribute("role", "dialog");
+  el.setAttribute("aria-modal", "true");
+  el.setAttribute("aria-label", "Photo en grand");
+  el.innerHTML = `<div class="vw-stage" id="vwStage"><img class="vw-img" id="vwImg" alt="" draggable="false"><div class="spin vw-spin"></div></div>
+  <div class="vw-top"><span class="vw-n" id="vwN"></span><span class="vw-hd" id="vwHd">HD</span><span class="sp"></span><button class="icon-btn" data-act="vclose" aria-label="Fermer">${ic("x")}</button></div>
+  ${items.length > 1 ? `<button class="vw-nav prev" data-act="vgo" data-d="-1" aria-label="Photo précédente">${ic("back")}</button><button class="vw-nav next" data-act="vgo" data-d="1" aria-label="Photo suivante">${ic("arrow")}</button>` : ""}
+  <div class="vw-cap" id="vwCap"></div>`;
+  document.body.appendChild(el);
+  document.body.classList.add("vwopen");
+  VW = { el, items, i, s: 1, x: 0, y: 0, ptr: new Map() };
+  vwBind(el);
+  vwShow(i, 0);
+  requestAnimationFrame(() => el.classList.add("on"));
+}
+function closeViewer(now) {
+  const V = VW;
+  if (!V) return;
+  VW = null;
+  document.body.classList.remove("vwopen");
+  if (now) { V.el.remove(); return; }
+  V.el.classList.remove("on");
+  setTimeout(() => V.el.remove(), 230);
+}
+function vwShow(i, dir) {
+  const V = VW;
+  if (!V) return;
+  const n = V.items.length;
+  V.i = ((i % n) + n) % n;
+  const it = V.items[V.i], img = $("#vwImg", V.el);
+  V.s = 1; V.x = 0; V.y = 0;
+  V.el.classList.remove("hd", "zoomed");
+  V.el.classList.add("loading");
+  V.el.style.setProperty("--vbg", 1);
+  img.style.transition = "none";
+  img.style.transform = "";
+  img.onload = () => { if (VW === V && V.items[V.i] === it) V.el.classList.remove("loading"); };
+  img.onerror = () => { if (VW === V) V.el.classList.remove("loading"); };
+  img.src = it.src;
+  if (dir && img.animate) { try { img.animate([{ opacity: 0, transform: `translate3d(${dir * 46}px,0,0)` }, { opacity: 1, transform: "none" }], { duration: 230, easing: "cubic-bezier(.2,.8,.2,1)" }); } catch (e) { /* rien */ } }
+  $("#vwN", V.el).textContent = n > 1 ? `${V.i + 1} / ${n}` : "";
+  $("#vwCap", V.el).innerHTML = `${it.cap ? `<b>${esc(it.cap)}</b>` : ""}${it.sci ? `<span class="latin">${esc(it.sci)}</span>` : ""}${it.id ? `<button class="chip" data-act="vfiche" data-id="${it.id}">${ic("info")}Fiche</button>` : ""}${it.attr ? `<small>${esc(it.attr)}</small>` : ""}`;
+  if (it.hd && it.hd !== it.src) {
+    const hi = new Image();
+    hi.onload = async () => {
+      try { if (hi.decode) await hi.decode(); } catch (e) { /* rien */ }
+      if (VW === V && V.items[V.i] === it) { img.src = it.hd; V.el.classList.add("hd"); V.el.classList.remove("loading"); }
+    };
+    hi.src = it.hd;
+  }
+  if (n > 1) [1, -1].forEach(d => { const nb = V.items[(V.i + d + n) % n]; if (nb?.src) preload(nb.src); });
+}
+function vwBox() {
+  const V = VW, st = $("#vwStage", V.el), img = $("#vwImg", V.el);
+  const W = st.clientWidth, H = st.clientHeight, r = img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : W / H;
+  const w = W / H > r ? H * r : W, h = W / H > r ? H : W / r;
+  const b = st.getBoundingClientRect();
+  return { W, H, w, h, cx: b.left + W / 2, cy: b.top + H / 2 };
+}
+function vwApply(anim) {
+  const V = VW;
+  if (!V) return;
+  const img = $("#vwImg", V.el), B = vwBox();
+  const mx = Math.max(0, (B.w * V.s - B.W) / 2), my = Math.max(0, (B.h * V.s - B.H) / 2), e = anim ? 0 : 50;
+  V.x = clamp(V.x, -mx - e, mx + e);
+  V.y = clamp(V.y, -my - e, my + e);
+  img.style.transition = anim ? "transform .28s cubic-bezier(.2,.8,.2,1)" : "none";
+  img.style.transform = `translate3d(${V.x}px,${V.y}px,0) scale(${V.s})`;
+  V.el.classList.toggle("zoomed", V.s > 1.02);
+}
+function vwZoomAt(px, py, s2) {
+  const V = VW;
+  if (!V) return;
+  const B = vwBox(), s = clamp(s2, 1, 6), k = s / V.s;
+  V.x = (px - B.cx) - ((px - B.cx) - V.x) * k;
+  V.y = (py - B.cy) - ((py - B.cy) - V.y) * k;
+  V.s = s;
+  if (s <= 1.02) { V.s = 1; V.x = 0; V.y = 0; }
+  vwApply(true);
+}
+function vwDrag(dx, dy, release) {
+  const V = VW;
+  if (!V) return;
+  const img = $("#vwImg", V.el), vert = Math.abs(dy) > Math.abs(dx);
+  img.style.transition = release ? "transform .26s cubic-bezier(.2,.8,.2,1)" : "none";
+  img.style.transform = release ? "" : vert ? `translate3d(0,${Math.max(0, dy)}px,0) scale(${1 - Math.min(.18, Math.max(0, dy) / 1400)})` : `translate3d(${dx}px,0,0)`;
+  V.el.style.setProperty("--vbg", release || !vert ? 1 : Math.max(.3, 1 - Math.max(0, dy) / 360));
+}
+function vwBind(el) {
+  const st = $("#vwStage", el);
+  let pinch = null, pan = null, lastTap = 0, tapT = 0;
+  const pts = () => [...VW.ptr.values()];
+  st.addEventListener("pointerdown", e => {
+    const V = VW;
+    if (!V) return;
+    try { st.setPointerCapture(e.pointerId); } catch (err) { /* rien */ }
+    V.ptr.set(e.pointerId, [e.clientX, e.clientY]);
+    if (V.ptr.size === 2) {
+      const [a, b] = pts();
+      pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, m: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], s: V.s, x: V.x, y: V.y };
+      pan = null;
+    } else if (V.ptr.size === 1) pan = { cx: e.clientX, cy: e.clientY, x: V.x, y: V.y, moved: false };
+  });
+  st.addEventListener("pointermove", e => {
+    const V = VW;
+    if (!V || !V.ptr.has(e.pointerId)) return;
+    V.ptr.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pinch && V.ptr.size >= 2) {
+      const [a, b] = pts(), B = vwBox(), d = Math.hypot(a[0] - b[0], a[1] - b[1]), m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      const s = clamp(pinch.s * d / pinch.d, 1, 6), k = s / pinch.s;
+      V.x = (m[0] - B.cx) - ((pinch.m[0] - B.cx) - pinch.x) * k;
+      V.y = (m[1] - B.cy) - ((pinch.m[1] - B.cy) - pinch.y) * k;
+      V.s = s;
+      vwApply(false);
+    } else if (pan) {
+      const dx = e.clientX - pan.cx, dy = e.clientY - pan.cy;
+      if (Math.abs(dx) + Math.abs(dy) > 8) pan.moved = true;
+      if (V.s > 1.02) { V.x = pan.x + dx; V.y = pan.y + dy; vwApply(false); }
+      else if (pan.moved) vwDrag(dx, dy);
+    }
+  });
+  const end = e => {
+    const V = VW;
+    if (!V || !V.ptr.has(e.pointerId)) return;
+    V.ptr.delete(e.pointerId);
+    if (pinch) {
+      if (V.ptr.size < 2) {
+        pinch = null;
+        if (V.s < 1.08) { V.s = 1; V.x = 0; V.y = 0; }
+        vwApply(true);
+        if (V.ptr.size === 1) { const [a] = pts(); pan = { cx: a[0], cy: a[1], x: V.x, y: V.y, moved: true }; }
+      }
+      return;
+    }
+    if (!pan) return;
+    const P = pan, dx = e.clientX - P.cx, dy = e.clientY - P.cy;
+    pan = null;
+    if (e.type === "pointercancel") { if (V.s <= 1.02) vwDrag(0, 0, true); else vwApply(true); return; }
+    if (P.moved) {
+      if (V.s > 1.02) { vwApply(true); return; }
+      if (dy > 90 && dy > Math.abs(dx)) { closeViewer(); return; }
+      if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) && V.items.length > 1) { const d = dx < 0 ? 1 : -1; vwDrag(0, 0, true); vwShow(V.i + d, d); return; }
+      vwDrag(0, 0, true);
+      return;
+    }
+    const now = Date.now();
+    if (now - lastTap < 320) { clearTimeout(tapT); lastTap = 0; vwZoomAt(e.clientX, e.clientY, V.s > 1.02 ? 1 : 2.6); return; }
+    lastTap = now;
+    const B = vwBox(), inside = Math.abs(e.clientX - B.cx - V.x) <= B.w * V.s / 2 && Math.abs(e.clientY - B.cy - V.y) <= B.h * V.s / 2;
+    if (!inside && V.s <= 1.02) tapT = setTimeout(() => { if (VW === V) closeViewer(); }, 330);
+  };
+  st.addEventListener("pointerup", end);
+  st.addEventListener("pointercancel", end);
+  st.addEventListener("wheel", e => { if (!VW) return; e.preventDefault(); vwZoomAt(e.clientX, e.clientY, VW.s * (e.deltaY < 0 ? 1.25 : 0.8)); }, { passive: false });
+  el.addEventListener("gesturestart", e => e.preventDefault());
+}
 
 /* ---------- Suggestions de saisie ---------- */
 let SUGT = 0, SUGQ = "";
@@ -426,32 +690,167 @@ function suggest(v) {
 }
 
 /* ---------- Carte Géo ---------- */
+/* Fonds de carte : relief (NASA Blue Marble, montagnes et fonds marins) puis satellite en zoomant,
+   satellite, topo, océans (bathymétrie : les îles ressortent), nuit (OSM assombri). Aucun n'exige de clé. */
+const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/";
+const GIBS = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/";
+const MAPST = {
+  relief: { n: "Relief", lab: true, cap: "NASA Blue Marble · Esri", layers: [
+    { u: GIBS + "GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg", max: 8, a: "NASA Blue Marble",
+      alt: [GIBS + "/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg", "https://map1.vis.earthdata.nasa.gov/wmts-webmerc/BlueMarble_ShadedRelief_Bathymetry/default//GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg", ESRI + "World_Physical_Map/MapServer/tile/{z}/{y}/{x}"] },
+    { u: ESRI + "World_Imagery/MapServer/tile/{z}/{y}/{x}", min: 9, a: "Esri, Maxar, Earthstar Geographics" }] },
+  sat: { n: "Satellite", lab: true, cap: "Esri World Imagery", layers: [{ u: ESRI + "World_Imagery/MapServer/tile/{z}/{y}/{x}", a: "Esri, Maxar, Earthstar Geographics" }] },
+  topo: { n: "Topo", light: true, cap: "Esri Topographic", layers: [{ u: ESRI + "World_Topo_Map/MapServer/tile/{z}/{y}/{x}", a: "Esri, HERE, Garmin, USGS, FAO, NPS" }] },
+  ocean: { n: "Océans", light: true, cap: "Esri Ocean · GEBCO, NOAA", layers: [{ u: ESRI + "Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}", nat: 13, a: "Esri, GEBCO, NOAA" }, { u: ESRI + "Ocean/World_Ocean_Reference/MapServer/tile/{z}/{y}/{x}", nat: 13, ov: true, a: "" }] },
+  nuit: { n: "Nuit", inv: true, cap: "© OpenStreetMap", layers: [{ u: "https://tile.openstreetmap.org/{z}/{x}/{y}.png", a: "© OpenStreetMap" }] }
+};
+const MAPLAB = { u: ESRI + "Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", a: "Esri" };
+const curStyle = () => MAPST[S.set.mapst] ? S.set.mapst : "relief";
+const tileUrl = (u, z, x, y) => u.replace("{z}", z).replace("{x}", x).replace("{y}", y);
+const layerAt = (st, z) => st.layers.find(l => !l.ov && (l.min ?? 0) <= z && z <= (l.max ?? 19)) || st.layers[0];
+function mapStylesHtml() {
+  const cur = curStyle();
+  return `<div class="mst">${Object.entries(MAPST).map(([k, st]) => `<button class="${k === cur ? "on" : ""}" data-act="mapset" data-s="${k}" aria-label="Fond ${esc(st.n)}"><span class="th${st.inv ? " inv" : ""}" style="background-image:url('${esc(tileUrl(layerAt(st, 2).u, 2, 2, 1))}')"></span><small>${esc(st.n)}</small></button>`).join("")}</div>`;
+}
+const mapTog = (k, icn, label) => `<button class="chip${S.set[k] ? " on" : ""}" data-act="toggle" data-k="${k}" role="switch" aria-checked="${S.set[k] ? "true" : "false"}">${ic(icn)}${label}</button>`;
+const mapMenuHtml = () => `${mapStylesHtml()}<div class="mtg">${mapTog("mapLab", "type", "Noms")}${mapTog("mapIsl", "isle", "Îles")}</div>`;
+function tileL(sp, extra, onDead) {
+  const alts = (sp.alt || []).slice();
+  const o = { attribution: sp.a || "", minZoom: sp.min ?? 0, maxZoom: sp.max ?? 19, ...extra };
+  if (sp.max != null) o.maxNativeZoom = sp.max;
+  if (sp.nat) o.maxNativeZoom = sp.nat;
+  const l = L.tileLayer(sp.u, o);
+  let ok = 0, bad = 0;
+  l.on("tileload", () => { ok++; });
+  l.on("tileerror", () => {
+    if (ok || ++bad < 4) return;
+    bad = 0;
+    if (alts.length) l.setUrl(alts.shift());
+    else if (onDead) { const f = onDead; onDead = null; f(); }
+  });
+  return l;
+}
+function setMapStyle(map, id) {
+  const st = MAPST[id] || MAPST.relief;
+  (map._plum || []).forEach(l => map.removeLayer(l));
+  map._plum = [];
+  const dead = () => {
+    if (map !== GMAP || id === "nuit") return;
+    toast(`Fond « ${st.n} » indisponible pour l'instant : fond Nuit à la place.`);
+    setMapStyle(map, "nuit");
+  };
+  st.layers.forEach((sp, i) => {
+    if (sp.ov && !S.set.mapLab) return;
+    const l = tileL(sp, { className: st.inv ? "tl-inv" : "", pane: sp.ov ? "labels" : "tilePane" }, i === 0 ? dead : null);
+    l.addTo(map);
+    map._plum.push(l);
+  });
+  if (st.lab && S.set.mapLab) { const l = tileL(MAPLAB, { pane: "labels" }); l.addTo(map); map._plum.push(l); }
+  map._plumSt = id;
+  map.getContainer().classList.toggle("light", !!st.light);
+  islStyle(map);
+}
+/* Îles : un anneau tant que l'île est trop petite pour être vue ; le toucher pose le pin dessus */
+function addIslands(map) {
+  const rd = L.canvas({ padding: .3, tolerance: 9 });
+  map._isl = ISLANDS.map(isl => {
+    const m = L.circleMarker([isl[1], isl[2]], { renderer: rd, radius: 6, weight: 1.4, opacity: .9, fillOpacity: .14, bubblingMouseEvents: false });
+    m.isl = isl;
+    m.bindTooltip(isl[0], { permanent: true, direction: "right", offset: [7, 0], className: "isl-lbl", opacity: 1 });
+    m.on("click", () => { const q = SES?.q; if (q && q.kind === "geo" && !q.done) placePin(q, m.getLatLng(), isl[0]); });
+    return m;
+  });
+  map.on("zoomend", () => islUpdate(map));
+  islStyle(map);
+  islUpdate(map);
+}
+function islStyle(map) {
+  const c = (MAPST[map._plumSt] || {}).light ? "#05627F" : "#8AF4FF";
+  (map._isl || []).forEach(m => m.setStyle({ color: c, fillColor: c }));
+}
+function islUpdate(map) {
+  if (!map._isl) return;
+  const z = map.getZoom(), on = S.set.mapIsl && !map._revealed, rings = [], labs = [];
+  const r = z < 1.5 ? 3.5 : z < 3 ? 5 : 6.5, gap = z < 3 ? 13 : 16;
+  map.getContainer().classList.toggle("zlo", z < 3.5);
+  map._isl.forEach(m => {
+    const [name, la, ln, d] = m.isl;
+    let vis = on && z <= 10 && d / (156.543 * Math.cos(la * Math.PI / 180) / 2 ** z) < 12, lab = false;
+    if (vis) {
+      const p = map.project([la, ln], z);
+      vis = !rings.some(s => Math.abs(s.x - p.x) < gap && Math.abs(s.y - p.y) < gap);
+      if (vis) {
+        const w = 8 + name.length * 6.4, box = [p.x + 5, p.y - 8, p.x + 5 + w, p.y + 8];
+        lab = z >= 3.5 && !labs.some(b => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1]) && !rings.some(s => s.x > box[0] - 4 && s.x < box[2] && Math.abs(s.y - p.y) < 10);
+        rings.push(p);
+        if (lab) labs.push(box);
+      }
+    }
+    if (vis) { m.setRadius(r); if (!map.hasLayer(m)) m.addTo(map); }
+    else if (map.hasLayer(m)) map.removeLayer(m);
+    const te = m.getTooltip()?.getElement();
+    if (te) te.classList.toggle("hid", !lab);
+  });
+}
+function mapExtras() {
+  if (!GMAP) return;
+  setMapStyle(GMAP, GMAP._plumSt || curStyle());
+  islUpdate(GMAP);
+}
+function placePin(q, ll, name) {
+  if (!GMAP || q.done) return;
+  q.guess = [ll.lat, ((ll.lng + 540) % 360) - 180];
+  q.guessName = name || "";
+  if (q.guessM) q.guessM.setLatLng(ll);
+  else q.guessM = L.circleMarker(ll, { pane: "markerPane", radius: 9, color: "#fff", weight: 3, fillColor: "#FF8B3D", fillOpacity: 1, interactive: false }).addTo(GMAP);
+  const b = $("#gok");
+  if (b) { b.disabled = false; b.innerHTML = ic("check") + `<span>Valider${name ? " · " + esc(name) : ""}</span>`; }
+}
+function setMapFull(on) {
+  const w = $("#gwrap");
+  if (!w) { document.body.classList.remove("gfull"); return; }
+  on = on ?? !w.classList.contains("full");
+  w.classList.toggle("full", on);
+  document.body.classList.toggle("gfull", on);
+  const b = w.querySelector("[data-act=mapfull]");
+  if (b) { b.innerHTML = ic(on ? "shrink" : "expand"); b.setAttribute("aria-label", on ? "Réduire la carte" : "Agrandir la carte"); }
+  if (GMAP) {
+    const m = GMAP, fill = () => { m.invalidateSize(); const zf = Math.floor(Math.log2(m.getSize().y / 256) * 2) / 2; if (on && m.getZoom() < zf) m.setZoom(zf); };
+    requestAnimationFrame(() => m.invalidateSize());
+    setTimeout(() => { if (GMAP === m) fill(); }, 280);
+  }
+}
 let GMAP = null;
 function mountGeoMap(q) {
   const el = $("#gmap");
+  document.body.classList.remove("gfull");
   if (!el || !window.L) return;
   if (GMAP) { try { GMAP.remove(); } catch (e) { /* rien */ } }
-  const map = GMAP = L.map(el, { worldCopyJump: true, zoomControl: false, attributionControl: true, minZoom: 1 }).setView([25, 5], 1);
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 12, attribution: "© OpenStreetMap" }).addTo(map);
+  const z0 = clamp(Math.floor(Math.log2(Math.max(256, el.clientWidth) / 256) * 2) / 2, .5, 3);
+  const map = GMAP = L.map(el, { worldCopyJump: true, zoomControl: false, attributionControl: true, minZoom: .5, maxZoom: 14, zoomSnap: .5 }).setView([22, 8], z0);
+  map.attributionControl.setPrefix('<a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a>');
+  const lp = map.createPane("labels");
+  lp.style.zIndex = 350;
+  lp.style.pointerEvents = "none";
+  setMapStyle(map, curStyle());
+  addIslands(map);
   q.guessM = null;
-  map.on("click", e => {
-    if (q.done) return;
-    q.guess = [e.latlng.lat, ((e.latlng.lng + 540) % 360) - 180];
-    if (q.guessM) q.guessM.setLatLng(e.latlng);
-    else q.guessM = L.circleMarker(e.latlng, { radius: 9, color: "#fff", weight: 3, fillColor: "#FF8B3D", fillOpacity: 1 }).addTo(map);
-    const b = $("#gok");
-    if (b) { b.disabled = false; b.innerHTML = ic("check") + "Valider"; }
-  });
+  map.on("click", e => placePin(q, e.latlng));
   setTimeout(() => map.invalidateSize(), 50);
 }
 function geoValidate() {
   const q = SES?.q;
   if (!q || q.done || !q.guess) return;
   const km = haversine(q.guess, [q.lat, q.lng]), tier = geoTier(km);
+  setMapFull(false);
+  const mm = $("#mmenu");
+  if (mm) mm.hidden = true;
   $$(".gstrip").forEach(g => g.classList.add("reveal"));
   $(".view.quiz")?.classList.add("georeveal");
   if (GMAP) {
     GMAP.invalidateSize();
+    GMAP._revealed = true;
+    islUpdate(GMAP);
     const t = [q.lat, q.lng];
     L.circleMarker(t, { radius: 10, color: "#fff", weight: 3, fillColor: "#1FD1F2", fillOpacity: 1 }).addTo(GMAP);
     L.circle(t, { radius: 10000, color: "#1FD1F2", weight: 1, fillOpacity: .12 }).addTo(GMAP);
@@ -552,25 +951,28 @@ function carnetList() {
   if (CARNET.f === "due") all = all.filter(x => Object.values(x.r.due || {}).some(d => d <= tday));
   if (CARNET.f === "master") all = all.filter(x => stars(x.r) === 3);
   if (CARNET.f === "weak") all = all.filter(x => x.r.n >= 2 && x.r.ok / x.r.n < .6);
+  if (CARNET.f === "field") all = all.filter(x => FIELD.ids.has(x.id));
   if (q) all = all.filter(x => norm(x.r.fr).includes(q) || norm(x.r.sci).includes(q));
   return all.sort((a, b) => String(b.r.last || "").localeCompare(String(a.r.last || "")) || String(a.r.fr || a.r.sci).localeCompare(String(b.r.fr || b.r.sci)));
 }
 function carnetGrid() {
   const list = carnetList();
   if (!list.length) return `<div class="empty">${ic("book")}<b>${Object.keys(S.sp).length ? "Rien ici" : "Ton carnet est vide"}</b><p>${Object.keys(S.sp).length ? "Change de filtre ou de recherche." : "Chaque oiseau croisé en quiz s'ajoute ici, avec sa fiche et ton niveau."}</p>${Object.keys(S.sp).length ? "" : `<button class="btn primary" data-act="daily">${ic("play")}Série du jour</button>`}</div>`;
-  return `<div class="cgrid">${list.map(({ id, r }) => `<button class="ctile" data-act="fiche" data-id="${id}"><span class="av" style="--p:${(stars(r) / 3 * 100).toFixed(0)}"><img src="${esc(r.img || r.md)}" alt="" loading="lazy"></span><b>${esc(r.fr || r.sci)}</b>${starsHtml(stars(r))}</button>`).join("")}</div>`;
+  return `<div class="cgrid">${list.map(({ id, r }) => `<button class="ctile" data-act="fiche" data-id="${id}"><span class="av" style="--p:${(stars(r) / 3 * 100).toFixed(0)}"><img src="${esc(r.img || r.md)}" alt="" loading="lazy">${FIELD.ids.has(id) ? `<span class="fld" title="Vue sur le terrain">${ic("eye", "xs")}</span>` : ""}</span><b>${esc(r.fr || r.sci)}</b>${starsHtml(stars(r))}</button>`).join("")}</div>`;
 }
 VIEWS.carnet = () => {
   const recs = Object.values(S.sp).filter(r => r.n > 0);
   const master = recs.filter(r => stars(r) === 3).length;
-  const filt = [["all", "Toutes"], ["due", "À revoir"], ["weak", "Fragiles"], ["master", "Maîtrisées"]];
+  const filt = [["all", "Toutes"], ["due", "À revoir"], ["weak", "Fragiles"], ["master", "Maîtrisées"], ...(S.set.inat ? [["field", "Vues sur le terrain"]] : [])];
   return `<section class="view carnet">
-  <div class="head"><div><h1 style="font:700 24px/1.1 var(--f-display);margin:0">Carnet</h1><div class="counts"><span><b>${recs.length}</b> espèces</span><span><b>${master}</b> maîtrisées</span><span><b>${dueList().length}</b> à revoir</span></div></div></div>
+  <div class="head"><div style="flex:1"><h1 style="font:700 24px/1.1 var(--f-display);margin:0">Carnet</h1><div class="counts"><span><b>${recs.length}</b> espèces</span><span><b>${master}</b> maîtrisées</span><span><b>${dueList().length}</b> à revoir</span></div></div>${recs.length ? `<button class="icon-btn" data-act="csv" aria-label="Exporter le carnet">${ic("down")}</button>` : ""}</div>
   <div class="search" style="margin-top:14px">${ic("search")}<input id="csearch" type="search" placeholder="Chercher une espèce" value="${esc(CARNET.q)}" aria-label="Chercher"></div>
   <div class="row" style="margin-top:10px">${filt.map(([k, l]) => `<button class="opt-btn mini ${CARNET.f === k ? "on" : ""}" data-act="cfilt" data-f="${k}">${l}</button>`).join("")}</div>
   <div id="cgrid">${carnetGrid()}</div>
 </section>`;
 };
+
+MOUNT.carnet = () => { if (S.set.inat) loadField().then(() => { if (VIEW === "carnet") $("#cgrid").innerHTML = carnetGrid(); }).catch(() => {}); };
 
 /* ---------- Progrès ---------- */
 function heatHtml() {
@@ -606,6 +1008,14 @@ VIEWS.progress = () => {
   const td = S.days[dayKey()] || { xp: 0, q: 0 };
   const cats = [["photo", "Photos", "frame"], ["son", "Chants", "wave"], ["nom", "Noms", "quill"], ["fam", "Familles", "tree"], ["type", "Saisie", "keyboard"], ["geo", "Géo", "globe"], ["root", "Racines", "root"]].filter(([k]) => S.stats[k]?.n);
   const conf = topConfusions(5);
+  const goal = S.set.goal || 150, gp = clamp(td.xp / goal, 0, 1);
+  const w7 = periodStats(7), w30 = periodStats(30), prev7 = (() => { const a = periodStats(14); return { xp: a.xp - w7.xp, q: a.q - w7.q, ok: a.ok - w7.ok }; })();
+  const pct = o => o.q ? Math.round(100 * o.ok / o.q) : null;
+  const trend = pct(w7) != null && pct(prev7) != null ? pct(w7) - pct(prev7) : null;
+  const fs = familyStats(), best = fs.slice().sort((a, b) => b.p - a.p || b.n - a.n).slice(0, 3), bestIds = new Set(best.map(x => x.f));
+  const weak = fs.filter(x => !bestIds.has(x.f) && x.p < .8).sort((a, b) => a.p - b.p).slice(0, 3);
+  const famRow = (x, train) => `<div class="hbar fam"><span class="t">${esc(famName(x.f))}<small>${x.sp} esp. · ${x.n} rép.</small></span><span class="b"><i style="width:${(x.p * 100).toFixed(0)}%"></i></span><span class="v">${Math.round(x.p * 100)} %</span>${train ? `<button class="chip warn" data-act="ftrain" data-f="${x.f}">${ic("play", "xs")}Revoir</button>` : ""}</div>`;
+  const hist = (S.hist || []).slice(0, 10);
   return `<section class="view progress">
   <div class="big-lvl"><div class="lring"><svg viewBox="0 0 96 96" aria-hidden="true"><circle class="track" cx="48" cy="48" r="40"/><circle class="prog" cx="48" cy="48" r="40" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - L.p)).toFixed(1)}"/></svg><b>${L.n}</b></div>
     <div><h2>${esc(L.rank)}</h2><p>${fmt(L.need - L.cur)} XP avant le niveau ${L.n + 1}${L.n < RANKS.length ? " · " + esc(RANKS[Math.min(L.n, RANKS.length - 1)]) : ""}</p><p>${fmt(S.xp)} XP au total</p></div></div>
@@ -615,9 +1025,20 @@ VIEWS.progress = () => {
     <div class="stat"><small>${ic("sun")}Aujourd'hui</small><b>${fmt(td.xp)}</b><div class="sub">XP · ${td.q || 0} question${td.q > 1 ? "s" : ""}</div></div>
     <div class="stat"><small>${ic("check")}Réussite</small><b>${tot.n ? Math.round(100 * tot.ok / tot.n) : 0} %</b><div class="sub">sur ${fmt(tot.n)} réponses</div></div>
   </div>
+  <div class="sec">${ic("star")}Objectif du jour<span class="more">${fmt(td.xp)} / ${fmt(goal)} XP</span></div>
+  <div class="card goalc"><span class="bar"><i style="width:${(gp * 100).toFixed(1)}%"></i></span><small>${gp >= 1 ? "Objectif atteint, bravo !" : `Encore ${fmt(goal - td.xp)} XP. Réglable dans Réglages.`}</small></div>
+  <div class="sec">${ic("chart")}Sur la durée</div>
+  <div class="grid2">
+    <div class="stat"><small>${ic("cal")}7 derniers jours</small><b>${fmt(w7.xp)} XP</b><div class="sub">${w7.q} réponses · ${pct(w7) ?? "–"} % bonnes${trend != null ? ` · <span style="color:${trend >= 0 ? "var(--good)" : "var(--bad)"}">${trend >= 0 ? "+" : ""}${trend} pts</span>` : ""}</div><div class="sub">${w7.active} jour${w7.active > 1 ? "s" : ""} joué${w7.active > 1 ? "s" : ""} sur 7</div></div>
+    <div class="stat"><small>${ic("cal")}30 derniers jours</small><b>${fmt(w30.xp)} XP</b><div class="sub">${w30.q} réponses · ${pct(w30) ?? "–"} % bonnes</div><div class="sub">${w30.active} jour${w30.active > 1 ? "s" : ""} joué${w30.active > 1 ? "s" : ""} sur 30</div></div>
+  </div>
   <div class="sec">${ic("cal")}12 dernières semaines</div><div class="card" style="padding:14px">${heatHtml()}</div>
   <div class="sec">${ic("chart")}14 derniers jours</div><div class="card" style="padding:14px">${chartHtml()}</div>
-  ${cats.length ? `<div class="sec">${ic("eye")}Par type de question</div><div class="card hbars" style="padding:14px">${cats.map(([k, l, i]) => { const s = S.stats[k], p = s.ok / s.n; return `<div class="hbar"><span class="t">${ic(i)}${l}</span><span class="b"><i style="width:${(p * 100).toFixed(0)}%"></i></span><span class="v">${Math.round(p * 100)} %</span></div>`; }).join("")}</div>` : ""}
+  ${cats.length ? `<div class="sec">${ic("eye")}Bonnes réponses par type de question</div><div class="card hbars" style="padding:14px">${cats.map(([k, l, i]) => { const s = S.stats[k], p = s.ok / s.n; return `<div class="hbar"><span class="t">${ic(i)}${l}</span><span class="b"><i style="width:${(p * 100).toFixed(0)}%"></i></span><span class="v">${Math.round(p * 100)} %</span></div>`; }).join("")}</div>` : ""}
+  ${best.length ? `<div class="sec">${ic("tree")}Familles les mieux maîtrisées</div><div class="card hbars" style="padding:14px">${best.map(x => famRow(x)).join("")}</div>` : ""}
+  ${weak.length ? `<div class="sec">${ic("replay")}Familles à retravailler</div><div class="card hbars" style="padding:14px">${weak.map(x => famRow(x, true)).join("")}</div>` : ""}
+  ${!fs.length ? `<p class="muted" style="font-size:13px;margin:14px 2px 0">Les familles fortes et à retravailler apparaîtront après quelques parties (4 réponses par famille minimum).</p>` : ""}
+  ${hist.length ? `<div class="sec">${ic("clock")}Historique des parties</div><div class="group">${hist.map((h, i) => `<div class="set"><span class="lab"><b>${esc(h.title || "Partie")}</b><small>${esc(ago(h.t))} · ${h.ok}/${h.n} bonnes · +${fmt(h.xp)} XP</small></span><button class="icon-btn" data-act="histplay" data-i="${i}" aria-label="Rejouer">${ic("replay")}</button></div>`).join("")}</div>` : ""}
   ${conf.length ? `<div class="sec">${ic("duel")}Tes confusions</div><div style="display:flex;flex-direction:column;gap:8px">${conf.map(c => { const a = S.sp[c.a], b = S.sp[c.b]; return `<div class="conf"><img src="${esc(a.img || a.md)}" alt=""><span class="vs">VS</span><img src="${esc(b.img || b.md)}" alt=""><span class="tx">${esc(a.fr || a.sci)}<small>${esc(b.fr || b.sci)} · ${c.n}×</small></span><button class="btn primary" data-act="duelgo" data-ids="${c.a},${c.b}">Duel</button></div>`; }).join("")}</div>` : ""}
   <div class="sec">${ic("trophy")}Badges<span class="more">${Object.keys(S.badges).length} / ${BADGES.length}</span></div>
   <div class="badges">${BADGES.map(b => `<div class="bdg ${S.badges[b.id] ? "" : "off"}"><span class="md">${ic(b.ic)}</span><b>${esc(b.n)}</b><small>${esc(b.d)}</small></div>`).join("")}</div>
@@ -635,6 +1056,8 @@ VIEWS.settings = () => `<section class="view settings">
   <div class="group">
     <div class="set"><span class="lab"><b>Noms affichés</b><small>Le latin en petit aide à le retenir sans effort.</small></span></div>
     <div class="set" style="border-top:0;padding-top:0">${seg("names", [["both", "FR + latin"], ["fr", "Français"], ["la", "Latin"]])}</div>
+    <div class="set"><span class="lab"><b>Objectif quotidien</b><small>XP à gagner chaque jour pour remplir l'anneau de l'accueil.</small></span></div>
+    <div class="set" style="border-top:0;padding-top:0">${seg("goal", [["50", "50 XP"], ["100", "100"], ["150", "150"], ["250", "250"]])}</div>
     <div class="set"><span class="lab"><b>Réponse par défaut</b><small>Saisie : tu tapes le nom, avec suggestions.</small></span></div>
     <div class="set" style="border-top:0;padding-top:0">${seg("fmt", [["qcm", "Choix multiple"], ["type", "Saisie"]])}</div>
     <div class="set"><span class="lab"><b>Choix par question</b><small>De 2 (facile) à 6.</small></span><div class="stepper"><button data-act="setk" data-d="-1" aria-label="Moins">${ic("minus")}</button><output>${S.set.k}</output><button data-act="setk" data-d="1" aria-label="Plus">${ic("plus")}</button></div></div>
@@ -649,6 +1072,13 @@ VIEWS.settings = () => `<section class="view settings">
     <div class="set"><span class="lab"><b>Effets sonores</b><small>Petits sons de réussite et d'erreur.</small></span>${sw("sfx")}</div>
     <div class="set"><span class="lab"><b>Animations réduites</b><small>Pour un affichage plus calme.</small></span>${sw("calm")}</div>
   </div>
+  <div class="sec">${ic("map")}Cartes</div>
+  <div class="group">
+    <div class="set"><span class="lab"><b>Fond de carte</b><small>Relief : montagnes et fonds marins, puis vue satellite quand tu zoomes. Aussi changeable depuis la carte Géo.</small></span></div>
+    <div class="set" style="border-top:0;padding-top:0;display:block">${mapStylesHtml()}</div>
+    <div class="set"><span class="lab"><b>Noms des lieux</b><small>Pays, villes et repères par-dessus le relief et le satellite.</small></span>${sw("mapLab")}</div>
+    <div class="set"><span class="lab"><b>Îles en évidence</b><small>Un anneau sur les petites îles, touche-le pour y poser ton pin.</small></span>${sw("mapIsl")}</div>
+  </div>
   <div class="sec">${ic("bell")}Rappel quotidien</div>
   <div class="group">
     <div class="set">${ic("clock")}<span class="lab"><b>Heure</b><small>Ajoute un rappel qui revient chaque jour dans ton calendrier.</small></span><input type="time" id="remind" value="${esc(S.set.remind)}" data-set="remind" aria-label="Heure du rappel"></div>
@@ -660,13 +1090,15 @@ VIEWS.settings = () => `<section class="view settings">
     <div class="set"><span class="lab"><b>Clé xeno-canto</b><small>Optionnelle : ajoute les chants xeno-canto aux fiches. <a href="https://xeno-canto.org/account" target="_blank" rel="noopener">Obtenir une clé</a></small></span><input type="password" id="xckey" value="${esc(S.set.xc)}" data-set="xc" placeholder="clé" autocomplete="off" aria-label="Clé xeno-canto"></div>
   </div>
   ${S.favs.length ? `<div class="sec">${ic("star")}Mes quiz</div><div class="group">${S.favs.map((f, i) => `<div class="set"><span class="lab"><b>${esc(f.title)}</b></span><button class="icon-btn" data-act="favdel" data-i="${i}" aria-label="Supprimer">${ic("trash")}</button></div>`).join("")}</div>` : ""}
-  <div class="sec">${ic("down")}Sauvegarde</div>
+  <div class="sec">${ic("down")}Mes données</div>
+  <p class="muted" style="font-size:13px;line-height:1.5;margin:-4px 2px 10px">Ta progression, ton carnet et tes astuces restent sur ce téléphone, dans l'appli : pas de compte, rien n'est envoyé ailleurs. L'appli interroge seulement iNaturalist, Wikipédia et xeno-canto pour les photos, les sons et les textes. Exporte de temps en temps pour ne rien perdre.</p>
   <div class="group">
+    <div class="set"><span class="lab"><b>Carnet en tableau</b><small>Toutes tes espèces avec dates et réussite (CSV pour Excel).</small></span><button class="btn ghost" data-act="csv">${ic("down")}CSV</button></div>
     <div class="set"><span class="lab"><b>Exporter</b><small>Télécharge ta progression (à garder en lieu sûr).</small></span><button class="btn ghost" data-act="export">${ic("down")}Exporter</button></div>
     <div class="set"><span class="lab"><b>Importer</b><small>Restaure une sauvegarde sur ce téléphone.</small></span><label class="btn ghost" style="cursor:pointer">${ic("up")}Importer<input type="file" id="importf" accept="application/json,.json" hidden></label></div>
     <div class="set"><span class="lab"><b>Tout effacer</b><small>Remet l'appli à zéro sur cet appareil.</small></span><button class="btn ghost" data-act="reset" id="resetBtn">${ic("trash")}Effacer</button></div>
   </div>
-  <p class="foot">Photos, sons et données : <a href="https://www.inaturalist.org" target="_blank" rel="noopener">iNaturalist</a> et ses observateurs (licence indiquée sur chaque média). Descriptions : Wikipédia (CC BY-SA). Fonds de carte : © contributeurs OpenStreetMap. Faune France n'ouvre pas ses données, d'où un simple lien depuis les fiches. Ta progression reste sur cet appareil.</p>
+  <p class="foot">Photos, sons et données : <a href="https://www.inaturalist.org" target="_blank" rel="noopener">iNaturalist</a> et ses observateurs (licence indiquée sur chaque média). Descriptions : Wikipédia (CC BY-SA). Fonds de carte : NASA Blue Marble, Esri et © contributeurs OpenStreetMap. Faune France n'ouvre pas ses données, d'où un simple lien depuis les fiches. Ta progression reste sur cet appareil.</p>
 </section>`;
 
 /* ---------- Calques ---------- */
@@ -733,26 +1165,29 @@ const FICHE = { t: null, playing: false };
 function taxonById(id) {
   id = +id;
   const fromSes = SES?.pool?.byId?.get(id) || (SES?.q?.t?.id === id ? SES.q.t : null) || (SES?.missed || []).find(t => t.id === id) || (SES?.q?.choices || []).map(c => c.t).find(t => t && t.id === id);
-  return fromSes || (OTD && OTD.id === id ? OTD : null) || (FICHE.sim || []).find(t => t.id === id) || fromRec(id);
+  return fromSes || (OTD && OTD.id === id ? OTD : null) || (FICHE.sim || []).find(t => t.id === id) || LEARNSIM.find(t => t.id === id) || fromRec(id) || geoTaxon(id);
 }
 function openFiche(t) {
   if (!t) return;
   FICHE.t = t;
+  if (S.sp[t.id]) { S.sp[t.id].views = (S.sp[t.id].views || 0) + 1; save(); }
   const r = S.sp[t.id], f = fam(t) || r?.f || 0, o = ord(t) || r?.o || 0, dec = decodeLatin(t.sci), note = dec.find(x => x.note);
   const s = r ? stars(r) : 0;
   openLayer(`<div class="panel" role="dialog" aria-label="Fiche ${esc(nameFr(t))}">
   <button class="icon-btn close" data-act="close" aria-label="Fermer">${ic("x")}</button>
-  <div class="gallery" id="gal"><figure><img src="${esc(imgOf(t))}" alt=""><figcaption>${esc(t.img?.attr || "")}</figcaption></figure></div><div class="gdots" id="gdots"></div>
+  <div class="gallery" id="gal"><figure data-act="zoom" data-grp="fg" data-src="${esc(imgOf(t))}" data-cap="${esc(nameFr(t))}" data-sci="${esc(t.fr ? t.sci : "")}" data-attr="${esc(t.img?.attr || "")}"><img src="${esc(imgOf(t))}" alt="" data-fit draggable="false"><span class="zb">${ic("zoom")}</span><figcaption>${esc(t.img?.attr || "")}</figcaption></figure></div><div class="gdots" id="gdots"></div>
   <div class="in">
     <div class="ftitle"><h2>${esc(nameFr(t))}</h2>${t.fr ? `<span class="latin">${esc(t.sci)}</span>` : ""}
       <div class="chips">${f ? `<span class="chip fam">${ic("tree")}${esc(famName(f))}${famVern(f) ? " · " + esc(famVern(f)) : ""}</span>` : ""}${o ? `<span class="chip ord">${esc(ordName(o))}</span>` : ""}${r?.n ? starsHtml(s) : ""}</div></div>
     ${dec.length ? `<div class="decode">${dec.map(d => `<span class="dchip"><span class="latin">${esc(d.w)}</span>${esc(d.m)}</span>`).join("")}</div>${note ? `<div class="dnote">${esc(note.note)}</div>` : ""}` : ""}
     <div class="fsec"><h3>${ic("edit")}Mon astuce</h3><textarea class="mynote" id="mynote" data-id="${t.id}" placeholder="Un moyen mnémotechnique, un détail qui t'aide à la reconnaître…">${esc(r?.note || "")}</textarea></div>
-    ${r?.n ? `<div class="fsec"><h3>${ic("chart")}Ma maîtrise</h3><div class="stats4"><div><b>${r.n}</b><small>fois vue</small></div><div><b>${Math.round(100 * r.ok / r.n)} %</b><small>réussite</small></div><div><b>${s}/3</b><small>étoiles</small></div></div></div>` : ""}
+    ${r?.n ? `<div class="fsec"><h3>${ic("chart")}Mon historique</h3><div class="stats4"><div><b>${r.n}</b><small>fois vue</small></div><div><b>${Math.round(100 * r.ok / r.n)} %</b><small>réussite</small></div><div><b>${s}/3</b><small>étoiles</small></div></div>
+      <div class="hist">${r.first ? `<span>${ic("spark", "xs")}Rencontrée le ${esc(dateLong(r.first))}</span>` : ""}${r.lastOk ? `<span>${ic("check", "xs")}Dernière réussite : ${esc(dateLong(r.lastOk))}</span>` : ""}${FIELD.ids.has(t.id) ? `<span class="fieldok">${ic("eye", "xs")}Vue sur le terrain (iNaturalist)</span>` : ""}</div>
+      ${Object.keys(r.conf || {}).length ? `<div class="hist">${Object.entries(r.conf).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id, n]) => `<button class="chip" data-act="fiche" data-id="${id}">${ic("duel", "xs")}Confondue avec ${esc(S.sp[id]?.fr || S.sp[id]?.sci || "?")} · ${n}×</button>`).join("")}</div>` : ""}</div>` : ""}
     <div class="fsec"><h3>${ic("cal")}Présence par mois<span class="seg"><button class="on" data-act="phz" data-z="fr">France</button><button data-act="phz" data-z="zone">Ma zone</button></span></h3><div class="pheno" id="pheno"></div></div>
-    <div class="fsec"><h3>${ic("map")}Observations<span class="seg"><button class="on" data-act="mapz" data-v="fr">France</button><button data-act="mapz" data-v="eu">Europe</button><button data-act="mapz" data-v="w">Monde</button></span></h3><div id="fmap"></div><div class="mapcap">Fond © OpenStreetMap — points : observations iNaturalist</div></div>
+    <div class="fsec"><h3>${ic("map")}Observations<span class="seg"><button class="on" data-act="mapz" data-v="fr">France</button><button data-act="mapz" data-v="eu">Europe</button><button data-act="mapz" data-v="w">Monde</button></span></h3><div id="fmap"></div><div class="mapcap" id="mapcap"></div></div>
     <div class="fsec"><h3>${ic("wave")}Chants & cris</h3><div class="slist" id="fsnd"><div class="spin" style="margin:6px auto"></div></div></div>
-    <div class="fsec" id="fwiki" hidden><h3>${ic("book")}Description</h3><p id="fwikiTx"></p></div>
+    <div class="fsec" id="fwiki" hidden><h3>${ic("book")}<span id="fwikiH">Description</span></h3><p id="fwikiTx"></p></div>
     <div class="fsec"><h3>${ic("duel")}Ressemble à</h3><div class="simil" id="fsim"><div class="spin" style="margin:6px auto"></div></div></div>
     <div class="fsec"><h3>${ic("ext")}En savoir plus</h3><div class="links">
       <a href="https://www.inaturalist.org/taxa/${t.id}" target="_blank" rel="noopener">iNaturalist${ic("ext")}</a>
@@ -764,12 +1199,14 @@ function openFiche(t) {
 }
 async function ficheFill(t) {
   const alive = () => FICHE.t === t && !$("#layer").hidden;
+  if (S.set.inat && FIELD.who !== S.set.inat) loadField().then(() => { if (alive() && FIELD.ids.has(t.id) && !$(".fieldok")) { const h = $(".hist"); if (h) h.insertAdjacentHTML("beforeend", `<span class="fieldok">${ic("eye", "xs")}Vue sur le terrain (iNaturalist)</span>`); } }).catch(() => {});
   renderPheno(t, { id: 6753 });
   renderMap(t, "fr");
   photosFor([t.id]).then(([ph]) => {
     if (!alive() || !ph.length) return;
     const g = $("#gal");
-    g.innerHTML = ph.slice(0, 10).map(p => `<figure><img src="${esc(p.md)}" alt="" loading="lazy"><figcaption>${esc(p.attr)}</figcaption></figure>`).join("");
+    g.innerHTML = ph.slice(0, 10).map((p, i) => `<figure data-act="zoom" data-grp="fg" data-src="${esc(p.lg || p.md)}" data-hd="${esc(hdOf(p.lg || p.md))}" data-cap="${esc(nameFr(t))}" data-sci="${esc(t.fr ? t.sci : "")}" data-attr="${esc(p.attr)}"><img src="${esc(p.lg || p.md)}" alt="" ${i ? 'loading="lazy" ' : ""}data-fit draggable="false"><span class="zb">${ic("zoom")}</span><figcaption>${esc(p.attr)}</figcaption></figure>`).join("");
+    fitImgs(g);
     const dots = $("#gdots");
     dots.innerHTML = ph.slice(0, 10).map((_, i) => `<i class="${i ? "" : "on"}"></i>`).join("");
     g.onscroll = () => { const i = Math.round(g.scrollLeft / g.clientWidth); $$("i", dots).forEach((d, j) => d.classList.toggle("on", i === j)); };
@@ -780,11 +1217,13 @@ async function ficheFill(t) {
     FICHE.snds = list;
     $("#fsnd").innerHTML = list.length ? list.map((s, i) => `<div class="srow"><button class="pl" data-act="fplay" data-i="${i}" aria-label="Écouter">${ic("play")}</button><span class="tx"><b>${esc(s.kind ? cap(s.kind) : "Enregistrement " + (i + 1))}${s.len ? " · " + esc(s.len) : ""}</b>${esc([s.place, s.attr].filter(Boolean).join(" · "))}</span>${s.page || s.uri ? `<a href="${esc(s.page || s.uri)}" target="_blank" rel="noopener" class="icon-btn" aria-label="Source">${ic("ext")}</a>` : ""}</div>`).join("") : `<p class="muted" style="font-size:14px">Pas d'enregistrement trouvé.${S.set.xc ? "" : " Ajoute une clé xeno-canto dans Réglages pour en avoir plus."}</p>`;
   });
-  wiki(t).then(w => {
-    if (!alive() || !w) return;
+  Promise.all([wikiDesc(t).catch(() => null), wiki(t).catch(() => null)]).then(([d, w]) => {
+    if (!alive() || (!d && !w)) return;
     $("#fwiki").hidden = false;
-    $("#fwikiTx").innerHTML = `${esc(w.text.length > 520 ? w.text.slice(0, 500).replace(/\s\S*$/, "") + "…" : w.text)} ${w.url ? `<a href="${esc(w.url)}" target="_blank" rel="noopener">Wikipédia</a>` : ""}`;
-  }).catch(() => {});
+    $("#fwikiH").textContent = d ? "Pour la reconnaître" : "Description";
+    const src = d || w;
+    $("#fwikiTx").innerHTML = `${esc(clip(src.text, d ? 900 : 520))} ${src.url ? `<a href="${esc(src.url)}" target="_blank" rel="noopener">Lire sur Wikipédia</a>` : ""}`;
+  });
   similar(t, null).then(list => {
     if (!alive()) return;
     FICHE.sim = list.slice(0, 10);
@@ -804,14 +1243,18 @@ function renderPheno(t, zone) {
 }
 function renderMap(t, view) {
   const V = { fr: { z: 5, xs: [15, 16], ys: [10, 11] }, eu: { z: 3, xs: [3, 4, 5], ys: [1, 2, 3] }, w: { z: 1, xs: [0, 1], ys: [0, 1] } }[view];
+  const st = MAPST[curStyle()], ly = layerAt(st, V.z), lab = st.lab && S.set.mapLab;
   let cells = "";
   V.ys.forEach((y, ry) => V.xs.forEach((x, rx) => {
     const area = `${ry + 1}/${rx + 1}`;
-    cells += `<img class="base" src="https://tile.openstreetmap.org/${V.z}/${x}/${y}.png" alt="" style="grid-area:${area}" loading="lazy">`;
+    cells += `<img class="base${st.inv ? " inv" : ""}" src="${esc(tileUrl(ly.u, V.z, x, y))}" data-alt="${esc(tileUrl(MAPST.nuit.layers[0].u, V.z, x, y))}" alt="" style="grid-area:${area}" loading="lazy" onerror="if(this.dataset.alt){this.src=this.dataset.alt;this.dataset.alt='';this.classList.add('inv')}">`;
+    if (lab) cells += `<img class="lab" src="${esc(tileUrl(MAPLAB.u, V.z, x, y))}" alt="" style="grid-area:${area}" loading="lazy" onerror="this.remove()">`;
     cells += `<img class="ov" src="https://api.inaturalist.org/v1/grid/${V.z}/${x}/${y}.png?taxon_id=${t.id}&color=%231FD1F2&quality_grade=research" alt="" style="grid-area:${area}" loading="lazy" onerror="this.remove()">`;
   }));
   const box = $("#fmap");
-  if (box) box.innerHTML = `<div class="tilemap" style="grid-template-columns:repeat(${V.xs.length},1fr)">${cells}</div>`;
+  if (box) box.innerHTML = `<div class="tilemap${st.light ? " light" : ""}" style="grid-template-columns:repeat(${V.xs.length},1fr)">${cells}</div>`;
+  const cap = $("#mapcap");
+  if (cap) cap.textContent = `Fond : ${st.cap} — points : observations iNaturalist`;
 }
 
 /* ---------- Son ---------- */
@@ -831,6 +1274,7 @@ function audioEl() {
     SND.el.addEventListener("ended", () => { SND.playing = false; setSndUI(); rowUI(); });
     SND.el.addEventListener("pause", () => { SND.playing = false; setSndUI(); rowUI(); });
     SND.el.addEventListener("playing", () => { SND.playing = true; setSndUI(); rowUI(); loop(); });
+    SND.el.addEventListener("error", () => { if (SND.mode === "el" && SND.url && !SND.row && SES?.q?.snd?.url === SND.url) mediaFail(SES.q, "Son indisponible"); else if (SND.row) toast("Ce son ne se lance pas."); });
   }
   return SND.el;
 }
@@ -1081,6 +1525,9 @@ const ACT = {
     if (k === "duel") { openDuelPicker(); return; }
     LASTCFG = modeCfg(k); startSession(LASTCFG);
   },
+  histplay: el => { const h = (S.hist || [])[+el.dataset.i]; if (h?.cfg) { LASTCFG = { ...h.cfg }; startSession(LASTCFG); } },
+  ftrain: el => { const f = +el.dataset.f; LASTCFG = { ...baseCfg(), title: famName(f) || "Famille", icon: "tree", taxa: [f], stim: photoStim(), size: 60 }; startSession(LASTCFG); },
+  csv: () => { download(`plumage-carnet-${dayKey()}.csv`, carnetCsv(), "text/csv;charset=utf-8"); toast("Carnet exporté (fichier CSV, ouvrable dans Excel)."); },
   fav: el => { const f = S.favs[+el.dataset.i]; if (f) { LASTCFG = { ...f.cfg }; startSession(LASTCFG); } },
   favdel: el => { S.favs.splice(+el.dataset.i, 1); save(); rerender(); },
   otd: () => openFiche(OTD),
@@ -1099,7 +1546,22 @@ const ACT = {
   aplay: el => { const q = SES?.q; const c = q?.choices?.[+el.dataset.i]; if (c?.snd) playRow(c.snd.url, el.closest(".achoice")); },
   fplay: el => { const s = FICHE.snds?.[+el.dataset.i]; if (s) { FICHE.playing = true; playRow(s.url, el.closest(".srow")); } },
   next: () => nextQuestion(),
+  replaceq: () => replaceQuestion(),
   geook: () => geoValidate(),
+  zoom: el => { if (el.querySelector(".mfail") || el.classList.contains("broken")) return; const z = zoomItems(el); openViewer(z.items, z.i); },
+  vclose: () => closeViewer(),
+  vgo: el => { if (VW) { const d = +el.dataset.d; vwShow(VW.i + d, d); } },
+  vfiche: el => { const t = taxonById(el.dataset.id); closeViewer(true); if (t) openFiche(t); },
+  mapfull: () => setMapFull(),
+  mapmenu: () => { const m = $("#mmenu"); if (m) m.hidden = !m.hidden; },
+  mapset: el => {
+    S.set.mapst = el.dataset.s; save();
+    $$("[data-act=mapset]").forEach(b => b.classList.toggle("on", b.dataset.s === S.set.mapst));
+    if (GMAP) setMapStyle(GMAP, S.set.mapst);
+    if (FICHE.t && $("#fmap") && !$("#layer").hidden) renderMap(FICHE.t, $("[data-act=mapz].on")?.dataset.v || "fr");
+    const mm = el.closest("#mmenu");
+    if (mm) mm.hidden = true;
+  },
   sugg: el => {
     const q = SES?.q;
     if (!q || q.done) return;
@@ -1152,9 +1614,14 @@ const ACT = {
   blaunch: async () => { try { const cfg = await builderCfg(getB()); LASTCFG = cfg; startSession(cfg); } catch (e) { toast("Familles indisponibles (réseau ?)."); } },
   bsave: async () => { try { const B = getB(), cfg = await builderCfg(B); S.favs.unshift({ title: cfg.title, cfg }); S.favs = S.favs.slice(0, 12); save(); toast("Enregistré dans « Mes quiz » sur l'accueil."); } catch (e) { toast("Enregistrement impossible."); } },
   cfilt: el => { CARNET.f = el.dataset.f; $$("[data-act=cfilt]").forEach(b => b.classList.toggle("on", b === el)); $("#cgrid").innerHTML = carnetGrid(); },
-  set: el => { const k = el.dataset.k; S.set[k] = el.dataset.v; save(); $$(`[data-act=set][data-k=${k}]`).forEach(b => b.classList.toggle("on", b === el)); },
+  set: el => { const k = el.dataset.k; S.set[k] = k === "goal" ? +el.dataset.v : el.dataset.v; save(); $$(`[data-act=set][data-k=${k}]`).forEach(b => b.classList.toggle("on", b === el)); },
   setk: el => { S.set.k = clamp(S.set.k + +el.dataset.d, 2, 6); save(); rerender(); },
-  toggle: el => { const k = el.dataset.k; S.set[k] = !S.set[k]; save(); el.classList.toggle("on", S.set[k]); el.setAttribute("aria-checked", S.set[k] ? "true" : "false"); if (k === "calm") document.body.classList.toggle("calm", S.set.calm); },
+  toggle: el => {
+    const k = el.dataset.k; S.set[k] = !S.set[k]; save();
+    $$(`[data-act=toggle][data-k=${k}]`).forEach(b => { b.classList.toggle("on", S.set[k]); b.setAttribute("aria-checked", S.set[k] ? "true" : "false"); });
+    if (k === "calm") document.body.classList.toggle("calm", S.set.calm);
+    if (k === "mapLab" || k === "mapIsl") mapExtras();
+  },
   ics: () => { icsFile(); toast("Ouvre le fichier pour ajouter le rappel quotidien à ton calendrier."); },
   export: () => { download(`plumage-sauvegarde-${dayKey()}.json`, JSON.stringify(S), "application/json"); toast("Sauvegarde téléchargée."); },
   reset: el => {
@@ -1164,6 +1631,8 @@ const ACT = {
 };
 
 function onClick(e) {
+  const mm = $("#mmenu");
+  if (mm && !mm.hidden && !e.target.closest("#mmenu,[data-act=mapmenu]")) mm.hidden = true;
   const el = e.target.closest("[data-act]");
   if (el) {
     if (el.disabled) return;
@@ -1174,6 +1643,11 @@ function onClick(e) {
   if (e.target.id === "layer") closeLayer();
 }
 function onKey(e) {
+  if (VW) {
+    if (e.key === "Escape") closeViewer();
+    else if (e.key === "ArrowRight" || e.key === "ArrowLeft") { const d = e.key === "ArrowRight" ? 1 : -1; vwShow(VW.i + d, d); }
+    return;
+  }
   const tg = e.target;
   if (tg && tg.matches && tg.matches("input, textarea")) { if (e.key === "Escape") tg.blur(); return; }
   if (e.key === "Escape") { if (!$("#layer").hidden) closeLayer(); return; }

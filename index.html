@@ -615,8 +615,10 @@ body.calm *,body.calm *::before,body.calm *::after{animation-duration:.01ms!impo
 
 .gstrip{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 calc(-1 * var(--gutter-r)) 0 0;padding-right:var(--gutter-r)}
 .gstrip::-webkit-scrollbar{display:none}
-.gstrip figure{position:relative;flex:none;width:72%;aspect-ratio:4/3;margin:0;border-radius:20px;overflow:hidden;scroll-snap-align:start;background:var(--card-2)}
-.gstrip img{width:100%;height:100%;object-fit:cover}
+.gstrip figure{position:relative;flex:none;width:auto;height:clamp(150px,27vh,250px);max-width:88%;aspect-ratio:4/3;margin:0;border-radius:20px;overflow:hidden;scroll-snap-align:start;background:var(--card-2);cursor:zoom-in}
+.gstrip img{width:100%;height:100%;object-fit:cover;transition:opacity .35s}
+.gstrip figure.ld img{opacity:0}
+.gstrip figure.broken{display:none}
 .gstrip .k{position:absolute;top:8px;left:8px;display:grid;place-items:center;width:26px;height:26px;border-radius:9px;font:600 12px var(--f-display);background:rgba(6,10,19,.7)}
 .gstrip figcaption{position:absolute;left:0;right:0;bottom:0;padding:18px 10px 8px;font-size:13px;font-weight:650;background:linear-gradient(180deg,transparent,rgba(6,10,19,.9));opacity:0;transition:opacity .4s}
 .gstrip.reveal figcaption{opacity:1}
@@ -626,9 +628,140 @@ body.calm *,body.calm *::before,body.calm *::after{animation-duration:.01ms!impo
 
 .georeveal .gstrip,.georeveal .prompt,.georeveal .hints{display:none}
 
-/* Fonds OpenStreetMap assombris pour coller au thème */
-.gmap .leaflet-tile-pane,.tilemap img.base{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.45)}
-.gmap.leaflet-container{background:#0B0F1A}
+/* Fond « Nuit » : OpenStreetMap assombri pour coller au thème */
+.gmap .tl-inv,.tilemap img.inv,.mst .th.inv{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.45)}
+.gmap.leaflet-container{background:#0B1830}
+.gmap.light.leaflet-container{background:#B9CFDC}
+
+.learn{margin-top:12px;display:flex;flex-direction:column;gap:10px}
+.lsec{padding:12px;border-radius:18px;background:rgba(255,255,255,.035);border:1px solid var(--line)}
+.lh{display:flex;align-items:center;gap:6px;margin-bottom:6px;font:600 11px/1 var(--f-ui);letter-spacing:.12em;text-transform:uppercase;color:var(--cyan)}
+.lsec p{margin:0;font-size:14px;line-height:1.5;color:#D3DAF0}
+.lfoot{display:flex;align-items:center;gap:8px;margin-top:8px}
+.lfoot small{flex:1;font-size:11px;color:var(--faint)}
+.lmore{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:700;color:var(--cyan)}
+.lsk{height:12px;border-radius:6px;background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(255,255,255,.12),rgba(255,255,255,.05));background-size:200% 100%;animation:shimmer 1.2s linear infinite;margin-top:8px}
+.lsk.short{width:60%}
+@keyframes shimmer{to{background-position:-200% 0}}
+.lsim{display:flex;gap:8px}
+.lsim button{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center}
+.lsim img{width:100%;max-width:84px;aspect-ratio:1;border-radius:14px;object-fit:cover;background:var(--card-2)}
+.lsim span{font-size:12px;font-weight:650;line-height:1.2}
+.fb .next{position:sticky;bottom:0;box-shadow:0 -10px 24px rgba(11,17,31,.9)}
+.hist{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.hist span{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--muted)}
+.hist .fieldok{color:var(--good)}
+
+.lastp{display:flex;align-items:center;gap:12px;width:100%;margin-top:10px;padding:12px 14px;border-radius:20px;text-align:left;background:var(--card);border:1px solid var(--line);transition:transform .15s}
+.lastp:active{transform:scale(.98)}
+.lastp .ic{display:grid;place-items:center;width:40px;height:40px;border-radius:13px;background:rgba(31,209,242,.12);color:var(--cyan);flex:none}
+.lastp .tx{flex:1;min-width:0;display:flex;flex-direction:column}
+.lastp small{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lastp b{font-size:15px;font-weight:700;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lastp .tx span{font-size:12.5px;color:var(--muted)}
+.lastp .go{display:flex;align-items:center;gap:5px;font:600 12px var(--f-display);color:var(--cyan)}
+.lastp .go .i{width:16px;height:16px}
+.goalc{padding:14px}
+.goalc small{display:block;margin-top:8px;font-size:12.5px;color:var(--muted)}
+.hbar.fam{grid-template-columns:minmax(0,1fr) 80px 40px auto}
+.hbar.fam .t{flex-direction:column;align-items:flex-start;gap:1px;color:var(--text);font-weight:600}
+.hbar.fam .t small{font-size:11px;color:var(--muted);font-weight:500}
+.hbar.fam .chip{height:28px;font-size:11.5px}
+.ctile .av{position:relative}
+.ctile .fld{position:absolute;right:2px;bottom:2px;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--good);color:#04170E;border:2px solid var(--bg)}
+
+.mfail{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:16px;background:rgba(6,10,19,.82);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border-radius:inherit}
+.mfail .i{width:36px;height:36px;color:var(--muted)}
+.mfail b{font:600 16px var(--f-display)}
+.lastp small{text-transform:none;letter-spacing:0;font-size:12px}
+
+/* ---------- Photos : cadrage adaptatif, badge zoom ---------- */
+.zb{position:absolute;z-index:2;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;color:#fff;background:rgba(6,10,19,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);pointer-events:none}
+.zb .i{width:16px;height:16px}
+.gstrip .zb{top:8px;right:8px}
+.shot{cursor:zoom-in}
+.shot .zb{right:17px;bottom:17px;opacity:0;transition:opacity .4s .5s}
+.shot.loaded .zb{opacity:.92}
+.gallery figure{overflow:hidden;cursor:zoom-in}
+.gallery .zb{right:12px;bottom:10px}
+.compare figure{cursor:zoom-in}
+.shot img,.gstrip img,.gallery img,.compare img,.tchoice img,.gthumbs img,.gsp img{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.fitc{background:#0B0F1A}
+.fitc::before{content:"";position:absolute;inset:-16px;background:var(--bgi) center/cover no-repeat;filter:blur(14px) brightness(.5) saturate(1.2)}
+.fitc > img{position:relative;object-fit:contain!important}
+
+/* Géo : les 5 oiseaux après la réponse */
+.gsp{display:flex;gap:8px;margin-top:12px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.gsp::-webkit-scrollbar{display:none}
+.gsp button{flex:none;width:84px;display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center}
+.gsp img{width:84px;height:84px;border-radius:16px;object-fit:cover;background:var(--card-2);border:1px solid var(--line)}
+.gsp span{font-size:12px;font-weight:650;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.gsp button:active img{transform:scale(.95)}
+
+/* ---------- Carte Géo : fonds, îles, plein écran ---------- */
+.gwrap{position:relative}
+.gmap{position:relative;z-index:0}
+.gctl{position:absolute;top:10px;right:10px;z-index:3;display:flex;flex-direction:column;gap:8px}
+.mbtn{display:grid;place-items:center;width:40px;height:40px;border-radius:13px;color:var(--text);background:rgba(6,10,19,.72);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid var(--line-2);box-shadow:0 6px 18px rgba(0,0,0,.35);transition:transform .15s}
+.mbtn:active{transform:scale(.92)}
+.mbtn .i{width:20px;height:20px}
+.mmenu{position:absolute;top:10px;right:58px;z-index:4;width:min(330px,calc(100% - 68px));padding:10px;border-radius:18px;background:rgba(9,14,26,.94);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--line-2);box-shadow:0 18px 40px rgba(0,0,0,.5);animation:viewIn .22s var(--ease) both}
+.mst{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;width:100%}
+.mst button{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
+.mst .th{display:block;width:100%;aspect-ratio:1;border-radius:12px;background-color:#0B1830;background-position:center;background-size:cover;background-repeat:no-repeat;border:2px solid transparent;transition:border-color .2s,transform .15s}
+.mst button:active .th{transform:scale(.94)}
+.mst button.on .th{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(31,209,242,.2)}
+.mst small{font-size:11px;font-weight:650;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.mst button.on small{color:var(--text)}
+.set .mst{max-width:420px}
+.mtg{display:flex;gap:6px;margin-top:10px}
+.mtg .chip{flex:1;justify-content:center;height:34px;opacity:.5;transition:opacity .2s}
+.mtg .chip.on{opacity:1;border-color:rgba(31,209,242,.5)}
+.gthumbs{display:none}
+.gwrap.full{position:fixed;inset:0;z-index:45;padding:calc(env(safe-area-inset-top,0px) + 8px) 8px calc(env(safe-area-inset-bottom,0px) + 84px);background:var(--bg,#060A13)}
+.gwrap.full .gmap{height:100%;border-radius:18px}
+.gwrap.full .gctl{top:calc(env(safe-area-inset-top,0px) + 18px);right:18px}
+.gwrap.full .mmenu{top:calc(env(safe-area-inset-top,0px) + 18px);right:66px}
+.gwrap.full .gthumbs{display:flex;position:absolute;z-index:3;left:18px;top:calc(env(safe-area-inset-top,0px) + 18px);gap:6px}
+.gthumbs button{width:min(46px,11vw);aspect-ratio:1;border-radius:12px;overflow:hidden;border:2px solid rgba(255,255,255,.75);box-shadow:0 6px 16px rgba(0,0,0,.45);background:var(--card-2)}
+.gthumbs img{width:100%;height:100%;object-fit:cover}
+body.gfull #gok{position:fixed;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom,0px) + 16px);z-index:46;width:auto;margin:0!important}
+#gok span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gmap .leaflet-tooltip.isl-lbl{background:none;border:0;box-shadow:none;padding:0 3px;font:600 10.5px/1.2 var(--f-ui);color:#CFF8FF;text-shadow:0 0 3px #000,0 0 7px rgba(0,0,0,.9)}
+.gmap .leaflet-tooltip.isl-lbl::before{display:none}
+.gmap.zlo .leaflet-tooltip.isl-lbl,.gmap .leaflet-tooltip.isl-lbl.hid{display:none}
+body.gfull .view{animation:none}
+.gmap.light .leaflet-tooltip.isl-lbl{color:#063F52;text-shadow:0 0 3px #fff,0 0 7px #fff}
+.tilemap .lab{pointer-events:none}
+.tilemap.light .ov{mix-blend-mode:normal}
+
+/* ---------- Visionneuse HD ---------- */
+.viewer{position:fixed;inset:0;z-index:200;opacity:0;transition:opacity .22s;touch-action:none;overscroll-behavior:contain;-webkit-user-select:none;user-select:none}
+.viewer.on{opacity:1}
+.viewer::before{content:"";position:absolute;inset:0;background:#03050A;opacity:var(--vbg,1)}
+.vw-stage{position:absolute;inset:0;overflow:hidden;touch-action:none;cursor:zoom-in}
+.viewer.zoomed .vw-stage{cursor:grab}
+.vw-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform-origin:50% 50%;will-change:transform;-webkit-user-drag:none}
+.vw-spin{position:absolute;left:50%;top:50%;margin:-17px;opacity:0;transition:opacity .2s;pointer-events:none}
+.viewer.loading .vw-spin{opacity:1}
+.vw-top{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 20px;background:linear-gradient(rgba(3,5,10,.75),transparent);pointer-events:none}
+.vw-top > *{pointer-events:auto}
+.vw-top .sp{flex:1;pointer-events:none}
+.vw-top .icon-btn{background:rgba(6,10,19,.55);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.vw-n{font:600 13px var(--f-display);color:var(--muted);padding-left:6px}
+.vw-hd{display:inline-flex;align-items:center;height:22px;padding:0 7px;border-radius:7px;font:700 10px/1 var(--f-display);letter-spacing:.08em;color:#04170E;background:var(--good);opacity:0;transform:scale(.8);transition:opacity .3s,transform .3s var(--spring)}
+.viewer.hd .vw-hd{opacity:1;transform:none}
+.vw-cap{position:absolute;left:0;right:0;bottom:0;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px 10px;padding:34px 16px calc(env(safe-area-inset-bottom,0px) + 14px);text-align:center;background:linear-gradient(transparent,rgba(3,5,10,.86));pointer-events:none;transition:opacity .2s}
+.vw-cap:empty{display:none}
+.vw-cap b{font:700 16px var(--f-display)}
+.vw-cap .latin{font-size:17px;color:var(--muted)}
+.vw-cap small{flex-basis:100%;font-size:11px;color:rgba(255,255,255,.62)}
+.vw-cap .chip{pointer-events:auto}
+.viewer.zoomed .vw-cap,.viewer.zoomed .vw-nav{opacity:0;pointer-events:none}
+.vw-nav{position:absolute;top:50%;margin-top:-23px;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;color:#fff;background:rgba(255,255,255,.1);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);transition:opacity .2s}
+.vw-nav.prev{left:12px}.vw-nav.next{right:12px}
+@media (hover:none){.vw-nav{display:none}}
+body.vwopen{overflow:hidden}
 
 </style>
 </head>
@@ -693,6 +826,11 @@ body.calm *,body.calm *::before,body.calm *::after{animation-duration:.01ms!impo
   <symbol id="i-type" viewBox="0 0 24 24"><path d="M3.5 18L8 6l4.5 12M5.2 13.8h5.6M15 10.6c.8-.6 1.7-1 2.6-1 1.6 0 2.4 1 2.4 2.6V18M20 14.4c-2.8 0-5 .6-5 2.1 0 1 .8 1.5 1.9 1.5 1.6 0 3.1-1.1 3.1-3.6"/></symbol>
   <symbol id="i-sun" viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
   <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24"><path d="M14.5 4H20v5.5M20 4l-6.5 6.5M9.5 20H4v-5.5M4 20l6.5-6.5"/></symbol>
+  <symbol id="i-shrink" viewBox="0 0 24 24"><path d="M20 4l-6 6M14 4.8V10h5.2M4 20l6-6M10 19.2V14H4.8"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3.5l8.5 4.6-8.5 4.6-8.5-4.6L12 3.5zM3.5 12.2l8.5 4.6 8.5-4.6M3.5 16.2l8.5 4.6 8.5-4.6"/></symbol>
+  <symbol id="i-zoom" viewBox="0 0 24 24"><path d="M10.8 4.5a6.3 6.3 0 1 0 0 12.6 6.3 6.3 0 0 0 0-12.6zM19.5 19.5l-4.2-4.2M10.8 8.2v5.2M8.2 10.8h5.2"/></symbol>
+  <symbol id="i-isle" viewBox="0 0 24 24"><path d="M3 19.5c1.5.9 3 .9 4.5 0s3-.9 4.5 0 3 .9 4.5 0 3-.9 4.5 0M6.5 16.5c1.2-2.2 3.2-3.4 5.5-3.4s4.3 1.2 5.5 3.4M12 13.1c.4-3.2-.2-6-1.6-8.1M10.4 5c-1.8-.8-3.9-.4-5.2 1M10.4 5c1.9-1 4.1-.8 5.6.6M10.4 5c-.4 1.9.1 3.6 1.4 4.8"/></symbol>
 </svg>
 
 <div class="sky" aria-hidden="true"></div>
@@ -1239,6 +1377,50 @@ const ORDER_FR = {
 const MONTHS = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
 const MONTHS_LONG = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
 
+/* Îles à mettre en évidence sur la carte Géo : [nom, lat, lng, taille approx. en km].
+   Un anneau s'affiche tant que l'île est trop petite pour être vue ; le toucher place le pin dessus. */
+const ISLANDS = [
+  // Atlantique Nord-Est et mers du Nord
+  ["Tenerife", 28.27, -16.6, 80], ["Madère", 32.75, -16.96, 55], ["São Miguel", 37.78, -25.48, 65], ["Pico · Faial", 38.5, -28.4, 45], ["Terceira", 38.72, -27.22, 30], ["Flores (Açores)", 39.44, -31.2, 17],
+  ["Gran Canaria", 27.95, -15.6, 50], ["Fuerteventura", 28.4, -14.0, 100], ["Lanzarote", 29.04, -13.63, 60], ["La Palma", 28.68, -17.86, 45], ["El Hierro", 27.74, -18.02, 27], ["La Gomera", 28.1, -17.23, 25],
+  ["Santiago (Cap-Vert)", 15.08, -23.63, 55], ["Sal (Cap-Vert)", 16.73, -22.93, 30], ["Santo Antão", 17.07, -25.17, 40],
+  ["Ouessant", 48.46, -5.09, 8], ["Scilly", 49.93, -6.32, 15], ["Heligoland", 54.18, 7.88, 2], ["Fair Isle", 59.53, -1.63, 5], ["Féroé", 62.0, -6.85, 110], ["Shetland", 60.35, -1.25, 110], ["Orcades", 59.0, -3.0, 80], ["Hébrides", 57.75, -7.0, 200], ["Jan Mayen", 70.98, -8.5, 55],
+  ["Gotland", 57.5, 18.55, 170], ["Öland", 56.75, 16.65, 130], ["Bermudes", 32.32, -64.76, 25], ["Saint-Pierre-et-Miquelon", 46.95, -56.3, 40],
+  // Méditerranée
+  ["Corse", 42.15, 9.1, 180], ["Sardaigne", 40.05, 9.05, 270], ["Sicile", 37.55, 14.15, 280], ["Majorque", 39.62, 2.99, 100], ["Minorque", 39.95, 4.1, 50], ["Ibiza", 38.98, 1.43, 40],
+  ["Malte", 35.92, 14.41, 27], ["Lampedusa", 35.51, 12.6, 10], ["Crète", 35.24, 24.85, 260], ["Chypre", 35.1, 33.3, 220], ["Lesbos", 39.17, 26.33, 70], ["Rhodes", 36.17, 27.92, 75],
+  // Afrique et Atlantique Sud
+  ["Bijagos", 11.3, -15.9, 100], ["São Tomé", 0.23, 6.6, 50], ["Príncipe", 1.61, 7.4, 17], ["Bioko", 3.55, 8.75, 70],
+  ["Ascension", -7.95, -14.36, 12], ["Sainte-Hélène", -15.96, -5.71, 15], ["Tristan da Cunha", -37.11, -12.29, 12], ["Gough", -40.32, -9.94, 13], ["Bouvet", -54.42, 3.36, 9],
+  ["Fernando de Noronha", -3.85, -32.42, 10], ["Trindade", -20.51, -29.33, 6],
+  ["Malouines", -51.8, -59.5, 250], ["Géorgie du Sud", -54.43, -36.6, 170], ["Sandwich du Sud", -57.75, -26.5, 40], ["Orcades du Sud", -60.6, -45.5, 80], ["Shetland du Sud", -62.05, -58.4, 200],
+  // Océan Indien
+  ["Réunion", -21.12, 55.53, 60], ["Maurice", -20.25, 57.55, 55], ["Rodrigues", -19.72, 63.42, 18], ["Seychelles (Mahé)", -4.68, 55.49, 30], ["Aldabra", -9.42, 46.34, 34],
+  ["Mayotte", -12.82, 45.15, 40], ["Grande Comore", -11.7, 43.33, 60], ["Anjouan", -12.21, 44.43, 35],
+  ["Maldives", 4.17, 73.5, 10], ["Sri Lanka", 7.85, 80.75, 430], ["Socotra", 12.46, 53.82, 130], ["Bahreïn", 26.05, 50.55, 40],
+  ["Andaman", 11.7, 92.7, 150], ["Nicobar", 7.0, 93.8, 100], ["Chagos", -7.31, 72.41, 20], ["Laquedives", 10.57, 72.64, 15],
+  ["Kerguelen", -49.35, 69.5, 150], ["Crozet", -46.42, 51.8, 100], ["Amsterdam", -37.83, 77.55, 9], ["Prince-Édouard", -46.9, 37.75, 30], ["Heard", -53.1, 73.52, 40],
+  ["Christmas", -10.49, 105.62, 19], ["Cocos (Keeling)", -12.16, 96.87, 15],
+  // Asie
+  ["Taïwan", 23.7, 120.95, 390], ["Okinawa", 26.5, 127.95, 100], ["Ishigaki", 24.34, 124.16, 30], ["Jeju", 33.38, 126.55, 70], ["Hainan", 19.2, 109.7, 250], ["Palawan", 9.83, 118.74, 420],
+  ["Bali", -8.34, 115.09, 140], ["Flores", -8.66, 121.08, 360], ["Sumba", -9.65, 119.98, 200], ["Timor", -9.2, 125.0, 470], ["Halmahera", 0.63, 127.95, 300], ["Seram", -3.12, 129.5, 340],
+  // Pacifique Nord
+  ["Kouriles", 45.0, 147.7, 200], ["Attu", 52.88, 172.97, 60], ["Adak", 51.8, -176.6, 50], ["Unalaska", 53.87, -166.54, 80], ["Pribilof", 57.15, -170.27, 20], ["Kodiak", 57.47, -153.43, 160],
+  ["Haida Gwaii", 53.0, -132.0, 250], ["Wrangel", 71.24, -179.42, 150], ["Midway", 28.21, -177.37, 6],
+  ["Kauai", 22.05, -159.52, 50], ["Oahu", 21.47, -157.97, 60], ["Maui", 20.8, -156.31, 70], ["Hawaï (Grande Île)", 19.59, -155.43, 150],
+  ["Guam", 13.45, 144.78, 50], ["Saipan", 15.19, 145.75, 20], ["Palaos", 7.5, 134.6, 40], ["Pohnpei", 6.88, 158.22, 25], ["Kiritimati", 1.87, -157.36, 50],
+  // Pacifique Sud
+  ["Galápagos", -0.65, -90.4, 130], ["Île Cocos", 5.53, -87.06, 5], ["Île de Pâques", -27.12, -109.35, 20], ["Juan Fernández", -33.62, -78.83, 20],
+  ["Tahiti", -17.65, -149.43, 45], ["Marquises", -8.86, -140.14, 30], ["Rangiroa", -15.12, -147.65, 75], ["Gambier", -23.12, -134.97, 25], ["Pitcairn", -25.07, -130.1, 5], ["Rarotonga", -21.23, -159.78, 11],
+  ["Samoa", -13.75, -172.1, 150], ["Tonga", -21.17, -175.2, 40], ["Fidji", -17.8, 178.0, 150], ["Vanuatu", -16.25, 167.5, 120], ["Nouvelle-Calédonie", -21.3, 165.4, 400], ["Salomon", -9.6, 160.1, 150],
+  ["Lord Howe", -31.55, 159.08, 10], ["Norfolk", -29.03, 167.95, 8], ["Tasmanie", -42.0, 146.6, 300],
+  ["Chatham", -43.95, -176.55, 50], ["Îles Auckland", -50.7, 166.1, 40], ["Campbell", -52.54, 169.15, 15], ["Macquarie", -54.62, 158.86, 34],
+  // Caraïbes
+  ["Jamaïque", 18.11, -77.3, 230], ["Porto Rico", 18.22, -66.59, 180], ["Bahamas (Nassau)", 25.05, -77.4, 40], ["Andros", 24.43, -77.95, 160], ["Caïmans", 19.32, -81.24, 35], ["Dry Tortugas", 24.63, -82.87, 10],
+  ["Guadeloupe", 16.25, -61.58, 70], ["Martinique", 14.64, -61.02, 65], ["Dominique", 15.42, -61.35, 45], ["Sainte-Lucie", 13.9, -60.97, 40], ["Barbade", 13.19, -59.54, 33],
+  ["Trinité", 10.44, -61.25, 80], ["Tobago", 11.25, -60.67, 40], ["Curaçao", 12.17, -68.99, 60], ["Grenade", 12.11, -61.68, 30], ["Saint-Martin", 18.07, -63.05, 15]
+];
+
 /* ---- core.js ---- */
 "use strict";
 /* ============================================================
@@ -1291,7 +1473,8 @@ const defaults = () => ({
   best: { combo: 0 }, favs: [],
   set: {
     zone: { id: 6753, name: "France" }, fmt: "qcm", names: "both", k: 5, diff: "moyen", photo: "ref",
-    sfx: true, calm: false, sono: true, inat: "", xc: "", remind: "19:30", builder: null
+    goal: 150, sfx: true, calm: false, sono: true, inat: "", xc: "", remind: "19:30", builder: null,
+    mapst: "relief", mapLab: true, mapIsl: true
   }
 });
 function loadState() {
@@ -1622,6 +1805,49 @@ async function lexRemote(q) {
   return out;
 }
 
+/* ---------- Espèces vues sur le terrain (observations iNaturalist de l'utilisateur) ---------- */
+const FIELD = { ids: new Set(), who: "" };
+async function loadField() {
+  const who = S.set.inat;
+  if (!who) { FIELD.ids = new Set(); FIELD.who = ""; return FIELD.ids; }
+  if (FIELD.who === who) return FIELD.ids;
+  const list = await cached("mine:" + who, DAY, async () => {
+    const d = await inat("/observations/species_counts", { taxon_id: 3, user_login: who, per_page: 500 });
+    return (d.results || []).map(r => r.taxon?.id).filter(Boolean);
+  });
+  FIELD.ids = new Set(list || []); FIELD.who = who;
+  return FIELD.ids;
+}
+function ago(t) {
+  const m = Math.round((Date.now() - t) / 60000);
+  if (m < 2) return "à l'instant";
+  if (m < 60) return `il y a ${m} min`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `il y a ${h} h`;
+  const d = Math.round(h / 24);
+  return d === 1 ? "hier" : `il y a ${d} j`;
+}
+function periodStats(days) {
+  const tn = todayNum(), o = { xp: 0, q: 0, ok: 0, active: 0 };
+  for (let n = tn - days + 1; n <= tn; n++) { const d = S.days[keyOfNum(n)]; if (d) { o.xp += d.xp || 0; o.q += d.q || 0; o.ok += d.ok || 0; if (d.q) o.active++; } }
+  return o;
+}
+function familyStats() {
+  const m = new Map();
+  for (const r of Object.values(S.sp)) {
+    if (!r.n || !r.f) continue;
+    const x = m.get(r.f) || { f: r.f, n: 0, ok: 0, sp: 0 };
+    x.n += r.n; x.ok += r.ok; x.sp++;
+    m.set(r.f, x);
+  }
+  return [...m.values()].filter(x => x.n >= 4).map(x => ({ ...x, p: x.ok / x.n }));
+}
+function carnetCsv() {
+  const rows = [["Nom français", "Nom latin", "Famille", "Ordre", "Fois vue", "Réussite (%)", "Étoiles", "Première rencontre", "Dernière réussite", "Vue sur le terrain", "Mon astuce"]];
+  for (const [id, r] of Object.entries(S.sp)) if (r.n > 0) rows.push([r.fr, r.sci, famName(r.f), ordName(r.o), r.n, Math.round(100 * r.ok / r.n), stars(r), r.first || "", r.lastOk || "", FIELD.ids.has(+id) ? "oui" : "", r.note || ""]);
+  return "\ufeff" + rows.map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(";")).join("\r\n");
+}
+
 /* ---------- Médias ---------- */
 const DET = new Map();
 let V2 = true;
@@ -1759,6 +1985,36 @@ function wiki(t) {
     return null;
   });
 }
+/* Section « Description / Identification » de l'article Wikipédia (critères de reconnaissance) */
+function pickSection(txt, names) {
+  const re = /\n(==+)\s*([^=\n]+?)\s*==+\n/g, heads = [];
+  let m;
+  while ((m = re.exec(txt))) heads.push({ lvl: m[1].length, name: m[2].trim(), start: m.index, body: re.lastIndex });
+  for (const nm of names) {
+    const h = heads.find(x => norm(x.name).startsWith(norm(nm)));
+    if (!h) continue;
+    const next = heads.find(x => x.start > h.start && x.lvl <= h.lvl);
+    const body = txt.slice(h.body, next ? next.start : undefined).replace(/\n==+\s*[^=\n]+?\s*==+\n/g, "\n").replace(/\n{2,}/g, "\n").trim();
+    if (body.length > 60) return body;
+  }
+  return null;
+}
+function wikiDesc(t) {
+  return memo("wdesc:" + t.id, async () => {
+    const one = async title => {
+      const d = await getJSON("https://fr.wikipedia.org/w/api.php?action=query&prop=extracts&explaintext=1&redirects=1&format=json&origin=*&titles=" + encodeURIComponent(title), { tries: 1, timeout: 10000 });
+      const pg = Object.values(d?.query?.pages || {})[0];
+      if (!pg || pg.missing !== undefined || !pg.extract) throw new Error("vide");
+      return pg;
+    };
+    let pg = null;
+    try { pg = await one(t.sci); } catch (e) { if (t.fr) { try { pg = await one(t.fr); } catch (e2) { /* rien */ } } }
+    if (!pg) return null;
+    const sec = pickSection(pg.extract, ["Description", "Identification", "Morphologie", "Caractéristiques", "Aspect"]);
+    return sec ? { text: sec, url: "https://fr.m.wikipedia.org/wiki/" + encodeURIComponent(pg.title.replace(/ /g, "_")), title: pg.title } : null;
+  });
+}
+const clip = (s, n) => { s = String(s || "").replace(/\s+/g, " ").trim(); if (s.length <= n) return s; const cut = s.slice(0, n); const dot = cut.lastIndexOf(". "); return (dot > n * .5 ? cut.slice(0, dot + 1) : cut.replace(/\s\S*$/, "") + "…"); };
 const XCTYPE = { song: "chant", call: "cri", "flight call": "cri en vol", "alarm call": "alarme", drumming: "tambourinage", "begging call": "quémande", subsong: "babil", "nocturnal flight call": "cri nocturne" };
 async function xcList(t) {
   if (!S.set.xc) return null;
@@ -1988,7 +2244,7 @@ async function prepare(ses) {
     ses.len = ses.plan.length;
     photosFor([A.id, B.id]).catch(() => {});
   } else if (ses.kind === "geo") {
-    await ensureLeaflet();
+    try { await ensureLeaflet(); } catch (e) { ses.geoQcm = true; }
   } else if (ses.kind === "root") {
     ses.pool = { list: Object.keys(S.sp).map(fromRec).filter(Boolean), byId: new Map() };
   }
@@ -2078,7 +2334,7 @@ function randomSpec(ses) {
 async function buildNext(ses) {
   if (ses.ended || (ses.len && ses.built >= ses.len)) return null;
   const idx = ses.built;
-  let spec = ses.plan ? ses.plan[idx] : randomSpec(ses);
+  let spec = (ses.plan && ses.plan[idx]) || randomSpec(ses);
   for (let attempt = 0; attempt < 5 && spec; attempt++) {
     const q = await buildQ(ses, spec);
     if (q) { q.idx = idx; ses.built = idx + 1; warm(q); return q; }
@@ -2250,20 +2506,32 @@ async function buildGeo(ses) {
       const t = n.taxon, ph = (n.photos || []).find(p => p && p.url);
       if (!t || !ph || t.rank !== "species" || seen.has(t.id)) continue;
       seen.add(t.id);
-      sp.push({ id: t.id, fr: cap(t.preferred_common_name || t.name), sci: t.name, img: sizeUrl(ph.url, "medium"), attr: ph.attribution || "" });
+      sp.push({ id: t.id, fr: cap(t.preferred_common_name || t.name), sci: t.name, img: sizeUrl(ph.url, "medium"), lg: sizeUrl(ph.url, "large"), hd: sizeUrl(ph.url, "original"), attr: ph.attribution || "" });
       const l = parseLoc(n); if (l) pts.push(l);
       if (sp.length >= 5) break;
     }
     if (sp.length < 5) continue;
-    sp.forEach(s => preload(s.img));
+    sp.forEach(s => preload(s.lg));
     const lat = pts.reduce((a, p) => a + p[0], 0) / pts.length || loc[0], lng = pts.reduce((a, p) => a + p[1], 0) / pts.length || loc[1];
     const place = (near.results.find(n => n.place_guess) || o).place_guess || "";
     const country = place.split(",").pop().trim();
     const hints = [{ ic: "globe", tx: lat >= 0 ? "Hémisphère nord" : "Hémisphère sud" }];
     if (country) hints.push({ ic: "pin", tx: "Pays : " + country });
+    if (ses.geoQcm) {
+      const k = continentOf(lat, lng);
+      return { kind: "geo", lat, lng, place, sp, cont: k, format: "qcm", level: "geo", hintsUsed: 0, hints, k: 6,
+        choices: CONTINENTS.map(c => ({ key: "c" + c.k, label: c.n })), answerKey: "c" + k };
+    }
     return { kind: "geo", lat, lng, place, sp, format: "map", level: "geo", hintsUsed: 0, hints, answerKey: "map" };
   }
   return null;
+}
+function continentOf(la, ln) {
+  if (ln < -25 && ln > -170) return la > 12 ? "na" : "sa";
+  if (ln <= -170 || (ln >= 110 && la < -10) || (ln >= 130 && la < 0)) return "oc";
+  if (la > 36 && ln >= -25 && ln < 45) return "eu";
+  if (la <= 36 && la > -40 && ln >= -25 && ln < 52) return (la > 29 && ln > 34) ? "as" : "af";
+  return "as";
 }
 function haversine(a, b) {
   const R = 6371, r = x => x * Math.PI / 180;
@@ -2343,7 +2611,7 @@ function checkTyped(str, q) {
   return { ok: false };
 }
 function xpFor(ses, q, res, ms) {
-  if (q.kind === "geo") return res.geoPts || 0;
+  if (q.kind === "geo") return q.format === "map" ? (res.geoPts || 0) : (res.ok ? 40 : 0);
   if (!res.ok) return res.partial ? 3 : 0;
   let x = q.kind === "root" ? 7 : 10;
   const nC = q.choices?.length || q.k || 5;
@@ -2374,7 +2642,7 @@ function settle(res) {
   if (q.kind === "taxon") {
     const r = rec(q.t);
     if (!r.n) ses.newSp.push(q.t.id);
-    r.n++; if (ok) r.ok++;
+    r.n++; if (ok) { r.ok++; r.lastOk = dayKey(); }
     r.last = dayKey();
     const mod = (q.stim === "son" || q.stim === "soncho") ? "son" : (q.stim === "fr" || q.stim === "la") ? "nom" : "photo";
     if (q.level === "species") srsUpdate(r, mod, ok, (q.hintsUsed || 0) > 0);
@@ -2438,7 +2706,7 @@ function showQuestion(q) {
   mountQuestion(q);
   q.t0 = Date.now();
   const more = !(ses.len && ses.built >= ses.len);
-  ses.nextP = more ? buildNext(ses).catch(e => ({ err: e })) : null;
+  if (!ses.nextP && more) ses.nextP = buildNext(ses).catch(e => ({ err: e }));
 }
 
 function endSession(aborted) {
@@ -2457,6 +2725,7 @@ function endSession(aborted) {
     if (h < 8) count("early");
     if (h >= 22) count("night");
     if (ses.kind === "duel" && n >= 6 && ok >= n - 1) count("duelwin");
+    S.hist = [{ t: Date.now(), title: ses.title || "", kind: ses.kind, n, ok, xp: ses.xp, cfg: ses.cfg }, ...(S.hist || [])].slice(0, 30);
     if (n >= 3) {
       const m = markPlayed();
       if (m) msgs.push(m);
@@ -2467,6 +2736,7 @@ function endSession(aborted) {
       today().serie = 1;
     }
   }
+  if (n && S.hist && S.hist[0]) S.hist[0].xp = ses.xp;
   const badges = checkBadges();
   const L = level();
   if (L.n > ses.lvl0 && !ses.lvlNow) { setTimeout(() => { sfx.lvl(); confetti(); }, 500); }
@@ -2482,11 +2752,13 @@ function endSession(aborted) {
    ============================================================ */
 let VIEW = "home", VDATA = null, OTD = null, LASTCFG = null, SILENT = "";
 const OKW = ["Exact !", "Bien vu !", "Bravo !", "Parfait !", "Dans le mille !", "Yes !"];
-const BADW = ["Raté…", "Pas cette fois", "Oups !", "Presque…"];
+const BADW = ["Raté…", "Pas cette fois", "Oups !", "Raté, retiens-la !"];
 const VIEWS = {}, MOUNT = {};
 
 function go(v, data) {
   if (VIEW === "quiz" && v !== "quiz") { sndStop(); clearQTimer(); hideFeedback(); }
+  closeViewer(true);
+  document.body.classList.remove("gfull");
   VIEW = v; VDATA = data;
   document.body.classList.toggle("inquiz", ["quiz", "loading", "result", "error", "builder"].includes(v));
   $$("#nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === v));
@@ -2529,6 +2801,7 @@ function floatXp(n) {
 let FXID = 0;
 function stopFx() { FXID++; const cv = $("#fx"); if (cv) cv.getContext("2d").clearRect(0, 0, cv.width, cv.height); }
 function confetti(n = 90) {
+  if (VIEW !== "result" && VIEW !== "quiz") return;
   if (S.set.calm || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
   const id = ++FXID;
   const cv = $("#fx"), dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -2594,7 +2867,8 @@ async function pickZone(zk, apply) {
 /* ---------- Accueil ---------- */
 VIEWS.home = () => {
   const L = level(), st = liveStreak(), d = S.days[dayKey()], done = !!d?.serie, due = dueList().length;
-  const goal = done ? 1 : clamp((d?.xp || 0) / 150, 0, 1), C = 2 * Math.PI * 66;
+  const goal = done ? 1 : clamp((d?.xp || 0) / (S.set.goal || 150), 0, 1), C = 2 * Math.PI * 66;
+  const last = (S.hist || [])[0];
   const hot = !playedToday() && new Date().getHours() >= 17;
   return `<section class="view home">
   <header class="hud">
@@ -2608,8 +2882,8 @@ VIEWS.home = () => {
     <div class="orb-wrap"><button class="orb ${done ? "done" : ""}" data-act="daily" aria-label="Lancer la série du jour">
       <svg class="ring" viewBox="0 0 148 148" aria-hidden="true"><circle class="track" cx="74" cy="74" r="66"/><circle class="prog" cx="74" cy="74" r="66" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - goal)).toFixed(1)}"/></svg>
       <span class="core">${ic(done ? "check" : "play")}</span></button></div>
-    <h1>${done ? "Série bouclée !" : "12 questions, 4 minutes"}</h1>
-    <div class="sub">${done ? "Rejoue quand tu veux, ou change de mode." : `Photos, chants, latin et familles · ${esc(zoneLabel(S.set.zone))}`}</div>
+    <h1>${done ? "Série bouclée !" : "12 questions, sans chrono"}</h1>
+    <div class="sub">${done ? "Rejoue quand tu veux, ou change de mode." : `Environ 4 min · photos, chants, latin, familles · ${esc(zoneLabel(S.set.zone))}`}</div>
     <div class="mix" aria-hidden="true"><span>${ic("frame")}</span><span>${ic("wave")}</span><span>${ic("quill")}</span><span>${ic("tree")}</span><span>${ic("duel")}</span></div>
     <button class="otd" id="otd" data-act="otd" hidden><img alt=""><span><small>Oiseau du jour</small><b></b></span>${ic("arrow")}</button>
   </div>
@@ -2617,6 +2891,7 @@ VIEWS.home = () => {
     <button class="qbtn" data-act="mini"><span class="ic">${ic("bolt")}</span><span><b>Mini-série</b><small>3 questions, 1 min</small></span></button>
     <button class="qbtn due ${due ? "" : "zero"}" data-act="review"><span class="ic">${ic("replay")}</span><span><b>${due ? due + " à revoir" : "Révisions"}</b><small>${due ? "Répétition espacée" : "Rien à revoir"}</small></span></button>
   </div>
+  ${last ? `<button class="lastp" data-act="histplay" data-i="0"><span class="ic">${ic(last.cfg?.icon || "replay")}</span><span class="tx"><small>Dernière partie · ${esc(ago(last.t))}</small><b>${esc(last.title || "Partie")}</b><span>${last.ok}/${last.n} bonnes réponses · +${fmt(last.xp)} XP</span></span><span class="go">${ic("replay")}Rejouer</span></button>` : ""}
   <button class="lvlbar" data-act="tab" data-tab="progress"><span class="badge">${L.n}</span><span class="meta"><b>${esc(L.rank)}</b><small>${fmt(L.cur)} / ${fmt(L.need)} XP</small><span class="bar"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span></span></button>
   <div class="sec">${ic("playc")}Modes</div>
   <div class="tiles">${MODES.map((m, i) => `<button class="tile" style="--c:${m.c};animation-delay:${i * 35}ms" data-act="mode" data-mode="${m.k}"><span class="ic">${ic(m.ic)}</span><span><b>${m.n}</b><small>${m.d}</small></span></button>`).join("")}</div>
@@ -2644,7 +2919,9 @@ MOUNT.home = async () => {
 VIEWS.loading = d => `<section class="view loading"><div>
   <div class="lens"><span></span><span></span><span></span>${ic(d?.icon || "binoc")}</div>
   <b>${esc(d?.title || "Mise au point…")}</b><small>Mise au point sur iNaturalist…</small>
-  <button class="btn ghost" data-act="home" style="margin-top:24px">Annuler</button></div></section>`;
+  <div id="slow" hidden><small style="margin-top:14px;color:var(--gold)">Ça prend plus de temps que prévu (réseau lent ou iNaturalist chargé).</small><button class="btn primary" data-act="retry" style="margin-top:12px">${ic("replay")}Réessayer</button></div>
+  <button class="btn ghost" data-act="home" style="margin-top:14px">Annuler</button></div></section>`;
+MOUNT.loading = () => { const v = VDATA; setTimeout(() => { if (VIEW === "loading" && VDATA === v) { const s = $("#slow"); if (s) s.hidden = false; } }, 12000); };
 function showError(e, cfg, mid) { LASTCFG = cfg; go("error", { e, cfg, mid }); }
 VIEWS.error = ({ e }) => {
   const code = e?.code || e?.message;
@@ -2676,7 +2953,7 @@ function promptIcon(q) {
   return { photo: "frame", field: "eye", son: "wave", soncho: "wave", fr: "quill", la: "quill" }[q.stim] || "frame";
 }
 function stageHtml(q) {
-  if (q.kind === "geo") return `<div class="gstrip" id="gstrip">${q.sp.map((s, i) => `<figure><img src="${esc(s.img)}" alt="Oiseau ${i + 1}"><span class="k">${i + 1}</span><figcaption>${esc(s.fr)}</figcaption></figure>`).join("")}</div>`;
+  if (q.kind === "geo") return `<div class="gstrip" id="gstrip">${q.sp.map((s, i) => `<figure data-act="zoom" data-grp="gs" data-src="${esc(s.lg || s.img)}" data-hd="${esc(s.hd || "")}" data-cap="Oiseau ${i + 1} / ${q.sp.length}" data-attr="${esc(s.attr || "")}"><img src="${esc(s.lg || s.img)}" data-alt="${esc(s.img)}" alt="Oiseau ${i + 1}" draggable="false"><span class="k">${i + 1}</span><span class="zb">${ic("zoom")}</span><figcaption>${esc(s.fr)}</figcaption></figure>`).join("")}</div>`;
   if (q.kind === "root") return `<div class="namecard"><div><span class="eyebrow">Racine latine</span><div class="big latin">${esc(q.w)}</div>${q.ex ? `<div class="ex">dans <span class="latin">${esc(q.ex.sci)}</span></div>` : ""}</div></div>`;
   const bonus = q.bonus ? `<span class="tag-bonus">${ic("spark")}Rareté ×2</span>` : "";
   if (q.stim === "son") return `<div class="sound" id="sound">${bonus}
@@ -2685,10 +2962,11 @@ function stageHtml(q) {
   if (q.stim === "fr") return `<div class="namecard"><div><span class="eyebrow">Nom français</span><div class="big">${esc(q.t.fr || q.t.sci)}</div></div></div>`;
   if (q.stim === "la") return `<div class="namecard"><div><span class="eyebrow">Nom latin</span><div class="big latin">${esc(q.t.sci)}</div></div></div>`;
   const p = q.photo || {};
-  return `<figure class="shot" id="shot">
+  return `<figure class="shot" id="shot" data-act="zoom" data-grp="q" data-src="${esc(p.lg || p.md)}" data-hd="${esc(hdOf(p.lg || p.md))}" data-attr="${esc(p.attr || "")}">
     <img class="blur" src="${esc(p.md)}" alt="">
-    <img class="main" id="mainImg" alt="Oiseau à identifier">
+    <img class="main" id="mainImg" alt="Oiseau à identifier" draggable="false">
     <span class="ret tl"></span><span class="ret tr"></span><span class="ret bl"></span><span class="ret br"></span>
+    <span class="zb">${ic("zoom")}</span>
     <div class="spinner"><div class="spin"></div></div>
     ${q.stim === "field" ? `<span class="tag-field">${ic("eye")}Terrain</span>` : ""}${bonus}
     ${q.stim === "soncho" ? `<figcaption class="credit" style="font-size:13px;font-weight:700;color:#fff">${esc(nameFr(q.t))}</figcaption>` : `<figcaption class="credit">${esc(p.attr || "")}</figcaption>`}
@@ -2713,13 +2991,17 @@ function typePlaceholder(q) {
 }
 function answersHtml(q) {
   const ch = q.choices || [];
-  if (q.format === "map") return `<div class="gmap" id="gmap"></div><button class="btn primary wide" id="gok" data-act="geook" disabled style="margin-top:10px">${ic("pin")}Touche la carte pour placer ton pin</button>`;
+  if (q.format === "map") return window.L ? `<div class="gwrap" id="gwrap"><div class="gmap" id="gmap"></div>
+    <div class="gctl"><button class="mbtn" data-act="mapfull" aria-label="Agrandir la carte">${ic("expand")}</button><button class="mbtn" data-act="mapmenu" aria-label="Fond de carte">${ic("layers")}</button></div>
+    <div class="gthumbs">${q.sp.map((s, i) => `<button data-act="zoom" data-grp="gt" data-src="${esc(s.lg || s.img)}" data-hd="${esc(s.hd || "")}" data-cap="Oiseau ${i + 1} / ${q.sp.length}" data-attr="${esc(s.attr || "")}" aria-label="Photo ${i + 1}"><img src="${esc(s.img)}" alt="" draggable="false"></button>`).join("")}</div>
+    <div class="mmenu" id="mmenu" hidden>${mapMenuHtml()}</div></div>
+    <button class="btn primary wide" id="gok" data-act="geook" disabled style="margin-top:10px">${ic("pin")}<span>Place ton pin</span></button>` : `<p class="muted">Carte indisponible.</p><button class="btn primary wide" data-act="replaceq">${ic("shuffle")}Autre question</button>`;
   if (q.format === "type") return `<form class="typer" id="typer" autocomplete="off"><input id="ans" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" placeholder="${esc(typePlaceholder(q))}" aria-label="Ta réponse"><button class="btn primary" type="submit" aria-label="Valider">${ic("check")}</button></form><div class="sugg" id="sugg"></div><button class="skip" data-act="skip">Je ne sais pas</button>`;
   if (q.format === "flash") return `<div class="flashbox"><button class="btn ghost wide" data-act="reveal" style="height:62px">${ic("eye")}Voir la réponse</button></div>`;
   if (q.format === "audio") return ch.map((c, i) => `<div class="achoice" data-k="${c.key}" style="animation-delay:${i * 50}ms"><button class="pl" data-act="aplay" data-i="${i}" aria-label="Écouter l'enregistrement ${String.fromCharCode(65 + i)}">${ic("play")}</button><div class="wv" aria-hidden="true">${Array.from({ length: 14 }, (_, j) => `<i style="height:${30 + ((j * 37 + i * 11) % 60)}%"></i>`).join("")}</div><button class="pick" data-act="pick" data-k="${c.key}">${String.fromCharCode(65 + i)} · Lui</button></div>`).join("");
   if (q.format === "tiles") {
     const nm = c => q.names === "la" ? `<span class="latin">${esc(c.sci)}</span>` : esc(c.fr);
-    return `<div class="tgrid">${ch.map((c, i) => `<button class="tchoice" data-act="pick" data-k="${c.key}" style="animation-delay:${i * 45}ms"><img src="${esc(c.t.img?.md || "")}" alt="${esc(c.fr)}"><span class="k">${i + 1}</span><span class="nm">${nm(c)}</span></button>`).join("")}</div>`;
+    return `<div class="tgrid">${ch.map((c, i) => `<button class="tchoice" data-act="pick" data-k="${c.key}" style="animation-delay:${i * 45}ms"><img src="${esc(c.t.img?.md || "")}" alt="${esc(c.fr)}" data-fit draggable="false"><span class="k">${i + 1}</span><span class="nm">${nm(c)}</span></button>`).join("")}</div>`;
   }
   return ch.map((c, i) => `<button class="choice" data-act="pick" data-k="${c.key}" style="animation-delay:${i * 40}ms"><span class="k">${i + 1}</span><span class="lbl">${choiceLabel(c)}</span><svg class="i mark" aria-hidden="true"><use href="#i-check"/></svg></button>`).join("");
 }
@@ -2744,12 +3026,13 @@ function mountQuestion(q) {
     if (fig && img) {
       let tried = false;
       img.onload = () => fig.classList.add("loaded");
-      img.onerror = () => { if (!tried && q.photo.md && img.src !== q.photo.md) { tried = true; img.src = q.photo.md; } else fig.classList.add("loaded"); };
+      img.onerror = () => { if (!tried && q.photo.md && img.src !== q.photo.md) { tried = true; img.src = q.photo.md; fig.dataset.src = q.photo.md; fig.dataset.hd = ""; } else { img.style.visibility = "hidden"; fig.classList.add("loaded"); mediaFail(q, "Photo indisponible"); } };
       img.src = q.photo.lg || q.photo.md;
     }
     setAmbient(q.photo.md);
-  } else if (q.kind === "geo") { setAmbient(q.sp[0]?.img); mountGeoMap(q); }
+  } else if (q.kind === "geo") { setAmbient(q.sp[0]?.img); fitStrip(); mountGeoMap(q); }
   else setAmbient(null);
+  if (q.format === "tiles") fitImgs($("#answers"));
   if (q.stim === "son" && q.snd) {
     sndLoad(q.snd.url, $("#sono")).then(mode => { if (mode && SES?.q === q && !q.done) sndPlay(true); });
   }
@@ -2758,6 +3041,27 @@ function mountQuestion(q) {
   if (ses.deadline) startChallengeBar();
 }
 let QT = 0, CT = 0;
+function mediaFail(q, msg) {
+  if (!q || q.done || SES?.q !== q) return;
+  const host = $("#shot") || $("#sound");
+  if (!host || host.querySelector(".mfail")) return;
+  host.insertAdjacentHTML("beforeend", `<div class="mfail">${ic(q.stim === "son" ? "wave" : "frame")}<b>${esc(msg)}</b><button class="btn primary" data-act="replaceq">${ic("shuffle")}Autre question</button></div>`);
+}
+async function replaceQuestion() {
+  const ses = SES, q = ses?.q;
+  if (!q || q.done) return;
+  q.done = true;
+  clearQTimer();
+  sndStop();
+  $("#app").classList.add("waiting");
+  let q2 = null;
+  for (let i = 0; i < 4 && !q2; i++) { try { q2 = await buildQ(ses, randomSpec(ses)); } catch (e) { /* suivant */ } }
+  $("#app").classList.remove("waiting");
+  if (SES !== ses) return;
+  if (!q2) { q.done = false; toast("Impossible de charger une autre question. Vérifie ta connexion."); return; }
+  q2.idx = q.idx;
+  showQuestion(q2);
+}
 function startQTimer(q, ms) {
   clearQTimer();
   const bar = $("#tbar");
@@ -2808,8 +3112,9 @@ function revealHtml(q) {
 function compareHtml(t, c, q) {
   const a = (q.photo && q.stim !== "soncho" ? q.photo.md : "") || imgOf(t), b = imgOf(c);
   if (!b) return "";
-  return `<div class="compare"><figure class="right"><img src="${esc(a)}" alt=""><figcaption><small>Bonne réponse</small>${esc(nameFr(t))}</figcaption></figure>
-  <figure class="you"><img src="${esc(b)}" alt=""><figcaption><small>Ton choix</small>${esc(nameFr(c))}</figcaption></figure></div>`;
+  const big = u => sizeUrl(u, "large");
+  return `<div class="compare"><figure class="right" data-act="zoom" data-grp="cmp" data-src="${esc(big(a))}" data-cap="Bonne réponse · ${esc(nameFr(t))}" data-sci="${esc(t.fr ? t.sci : "")}" data-id="${t.id}"><img src="${esc(a)}" alt="" data-fit draggable="false"><figcaption><small>Bonne réponse</small>${esc(nameFr(t))}</figcaption></figure>
+  <figure class="you" data-act="zoom" data-grp="cmp" data-src="${esc(big(b))}" data-cap="Ton choix · ${esc(nameFr(c))}" data-sci="${esc(c.fr ? c.sci : "")}" data-id="${c.id}"><img src="${esc(b)}" alt="" data-fit draggable="false"><figcaption><small>Ton choix</small>${esc(nameFr(c))}</figcaption></figure></div>`;
 }
 function fbHtml(q, res, gain) {
   const ses = SES;
@@ -2818,11 +3123,16 @@ function fbHtml(q, res, gain) {
   const verdict = res.timeout ? "Temps écoulé" : res.ok ? pick(OKW) : res.partial ? "Presque !" : pick(BADW);
   const head = `<div class="grab"></div><div class="verdict"><span class="vi">${ic(res.ok ? "check" : res.partial ? "bulb" : "x")}</span><b>${verdict}</b>${gain ? `<span class="gain">+${gain} XP</span>` : ""}</div>`;
   const next = `<button class="btn primary wide next" data-act="next">${last || over ? "Voir le bilan" : "Suivant"}${ic("arrow")}</button>`;
+  if (q.kind === "geo" && q.format !== "map") {
+    const c = CONTINENTS.find(x => x.k === q.cont);
+    return `${head}<div class="dnote" style="font-size:15px;color:var(--text)">${ic("globe", "xs")} ${esc(c ? c.n : "")} · ${esc(q.place || "")}</div>
+    ${geoSpHtml(q)}${next}`;
+  }
   if (q.kind === "geo") {
     const km = res.geoKm, tier = geoTier(km);
     return `<div class="grab"></div><div class="verdict"><span class="vi">${ic(km <= 1500 ? "check" : "pin")}</span><b>${esc(tier[2])}</b><span class="gain">+${gain} XP</span></div>
-    <div class="dnote" style="font-size:15px;color:var(--text)">${ic("pin", "xs")} À <b>${fmt(km)} km</b> · ${esc(q.place || "")}</div>
-    <div class="chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">${q.sp.map(s => `<span class="chip">${esc(s.fr)}</span>`).join("")}</div>${next}`;
+    <div class="dnote" style="font-size:15px;color:var(--text)">${ic("pin", "xs")} À <b>${fmt(km)} km</b> · ${esc(q.place || "")}${q.guessName ? ` <small class="muted">(pin sur ${esc(q.guessName)})</small>` : ""}</div>
+    ${geoSpHtml(q)}${next}`;
   }
   if (q.kind === "root") {
     return `${head}<div class="decode"><span class="dchip"><span class="latin">${esc(q.w)}</span>${esc(q.mean)}</span></div>${q.note ? `<div class="dnote">${esc(q.note)}</div>` : ""}${q.ex ? `<div class="dnote">Exemple : ${esc(q.ex.fr || "")} · <span class="latin">${esc(q.ex.sci)}</span></div>` : ""}${next}`;
@@ -2845,7 +3155,20 @@ function fbHtml(q, res, gain) {
   ${chosen ? compareHtml(t, chosen, q) : ""}
   ${q.photo?.field && (q.photo.place || q.photo.date) ? `<div class="dnote">${ic("pin", "xs")} ${esc(q.photo.place || "")}${q.photo.date ? " · " + esc(dateLong(q.photo.date)) : ""}</div>` : ""}
   ${q.snd ? `<div class="dnote" style="display:flex;align-items:center;gap:8px">${ic("wave", "xs")}<span style="flex:1">${esc([q.snd.place, q.snd.attr].filter(Boolean).join(" · "))}</span><button class="chip warn" data-act="badsnd">${ic("x", "xs")}Mauvais son</button></div>` : ""}
+  <div class="learn" id="learn" data-id="${t.id}"><div class="lsec"><div class="lh">${ic("book", "xs")}Pour la reconnaître</div><div class="lsk"></div><div class="lsk short"></div></div></div>
   ${next}`;
+}
+let LEARNSIM = [];
+async function fillLearn(t) {
+  const [d, w, sim] = await Promise.all([wikiDesc(t).catch(() => null), wiki(t).catch(() => null), similar(t, null).catch(() => [])]);
+  const box = $("#learn");
+  if (!box || +box.dataset.id !== t.id) return;
+  const txt = d ? d.text : w ? w.text : "";
+  LEARNSIM = sim.filter(x => x.id !== t.id).slice(0, 3);
+  const parts = [];
+  if (txt) parts.push(`<div class="lsec"><div class="lh">${ic("book", "xs")}${d ? "Pour la reconnaître" : "En bref"}</div><p>${esc(clip(txt, 280))}</p><div class="lfoot"><small>Source : Wikipédia</small><button class="lmore" data-act="fiche" data-id="${t.id}">Fiche complète${ic("arrow", "xs")}</button></div></div>`);
+  if (LEARNSIM.length) parts.push(`<div class="lsec"><div class="lh">${ic("duel", "xs")}À ne pas confondre avec</div><div class="lsim">${LEARNSIM.map(s => `<button data-act="fiche" data-id="${s.id}"><img src="${esc(s.img?.sq || "")}" alt=""><span>${esc(nameFr(s))}</span></button>`).join("")}</div></div>`);
+  box.innerHTML = parts.join("");
 }
 function showFeedback(q, res, gain) {
   hideFeedback();
@@ -2858,6 +3181,8 @@ function showFeedback(q, res, gain) {
   el.style.overflowY = "auto";
   el.innerHTML = fbHtml(q, res, gain);
   document.body.appendChild(el);
+  fitImgs(el);
+  if (q.kind === "taxon") fillLearn(q.t);
   requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("show")));
   const cb = $("#combo");
   if (cb) {
@@ -2873,6 +3198,215 @@ function showFeedback(q, res, gain) {
   if (nb && window.matchMedia && matchMedia("(hover:hover)").matches) nb.focus({ preventScroll: true });
 }
 function hideFeedback() { const f = $("#fb"); if (f) f.remove(); }
+const geoSpHtml = q => `<div class="gsp">${q.sp.map(s => `<button data-act="zoom" data-grp="gr" data-src="${esc(s.lg || s.img)}" data-hd="${esc(s.hd || "")}" data-cap="${esc(s.fr)}" data-sci="${esc(s.fr !== s.sci ? s.sci : "")}" data-attr="${esc(s.attr || "")}" data-id="${s.id}"><img src="${esc(s.img)}" alt="" draggable="false"><span>${esc(s.fr)}</span></button>`).join("")}</div>`;
+function geoTaxon(id) {
+  const s = (SES?.q?.sp || []).find(x => x.id === id);
+  return s ? { id: s.id, sci: s.sci, fr: s.fr !== s.sci ? s.fr : "", a: [], img: { sq: s.img, md: s.img, attr: s.attr || "", lic: "" } } : null;
+}
+
+/* ---------- Photos : cadrage adaptatif ---------- */
+// Si le format de la photo est trop différent du cadre, on l'affiche entière (fond flouté) au lieu de la rogner.
+function fitImgs(root) {
+  $$("img[data-fit]", root || document).forEach(img => {
+    if (img.dataset.fitted) return;
+    const f = () => {
+      const box = img.parentElement;
+      if (!box || !img.naturalWidth || !box.clientHeight) return;
+      img.dataset.fitted = "1";
+      const r = img.naturalWidth / img.naturalHeight, rb = box.clientWidth / box.clientHeight;
+      const c = Math.abs(Math.log(r / rb)) > .3;
+      box.classList.toggle("fitc", c);
+      if (c) box.style.setProperty("--bgi", `url("${String(img.currentSrc || img.src).replace(/"/g, "%22")}")`);
+    };
+    if (img.complete && img.naturalWidth) f(); else img.addEventListener("load", f, { once: true });
+  });
+}
+// Bandeau Géo : chaque carte prend le format de sa photo (plus de têtes coupées)
+function fitStrip() {
+  $$("#gstrip img").forEach(img => {
+    const fig = img.closest("figure");
+    const f = () => { if (fig && img.naturalWidth) { fig.style.aspectRatio = String(clamp(img.naturalWidth / img.naturalHeight, .62, 1.9)); fig.classList.remove("ld"); } };
+    img.addEventListener("error", () => {
+      const alt = img.dataset.alt;
+      if (alt && img.src !== alt) { img.dataset.alt = ""; img.src = alt; if (fig) { fig.dataset.src = alt; fig.dataset.hd = ""; } }
+      else if (fig) { fig.classList.remove("ld"); fig.classList.add("broken"); }
+    });
+    if (img.complete && img.naturalWidth) f(); else { fig?.classList.add("ld"); img.addEventListener("load", f); }
+  });
+}
+
+/* ---------- Visionneuse HD (toucher une photo) ---------- */
+let VW = null;
+const hdOf = u => u ? sizeUrl(u, "original") : "";
+function zoomItems(el) {
+  const g = el.dataset.grp;
+  const els = g ? $$(`[data-act=zoom][data-grp="${g}"]`) : [el];
+  return {
+    items: els.map(x => ({ src: x.dataset.src, hd: x.dataset.hd || hdOf(x.dataset.src), cap: x.dataset.cap || "", sci: x.dataset.sci || "", attr: x.dataset.attr || "", id: +x.dataset.id || 0 })),
+    i: Math.max(0, els.indexOf(el))
+  };
+}
+function openViewer(items, i = 0) {
+  closeViewer(true);
+  if (!items.length || !items[i]?.src) return;
+  const el = document.createElement("div");
+  el.className = "viewer loading";
+  el.id = "viewer";
+  el.setAttribute("role", "dialog");
+  el.setAttribute("aria-modal", "true");
+  el.setAttribute("aria-label", "Photo en grand");
+  el.innerHTML = `<div class="vw-stage" id="vwStage"><img class="vw-img" id="vwImg" alt="" draggable="false"><div class="spin vw-spin"></div></div>
+  <div class="vw-top"><span class="vw-n" id="vwN"></span><span class="vw-hd" id="vwHd">HD</span><span class="sp"></span><button class="icon-btn" data-act="vclose" aria-label="Fermer">${ic("x")}</button></div>
+  ${items.length > 1 ? `<button class="vw-nav prev" data-act="vgo" data-d="-1" aria-label="Photo précédente">${ic("back")}</button><button class="vw-nav next" data-act="vgo" data-d="1" aria-label="Photo suivante">${ic("arrow")}</button>` : ""}
+  <div class="vw-cap" id="vwCap"></div>`;
+  document.body.appendChild(el);
+  document.body.classList.add("vwopen");
+  VW = { el, items, i, s: 1, x: 0, y: 0, ptr: new Map() };
+  vwBind(el);
+  vwShow(i, 0);
+  requestAnimationFrame(() => el.classList.add("on"));
+}
+function closeViewer(now) {
+  const V = VW;
+  if (!V) return;
+  VW = null;
+  document.body.classList.remove("vwopen");
+  if (now) { V.el.remove(); return; }
+  V.el.classList.remove("on");
+  setTimeout(() => V.el.remove(), 230);
+}
+function vwShow(i, dir) {
+  const V = VW;
+  if (!V) return;
+  const n = V.items.length;
+  V.i = ((i % n) + n) % n;
+  const it = V.items[V.i], img = $("#vwImg", V.el);
+  V.s = 1; V.x = 0; V.y = 0;
+  V.el.classList.remove("hd", "zoomed");
+  V.el.classList.add("loading");
+  V.el.style.setProperty("--vbg", 1);
+  img.style.transition = "none";
+  img.style.transform = "";
+  img.onload = () => { if (VW === V && V.items[V.i] === it) V.el.classList.remove("loading"); };
+  img.onerror = () => { if (VW === V) V.el.classList.remove("loading"); };
+  img.src = it.src;
+  if (dir && img.animate) { try { img.animate([{ opacity: 0, transform: `translate3d(${dir * 46}px,0,0)` }, { opacity: 1, transform: "none" }], { duration: 230, easing: "cubic-bezier(.2,.8,.2,1)" }); } catch (e) { /* rien */ } }
+  $("#vwN", V.el).textContent = n > 1 ? `${V.i + 1} / ${n}` : "";
+  $("#vwCap", V.el).innerHTML = `${it.cap ? `<b>${esc(it.cap)}</b>` : ""}${it.sci ? `<span class="latin">${esc(it.sci)}</span>` : ""}${it.id ? `<button class="chip" data-act="vfiche" data-id="${it.id}">${ic("info")}Fiche</button>` : ""}${it.attr ? `<small>${esc(it.attr)}</small>` : ""}`;
+  if (it.hd && it.hd !== it.src) {
+    const hi = new Image();
+    hi.onload = async () => {
+      try { if (hi.decode) await hi.decode(); } catch (e) { /* rien */ }
+      if (VW === V && V.items[V.i] === it) { img.src = it.hd; V.el.classList.add("hd"); V.el.classList.remove("loading"); }
+    };
+    hi.src = it.hd;
+  }
+  if (n > 1) [1, -1].forEach(d => { const nb = V.items[(V.i + d + n) % n]; if (nb?.src) preload(nb.src); });
+}
+function vwBox() {
+  const V = VW, st = $("#vwStage", V.el), img = $("#vwImg", V.el);
+  const W = st.clientWidth, H = st.clientHeight, r = img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : W / H;
+  const w = W / H > r ? H * r : W, h = W / H > r ? H : W / r;
+  const b = st.getBoundingClientRect();
+  return { W, H, w, h, cx: b.left + W / 2, cy: b.top + H / 2 };
+}
+function vwApply(anim) {
+  const V = VW;
+  if (!V) return;
+  const img = $("#vwImg", V.el), B = vwBox();
+  const mx = Math.max(0, (B.w * V.s - B.W) / 2), my = Math.max(0, (B.h * V.s - B.H) / 2), e = anim ? 0 : 50;
+  V.x = clamp(V.x, -mx - e, mx + e);
+  V.y = clamp(V.y, -my - e, my + e);
+  img.style.transition = anim ? "transform .28s cubic-bezier(.2,.8,.2,1)" : "none";
+  img.style.transform = `translate3d(${V.x}px,${V.y}px,0) scale(${V.s})`;
+  V.el.classList.toggle("zoomed", V.s > 1.02);
+}
+function vwZoomAt(px, py, s2) {
+  const V = VW;
+  if (!V) return;
+  const B = vwBox(), s = clamp(s2, 1, 6), k = s / V.s;
+  V.x = (px - B.cx) - ((px - B.cx) - V.x) * k;
+  V.y = (py - B.cy) - ((py - B.cy) - V.y) * k;
+  V.s = s;
+  if (s <= 1.02) { V.s = 1; V.x = 0; V.y = 0; }
+  vwApply(true);
+}
+function vwDrag(dx, dy, release) {
+  const V = VW;
+  if (!V) return;
+  const img = $("#vwImg", V.el), vert = Math.abs(dy) > Math.abs(dx);
+  img.style.transition = release ? "transform .26s cubic-bezier(.2,.8,.2,1)" : "none";
+  img.style.transform = release ? "" : vert ? `translate3d(0,${Math.max(0, dy)}px,0) scale(${1 - Math.min(.18, Math.max(0, dy) / 1400)})` : `translate3d(${dx}px,0,0)`;
+  V.el.style.setProperty("--vbg", release || !vert ? 1 : Math.max(.3, 1 - Math.max(0, dy) / 360));
+}
+function vwBind(el) {
+  const st = $("#vwStage", el);
+  let pinch = null, pan = null, lastTap = 0, tapT = 0;
+  const pts = () => [...VW.ptr.values()];
+  st.addEventListener("pointerdown", e => {
+    const V = VW;
+    if (!V) return;
+    try { st.setPointerCapture(e.pointerId); } catch (err) { /* rien */ }
+    V.ptr.set(e.pointerId, [e.clientX, e.clientY]);
+    if (V.ptr.size === 2) {
+      const [a, b] = pts();
+      pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, m: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], s: V.s, x: V.x, y: V.y };
+      pan = null;
+    } else if (V.ptr.size === 1) pan = { cx: e.clientX, cy: e.clientY, x: V.x, y: V.y, moved: false };
+  });
+  st.addEventListener("pointermove", e => {
+    const V = VW;
+    if (!V || !V.ptr.has(e.pointerId)) return;
+    V.ptr.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pinch && V.ptr.size >= 2) {
+      const [a, b] = pts(), B = vwBox(), d = Math.hypot(a[0] - b[0], a[1] - b[1]), m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      const s = clamp(pinch.s * d / pinch.d, 1, 6), k = s / pinch.s;
+      V.x = (m[0] - B.cx) - ((pinch.m[0] - B.cx) - pinch.x) * k;
+      V.y = (m[1] - B.cy) - ((pinch.m[1] - B.cy) - pinch.y) * k;
+      V.s = s;
+      vwApply(false);
+    } else if (pan) {
+      const dx = e.clientX - pan.cx, dy = e.clientY - pan.cy;
+      if (Math.abs(dx) + Math.abs(dy) > 8) pan.moved = true;
+      if (V.s > 1.02) { V.x = pan.x + dx; V.y = pan.y + dy; vwApply(false); }
+      else if (pan.moved) vwDrag(dx, dy);
+    }
+  });
+  const end = e => {
+    const V = VW;
+    if (!V || !V.ptr.has(e.pointerId)) return;
+    V.ptr.delete(e.pointerId);
+    if (pinch) {
+      if (V.ptr.size < 2) {
+        pinch = null;
+        if (V.s < 1.08) { V.s = 1; V.x = 0; V.y = 0; }
+        vwApply(true);
+        if (V.ptr.size === 1) { const [a] = pts(); pan = { cx: a[0], cy: a[1], x: V.x, y: V.y, moved: true }; }
+      }
+      return;
+    }
+    if (!pan) return;
+    const P = pan, dx = e.clientX - P.cx, dy = e.clientY - P.cy;
+    pan = null;
+    if (e.type === "pointercancel") { if (V.s <= 1.02) vwDrag(0, 0, true); else vwApply(true); return; }
+    if (P.moved) {
+      if (V.s > 1.02) { vwApply(true); return; }
+      if (dy > 90 && dy > Math.abs(dx)) { closeViewer(); return; }
+      if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) && V.items.length > 1) { const d = dx < 0 ? 1 : -1; vwDrag(0, 0, true); vwShow(V.i + d, d); return; }
+      vwDrag(0, 0, true);
+      return;
+    }
+    const now = Date.now();
+    if (now - lastTap < 320) { clearTimeout(tapT); lastTap = 0; vwZoomAt(e.clientX, e.clientY, V.s > 1.02 ? 1 : 2.6); return; }
+    lastTap = now;
+    const B = vwBox(), inside = Math.abs(e.clientX - B.cx - V.x) <= B.w * V.s / 2 && Math.abs(e.clientY - B.cy - V.y) <= B.h * V.s / 2;
+    if (!inside && V.s <= 1.02) tapT = setTimeout(() => { if (VW === V) closeViewer(); }, 330);
+  };
+  st.addEventListener("pointerup", end);
+  st.addEventListener("pointercancel", end);
+  st.addEventListener("wheel", e => { if (!VW) return; e.preventDefault(); vwZoomAt(e.clientX, e.clientY, VW.s * (e.deltaY < 0 ? 1.25 : 0.8)); }, { passive: false });
+  el.addEventListener("gesturestart", e => e.preventDefault());
+}
 
 /* ---------- Suggestions de saisie ---------- */
 let SUGT = 0, SUGQ = "";
@@ -2905,32 +3439,167 @@ function suggest(v) {
 }
 
 /* ---------- Carte Géo ---------- */
+/* Fonds de carte : relief (NASA Blue Marble, montagnes et fonds marins) puis satellite en zoomant,
+   satellite, topo, océans (bathymétrie : les îles ressortent), nuit (OSM assombri). Aucun n'exige de clé. */
+const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services/";
+const GIBS = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief_Bathymetry/default/";
+const MAPST = {
+  relief: { n: "Relief", lab: true, cap: "NASA Blue Marble · Esri", layers: [
+    { u: GIBS + "GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg", max: 8, a: "NASA Blue Marble",
+      alt: [GIBS + "/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg", "https://map1.vis.earthdata.nasa.gov/wmts-webmerc/BlueMarble_ShadedRelief_Bathymetry/default//GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg", ESRI + "World_Physical_Map/MapServer/tile/{z}/{y}/{x}"] },
+    { u: ESRI + "World_Imagery/MapServer/tile/{z}/{y}/{x}", min: 9, a: "Esri, Maxar, Earthstar Geographics" }] },
+  sat: { n: "Satellite", lab: true, cap: "Esri World Imagery", layers: [{ u: ESRI + "World_Imagery/MapServer/tile/{z}/{y}/{x}", a: "Esri, Maxar, Earthstar Geographics" }] },
+  topo: { n: "Topo", light: true, cap: "Esri Topographic", layers: [{ u: ESRI + "World_Topo_Map/MapServer/tile/{z}/{y}/{x}", a: "Esri, HERE, Garmin, USGS, FAO, NPS" }] },
+  ocean: { n: "Océans", light: true, cap: "Esri Ocean · GEBCO, NOAA", layers: [{ u: ESRI + "Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}", nat: 13, a: "Esri, GEBCO, NOAA" }, { u: ESRI + "Ocean/World_Ocean_Reference/MapServer/tile/{z}/{y}/{x}", nat: 13, ov: true, a: "" }] },
+  nuit: { n: "Nuit", inv: true, cap: "© OpenStreetMap", layers: [{ u: "https://tile.openstreetmap.org/{z}/{x}/{y}.png", a: "© OpenStreetMap" }] }
+};
+const MAPLAB = { u: ESRI + "Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}", a: "Esri" };
+const curStyle = () => MAPST[S.set.mapst] ? S.set.mapst : "relief";
+const tileUrl = (u, z, x, y) => u.replace("{z}", z).replace("{x}", x).replace("{y}", y);
+const layerAt = (st, z) => st.layers.find(l => !l.ov && (l.min ?? 0) <= z && z <= (l.max ?? 19)) || st.layers[0];
+function mapStylesHtml() {
+  const cur = curStyle();
+  return `<div class="mst">${Object.entries(MAPST).map(([k, st]) => `<button class="${k === cur ? "on" : ""}" data-act="mapset" data-s="${k}" aria-label="Fond ${esc(st.n)}"><span class="th${st.inv ? " inv" : ""}" style="background-image:url('${esc(tileUrl(layerAt(st, 2).u, 2, 2, 1))}')"></span><small>${esc(st.n)}</small></button>`).join("")}</div>`;
+}
+const mapTog = (k, icn, label) => `<button class="chip${S.set[k] ? " on" : ""}" data-act="toggle" data-k="${k}" role="switch" aria-checked="${S.set[k] ? "true" : "false"}">${ic(icn)}${label}</button>`;
+const mapMenuHtml = () => `${mapStylesHtml()}<div class="mtg">${mapTog("mapLab", "type", "Noms")}${mapTog("mapIsl", "isle", "Îles")}</div>`;
+function tileL(sp, extra, onDead) {
+  const alts = (sp.alt || []).slice();
+  const o = { attribution: sp.a || "", minZoom: sp.min ?? 0, maxZoom: sp.max ?? 19, ...extra };
+  if (sp.max != null) o.maxNativeZoom = sp.max;
+  if (sp.nat) o.maxNativeZoom = sp.nat;
+  const l = L.tileLayer(sp.u, o);
+  let ok = 0, bad = 0;
+  l.on("tileload", () => { ok++; });
+  l.on("tileerror", () => {
+    if (ok || ++bad < 4) return;
+    bad = 0;
+    if (alts.length) l.setUrl(alts.shift());
+    else if (onDead) { const f = onDead; onDead = null; f(); }
+  });
+  return l;
+}
+function setMapStyle(map, id) {
+  const st = MAPST[id] || MAPST.relief;
+  (map._plum || []).forEach(l => map.removeLayer(l));
+  map._plum = [];
+  const dead = () => {
+    if (map !== GMAP || id === "nuit") return;
+    toast(`Fond « ${st.n} » indisponible pour l'instant : fond Nuit à la place.`);
+    setMapStyle(map, "nuit");
+  };
+  st.layers.forEach((sp, i) => {
+    if (sp.ov && !S.set.mapLab) return;
+    const l = tileL(sp, { className: st.inv ? "tl-inv" : "", pane: sp.ov ? "labels" : "tilePane" }, i === 0 ? dead : null);
+    l.addTo(map);
+    map._plum.push(l);
+  });
+  if (st.lab && S.set.mapLab) { const l = tileL(MAPLAB, { pane: "labels" }); l.addTo(map); map._plum.push(l); }
+  map._plumSt = id;
+  map.getContainer().classList.toggle("light", !!st.light);
+  islStyle(map);
+}
+/* Îles : un anneau tant que l'île est trop petite pour être vue ; le toucher pose le pin dessus */
+function addIslands(map) {
+  const rd = L.canvas({ padding: .3, tolerance: 9 });
+  map._isl = ISLANDS.map(isl => {
+    const m = L.circleMarker([isl[1], isl[2]], { renderer: rd, radius: 6, weight: 1.4, opacity: .9, fillOpacity: .14, bubblingMouseEvents: false });
+    m.isl = isl;
+    m.bindTooltip(isl[0], { permanent: true, direction: "right", offset: [7, 0], className: "isl-lbl", opacity: 1 });
+    m.on("click", () => { const q = SES?.q; if (q && q.kind === "geo" && !q.done) placePin(q, m.getLatLng(), isl[0]); });
+    return m;
+  });
+  map.on("zoomend", () => islUpdate(map));
+  islStyle(map);
+  islUpdate(map);
+}
+function islStyle(map) {
+  const c = (MAPST[map._plumSt] || {}).light ? "#05627F" : "#8AF4FF";
+  (map._isl || []).forEach(m => m.setStyle({ color: c, fillColor: c }));
+}
+function islUpdate(map) {
+  if (!map._isl) return;
+  const z = map.getZoom(), on = S.set.mapIsl && !map._revealed, rings = [], labs = [];
+  const r = z < 1.5 ? 3.5 : z < 3 ? 5 : 6.5, gap = z < 3 ? 13 : 16;
+  map.getContainer().classList.toggle("zlo", z < 3.5);
+  map._isl.forEach(m => {
+    const [name, la, ln, d] = m.isl;
+    let vis = on && z <= 10 && d / (156.543 * Math.cos(la * Math.PI / 180) / 2 ** z) < 12, lab = false;
+    if (vis) {
+      const p = map.project([la, ln], z);
+      vis = !rings.some(s => Math.abs(s.x - p.x) < gap && Math.abs(s.y - p.y) < gap);
+      if (vis) {
+        const w = 8 + name.length * 6.4, box = [p.x + 5, p.y - 8, p.x + 5 + w, p.y + 8];
+        lab = z >= 3.5 && !labs.some(b => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1]) && !rings.some(s => s.x > box[0] - 4 && s.x < box[2] && Math.abs(s.y - p.y) < 10);
+        rings.push(p);
+        if (lab) labs.push(box);
+      }
+    }
+    if (vis) { m.setRadius(r); if (!map.hasLayer(m)) m.addTo(map); }
+    else if (map.hasLayer(m)) map.removeLayer(m);
+    const te = m.getTooltip()?.getElement();
+    if (te) te.classList.toggle("hid", !lab);
+  });
+}
+function mapExtras() {
+  if (!GMAP) return;
+  setMapStyle(GMAP, GMAP._plumSt || curStyle());
+  islUpdate(GMAP);
+}
+function placePin(q, ll, name) {
+  if (!GMAP || q.done) return;
+  q.guess = [ll.lat, ((ll.lng + 540) % 360) - 180];
+  q.guessName = name || "";
+  if (q.guessM) q.guessM.setLatLng(ll);
+  else q.guessM = L.circleMarker(ll, { pane: "markerPane", radius: 9, color: "#fff", weight: 3, fillColor: "#FF8B3D", fillOpacity: 1, interactive: false }).addTo(GMAP);
+  const b = $("#gok");
+  if (b) { b.disabled = false; b.innerHTML = ic("check") + `<span>Valider${name ? " · " + esc(name) : ""}</span>`; }
+}
+function setMapFull(on) {
+  const w = $("#gwrap");
+  if (!w) { document.body.classList.remove("gfull"); return; }
+  on = on ?? !w.classList.contains("full");
+  w.classList.toggle("full", on);
+  document.body.classList.toggle("gfull", on);
+  const b = w.querySelector("[data-act=mapfull]");
+  if (b) { b.innerHTML = ic(on ? "shrink" : "expand"); b.setAttribute("aria-label", on ? "Réduire la carte" : "Agrandir la carte"); }
+  if (GMAP) {
+    const m = GMAP, fill = () => { m.invalidateSize(); const zf = Math.floor(Math.log2(m.getSize().y / 256) * 2) / 2; if (on && m.getZoom() < zf) m.setZoom(zf); };
+    requestAnimationFrame(() => m.invalidateSize());
+    setTimeout(() => { if (GMAP === m) fill(); }, 280);
+  }
+}
 let GMAP = null;
 function mountGeoMap(q) {
   const el = $("#gmap");
+  document.body.classList.remove("gfull");
   if (!el || !window.L) return;
   if (GMAP) { try { GMAP.remove(); } catch (e) { /* rien */ } }
-  const map = GMAP = L.map(el, { worldCopyJump: true, zoomControl: false, attributionControl: true, minZoom: 1 }).setView([25, 5], 1);
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 12, attribution: "© OpenStreetMap" }).addTo(map);
+  const z0 = clamp(Math.floor(Math.log2(Math.max(256, el.clientWidth) / 256) * 2) / 2, .5, 3);
+  const map = GMAP = L.map(el, { worldCopyJump: true, zoomControl: false, attributionControl: true, minZoom: .5, maxZoom: 14, zoomSnap: .5 }).setView([22, 8], z0);
+  map.attributionControl.setPrefix('<a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a>');
+  const lp = map.createPane("labels");
+  lp.style.zIndex = 350;
+  lp.style.pointerEvents = "none";
+  setMapStyle(map, curStyle());
+  addIslands(map);
   q.guessM = null;
-  map.on("click", e => {
-    if (q.done) return;
-    q.guess = [e.latlng.lat, ((e.latlng.lng + 540) % 360) - 180];
-    if (q.guessM) q.guessM.setLatLng(e.latlng);
-    else q.guessM = L.circleMarker(e.latlng, { radius: 9, color: "#fff", weight: 3, fillColor: "#FF8B3D", fillOpacity: 1 }).addTo(map);
-    const b = $("#gok");
-    if (b) { b.disabled = false; b.innerHTML = ic("check") + "Valider"; }
-  });
+  map.on("click", e => placePin(q, e.latlng));
   setTimeout(() => map.invalidateSize(), 50);
 }
 function geoValidate() {
   const q = SES?.q;
   if (!q || q.done || !q.guess) return;
   const km = haversine(q.guess, [q.lat, q.lng]), tier = geoTier(km);
+  setMapFull(false);
+  const mm = $("#mmenu");
+  if (mm) mm.hidden = true;
   $$(".gstrip").forEach(g => g.classList.add("reveal"));
   $(".view.quiz")?.classList.add("georeveal");
   if (GMAP) {
     GMAP.invalidateSize();
+    GMAP._revealed = true;
+    islUpdate(GMAP);
     const t = [q.lat, q.lng];
     L.circleMarker(t, { radius: 10, color: "#fff", weight: 3, fillColor: "#1FD1F2", fillOpacity: 1 }).addTo(GMAP);
     L.circle(t, { radius: 10000, color: "#1FD1F2", weight: 1, fillOpacity: .12 }).addTo(GMAP);
@@ -3031,25 +3700,28 @@ function carnetList() {
   if (CARNET.f === "due") all = all.filter(x => Object.values(x.r.due || {}).some(d => d <= tday));
   if (CARNET.f === "master") all = all.filter(x => stars(x.r) === 3);
   if (CARNET.f === "weak") all = all.filter(x => x.r.n >= 2 && x.r.ok / x.r.n < .6);
+  if (CARNET.f === "field") all = all.filter(x => FIELD.ids.has(x.id));
   if (q) all = all.filter(x => norm(x.r.fr).includes(q) || norm(x.r.sci).includes(q));
   return all.sort((a, b) => String(b.r.last || "").localeCompare(String(a.r.last || "")) || String(a.r.fr || a.r.sci).localeCompare(String(b.r.fr || b.r.sci)));
 }
 function carnetGrid() {
   const list = carnetList();
   if (!list.length) return `<div class="empty">${ic("book")}<b>${Object.keys(S.sp).length ? "Rien ici" : "Ton carnet est vide"}</b><p>${Object.keys(S.sp).length ? "Change de filtre ou de recherche." : "Chaque oiseau croisé en quiz s'ajoute ici, avec sa fiche et ton niveau."}</p>${Object.keys(S.sp).length ? "" : `<button class="btn primary" data-act="daily">${ic("play")}Série du jour</button>`}</div>`;
-  return `<div class="cgrid">${list.map(({ id, r }) => `<button class="ctile" data-act="fiche" data-id="${id}"><span class="av" style="--p:${(stars(r) / 3 * 100).toFixed(0)}"><img src="${esc(r.img || r.md)}" alt="" loading="lazy"></span><b>${esc(r.fr || r.sci)}</b>${starsHtml(stars(r))}</button>`).join("")}</div>`;
+  return `<div class="cgrid">${list.map(({ id, r }) => `<button class="ctile" data-act="fiche" data-id="${id}"><span class="av" style="--p:${(stars(r) / 3 * 100).toFixed(0)}"><img src="${esc(r.img || r.md)}" alt="" loading="lazy">${FIELD.ids.has(id) ? `<span class="fld" title="Vue sur le terrain">${ic("eye", "xs")}</span>` : ""}</span><b>${esc(r.fr || r.sci)}</b>${starsHtml(stars(r))}</button>`).join("")}</div>`;
 }
 VIEWS.carnet = () => {
   const recs = Object.values(S.sp).filter(r => r.n > 0);
   const master = recs.filter(r => stars(r) === 3).length;
-  const filt = [["all", "Toutes"], ["due", "À revoir"], ["weak", "Fragiles"], ["master", "Maîtrisées"]];
+  const filt = [["all", "Toutes"], ["due", "À revoir"], ["weak", "Fragiles"], ["master", "Maîtrisées"], ...(S.set.inat ? [["field", "Vues sur le terrain"]] : [])];
   return `<section class="view carnet">
-  <div class="head"><div><h1 style="font:700 24px/1.1 var(--f-display);margin:0">Carnet</h1><div class="counts"><span><b>${recs.length}</b> espèces</span><span><b>${master}</b> maîtrisées</span><span><b>${dueList().length}</b> à revoir</span></div></div></div>
+  <div class="head"><div style="flex:1"><h1 style="font:700 24px/1.1 var(--f-display);margin:0">Carnet</h1><div class="counts"><span><b>${recs.length}</b> espèces</span><span><b>${master}</b> maîtrisées</span><span><b>${dueList().length}</b> à revoir</span></div></div>${recs.length ? `<button class="icon-btn" data-act="csv" aria-label="Exporter le carnet">${ic("down")}</button>` : ""}</div>
   <div class="search" style="margin-top:14px">${ic("search")}<input id="csearch" type="search" placeholder="Chercher une espèce" value="${esc(CARNET.q)}" aria-label="Chercher"></div>
   <div class="row" style="margin-top:10px">${filt.map(([k, l]) => `<button class="opt-btn mini ${CARNET.f === k ? "on" : ""}" data-act="cfilt" data-f="${k}">${l}</button>`).join("")}</div>
   <div id="cgrid">${carnetGrid()}</div>
 </section>`;
 };
+
+MOUNT.carnet = () => { if (S.set.inat) loadField().then(() => { if (VIEW === "carnet") $("#cgrid").innerHTML = carnetGrid(); }).catch(() => {}); };
 
 /* ---------- Progrès ---------- */
 function heatHtml() {
@@ -3085,6 +3757,14 @@ VIEWS.progress = () => {
   const td = S.days[dayKey()] || { xp: 0, q: 0 };
   const cats = [["photo", "Photos", "frame"], ["son", "Chants", "wave"], ["nom", "Noms", "quill"], ["fam", "Familles", "tree"], ["type", "Saisie", "keyboard"], ["geo", "Géo", "globe"], ["root", "Racines", "root"]].filter(([k]) => S.stats[k]?.n);
   const conf = topConfusions(5);
+  const goal = S.set.goal || 150, gp = clamp(td.xp / goal, 0, 1);
+  const w7 = periodStats(7), w30 = periodStats(30), prev7 = (() => { const a = periodStats(14); return { xp: a.xp - w7.xp, q: a.q - w7.q, ok: a.ok - w7.ok }; })();
+  const pct = o => o.q ? Math.round(100 * o.ok / o.q) : null;
+  const trend = pct(w7) != null && pct(prev7) != null ? pct(w7) - pct(prev7) : null;
+  const fs = familyStats(), best = fs.slice().sort((a, b) => b.p - a.p || b.n - a.n).slice(0, 3), bestIds = new Set(best.map(x => x.f));
+  const weak = fs.filter(x => !bestIds.has(x.f) && x.p < .8).sort((a, b) => a.p - b.p).slice(0, 3);
+  const famRow = (x, train) => `<div class="hbar fam"><span class="t">${esc(famName(x.f))}<small>${x.sp} esp. · ${x.n} rép.</small></span><span class="b"><i style="width:${(x.p * 100).toFixed(0)}%"></i></span><span class="v">${Math.round(x.p * 100)} %</span>${train ? `<button class="chip warn" data-act="ftrain" data-f="${x.f}">${ic("play", "xs")}Revoir</button>` : ""}</div>`;
+  const hist = (S.hist || []).slice(0, 10);
   return `<section class="view progress">
   <div class="big-lvl"><div class="lring"><svg viewBox="0 0 96 96" aria-hidden="true"><circle class="track" cx="48" cy="48" r="40"/><circle class="prog" cx="48" cy="48" r="40" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - L.p)).toFixed(1)}"/></svg><b>${L.n}</b></div>
     <div><h2>${esc(L.rank)}</h2><p>${fmt(L.need - L.cur)} XP avant le niveau ${L.n + 1}${L.n < RANKS.length ? " · " + esc(RANKS[Math.min(L.n, RANKS.length - 1)]) : ""}</p><p>${fmt(S.xp)} XP au total</p></div></div>
@@ -3094,9 +3774,20 @@ VIEWS.progress = () => {
     <div class="stat"><small>${ic("sun")}Aujourd'hui</small><b>${fmt(td.xp)}</b><div class="sub">XP · ${td.q || 0} question${td.q > 1 ? "s" : ""}</div></div>
     <div class="stat"><small>${ic("check")}Réussite</small><b>${tot.n ? Math.round(100 * tot.ok / tot.n) : 0} %</b><div class="sub">sur ${fmt(tot.n)} réponses</div></div>
   </div>
+  <div class="sec">${ic("star")}Objectif du jour<span class="more">${fmt(td.xp)} / ${fmt(goal)} XP</span></div>
+  <div class="card goalc"><span class="bar"><i style="width:${(gp * 100).toFixed(1)}%"></i></span><small>${gp >= 1 ? "Objectif atteint, bravo !" : `Encore ${fmt(goal - td.xp)} XP. Réglable dans Réglages.`}</small></div>
+  <div class="sec">${ic("chart")}Sur la durée</div>
+  <div class="grid2">
+    <div class="stat"><small>${ic("cal")}7 derniers jours</small><b>${fmt(w7.xp)} XP</b><div class="sub">${w7.q} réponses · ${pct(w7) ?? "–"} % bonnes${trend != null ? ` · <span style="color:${trend >= 0 ? "var(--good)" : "var(--bad)"}">${trend >= 0 ? "+" : ""}${trend} pts</span>` : ""}</div><div class="sub">${w7.active} jour${w7.active > 1 ? "s" : ""} joué${w7.active > 1 ? "s" : ""} sur 7</div></div>
+    <div class="stat"><small>${ic("cal")}30 derniers jours</small><b>${fmt(w30.xp)} XP</b><div class="sub">${w30.q} réponses · ${pct(w30) ?? "–"} % bonnes</div><div class="sub">${w30.active} jour${w30.active > 1 ? "s" : ""} joué${w30.active > 1 ? "s" : ""} sur 30</div></div>
+  </div>
   <div class="sec">${ic("cal")}12 dernières semaines</div><div class="card" style="padding:14px">${heatHtml()}</div>
   <div class="sec">${ic("chart")}14 derniers jours</div><div class="card" style="padding:14px">${chartHtml()}</div>
-  ${cats.length ? `<div class="sec">${ic("eye")}Par type de question</div><div class="card hbars" style="padding:14px">${cats.map(([k, l, i]) => { const s = S.stats[k], p = s.ok / s.n; return `<div class="hbar"><span class="t">${ic(i)}${l}</span><span class="b"><i style="width:${(p * 100).toFixed(0)}%"></i></span><span class="v">${Math.round(p * 100)} %</span></div>`; }).join("")}</div>` : ""}
+  ${cats.length ? `<div class="sec">${ic("eye")}Bonnes réponses par type de question</div><div class="card hbars" style="padding:14px">${cats.map(([k, l, i]) => { const s = S.stats[k], p = s.ok / s.n; return `<div class="hbar"><span class="t">${ic(i)}${l}</span><span class="b"><i style="width:${(p * 100).toFixed(0)}%"></i></span><span class="v">${Math.round(p * 100)} %</span></div>`; }).join("")}</div>` : ""}
+  ${best.length ? `<div class="sec">${ic("tree")}Familles les mieux maîtrisées</div><div class="card hbars" style="padding:14px">${best.map(x => famRow(x)).join("")}</div>` : ""}
+  ${weak.length ? `<div class="sec">${ic("replay")}Familles à retravailler</div><div class="card hbars" style="padding:14px">${weak.map(x => famRow(x, true)).join("")}</div>` : ""}
+  ${!fs.length ? `<p class="muted" style="font-size:13px;margin:14px 2px 0">Les familles fortes et à retravailler apparaîtront après quelques parties (4 réponses par famille minimum).</p>` : ""}
+  ${hist.length ? `<div class="sec">${ic("clock")}Historique des parties</div><div class="group">${hist.map((h, i) => `<div class="set"><span class="lab"><b>${esc(h.title || "Partie")}</b><small>${esc(ago(h.t))} · ${h.ok}/${h.n} bonnes · +${fmt(h.xp)} XP</small></span><button class="icon-btn" data-act="histplay" data-i="${i}" aria-label="Rejouer">${ic("replay")}</button></div>`).join("")}</div>` : ""}
   ${conf.length ? `<div class="sec">${ic("duel")}Tes confusions</div><div style="display:flex;flex-direction:column;gap:8px">${conf.map(c => { const a = S.sp[c.a], b = S.sp[c.b]; return `<div class="conf"><img src="${esc(a.img || a.md)}" alt=""><span class="vs">VS</span><img src="${esc(b.img || b.md)}" alt=""><span class="tx">${esc(a.fr || a.sci)}<small>${esc(b.fr || b.sci)} · ${c.n}×</small></span><button class="btn primary" data-act="duelgo" data-ids="${c.a},${c.b}">Duel</button></div>`; }).join("")}</div>` : ""}
   <div class="sec">${ic("trophy")}Badges<span class="more">${Object.keys(S.badges).length} / ${BADGES.length}</span></div>
   <div class="badges">${BADGES.map(b => `<div class="bdg ${S.badges[b.id] ? "" : "off"}"><span class="md">${ic(b.ic)}</span><b>${esc(b.n)}</b><small>${esc(b.d)}</small></div>`).join("")}</div>
@@ -3114,6 +3805,8 @@ VIEWS.settings = () => `<section class="view settings">
   <div class="group">
     <div class="set"><span class="lab"><b>Noms affichés</b><small>Le latin en petit aide à le retenir sans effort.</small></span></div>
     <div class="set" style="border-top:0;padding-top:0">${seg("names", [["both", "FR + latin"], ["fr", "Français"], ["la", "Latin"]])}</div>
+    <div class="set"><span class="lab"><b>Objectif quotidien</b><small>XP à gagner chaque jour pour remplir l'anneau de l'accueil.</small></span></div>
+    <div class="set" style="border-top:0;padding-top:0">${seg("goal", [["50", "50 XP"], ["100", "100"], ["150", "150"], ["250", "250"]])}</div>
     <div class="set"><span class="lab"><b>Réponse par défaut</b><small>Saisie : tu tapes le nom, avec suggestions.</small></span></div>
     <div class="set" style="border-top:0;padding-top:0">${seg("fmt", [["qcm", "Choix multiple"], ["type", "Saisie"]])}</div>
     <div class="set"><span class="lab"><b>Choix par question</b><small>De 2 (facile) à 6.</small></span><div class="stepper"><button data-act="setk" data-d="-1" aria-label="Moins">${ic("minus")}</button><output>${S.set.k}</output><button data-act="setk" data-d="1" aria-label="Plus">${ic("plus")}</button></div></div>
@@ -3128,6 +3821,13 @@ VIEWS.settings = () => `<section class="view settings">
     <div class="set"><span class="lab"><b>Effets sonores</b><small>Petits sons de réussite et d'erreur.</small></span>${sw("sfx")}</div>
     <div class="set"><span class="lab"><b>Animations réduites</b><small>Pour un affichage plus calme.</small></span>${sw("calm")}</div>
   </div>
+  <div class="sec">${ic("map")}Cartes</div>
+  <div class="group">
+    <div class="set"><span class="lab"><b>Fond de carte</b><small>Relief : montagnes et fonds marins, puis vue satellite quand tu zoomes. Aussi changeable depuis la carte Géo.</small></span></div>
+    <div class="set" style="border-top:0;padding-top:0;display:block">${mapStylesHtml()}</div>
+    <div class="set"><span class="lab"><b>Noms des lieux</b><small>Pays, villes et repères par-dessus le relief et le satellite.</small></span>${sw("mapLab")}</div>
+    <div class="set"><span class="lab"><b>Îles en évidence</b><small>Un anneau sur les petites îles, touche-le pour y poser ton pin.</small></span>${sw("mapIsl")}</div>
+  </div>
   <div class="sec">${ic("bell")}Rappel quotidien</div>
   <div class="group">
     <div class="set">${ic("clock")}<span class="lab"><b>Heure</b><small>Ajoute un rappel qui revient chaque jour dans ton calendrier.</small></span><input type="time" id="remind" value="${esc(S.set.remind)}" data-set="remind" aria-label="Heure du rappel"></div>
@@ -3139,13 +3839,15 @@ VIEWS.settings = () => `<section class="view settings">
     <div class="set"><span class="lab"><b>Clé xeno-canto</b><small>Optionnelle : ajoute les chants xeno-canto aux fiches. <a href="https://xeno-canto.org/account" target="_blank" rel="noopener">Obtenir une clé</a></small></span><input type="password" id="xckey" value="${esc(S.set.xc)}" data-set="xc" placeholder="clé" autocomplete="off" aria-label="Clé xeno-canto"></div>
   </div>
   ${S.favs.length ? `<div class="sec">${ic("star")}Mes quiz</div><div class="group">${S.favs.map((f, i) => `<div class="set"><span class="lab"><b>${esc(f.title)}</b></span><button class="icon-btn" data-act="favdel" data-i="${i}" aria-label="Supprimer">${ic("trash")}</button></div>`).join("")}</div>` : ""}
-  <div class="sec">${ic("down")}Sauvegarde</div>
+  <div class="sec">${ic("down")}Mes données</div>
+  <p class="muted" style="font-size:13px;line-height:1.5;margin:-4px 2px 10px">Ta progression, ton carnet et tes astuces restent sur ce téléphone, dans l'appli : pas de compte, rien n'est envoyé ailleurs. L'appli interroge seulement iNaturalist, Wikipédia et xeno-canto pour les photos, les sons et les textes. Exporte de temps en temps pour ne rien perdre.</p>
   <div class="group">
+    <div class="set"><span class="lab"><b>Carnet en tableau</b><small>Toutes tes espèces avec dates et réussite (CSV pour Excel).</small></span><button class="btn ghost" data-act="csv">${ic("down")}CSV</button></div>
     <div class="set"><span class="lab"><b>Exporter</b><small>Télécharge ta progression (à garder en lieu sûr).</small></span><button class="btn ghost" data-act="export">${ic("down")}Exporter</button></div>
     <div class="set"><span class="lab"><b>Importer</b><small>Restaure une sauvegarde sur ce téléphone.</small></span><label class="btn ghost" style="cursor:pointer">${ic("up")}Importer<input type="file" id="importf" accept="application/json,.json" hidden></label></div>
     <div class="set"><span class="lab"><b>Tout effacer</b><small>Remet l'appli à zéro sur cet appareil.</small></span><button class="btn ghost" data-act="reset" id="resetBtn">${ic("trash")}Effacer</button></div>
   </div>
-  <p class="foot">Photos, sons et données : <a href="https://www.inaturalist.org" target="_blank" rel="noopener">iNaturalist</a> et ses observateurs (licence indiquée sur chaque média). Descriptions : Wikipédia (CC BY-SA). Fonds de carte : © contributeurs OpenStreetMap. Faune France n'ouvre pas ses données, d'où un simple lien depuis les fiches. Ta progression reste sur cet appareil.</p>
+  <p class="foot">Photos, sons et données : <a href="https://www.inaturalist.org" target="_blank" rel="noopener">iNaturalist</a> et ses observateurs (licence indiquée sur chaque média). Descriptions : Wikipédia (CC BY-SA). Fonds de carte : NASA Blue Marble, Esri et © contributeurs OpenStreetMap. Faune France n'ouvre pas ses données, d'où un simple lien depuis les fiches. Ta progression reste sur cet appareil.</p>
 </section>`;
 
 /* ---------- Calques ---------- */
@@ -3212,26 +3914,29 @@ const FICHE = { t: null, playing: false };
 function taxonById(id) {
   id = +id;
   const fromSes = SES?.pool?.byId?.get(id) || (SES?.q?.t?.id === id ? SES.q.t : null) || (SES?.missed || []).find(t => t.id === id) || (SES?.q?.choices || []).map(c => c.t).find(t => t && t.id === id);
-  return fromSes || (OTD && OTD.id === id ? OTD : null) || (FICHE.sim || []).find(t => t.id === id) || fromRec(id);
+  return fromSes || (OTD && OTD.id === id ? OTD : null) || (FICHE.sim || []).find(t => t.id === id) || LEARNSIM.find(t => t.id === id) || fromRec(id) || geoTaxon(id);
 }
 function openFiche(t) {
   if (!t) return;
   FICHE.t = t;
+  if (S.sp[t.id]) { S.sp[t.id].views = (S.sp[t.id].views || 0) + 1; save(); }
   const r = S.sp[t.id], f = fam(t) || r?.f || 0, o = ord(t) || r?.o || 0, dec = decodeLatin(t.sci), note = dec.find(x => x.note);
   const s = r ? stars(r) : 0;
   openLayer(`<div class="panel" role="dialog" aria-label="Fiche ${esc(nameFr(t))}">
   <button class="icon-btn close" data-act="close" aria-label="Fermer">${ic("x")}</button>
-  <div class="gallery" id="gal"><figure><img src="${esc(imgOf(t))}" alt=""><figcaption>${esc(t.img?.attr || "")}</figcaption></figure></div><div class="gdots" id="gdots"></div>
+  <div class="gallery" id="gal"><figure data-act="zoom" data-grp="fg" data-src="${esc(imgOf(t))}" data-cap="${esc(nameFr(t))}" data-sci="${esc(t.fr ? t.sci : "")}" data-attr="${esc(t.img?.attr || "")}"><img src="${esc(imgOf(t))}" alt="" data-fit draggable="false"><span class="zb">${ic("zoom")}</span><figcaption>${esc(t.img?.attr || "")}</figcaption></figure></div><div class="gdots" id="gdots"></div>
   <div class="in">
     <div class="ftitle"><h2>${esc(nameFr(t))}</h2>${t.fr ? `<span class="latin">${esc(t.sci)}</span>` : ""}
       <div class="chips">${f ? `<span class="chip fam">${ic("tree")}${esc(famName(f))}${famVern(f) ? " · " + esc(famVern(f)) : ""}</span>` : ""}${o ? `<span class="chip ord">${esc(ordName(o))}</span>` : ""}${r?.n ? starsHtml(s) : ""}</div></div>
     ${dec.length ? `<div class="decode">${dec.map(d => `<span class="dchip"><span class="latin">${esc(d.w)}</span>${esc(d.m)}</span>`).join("")}</div>${note ? `<div class="dnote">${esc(note.note)}</div>` : ""}` : ""}
     <div class="fsec"><h3>${ic("edit")}Mon astuce</h3><textarea class="mynote" id="mynote" data-id="${t.id}" placeholder="Un moyen mnémotechnique, un détail qui t'aide à la reconnaître…">${esc(r?.note || "")}</textarea></div>
-    ${r?.n ? `<div class="fsec"><h3>${ic("chart")}Ma maîtrise</h3><div class="stats4"><div><b>${r.n}</b><small>fois vue</small></div><div><b>${Math.round(100 * r.ok / r.n)} %</b><small>réussite</small></div><div><b>${s}/3</b><small>étoiles</small></div></div></div>` : ""}
+    ${r?.n ? `<div class="fsec"><h3>${ic("chart")}Mon historique</h3><div class="stats4"><div><b>${r.n}</b><small>fois vue</small></div><div><b>${Math.round(100 * r.ok / r.n)} %</b><small>réussite</small></div><div><b>${s}/3</b><small>étoiles</small></div></div>
+      <div class="hist">${r.first ? `<span>${ic("spark", "xs")}Rencontrée le ${esc(dateLong(r.first))}</span>` : ""}${r.lastOk ? `<span>${ic("check", "xs")}Dernière réussite : ${esc(dateLong(r.lastOk))}</span>` : ""}${FIELD.ids.has(t.id) ? `<span class="fieldok">${ic("eye", "xs")}Vue sur le terrain (iNaturalist)</span>` : ""}</div>
+      ${Object.keys(r.conf || {}).length ? `<div class="hist">${Object.entries(r.conf).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id, n]) => `<button class="chip" data-act="fiche" data-id="${id}">${ic("duel", "xs")}Confondue avec ${esc(S.sp[id]?.fr || S.sp[id]?.sci || "?")} · ${n}×</button>`).join("")}</div>` : ""}</div>` : ""}
     <div class="fsec"><h3>${ic("cal")}Présence par mois<span class="seg"><button class="on" data-act="phz" data-z="fr">France</button><button data-act="phz" data-z="zone">Ma zone</button></span></h3><div class="pheno" id="pheno"></div></div>
-    <div class="fsec"><h3>${ic("map")}Observations<span class="seg"><button class="on" data-act="mapz" data-v="fr">France</button><button data-act="mapz" data-v="eu">Europe</button><button data-act="mapz" data-v="w">Monde</button></span></h3><div id="fmap"></div><div class="mapcap">Fond © OpenStreetMap — points : observations iNaturalist</div></div>
+    <div class="fsec"><h3>${ic("map")}Observations<span class="seg"><button class="on" data-act="mapz" data-v="fr">France</button><button data-act="mapz" data-v="eu">Europe</button><button data-act="mapz" data-v="w">Monde</button></span></h3><div id="fmap"></div><div class="mapcap" id="mapcap"></div></div>
     <div class="fsec"><h3>${ic("wave")}Chants & cris</h3><div class="slist" id="fsnd"><div class="spin" style="margin:6px auto"></div></div></div>
-    <div class="fsec" id="fwiki" hidden><h3>${ic("book")}Description</h3><p id="fwikiTx"></p></div>
+    <div class="fsec" id="fwiki" hidden><h3>${ic("book")}<span id="fwikiH">Description</span></h3><p id="fwikiTx"></p></div>
     <div class="fsec"><h3>${ic("duel")}Ressemble à</h3><div class="simil" id="fsim"><div class="spin" style="margin:6px auto"></div></div></div>
     <div class="fsec"><h3>${ic("ext")}En savoir plus</h3><div class="links">
       <a href="https://www.inaturalist.org/taxa/${t.id}" target="_blank" rel="noopener">iNaturalist${ic("ext")}</a>
@@ -3243,12 +3948,14 @@ function openFiche(t) {
 }
 async function ficheFill(t) {
   const alive = () => FICHE.t === t && !$("#layer").hidden;
+  if (S.set.inat && FIELD.who !== S.set.inat) loadField().then(() => { if (alive() && FIELD.ids.has(t.id) && !$(".fieldok")) { const h = $(".hist"); if (h) h.insertAdjacentHTML("beforeend", `<span class="fieldok">${ic("eye", "xs")}Vue sur le terrain (iNaturalist)</span>`); } }).catch(() => {});
   renderPheno(t, { id: 6753 });
   renderMap(t, "fr");
   photosFor([t.id]).then(([ph]) => {
     if (!alive() || !ph.length) return;
     const g = $("#gal");
-    g.innerHTML = ph.slice(0, 10).map(p => `<figure><img src="${esc(p.md)}" alt="" loading="lazy"><figcaption>${esc(p.attr)}</figcaption></figure>`).join("");
+    g.innerHTML = ph.slice(0, 10).map((p, i) => `<figure data-act="zoom" data-grp="fg" data-src="${esc(p.lg || p.md)}" data-hd="${esc(hdOf(p.lg || p.md))}" data-cap="${esc(nameFr(t))}" data-sci="${esc(t.fr ? t.sci : "")}" data-attr="${esc(p.attr)}"><img src="${esc(p.lg || p.md)}" alt="" ${i ? 'loading="lazy" ' : ""}data-fit draggable="false"><span class="zb">${ic("zoom")}</span><figcaption>${esc(p.attr)}</figcaption></figure>`).join("");
+    fitImgs(g);
     const dots = $("#gdots");
     dots.innerHTML = ph.slice(0, 10).map((_, i) => `<i class="${i ? "" : "on"}"></i>`).join("");
     g.onscroll = () => { const i = Math.round(g.scrollLeft / g.clientWidth); $$("i", dots).forEach((d, j) => d.classList.toggle("on", i === j)); };
@@ -3259,11 +3966,13 @@ async function ficheFill(t) {
     FICHE.snds = list;
     $("#fsnd").innerHTML = list.length ? list.map((s, i) => `<div class="srow"><button class="pl" data-act="fplay" data-i="${i}" aria-label="Écouter">${ic("play")}</button><span class="tx"><b>${esc(s.kind ? cap(s.kind) : "Enregistrement " + (i + 1))}${s.len ? " · " + esc(s.len) : ""}</b>${esc([s.place, s.attr].filter(Boolean).join(" · "))}</span>${s.page || s.uri ? `<a href="${esc(s.page || s.uri)}" target="_blank" rel="noopener" class="icon-btn" aria-label="Source">${ic("ext")}</a>` : ""}</div>`).join("") : `<p class="muted" style="font-size:14px">Pas d'enregistrement trouvé.${S.set.xc ? "" : " Ajoute une clé xeno-canto dans Réglages pour en avoir plus."}</p>`;
   });
-  wiki(t).then(w => {
-    if (!alive() || !w) return;
+  Promise.all([wikiDesc(t).catch(() => null), wiki(t).catch(() => null)]).then(([d, w]) => {
+    if (!alive() || (!d && !w)) return;
     $("#fwiki").hidden = false;
-    $("#fwikiTx").innerHTML = `${esc(w.text.length > 520 ? w.text.slice(0, 500).replace(/\s\S*$/, "") + "…" : w.text)} ${w.url ? `<a href="${esc(w.url)}" target="_blank" rel="noopener">Wikipédia</a>` : ""}`;
-  }).catch(() => {});
+    $("#fwikiH").textContent = d ? "Pour la reconnaître" : "Description";
+    const src = d || w;
+    $("#fwikiTx").innerHTML = `${esc(clip(src.text, d ? 900 : 520))} ${src.url ? `<a href="${esc(src.url)}" target="_blank" rel="noopener">Lire sur Wikipédia</a>` : ""}`;
+  });
   similar(t, null).then(list => {
     if (!alive()) return;
     FICHE.sim = list.slice(0, 10);
@@ -3283,14 +3992,18 @@ function renderPheno(t, zone) {
 }
 function renderMap(t, view) {
   const V = { fr: { z: 5, xs: [15, 16], ys: [10, 11] }, eu: { z: 3, xs: [3, 4, 5], ys: [1, 2, 3] }, w: { z: 1, xs: [0, 1], ys: [0, 1] } }[view];
+  const st = MAPST[curStyle()], ly = layerAt(st, V.z), lab = st.lab && S.set.mapLab;
   let cells = "";
   V.ys.forEach((y, ry) => V.xs.forEach((x, rx) => {
     const area = `${ry + 1}/${rx + 1}`;
-    cells += `<img class="base" src="https://tile.openstreetmap.org/${V.z}/${x}/${y}.png" alt="" style="grid-area:${area}" loading="lazy">`;
+    cells += `<img class="base${st.inv ? " inv" : ""}" src="${esc(tileUrl(ly.u, V.z, x, y))}" data-alt="${esc(tileUrl(MAPST.nuit.layers[0].u, V.z, x, y))}" alt="" style="grid-area:${area}" loading="lazy" onerror="if(this.dataset.alt){this.src=this.dataset.alt;this.dataset.alt='';this.classList.add('inv')}">`;
+    if (lab) cells += `<img class="lab" src="${esc(tileUrl(MAPLAB.u, V.z, x, y))}" alt="" style="grid-area:${area}" loading="lazy" onerror="this.remove()">`;
     cells += `<img class="ov" src="https://api.inaturalist.org/v1/grid/${V.z}/${x}/${y}.png?taxon_id=${t.id}&color=%231FD1F2&quality_grade=research" alt="" style="grid-area:${area}" loading="lazy" onerror="this.remove()">`;
   }));
   const box = $("#fmap");
-  if (box) box.innerHTML = `<div class="tilemap" style="grid-template-columns:repeat(${V.xs.length},1fr)">${cells}</div>`;
+  if (box) box.innerHTML = `<div class="tilemap${st.light ? " light" : ""}" style="grid-template-columns:repeat(${V.xs.length},1fr)">${cells}</div>`;
+  const cap = $("#mapcap");
+  if (cap) cap.textContent = `Fond : ${st.cap} — points : observations iNaturalist`;
 }
 
 /* ---------- Son ---------- */
@@ -3310,6 +4023,7 @@ function audioEl() {
     SND.el.addEventListener("ended", () => { SND.playing = false; setSndUI(); rowUI(); });
     SND.el.addEventListener("pause", () => { SND.playing = false; setSndUI(); rowUI(); });
     SND.el.addEventListener("playing", () => { SND.playing = true; setSndUI(); rowUI(); loop(); });
+    SND.el.addEventListener("error", () => { if (SND.mode === "el" && SND.url && !SND.row && SES?.q?.snd?.url === SND.url) mediaFail(SES.q, "Son indisponible"); else if (SND.row) toast("Ce son ne se lance pas."); });
   }
   return SND.el;
 }
@@ -3560,6 +4274,9 @@ const ACT = {
     if (k === "duel") { openDuelPicker(); return; }
     LASTCFG = modeCfg(k); startSession(LASTCFG);
   },
+  histplay: el => { const h = (S.hist || [])[+el.dataset.i]; if (h?.cfg) { LASTCFG = { ...h.cfg }; startSession(LASTCFG); } },
+  ftrain: el => { const f = +el.dataset.f; LASTCFG = { ...baseCfg(), title: famName(f) || "Famille", icon: "tree", taxa: [f], stim: photoStim(), size: 60 }; startSession(LASTCFG); },
+  csv: () => { download(`plumage-carnet-${dayKey()}.csv`, carnetCsv(), "text/csv;charset=utf-8"); toast("Carnet exporté (fichier CSV, ouvrable dans Excel)."); },
   fav: el => { const f = S.favs[+el.dataset.i]; if (f) { LASTCFG = { ...f.cfg }; startSession(LASTCFG); } },
   favdel: el => { S.favs.splice(+el.dataset.i, 1); save(); rerender(); },
   otd: () => openFiche(OTD),
@@ -3578,7 +4295,22 @@ const ACT = {
   aplay: el => { const q = SES?.q; const c = q?.choices?.[+el.dataset.i]; if (c?.snd) playRow(c.snd.url, el.closest(".achoice")); },
   fplay: el => { const s = FICHE.snds?.[+el.dataset.i]; if (s) { FICHE.playing = true; playRow(s.url, el.closest(".srow")); } },
   next: () => nextQuestion(),
+  replaceq: () => replaceQuestion(),
   geook: () => geoValidate(),
+  zoom: el => { if (el.querySelector(".mfail") || el.classList.contains("broken")) return; const z = zoomItems(el); openViewer(z.items, z.i); },
+  vclose: () => closeViewer(),
+  vgo: el => { if (VW) { const d = +el.dataset.d; vwShow(VW.i + d, d); } },
+  vfiche: el => { const t = taxonById(el.dataset.id); closeViewer(true); if (t) openFiche(t); },
+  mapfull: () => setMapFull(),
+  mapmenu: () => { const m = $("#mmenu"); if (m) m.hidden = !m.hidden; },
+  mapset: el => {
+    S.set.mapst = el.dataset.s; save();
+    $$("[data-act=mapset]").forEach(b => b.classList.toggle("on", b.dataset.s === S.set.mapst));
+    if (GMAP) setMapStyle(GMAP, S.set.mapst);
+    if (FICHE.t && $("#fmap") && !$("#layer").hidden) renderMap(FICHE.t, $("[data-act=mapz].on")?.dataset.v || "fr");
+    const mm = el.closest("#mmenu");
+    if (mm) mm.hidden = true;
+  },
   sugg: el => {
     const q = SES?.q;
     if (!q || q.done) return;
@@ -3631,9 +4363,14 @@ const ACT = {
   blaunch: async () => { try { const cfg = await builderCfg(getB()); LASTCFG = cfg; startSession(cfg); } catch (e) { toast("Familles indisponibles (réseau ?)."); } },
   bsave: async () => { try { const B = getB(), cfg = await builderCfg(B); S.favs.unshift({ title: cfg.title, cfg }); S.favs = S.favs.slice(0, 12); save(); toast("Enregistré dans « Mes quiz » sur l'accueil."); } catch (e) { toast("Enregistrement impossible."); } },
   cfilt: el => { CARNET.f = el.dataset.f; $$("[data-act=cfilt]").forEach(b => b.classList.toggle("on", b === el)); $("#cgrid").innerHTML = carnetGrid(); },
-  set: el => { const k = el.dataset.k; S.set[k] = el.dataset.v; save(); $$(`[data-act=set][data-k=${k}]`).forEach(b => b.classList.toggle("on", b === el)); },
+  set: el => { const k = el.dataset.k; S.set[k] = k === "goal" ? +el.dataset.v : el.dataset.v; save(); $$(`[data-act=set][data-k=${k}]`).forEach(b => b.classList.toggle("on", b === el)); },
   setk: el => { S.set.k = clamp(S.set.k + +el.dataset.d, 2, 6); save(); rerender(); },
-  toggle: el => { const k = el.dataset.k; S.set[k] = !S.set[k]; save(); el.classList.toggle("on", S.set[k]); el.setAttribute("aria-checked", S.set[k] ? "true" : "false"); if (k === "calm") document.body.classList.toggle("calm", S.set.calm); },
+  toggle: el => {
+    const k = el.dataset.k; S.set[k] = !S.set[k]; save();
+    $$(`[data-act=toggle][data-k=${k}]`).forEach(b => { b.classList.toggle("on", S.set[k]); b.setAttribute("aria-checked", S.set[k] ? "true" : "false"); });
+    if (k === "calm") document.body.classList.toggle("calm", S.set.calm);
+    if (k === "mapLab" || k === "mapIsl") mapExtras();
+  },
   ics: () => { icsFile(); toast("Ouvre le fichier pour ajouter le rappel quotidien à ton calendrier."); },
   export: () => { download(`plumage-sauvegarde-${dayKey()}.json`, JSON.stringify(S), "application/json"); toast("Sauvegarde téléchargée."); },
   reset: el => {
@@ -3643,6 +4380,8 @@ const ACT = {
 };
 
 function onClick(e) {
+  const mm = $("#mmenu");
+  if (mm && !mm.hidden && !e.target.closest("#mmenu,[data-act=mapmenu]")) mm.hidden = true;
   const el = e.target.closest("[data-act]");
   if (el) {
     if (el.disabled) return;
@@ -3653,6 +4392,11 @@ function onClick(e) {
   if (e.target.id === "layer") closeLayer();
 }
 function onKey(e) {
+  if (VW) {
+    if (e.key === "Escape") closeViewer();
+    else if (e.key === "ArrowRight" || e.key === "ArrowLeft") { const d = e.key === "ArrowRight" ? 1 : -1; vwShow(VW.i + d, d); }
+    return;
+  }
   const tg = e.target;
   if (tg && tg.matches && tg.matches("input, textarea")) { if (e.key === "Escape") tg.blur(); return; }
   if (e.key === "Escape") { if (!$("#layer").hidden) closeLayer(); return; }

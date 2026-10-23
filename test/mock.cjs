@@ -66,9 +66,11 @@ const imgCache = new Map();
 async function bird(pid, size) {
   const key = pid + size;
   if (imgCache.has(key)) return imgCache.get(key);
-  const W = size === "square" ? 75 : size === "medium" ? 500 : 1024, H = size === "square" ? 75 : Math.round(W * .75);
+  // formats variés pour tester le cadrage : paysage 4:3, portrait 3:4, paysage 3:2
+  const L = size === "square" ? 75 : size === "medium" ? 500 : 1024, ar = size === "square" ? 1 : [.75, 1.333, .667][pid % 3];
+  const W = ar > 1 ? Math.round(L / ar) : L, H = ar > 1 ? L : Math.round(L * ar);
   const h = hue(Math.floor(pid / 10)), h2 = (h + 40) % 360, v = pid % 10;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 400 300">
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">
   <defs><radialGradient id="g" cx="${30 + v * 4}%" cy="40%" r="80%"><stop offset="0" stop-color="hsl(${h2},45%,62%)"/><stop offset="1" stop-color="hsl(${h},40%,18%)"/></radialGradient>
   <filter id="b"><feGaussianBlur stdDeviation="6"/></filter></defs>
   <rect width="400" height="300" fill="url(#g)"/>
@@ -99,6 +101,18 @@ function wav(seed) {
   return data;
 }
 const wavCache = new Map();
+const TILEC = new Map();
+async function mapTile(kind, z) {
+  const k = kind + z;
+  if (TILEC.has(k)) return TILEC.get(k);
+  const pal = { relief: ["#0E2A4A", "#3E6B3A", "#B89B6A", "#F4F1EA"], sat: ["#0A1F33", "#2F4A25", "#6B5A3A", "#9AA58A"], topo: ["#BFD9E8", "#EFE9D8", "#C9C2A6", "#8C7B5A"], ocean: ["#8DB6D3", "#E9E4D6", "#D8D2BE", "#B9B29A"], phys: ["#5C86B0", "#8FA86A", "#C2A878", "#EEEEEE"] }[kind];
+  const svg = kind === "lab"
+    ? `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><text x="40" y="60" font-size="15" font-family="sans-serif" fill="#fff" stroke="#000" stroke-width=".5">Pays ${z}</text><path d="M0 200 L 256 180" stroke="#ddd" stroke-dasharray="4 4" fill="none"/></svg>`
+    : `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256"><rect width="256" height="256" fill="${pal[0]}"/><path d="M20 60 C 80 20, 160 40, 230 90 L 220 200 C 150 230, 70 220, 30 180 Z" fill="${pal[1]}"/><path d="M70 90 C 110 70, 150 80, 180 110 L 170 160 C 130 175, 90 170, 75 140 Z" fill="${pal[2]}"/><path d="M110 105 l 15 -18 l 15 18 z" fill="${pal[3]}"/><circle cx="215" cy="222" r="4" fill="${pal[1]}"/><text x="60" y="245" font-size="13" font-family="sans-serif" fill="#fff" opacity=".7">${kind} ${z}</text></svg>`;
+  const buf = await sharp(Buffer.from(svg)).png().toBuffer();
+  TILEC.set(k, buf);
+  return buf;
+}
 let tilePng = null, gridPng = null;
 
 async function handle(route) {
@@ -125,11 +139,13 @@ async function handle(route) {
   }
   if (host === "static.inaturalist.org") {
     let m = p.match(/^\/photos\/(\d+)\/(square|medium|large|small|original)\.jpg$/);
+    if (m && process.env.MOCK_BAD_IMG && m[2] !== "square" && Math.floor(+m[1] / 10) % 2 === 0) return route.fulfill({ status: 404, body: "" });
     if (m) return route.fulfill({ status: 200, contentType: "image/jpeg", headers: { "access-control-allow-origin": "*" }, body: await bird(+m[1], m[2] === "large" || m[2] === "original" ? "large" : m[2] === "square" ? "square" : "medium") });
     m = p.match(/^\/sounds\/(\d+)\.wav$/);
     if (m) { if (!wavCache.has(m[1])) wavCache.set(m[1], wav(+m[1])); return route.fulfill({ status: 200, contentType: "audio/wav", headers: { "access-control-allow-origin": "*" }, body: wavCache.get(m[1]) }); }
     return route.fulfill({ status: 404, body: "" });
   }
+  if (host === "cdnjs.cloudflare.com" && process.env.MOCK_NO_CDN) return route.abort();
   if (host === "cdnjs.cloudflare.com") {
     const f = p.endsWith(".css") ? "leaflet.css" : "leaflet.js";
     return route.fulfill({ status: 200, contentType: f.endsWith(".css") ? "text/css" : "application/javascript", body: fs.readFileSync(path.join(__dirname, "vendor/lf/dist", f)) });
@@ -143,11 +159,24 @@ async function handle(route) {
     tilePng = tilePng || await sharp({ create: { width: 256, height: 256, channels: 3, background: { r: 18, g: 22, b: 33 } } }).png().toBuffer();
     return route.fulfill({ status: 200, contentType: "image/png", body: tilePng });
   }
+  if (host === "fr.wikipedia.org" && p === "/w/api.php") {
+    const title = q.titles || "";
+    const sp = allSp.find(x => x.sci === title || x.fr === title);
+    if (!sp) return json(route, { query: { pages: { "-1": { title, missing: "" } } } });
+    const extract = `Le ${sp.fr.toLowerCase()} est un oiseau.\n\n\n== Description ==\nIl mesure 14 cm pour une envergure de 22 cm. Le dessus est brun olive, la poitrine et la face sont orange vif bordées de gris. Les juvéniles sont tachetés de brun, sans orange.\n\n\n=== Chant ===\nChant flûté et mélancolique.\n\n\n== Répartition ==\nToute l'Europe.`;
+    return json(route, { query: { pages: { "123": { pageid: 123, title: sp.fr, extract } } } });
+  }
   if (host === "fr.wikipedia.org") {
     const title = decodeURIComponent(p.split("/").pop()).replace(/_/g, " ");
     const s = allSp.find(x => x.sci === title || x.fr === title);
     if (!s) return json(route, { type: "https://mediawiki.org/wiki/HyperSwitch/errors/not_found" }, 404);
     return json(route, { type: "standard", title: s.fr, extract: `Le ${s.fr.toLowerCase()} (${s.sci}) est une espèce d'oiseaux de la famille des ${famOf(s.f)[1].replace(/idae$/, "idés")}. Texte de test qui imite un résumé Wikipédia pour vérifier la mise en page sur plusieurs lignes.`, content_urls: { mobile: { page: "https://fr.m.wikipedia.org/wiki/" + encodeURIComponent(s.fr) } } });
+  }
+  if (host === "gibs.earthdata.nasa.gov" || host === "map1.vis.earthdata.nasa.gov" || host === "server.arcgisonline.com") {
+    if (process.env.MOCK_NO_TILES || (process.env.MOCK_NO_GIBS && host !== "server.arcgisonline.com")) return route.fulfill({ status: 404, body: "" });
+    const kind = host !== "server.arcgisonline.com" ? "relief" : /World_Imagery/.test(p) ? "sat" : /World_Topo_Map/.test(p) ? "topo" : /World_Ocean_Base/.test(p) ? "ocean" : /World_Physical/.test(p) ? "phys" : "lab";
+    const z = (p.match(/\/(\d+)\/\d+\/\d+(\.\w+)?$/) || [])[1] || "?";
+    return route.fulfill({ status: 200, contentType: "image/png", body: await mapTile(kind, z) });
   }
   if (host !== "api.inaturalist.org") return route.abort();
 

@@ -527,3 +527,47 @@ const ORDER_FR = {
 
 const MONTHS = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
 const MONTHS_LONG = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+
+/* Îles à mettre en évidence sur la carte Géo : [nom, lat, lng, taille approx. en km].
+   Un anneau s'affiche tant que l'île est trop petite pour être vue ; le toucher place le pin dessus. */
+const ISLANDS = [
+  // Atlantique Nord-Est et mers du Nord
+  ["Tenerife", 28.27, -16.6, 80], ["Madère", 32.75, -16.96, 55], ["São Miguel", 37.78, -25.48, 65], ["Pico · Faial", 38.5, -28.4, 45], ["Terceira", 38.72, -27.22, 30], ["Flores (Açores)", 39.44, -31.2, 17],
+  ["Gran Canaria", 27.95, -15.6, 50], ["Fuerteventura", 28.4, -14.0, 100], ["Lanzarote", 29.04, -13.63, 60], ["La Palma", 28.68, -17.86, 45], ["El Hierro", 27.74, -18.02, 27], ["La Gomera", 28.1, -17.23, 25],
+  ["Santiago (Cap-Vert)", 15.08, -23.63, 55], ["Sal (Cap-Vert)", 16.73, -22.93, 30], ["Santo Antão", 17.07, -25.17, 40],
+  ["Ouessant", 48.46, -5.09, 8], ["Scilly", 49.93, -6.32, 15], ["Heligoland", 54.18, 7.88, 2], ["Fair Isle", 59.53, -1.63, 5], ["Féroé", 62.0, -6.85, 110], ["Shetland", 60.35, -1.25, 110], ["Orcades", 59.0, -3.0, 80], ["Hébrides", 57.75, -7.0, 200], ["Jan Mayen", 70.98, -8.5, 55],
+  ["Gotland", 57.5, 18.55, 170], ["Öland", 56.75, 16.65, 130], ["Bermudes", 32.32, -64.76, 25], ["Saint-Pierre-et-Miquelon", 46.95, -56.3, 40],
+  // Méditerranée
+  ["Corse", 42.15, 9.1, 180], ["Sardaigne", 40.05, 9.05, 270], ["Sicile", 37.55, 14.15, 280], ["Majorque", 39.62, 2.99, 100], ["Minorque", 39.95, 4.1, 50], ["Ibiza", 38.98, 1.43, 40],
+  ["Malte", 35.92, 14.41, 27], ["Lampedusa", 35.51, 12.6, 10], ["Crète", 35.24, 24.85, 260], ["Chypre", 35.1, 33.3, 220], ["Lesbos", 39.17, 26.33, 70], ["Rhodes", 36.17, 27.92, 75],
+  // Afrique et Atlantique Sud
+  ["Bijagos", 11.3, -15.9, 100], ["São Tomé", 0.23, 6.6, 50], ["Príncipe", 1.61, 7.4, 17], ["Bioko", 3.55, 8.75, 70],
+  ["Ascension", -7.95, -14.36, 12], ["Sainte-Hélène", -15.96, -5.71, 15], ["Tristan da Cunha", -37.11, -12.29, 12], ["Gough", -40.32, -9.94, 13], ["Bouvet", -54.42, 3.36, 9],
+  ["Fernando de Noronha", -3.85, -32.42, 10], ["Trindade", -20.51, -29.33, 6],
+  ["Malouines", -51.8, -59.5, 250], ["Géorgie du Sud", -54.43, -36.6, 170], ["Sandwich du Sud", -57.75, -26.5, 40], ["Orcades du Sud", -60.6, -45.5, 80], ["Shetland du Sud", -62.05, -58.4, 200],
+  // Océan Indien
+  ["Réunion", -21.12, 55.53, 60], ["Maurice", -20.25, 57.55, 55], ["Rodrigues", -19.72, 63.42, 18], ["Seychelles (Mahé)", -4.68, 55.49, 30], ["Aldabra", -9.42, 46.34, 34],
+  ["Mayotte", -12.82, 45.15, 40], ["Grande Comore", -11.7, 43.33, 60], ["Anjouan", -12.21, 44.43, 35],
+  ["Maldives", 4.17, 73.5, 10], ["Sri Lanka", 7.85, 80.75, 430], ["Socotra", 12.46, 53.82, 130], ["Bahreïn", 26.05, 50.55, 40],
+  ["Andaman", 11.7, 92.7, 150], ["Nicobar", 7.0, 93.8, 100], ["Chagos", -7.31, 72.41, 20], ["Laquedives", 10.57, 72.64, 15],
+  ["Kerguelen", -49.35, 69.5, 150], ["Crozet", -46.42, 51.8, 100], ["Amsterdam", -37.83, 77.55, 9], ["Prince-Édouard", -46.9, 37.75, 30], ["Heard", -53.1, 73.52, 40],
+  ["Christmas", -10.49, 105.62, 19], ["Cocos (Keeling)", -12.16, 96.87, 15],
+  // Asie
+  ["Taïwan", 23.7, 120.95, 390], ["Okinawa", 26.5, 127.95, 100], ["Ishigaki", 24.34, 124.16, 30], ["Jeju", 33.38, 126.55, 70], ["Hainan", 19.2, 109.7, 250], ["Palawan", 9.83, 118.74, 420],
+  ["Bali", -8.34, 115.09, 140], ["Flores", -8.66, 121.08, 360], ["Sumba", -9.65, 119.98, 200], ["Timor", -9.2, 125.0, 470], ["Halmahera", 0.63, 127.95, 300], ["Seram", -3.12, 129.5, 340],
+  // Pacifique Nord
+  ["Kouriles", 45.0, 147.7, 200], ["Attu", 52.88, 172.97, 60], ["Adak", 51.8, -176.6, 50], ["Unalaska", 53.87, -166.54, 80], ["Pribilof", 57.15, -170.27, 20], ["Kodiak", 57.47, -153.43, 160],
+  ["Haida Gwaii", 53.0, -132.0, 250], ["Wrangel", 71.24, -179.42, 150], ["Midway", 28.21, -177.37, 6],
+  ["Kauai", 22.05, -159.52, 50], ["Oahu", 21.47, -157.97, 60], ["Maui", 20.8, -156.31, 70], ["Hawaï (Grande Île)", 19.59, -155.43, 150],
+  ["Guam", 13.45, 144.78, 50], ["Saipan", 15.19, 145.75, 20], ["Palaos", 7.5, 134.6, 40], ["Pohnpei", 6.88, 158.22, 25], ["Kiritimati", 1.87, -157.36, 50],
+  // Pacifique Sud
+  ["Galápagos", -0.65, -90.4, 130], ["Île Cocos", 5.53, -87.06, 5], ["Île de Pâques", -27.12, -109.35, 20], ["Juan Fernández", -33.62, -78.83, 20],
+  ["Tahiti", -17.65, -149.43, 45], ["Marquises", -8.86, -140.14, 30], ["Rangiroa", -15.12, -147.65, 75], ["Gambier", -23.12, -134.97, 25], ["Pitcairn", -25.07, -130.1, 5], ["Rarotonga", -21.23, -159.78, 11],
+  ["Samoa", -13.75, -172.1, 150], ["Tonga", -21.17, -175.2, 40], ["Fidji", -17.8, 178.0, 150], ["Vanuatu", -16.25, 167.5, 120], ["Nouvelle-Calédonie", -21.3, 165.4, 400], ["Salomon", -9.6, 160.1, 150],
+  ["Lord Howe", -31.55, 159.08, 10], ["Norfolk", -29.03, 167.95, 8], ["Tasmanie", -42.0, 146.6, 300],
+  ["Chatham", -43.95, -176.55, 50], ["Îles Auckland", -50.7, 166.1, 40], ["Campbell", -52.54, 169.15, 15], ["Macquarie", -54.62, 158.86, 34],
+  // Caraïbes
+  ["Jamaïque", 18.11, -77.3, 230], ["Porto Rico", 18.22, -66.59, 180], ["Bahamas (Nassau)", 25.05, -77.4, 40], ["Andros", 24.43, -77.95, 160], ["Caïmans", 19.32, -81.24, 35], ["Dry Tortugas", 24.63, -82.87, 10],
+  ["Guadeloupe", 16.25, -61.58, 70], ["Martinique", 14.64, -61.02, 65], ["Dominique", 15.42, -61.35, 45], ["Sainte-Lucie", 13.9, -60.97, 40], ["Barbade", 13.19, -59.54, 33],
+  ["Trinité", 10.44, -61.25, 80], ["Tobago", 11.25, -60.67, 40], ["Curaçao", 12.17, -68.99, 60], ["Grenade", 12.11, -61.68, 30], ["Saint-Martin", 18.07, -63.05, 15]
+];

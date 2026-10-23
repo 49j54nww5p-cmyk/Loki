@@ -109,7 +109,7 @@ async function prepare(ses) {
     ses.len = ses.plan.length;
     photosFor([A.id, B.id]).catch(() => {});
   } else if (ses.kind === "geo") {
-    await ensureLeaflet();
+    try { await ensureLeaflet(); } catch (e) { ses.geoQcm = true; }
   } else if (ses.kind === "root") {
     ses.pool = { list: Object.keys(S.sp).map(fromRec).filter(Boolean), byId: new Map() };
   }
@@ -199,7 +199,7 @@ function randomSpec(ses) {
 async function buildNext(ses) {
   if (ses.ended || (ses.len && ses.built >= ses.len)) return null;
   const idx = ses.built;
-  let spec = ses.plan ? ses.plan[idx] : randomSpec(ses);
+  let spec = (ses.plan && ses.plan[idx]) || randomSpec(ses);
   for (let attempt = 0; attempt < 5 && spec; attempt++) {
     const q = await buildQ(ses, spec);
     if (q) { q.idx = idx; ses.built = idx + 1; warm(q); return q; }
@@ -371,20 +371,32 @@ async function buildGeo(ses) {
       const t = n.taxon, ph = (n.photos || []).find(p => p && p.url);
       if (!t || !ph || t.rank !== "species" || seen.has(t.id)) continue;
       seen.add(t.id);
-      sp.push({ id: t.id, fr: cap(t.preferred_common_name || t.name), sci: t.name, img: sizeUrl(ph.url, "medium"), attr: ph.attribution || "" });
+      sp.push({ id: t.id, fr: cap(t.preferred_common_name || t.name), sci: t.name, img: sizeUrl(ph.url, "medium"), lg: sizeUrl(ph.url, "large"), hd: sizeUrl(ph.url, "original"), attr: ph.attribution || "" });
       const l = parseLoc(n); if (l) pts.push(l);
       if (sp.length >= 5) break;
     }
     if (sp.length < 5) continue;
-    sp.forEach(s => preload(s.img));
+    sp.forEach(s => preload(s.lg));
     const lat = pts.reduce((a, p) => a + p[0], 0) / pts.length || loc[0], lng = pts.reduce((a, p) => a + p[1], 0) / pts.length || loc[1];
     const place = (near.results.find(n => n.place_guess) || o).place_guess || "";
     const country = place.split(",").pop().trim();
     const hints = [{ ic: "globe", tx: lat >= 0 ? "Hémisphère nord" : "Hémisphère sud" }];
     if (country) hints.push({ ic: "pin", tx: "Pays : " + country });
+    if (ses.geoQcm) {
+      const k = continentOf(lat, lng);
+      return { kind: "geo", lat, lng, place, sp, cont: k, format: "qcm", level: "geo", hintsUsed: 0, hints, k: 6,
+        choices: CONTINENTS.map(c => ({ key: "c" + c.k, label: c.n })), answerKey: "c" + k };
+    }
     return { kind: "geo", lat, lng, place, sp, format: "map", level: "geo", hintsUsed: 0, hints, answerKey: "map" };
   }
   return null;
+}
+function continentOf(la, ln) {
+  if (ln < -25 && ln > -170) return la > 12 ? "na" : "sa";
+  if (ln <= -170 || (ln >= 110 && la < -10) || (ln >= 130 && la < 0)) return "oc";
+  if (la > 36 && ln >= -25 && ln < 45) return "eu";
+  if (la <= 36 && la > -40 && ln >= -25 && ln < 52) return (la > 29 && ln > 34) ? "as" : "af";
+  return "as";
 }
 function haversine(a, b) {
   const R = 6371, r = x => x * Math.PI / 180;
@@ -464,7 +476,7 @@ function checkTyped(str, q) {
   return { ok: false };
 }
 function xpFor(ses, q, res, ms) {
-  if (q.kind === "geo") return res.geoPts || 0;
+  if (q.kind === "geo") return q.format === "map" ? (res.geoPts || 0) : (res.ok ? 40 : 0);
   if (!res.ok) return res.partial ? 3 : 0;
   let x = q.kind === "root" ? 7 : 10;
   const nC = q.choices?.length || q.k || 5;
@@ -495,7 +507,7 @@ function settle(res) {
   if (q.kind === "taxon") {
     const r = rec(q.t);
     if (!r.n) ses.newSp.push(q.t.id);
-    r.n++; if (ok) r.ok++;
+    r.n++; if (ok) { r.ok++; r.lastOk = dayKey(); }
     r.last = dayKey();
     const mod = (q.stim === "son" || q.stim === "soncho") ? "son" : (q.stim === "fr" || q.stim === "la") ? "nom" : "photo";
     if (q.level === "species") srsUpdate(r, mod, ok, (q.hintsUsed || 0) > 0);
@@ -559,7 +571,7 @@ function showQuestion(q) {
   mountQuestion(q);
   q.t0 = Date.now();
   const more = !(ses.len && ses.built >= ses.len);
-  ses.nextP = more ? buildNext(ses).catch(e => ({ err: e })) : null;
+  if (!ses.nextP && more) ses.nextP = buildNext(ses).catch(e => ({ err: e }));
 }
 
 function endSession(aborted) {
@@ -578,6 +590,7 @@ function endSession(aborted) {
     if (h < 8) count("early");
     if (h >= 22) count("night");
     if (ses.kind === "duel" && n >= 6 && ok >= n - 1) count("duelwin");
+    S.hist = [{ t: Date.now(), title: ses.title || "", kind: ses.kind, n, ok, xp: ses.xp, cfg: ses.cfg }, ...(S.hist || [])].slice(0, 30);
     if (n >= 3) {
       const m = markPlayed();
       if (m) msgs.push(m);
@@ -588,6 +601,7 @@ function endSession(aborted) {
       today().serie = 1;
     }
   }
+  if (n && S.hist && S.hist[0]) S.hist[0].xp = ses.xp;
   const badges = checkBadges();
   const L = level();
   if (L.n > ses.lvl0 && !ses.lvlNow) { setTimeout(() => { sfx.lvl(); confetti(); }, 500); }

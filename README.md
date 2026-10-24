@@ -9,6 +9,10 @@ Sur iPhone : ouvre le lien dans Safari, bouton Partager, puis « Sur l'écran d'
 ## Contenu
 
 - **Série du jour** (12 questions mélangées, environ 4 min), **mini-série** (1 min) et **révisions espacées**
+- **Sur mesure** mis en avant sur l'accueil, juste sous la série du jour, avec tes quiz enregistrés
+- **Présentation** rapide au premier lancement (bouton « Passer », à revoir dans Réglages) et fenêtre **Quoi de neuf ?** après chaque mise à jour
+- **Duel en direct** : 1 contre 1, chacun son téléphone, mêmes photos et même chrono (5, 10 ou 15 s) ; on rejoint avec un code à 5 caractères ou le lien d'invitation ; 100 points par bonne réponse plus un bonus de rapidité, revanche en un geste
+- **Classement XP** de tous les joueurs (top 100), facultatif : seuls le pseudo et l'XP sont publiés
 - **Modes** : Photo, Chants (avec sonogramme), Latin ↔ français, Familles, Duels de sosies, Géo, Racines latines, Sur mesure
 - **Sur mesure** : zone (n'importe quel lieu iNaturalist, autour de moi, le monde), groupes de familles, espèces communes / de saison / raretés / exotiques / tes propres observations, type de question (photo, photo de terrain, chant, « quel chant ? », nom français, nom latin), réponse attendue (espèce, genre, famille, ordre), QCM de 2 à 6 choix, vignettes, saisie libre, flashcards, leurres de facile à expert, chrono
 - **Progression** : XP, niveaux, jours d'affilée avec jokers, badges, carnet d'espèces, statistiques, confusions fréquentes
@@ -32,7 +36,10 @@ Sur iPhone : ouvre le lien dans Safari, bouton Partager, puis « Sur l'écran d'
 - Sons : iNaturalist, Wikimedia Commons et xeno-canto (avec ta clé).
 - La progression reste dans le navigateur de l'appareil (sauvegarde / restauration dans Réglages). Pas de compte, pas de traceur : détails dans Réglages › Confidentialité et sources.
 - Polices (SIL OFL) et Leaflet (BSD-2) sont hébergés avec l'appli : aucun appel à Google Fonts ni à un CDN.
+- Classement et duels : Firebase Realtime Database (Google), appelée en REST sans bibliothèque. Le classement ne reçoit que pseudo, XP et date, et seulement si tu l'actives ; une partie de duel (pseudos, questions, réponses) est effacée quand l'hôte la quitte.
 
 ## Développement
 
 Sources dans `src/`. Pour régénérer `index.html` et les icônes : `OUT=. node build.cjs` (nécessite `sharp`).
+
+En ligne : l'adresse de la base se règle dans `NET_URL` (`src/net.js`) ; tant qu'elle est vide, classement et duel affichent « Bientôt en ligne ». Tests : `node test/run.cjs all`, puis `test/live.cjs` (duel entre onglets sur une base locale), `test/hand.cjs`, etc.

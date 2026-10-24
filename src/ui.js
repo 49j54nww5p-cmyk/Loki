@@ -11,11 +11,11 @@ function go(v, data) {
   closeViewer(true);
   document.body.classList.remove("gfull");
   VIEW = v; VDATA = data;
-  document.body.classList.toggle("inquiz", ["quiz", "loading", "result", "error", "builder", "trip", "hand", "handsp"].includes(v));
+  document.body.classList.toggle("inquiz", ["quiz", "loading", "result", "error", "builder", "trip", "hand", "handsp", "live"].includes(v));
   const tabv = v === "about" ? "settings" : v;
   $$("#nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === tabv));
   if (v !== "quiz") setAmbient(null);
-  if (v !== "result" && v !== "quiz") stopFx();
+  if (v !== "result" && v !== "quiz" && v !== "live") stopFx();
   const app = $("#app");
   app.classList.remove("waiting");
   app.innerHTML = (VIEWS[v] || VIEWS.home)(data);
@@ -53,7 +53,7 @@ function floatXp(n) {
 let FXID = 0;
 function stopFx() { FXID++; const cv = $("#fx"); if (cv) cv.getContext("2d").clearRect(0, 0, cv.width, cv.height); }
 function confetti(n = 90) {
-  if (VIEW !== "result" && VIEW !== "quiz") return;
+  if (VIEW !== "result" && VIEW !== "quiz" && VIEW !== "live") return;
   if (S.set.calm || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
   const id = ++FXID;
   const cv = $("#fx"), dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -117,7 +117,7 @@ async function pickZone(zk, apply) {
 }
 
 /* ---------- Accueil ---------- */
-const MODEGROUPS = [["Reconnaître", "eye", ["photo", "chant", "ecrire", "duel"]], ["Comprendre", "book", ["latin", "famille", "racines", "main"]], ["Explorer", "globe", ["geo", "sortie", "perso"]]];
+const MODEGROUPS = [["Reconnaître", "eye", ["photo", "chant", "ecrire", "duel"]], ["Comprendre", "book", ["latin", "famille", "racines", "main"]], ["Explorer", "globe", ["geo", "sortie"]]];
 const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const isStandalone = () => window.navigator.standalone === true || !!(window.matchMedia && matchMedia("(display-mode: standalone)").matches);
 const installCard = () => isIOS() && !isStandalone() && Date.now() - (S.hint?.install || 0) > 30 * DAY
@@ -156,7 +156,7 @@ VIEWS.home = () => {
   <header class="hud">
     <div class="brand"><span class="mark">${ic("bird")}</span>Plumage</div>
     <div class="pill flame ${st ? "" : "cold"} ${hot ? "hot" : ""}" title="Jours d'affilée">${ic("flame")}<span>${st}</span></div>
-    <div class="pill xp" title="Points d'expérience">${ic("spark")}<span>${fmt(S.xp)}</span></div>
+    <button class="pill xp" data-act="tab" data-tab="top" title="Classement">${ic("spark")}<span>${fmt(S.xp)}</span></button>
   </header>
   <div class="hero">
     <div class="bgimg" id="heroBg"><img alt=""></div>
@@ -169,6 +169,13 @@ VIEWS.home = () => {
     <div class="mix" aria-hidden="true"><span>${ic("frame")}</span><span>${ic("wave")}</span><span>${ic("quill")}</span><span>${ic("tree")}</span><span>${ic("duel")}</span></div>
     <button class="otd" id="otd" data-act="otd" hidden><img alt=""><span><small>Oiseau du jour</small><b></b></span>${ic("arrow")}</button>
   </div>
+  <button class="perso-cta" data-act="mode" data-mode="perso">
+    <span class="ic">${ic("sliders")}</span>
+    <span class="tx"><b>Sur mesure</b><small>Ton quiz à toi, réglé au millimètre</small>
+      <span class="pills"><span>${ic("pin", "xs")}Lieu</span><span>${ic("tree", "xs")}Familles</span><span>${ic("spark", "xs")}Âge</span><span>${ic("wave", "xs")}Chants</span><span>${ic("clock", "xs")}Chrono</span></span></span>
+    <span class="go">${ic("arrow")}</span>
+  </button>
+  ${S.favs.length ? `<div class="favs top" aria-label="Mes quiz">${S.favs.map((f, i) => `<button class="fav" data-act="fav" data-i="${i}">${ic("star")}${esc(f.title)}</button>`).join("")}</div>` : ""}
   ${installCard()}${backupCard()}
   <div class="quick">
     <button class="qbtn" data-act="mini"><span class="ic">${ic("bolt")}</span><span><b>Mini-série</b><small>3 questions, 1 min</small></span></button>
@@ -178,7 +185,6 @@ VIEWS.home = () => {
   <button class="lvlbar" data-act="tab" data-tab="progress"><span class="badge">${L.n}</span><span class="meta"><b>${esc(L.rank)}</b><small>${fmt(L.cur)} / ${fmt(L.need)} XP</small><span class="bar"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span></span></button>
   ${MODEGROUPS.map(([g, icn, ks], gi) => `<div class="sec">${ic(icn)}${g}</div>
   <div class="tiles">${ks.map(k => MODES.find(m => m.k === k)).filter(Boolean).map((m, i) => `<button class="tile" style="--c:${m.c};animation-delay:${(gi * 4 + i) * 35}ms" data-act="mode" data-mode="${m.k}"><span class="ic">${ic(m.ic)}</span><span><b>${m.n}</b><small>${m.d}</small></span></button>`).join("")}</div>`).join("")}
-  ${S.favs.length ? `<div class="sec">${ic("star")}Mes quiz</div><div class="favs">${S.favs.map((f, i) => `<button class="fav" data-act="fav" data-i="${i}">${ic("star")}${esc(f.title)}</button>`).join("")}</div>` : ""}
 </section>`;
 };
 MOUNT.home = async () => {
@@ -956,8 +962,63 @@ MOUNT.result = () => {
   if (c) requestAnimationFrame(() => requestAnimationFrame(() => { c.style.strokeDashoffset = c.dataset.off; }));
 };
 
+/* ---------- Présentation (premier lancement) et nouveautés ---------- */
+const TOUR = [
+  { ic: "bird", c: "#1FD1F2", t: "Bienvenue sur Plumage", d: "Apprends à reconnaître les oiseaux avec de vraies photos et de vrais chants, en direct d'iNaturalist." },
+  { ic: "spark", c: "#FFCB5C", t: "La série du jour", d: "12 questions, environ 4 minutes. Joue chaque jour : la flamme compte tes jours d'affilée." },
+  { ic: "sliders", c: "#FF8B3D", t: "Plein de façons de jouer", d: "Photos, chants, latin, familles, sosies, géo, baguage… Sur mesure pour régler ton propre quiz, et des duels contre tes amis." },
+  { ic: "replay", c: "#3BE59D", t: "Tu retiens pour de bon", d: "Tes erreurs reviennent en révision au bon moment. Une espèce est maîtrisée quand tu la reconnais sur 3 photos, 3 jours différents." },
+  { ic: "book", c: "#A58BFF", t: "Ton carnet", d: "Chaque oiseau rencontré rejoint ton carnet. Touche une photo pour l'agrandir, ouvre la fiche pour son chant, sa carte et ses sosies." },
+  { ic: "shield", c: "#14B8A6", t: "Tout reste chez toi", d: "Pas de compte : ta progression vit sur ce téléphone. Sauvegarde-la de temps en temps (Réglages) et installe l'appli sur l'écran d'accueil." }
+];
+const NEWS = [
+  { v: "2026-10-25", items: [
+    { ic: "sliders", t: "Sur mesure mis en avant", d: "Ton quiz à toi en un geste, juste sous la série du jour, avec tes quiz enregistrés." },
+    { ic: "ring", t: "Piaf en main", d: "Entraînement au baguage : topographie de l'aile, score de mue, âge par la mue, codes d'âge." },
+    { ic: "spark", t: "Âge des oiseaux", d: "Dans Sur mesure : un quiz rien que sur les juvéniles, ou les adultes." },
+    { ic: "globe", t: "Géo réparé", d: "Fini les mêmes photos qui reviennent en boucle." },
+    { ic: "info", t: "Présentation de l'appli", d: "À revoir quand tu veux dans Réglages." }
+  ] }
+];
+const TOURST = { i: 0 };
+function tourHtml() {
+  const i = TOURST.i, s = TOUR[i], last = i === TOUR.length - 1;
+  return `<div class="panel tour" role="dialog" aria-label="Présentation de l'appli">
+  <div class="tour-in" style="--c:${s.c}">
+    <div class="tour-art"><span>${ic(s.ic)}</span></div>
+    <span class="eyebrow">${i + 1} / ${TOUR.length}</span>
+    <h2>${esc(s.t)}</h2><p>${esc(s.d)}</p>
+    <div class="tour-dots">${TOUR.map((_, k) => `<i class="${k === i ? "on" : ""}"></i>`).join("")}</div>
+    <div class="tour-act">${last ? "" : `<button class="btn ghost" data-act="tskip">Passer</button>`}<button class="btn primary" data-act="tnext">${last ? "C'est parti !" : "Suivant"}${ic(last ? "play" : "arrow")}</button></div>
+  </div></div>`;
+}
+function openTour(i = 0) { TOURST.i = i; openLayer(tourHtml(), "tourl"); }
+function endTour() { S.hint = { ...(S.hint || {}), tour: Date.now(), news: NEWS[0].v }; save(); closeLayer(); }
+function newsHtml(all) {
+  const seen = all ? "" : (S.hint?.news || "");
+  const items = NEWS.filter(n => n.v > seen).flatMap(n => n.items);
+  return `<div class="panel news" role="dialog" aria-label="Nouveautés"><button class="icon-btn close" data-act="newsok" aria-label="Fermer">${ic("x")}</button>
+  <div class="in" style="padding-top:22px"><span class="eyebrow">${ic("spark", "xs")} Mise à jour</span><h2 style="margin-top:8px">Quoi de neuf ?</h2>
+  <div class="news-list">${items.map((x, k) => `<div class="news-it" style="animation-delay:${k * 60}ms"><span class="ic">${ic(x.ic)}</span><span><b>${esc(x.t)}</b><small>${esc(x.d)}</small></span></div>`).join("")}</div>
+  <button class="btn primary wide" data-act="newsok" style="margin:18px 0 22px">${ic("check")}Super !</button></div></div>`;
+}
+function openNews(all) { openLayer(newsHtml(all), "newsl"); }
+/* Au lancement : la présentation pour un nouveau joueur, sinon les nouveautés pas encore vues */
+function maybeIntro() {
+  if (VIEW !== "home" || !$("#layer").hidden || navigator.webdriver) return;
+  const h = S.hint || {};
+  const fresh = !h.tour && (S.xp || 0) < 40 && !Object.keys(S.sp).length;
+  if (fresh) { openTour(0); return; }
+  if (!h.tour) S.hint = { ...h, tour: Date.now() };
+  if ((S.hint.news || "") < NEWS[0].v) openNews();
+}
+
 /* ---------- Piaf en main ---------- */
 VIEWS.hand = () => handHubHtml();
+VIEWS.top = () => topViewHtml();
+MOUNT.top = () => topMount();
+VIEWS.live = () => liveViewHtml();
+MOUNT.live = () => liveMount();
 
 /* ---------- Constructeur « Sur mesure » ---------- */
 const defaultB = () => ({ zone: S.set.zone, guilds: [], fams: [], freq: "common", size: 100, stim: ["photo"], age: "all", target: "species", names: S.set.names, format: "qcm", k: S.set.k, diff: S.set.diff, len: 10, timer: 0 });
@@ -1160,6 +1221,7 @@ const SOURCES = [
   ["EURING", "https://euring.org", "Piaf en main : les codes d'âge (1 à 6…) et l'échelle du score de mue des primaires (0 à 5).", "Code d'échange EURING 2000+."],
   ["BTO", "https://www.bto.org", "Piaf en main : la notation de la mue des primaires et les espèces à mue post-juvénile complète.", "British Trust for Ornithology."],
   ["CRBPO (MNHN)", "https://crbpo.mnhn.fr", "Piaf en main : la notation française des âges (1A, +1A, 2A…) et les stratégies de mue présentées en formation.", "Centre de Recherches sur la Biologie des Populations d'Oiseaux."],
+  ["Firebase Realtime Database (Google)", "https://firebase.google.com/docs/database", "Le classement XP et le duel en direct, seulement quand tu les utilises.", "Données réduites au pseudo, à l'XP et aux parties en cours."],
   ["Critères des sosies", "", "Les tableaux « Comment les distinguer » des Duels : résumé simplifié des critères classiques des guides de terrain, rédigé pour l'appli.", "En cas de doute, ton guide de terrain fait foi."],
   ["Racines latines", "", "Le petit dictionnaire qui décode les noms scientifiques, rédigé pour l'appli.", "—"],
   ["Faune France", "https://www.faune-france.org", "Un simple lien depuis les fiches : ses données ne sont pas ouvertes.", "—"],
@@ -1179,13 +1241,15 @@ VIEWS.about = () => `<section class="view about">
     <li><b>Ta position</b> n'est utilisée que si tu choisis « Autour de moi ». Elle est arrondie à environ 100 m et envoyée à iNaturalist pour trouver les oiseaux proches.</li>
     <li><b>Ton pseudo iNaturalist</b> (facultatif) est envoyé à iNaturalist pour retrouver les espèces que tu as observées, une information déjà publique.</li>
     <li><b>Ta clé xeno-canto</b> (facultative) reste sur ton appareil et n'est envoyée qu'à xeno-canto. Elle n'est pas incluse dans tes sauvegardes.</li>
-    <li><b>Tes sauvegardes</b> ne partent que là où tu les envoies (Fichiers, iCloud, mail…).</li></ul>
+    <li><b>Tes sauvegardes</b> ne partent que là où tu les envoies (Fichiers, iCloud, mail…).</li>
+    <li><b>Classement (facultatif)</b> : seulement si tu l'actives, ton pseudo, ton XP et la date sont publiés sur le serveur de l'appli (Firebase, de Google). Le désactiver efface ta ligne.</li>
+    <li><b>Duel en direct (facultatif)</b> : pendant une partie, les pseudos, les questions et les réponses passent par ce même serveur, puis la partie est effacée.</li></ul>
     <h3>Hébergement</h3>
     <ul><li>L'appli est hébergée par GitHub Pages. GitHub enregistre l'adresse IP des visiteurs pour des raisons de sécurité.</li>
     <li>Les polices et la bibliothèque de cartes sont hébergées avec l'appli : aucun appel à Google Fonts ni à un CDN.</li></ul>
     <h3>Tes données, tes choix</h3>
     <ul><li>Tu peux tout exporter (sauvegarde complète ou carnet en CSV) et tout effacer à tout moment, sans rien demander à personne.</li></ul>
-    <small class="muted">Mise à jour : 23 octobre 2026.</small>
+    <small class="muted">Mise à jour : 25 octobre 2026.</small>
   </div>
   <div class="sec">${ic("book")}Sources et leur utilité</div>
   <div class="srcs">${SOURCES.map(([n, u, d, l]) => `<div class="src"><div class="sh"><b>${esc(n)}</b>${u ? `<a href="${esc(u)}" target="_blank" rel="noopener" aria-label="Ouvrir ${esc(n)}">${ic("ext", "xs")}</a>` : ""}</div><p>${esc(d)}</p><small>${esc(l)}</small></div>`).join("")}</div>
@@ -1265,6 +1329,7 @@ VIEWS.progress = () => {
   const famRow = (x, train) => `<div class="hbar fam"><span class="t">${esc(famName(x.f))}<small>${x.sp} esp. · ${x.n} rép.</small></span><span class="b"><i style="width:${(x.p * 100).toFixed(0)}%"></i></span><span class="v">${Math.round(x.p * 100)} %</span>${train ? `<button class="chip warn" data-act="ftrain" data-f="${x.f}">${ic("play", "xs")}Revoir</button>` : ""}</div>`;
   const hist = (S.hist || []).slice(0, 10);
   return `<section class="view progress">
+  <button class="topcard" data-act="tab" data-tab="top"><span class="ic">${ic("trophy")}</span><span class="tx"><b>Classement</b><small>Ton XP face à tous les joueurs</small></span>${ic("arrow")}</button>
   <div class="big-lvl"><div class="lring"><svg viewBox="0 0 96 96" aria-hidden="true"><circle class="track" cx="48" cy="48" r="40"/><circle class="prog" cx="48" cy="48" r="40" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - L.p)).toFixed(1)}"/></svg><b>${L.n}</b></div>
     <div><h2>${esc(L.rank)}</h2><p>${fmt(L.need - L.cur)} XP avant le niveau ${L.n + 1}${L.n < RANKS.length ? " · " + esc(RANKS[Math.min(L.n, RANKS.length - 1)]) : ""}</p><p>${fmt(S.xp)} XP au total</p></div></div>
   <div class="grid2">
@@ -1350,6 +1415,7 @@ VIEWS.settings = () => `<section class="view settings">
     <div class="set"><span class="lab"><b>Importer</b><small>Restaure une sauvegarde sur ce téléphone.</small></span><label class="btn ghost" style="cursor:pointer">${ic("up")}Importer<input type="file" id="importf" accept="application/json,.json" hidden></label></div>
     <div class="set"><span class="lab"><b>Tout effacer</b><small>Remet l'appli à zéro sur cet appareil.</small></span><button class="btn ghost" data-act="reset" id="resetBtn">${ic("trash")}Effacer</button></div>
   </div>
+  <div class="group" style="margin-top:18px"><button class="set link" data-act="tour">${ic("info")}<span class="lab"><b>Revoir la présentation</b><small>Le tour de l'appli en 6 écrans.</small></span>${ic("arrow")}</button><button class="set link" data-act="news">${ic("spark")}<span class="lab"><b>Nouveautés</b><small>Ce qui a changé dans la dernière mise à jour.</small></span>${ic("arrow")}</button></div>
   <div class="group" style="margin-top:18px"><button class="set link" data-act="tab" data-tab="about">${ic("shield")}<span class="lab"><b>Confidentialité et sources</b><small>Ce qui reste sur ton téléphone, ce qui en sort, et d'où viennent les données.</small></span>${ic("arrow", "s")}</button></div>
   <p class="foot">Photos, sons et données : iNaturalist, Wikipédia, Wikimedia Commons et xeno-canto, avec l'auteur et la licence de chaque média. Ta progression reste sur cet appareil.</p>
 </section>`;
@@ -1365,6 +1431,7 @@ function openLayer(html, cls = "") {
 function closeLayer() {
   const L = $("#layer");
   if (!L || L.hidden) return;
+  if (L.classList.contains("tourl") || L.classList.contains("newsl")) { S.hint = { ...(S.hint || {}), tour: S.hint?.tour || Date.now(), news: NEWS[0].v }; save(); }
   L.hidden = true;
   L.innerHTML = "";
   document.body.style.overflow = "";
@@ -1408,7 +1475,9 @@ function renderFamPicker(qv) {
 function openDuelPicker() {
   const conf = topConfusions(6);
   openLayer(`<div class="panel"><button class="icon-btn close" data-act="close" aria-label="Fermer">${ic("x")}</button><div class="in" style="padding-top:22px">
-    <h2>Duels</h2><p class="muted" style="margin:6px 0 4px;font-size:14px">Deux sosies, 8 questions pour les départager.</p>
+    <h2>Duels</h2>
+    <button class="livecta" data-act="live"><span class="ic">${ic("bolt")}</span><span class="tx"><b>Duel en direct, à deux</b><small>1 contre 1, chacun son téléphone, chrono à chaque question</small></span>${ic("arrow")}</button>
+    <div class="sec">${ic("duel")}Les sosies</div><p class="muted" style="margin:-4px 0 4px;font-size:14px">Deux sosies, 8 questions pour les départager.</p>
     ${conf.length ? `<div class="sec">${ic("replay")}Tes confusions</div><div style="display:flex;flex-direction:column;gap:8px">${conf.map(c => { const a = S.sp[c.a], b = S.sp[c.b]; return `<button class="conf" data-act="duelgo" data-ids="${c.a},${c.b}" style="text-align:left"><img src="${esc(a.img || a.md)}" alt=""><span class="vs">VS</span><img src="${esc(b.img || b.md)}" alt=""><span class="tx">${esc(a.fr || a.sci)}<small>${esc(b.fr || b.sci)} · ${c.n}×</small></span>${ic("arrow")}</button>`; }).join("")}</div>` : ""}
     <div class="sec">${ic("duel")}Grands classiques</div>
     <div class="plist">${DUELS.map((d, i) => `<button class="pitem" data-act="duelgo" data-i="${i}"><span style="flex:1"><b style="font-weight:650">${esc(d[2])}</b> <span class="muted">vs</span> <b style="font-weight:650">${esc(d[3])}</b></span>${ic("arrow", "s")}</button>`).join("")}</div></div></div>`);
@@ -1922,6 +1991,28 @@ const ACT = {
   ttap: (el, e) => handTap(el, e),
   hval: () => handValidate(),
   hzoom: el => handZoom(el),
+  topon: async el => {
+    const inp = $("#pseudo"), n = cleanName(inp ? inp.value : S.set.pseudo);
+    if (!S.set.topOn && !n) { toast("Choisis d'abord un pseudo."); inp?.focus(); return; }
+    if (n) S.set.pseudo = n;
+    S.set.topOn = !S.set.topOn; save();
+    el.classList.toggle("on", S.set.topOn); el.setAttribute("aria-checked", S.set.topOn ? "true" : "false");
+    if (S.set.topOn) { await topPush(true); toast("Tu apparais dans le classement."); } else { await topRemove(); toast("Tu n'apparais plus dans le classement."); }
+    if (VIEW === "top") topMount();
+  },
+  live: () => { closeLayer(); if (!LIVE.code) liveReset(); go("live"); },
+  liveT: el => { S.set.liveT = +el.dataset.v; save(); $$("[data-act=liveT]").forEach(b => b.classList.toggle("on", b === el)); },
+  lcreate: () => liveCreate(),
+  lshare: () => liveShare(),
+  lrewait: () => liveRewait(),
+  llaunch: el => { el.disabled = true; liveLaunch(); },
+  lleave: () => liveLeave(),
+  lpick: el => liveAnswer(el.dataset.k),
+  tnext: () => { if (TOURST.i >= TOUR.length - 1) endTour(); else { TOURST.i++; const L = $("#layer"); if (L) L.innerHTML = tourHtml(); } },
+  tskip: () => endTour(),
+  tour: () => openTour(0),
+  newsok: () => { S.hint = { ...(S.hint || {}), news: NEWS[0].v }; save(); closeLayer(); },
+  news: () => openNews(true),
   hpnum: el => { S.set.pnum = el.dataset.v; save(); rerender(); toast(el.dataset.v === "fr" ? "Primaires à la française : P1 est la petite plume externe." : "Primaires à l'anglaise : P1 est la plus interne, contre les secondaires."); },
   reveal: () => { const q = SES?.q; if (!q || q.done) return; $("#answers").innerHTML = revealHtml(q); },
   self: el => settle({ ok: el.dataset.v === "1", self: true }),
@@ -2014,6 +2105,7 @@ function onKey(e) {
   const tg = e.target;
   if (tg && tg.matches && tg.matches("input, textarea")) { if (e.key === "Escape") tg.blur(); return; }
   if (e.key === "Escape") { if (!$("#layer").hidden) closeLayer(); return; }
+  if (VIEW === "live" && LIVE.st === "q" && /^[1-6]$/.test(e.key)) { $$("#lans [data-act=lpick]")[+e.key - 1]?.click(); return; }
   if (VIEW !== "quiz" || !$("#layer").hidden) return;
   const fbOpen = $("#fb");
   const hq = SES?.q;
@@ -2025,6 +2117,7 @@ function onKey(e) {
   else if (e.key.toLowerCase() === "r") { unlockAudio(); sndPlay(); }
 }
 function onSubmit(e) {
+  if (e.target.id === "ljoin") { e.preventDefault(); $("#lcode")?.blur(); liveJoin($("#lcode")?.value || ""); return; }
   if (e.target.id === "typer") {
     e.preventDefault();
     const q = SES?.q;
@@ -2051,6 +2144,12 @@ function onInput(e) {
 }
 function onChange(e) {
   const t = e.target;
+  if (t.id === "pseudo" || t.id === "lpseudo") {
+    const n = cleanName(t.value);
+    t.value = n;
+    if (n && n !== S.set.pseudo) { S.set.pseudo = n; save(); if (S.set.topOn) topPush(true); toast("Pseudo enregistré."); }
+    return;
+  }
   if (t.dataset && t.dataset.set) { S.set[t.dataset.set] = t.value.trim(); save(); toast("Enregistré."); }
   if (t.id === "importf" && t.files && t.files[0]) {
     const fr = new FileReader();
@@ -2080,7 +2179,10 @@ function init() {
   document.addEventListener("input", onInput);
   document.addEventListener("change", onChange);
   const h = location.hash.replace("#", "");
-  go(["carnet", "progress", "settings", "about"].includes(h) ? h : "home");
+  const dm = h.match(/^duel=([A-Za-z0-9]{5})$/);
+  if (dm) { LIVE.joinCode = dm[1].toUpperCase(); history.replaceState(null, "", location.pathname + location.search); go("live"); }
+  else go(["carnet", "progress", "settings", "about", "top"].includes(h) ? h : "home");
+  setTimeout(maybeIntro, 900);
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) { /* rien */ }
   loadTaxo().catch(() => {});
 }

@@ -657,6 +657,7 @@ function endSession(aborted) {
   const L = level();
   if (L.n > ses.lvl0 && !ses.lvlNow) { setTimeout(() => { sfx.lvl(); confetti(); }, 500); }
   save(true);
+  topPush();
   if (!n) { SES = null; go("home"); return; }
   go("result", { ses, n, ok, badges, msgs });
   if (ok / n >= .8 || badges.length) setTimeout(() => confetti(), 450);

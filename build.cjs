@@ -7,7 +7,7 @@ const ROOT = __dirname, SRC = path.join(ROOT, "src"), DIST = process.env.OUT ? p
 fs.mkdirSync(DIST, { recursive: true });
 
 const css = fs.readFileSync(path.join(SRC, "styles.css"), "utf8");
-const js = ["data.js", "core.js", "engine.js", "hand.js", "ui.js"].map(f => `/* ---- ${f} ---- */\n` + fs.readFileSync(path.join(SRC, f), "utf8")).join("\n");
+const js = ["data.js", "core.js", "engine.js", "hand.js", "net.js", "ui.js"].map(f => `/* ---- ${f} ---- */\n` + fs.readFileSync(path.join(SRC, f), "utf8")).join("\n");
 const html = fs.readFileSync(path.join(SRC, "shell.html"), "utf8")
   .replace("/*__CSS__*/", () => css)
   .replace("/*__JS__*/", () => js);

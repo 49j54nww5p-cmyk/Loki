@@ -387,13 +387,22 @@ function parseLoc(o) {
   const c = o.geojson?.coordinates;
   return c ? [c[1], c[0]] : null;
 }
+/* Point de départ tiré au hasard : un identifiant d'observation au hasard, puis la première observation
+   d'oiseau qui suit. Chaque requête a donc une adresse différente : pas de résultat « au hasard »
+   resservi par un cache. Les lieux déjà joués récemment sont évités. */
+const GEO_MAXID = 230e6;
 async function buildGeo(ses) {
-  for (let attempt = 0; attempt < 6; attempt++) {
+  const recent = new Set([...(S.geoSeen || []), ...(ses.geoSeen || [])]);
+  for (let attempt = 0; attempt < 7; attempt++) {
     const c = Math.random() < .55 ? pick(CONTINENTS) : null;
-    const seed = await obsSearch({ taxon_id: 3, photos: "true", quality_grade: "research", order_by: "random", per_page: 1, ...(c ? { place_id: c.id } : {}), fields: GEOFIELDS }, true).catch(() => null);
+    const seed = await obsSearch({ taxon_id: 3, photos: "true", quality_grade: "research", id_above: 1 + rnd(GEO_MAXID), order_by: "id", order: "asc", per_page: 1, ...(c ? { place_id: c.id } : {}), fields: GEOFIELDS }, true).catch(() => null);
     const o = seed?.results?.[0];
     const loc = o && parseLoc(o);
     if (!loc) continue;
+    const gkey = loc[0].toFixed(1) + "," + loc[1].toFixed(1);
+    if (recent.has(gkey) && attempt < 5) continue;
+    (ses.geoSeen || (ses.geoSeen = [])).push(gkey);
+    S.geoSeen = [...(S.geoSeen || []).filter(k => k !== gkey), gkey].slice(-60);
     const near = await obsSearch({ taxon_id: 3, photos: "true", quality_grade: "research", lat: loc[0].toFixed(4), lng: loc[1].toFixed(4), radius: 10, order_by: "random", per_page: 60, locale: "fr", fields: GEOFIELDS }, true).catch(() => null);
     const seen = new Set(), sp = [], pts = [];
     for (const n of near?.results || []) {

@@ -175,13 +175,13 @@ function pump() {
     job.fn().then(job.res, job.rej).finally(() => { Q.active--; pump(); });
   }
 }
-async function getJSON(url, { tries = 2, timeout = 15000 } = {}) {
+async function getJSON(url, { tries = 2, timeout = 15000, fresh = false } = {}) {
   let err = null;
   for (let i = 0; i < tries; i++) {
     const ctl = new AbortController();
     const tm = setTimeout(() => ctl.abort(), timeout);
     try {
-      const r = await fetch(url, { signal: ctl.signal });
+      const r = await fetch(url, fresh ? { signal: ctl.signal, cache: "no-store" } : { signal: ctl.signal });
       clearTimeout(tm);
       if (r.status === 429 || r.status >= 500) { err = new Error("HTTP " + r.status); err.status = r.status; await sleep(1400 * (i + 1)); continue; }
       if (!r.ok) { const e = new Error("HTTP " + r.status); e.status = r.status; throw e; }
@@ -203,8 +203,9 @@ function inat(path, params = {}, v = 1) {
   p.catch(() => MEM.delete(url));
   return p;
 }
+/* Requêtes « au hasard » : jamais servies depuis le cache du navigateur */
 function inatFresh(path, params = {}, v = 1) {
-  return schedule(() => getJSON((v === 2 ? API2 : API1) + path + qs(params)));
+  return schedule(() => getJSON((v === 2 ? API2 : API1) + path + qs(params), { fresh: true }));
 }
 let OBSV2 = true;
 async function obsSearch(params, fresh) {

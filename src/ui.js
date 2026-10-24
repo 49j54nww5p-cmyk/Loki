@@ -1922,6 +1922,7 @@ const ACT = {
   ttap: (el, e) => handTap(el, e),
   hval: () => handValidate(),
   hzoom: el => handZoom(el),
+  hpnum: el => { S.set.pnum = el.dataset.v; save(); rerender(); toast(el.dataset.v === "fr" ? "Primaires à la française : P1 est la petite plume externe." : "Primaires à l'anglaise : P1 est la plus interne, contre les secondaires."); },
   reveal: () => { const q = SES?.q; if (!q || q.done) return; $("#answers").innerHTML = revealHtml(q); },
   self: el => settle({ ok: el.dataset.v === "1", self: true }),
   fiche: el => { const t = taxonById(el.dataset.id); if (t) openFiche(t); },

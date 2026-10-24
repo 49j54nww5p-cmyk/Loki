@@ -21,7 +21,7 @@ Sur iPhone : ouvre le lien dans Safari, bouton Partager, puis « Sur l'écran d'
 - **Sauvegarde** : envoi en un geste vers Fichiers, iCloud ou un mail, avec rappel régulier
 - **Fiches espèces** : galerie, présence par mois, carte des observations, chants, description Wikipédia, espèces qui ressemblent, ton astuce perso
 - **Âge des oiseaux** (Sur mesure) : quiz limité aux juvéniles ou aux adultes, d'après les annotations iNaturalist
-- **Piaf en main** (entraînement au permis de baguage) : aile dessinée à toucher (topographie, numérotation P / S / tertiaires / rectrices), score de mue 0-5 et formule des primaires, âge par les limites de mue (1A, +1A, 2A, +2A avec code EURING), codes d'âge, stratégies de mue ; fiches âge pour 18 passereaux (jeune contre adulte, iris, rectrices)
+- **Piaf en main** (entraînement au permis de baguage) : aile dessinée à toucher (topographie, numérotation P / S / tertiaires / rectrices, primaires à la française ou à l'anglaise), score de mue 0-5 et formule des primaires, âge par les limites de mue (1A, +1A, 2A, +2A avec code EURING), codes d'âge, stratégies de mue ; fiches âge pour 18 passereaux (jeune contre adulte, iris, rectrices)
 
 ## Données
 

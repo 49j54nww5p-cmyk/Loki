@@ -132,6 +132,12 @@ function hStyle(look, g, gen, id) {
   return st;
 }
 
+/* Numérotation des primaires : à la française (P1 = la petite plume externe, comme Svensson)
+   ou à l'anglaise (P1 = la plus interne, ordre de mue EURING / BTO). Les identifiants internes
+   de la géométrie restent dans l'ordre de mue (P1 interne) ; seule l'étiquette change. */
+const hFr = () => (S.set.pnum || "fr") === "fr";
+const hLab = id => /^P\d+$/.test(id) && hFr() ? "P" + (11 - +id.slice(1)) : id;
+
 /* Contour d'une plume entière (surbrillance, sélection, fantôme) */
 function hOutlineOf(id, mo) {
   if (id === "LC") return "M226,58C262,50 330,44 404,44C410,48 410,58 404,64C330,66 262,68 228,68Z";
@@ -145,7 +151,7 @@ function wingNums(ids) {
     const f = WG[id];
     if (!f) return "";
     const [x, y] = hPt(f, f.L + (f.id === "P10" ? 7 : 9), 0);
-    return `<text class="num" x="${x.toFixed(1)}" y="${(y + 3).toFixed(1)}">${f.id.replace(/^[PS]/, "")}</text>`;
+    return `<text class="num" x="${x.toFixed(1)}" y="${(y + 3).toFixed(1)}">${hLab(f.id).replace(/^[PS]/, "")}</text>`;
   }).join("");
 }
 const hGroupIds = g => g === "LC" ? ["LC"] : WGEO.filter(f => f.g === g).map(f => f.id);
@@ -491,13 +497,13 @@ function hTopoQ(ses) {
     return hBase("topo", { prompt: "Quelle est cette rectrice ?", icon: "wing", stage: "tail", t: { look: HTOPO, def: "a", hl: [id] }, choices: shuffle(ch).map(x => ({ key: x, label: x })), answerKey: id,
       expl: `C'est <b>${id}</b> : on compte depuis le centre de la queue (R1) vers l'extérieur (R6).` });
   }
-  const ids = [...Array.from({ length: 8 }, (_, i) => "P" + (i + 2)), ...Array.from({ length: 6 }, (_, i) => "S" + (i + 1)), "S7", "S8", "S9"];
+  const ids = [...Array.from({ length: 9 }, (_, i) => "P" + (i + 1)), ...Array.from({ length: 6 }, (_, i) => "S" + (i + 1)), "S7", "S8", "S9"];
   const id = hFresh(ses, ids, x => x, "tf:");
-  const nm = x => /^S[789]$/.test(x) ? `${x} (tertiaire)` : x;
-  const rule = id[0] === "P" ? "Les primaires se comptent de l'intérieur (P1, à côté des secondaires) vers l'extérieur (P10, minuscule)." : "Les secondaires se comptent de l'extérieur (S1, à côté de P1) vers le corps ; S7 à S9 sont les tertiaires.";
+  const nm = x => /^S[789]$/.test(x) ? `${x} (tertiaire)` : hLab(x);
+  const rule = id[0] === "P" ? (hFr() ? "À la française, les primaires se comptent depuis l'extérieur : P1 est la toute petite plume externe, P10 la plus interne, contre les secondaires." : "À l'anglaise, les primaires se comptent depuis l'intérieur : P1 est contre les secondaires, P10 la toute petite plume externe.") : "Les secondaires se comptent de l'extérieur (S1, à côté de P1) vers le corps ; S7 à S9 sont les tertiaires.";
   if (r < .76) return hBase("topo", { format: "tap", target: "feather", prompt: `Touche la plume ${nm(id)}`, icon: "wing", stage: "wing", w: { look: HTOPO, tap: true }, accept: [id], expl: rule });
   const n = +id.slice(1), alt = new Set([id]);
-  if (id[0] === "P") { alt.add("P" + (11 - n)); alt.add("P" + clamp(n + 1, 2, 9)); alt.add("P" + clamp(n - 1, 2, 9)); alt.add("S" + clamp(n, 1, 9)); }
+  if (id[0] === "P") { alt.add("P" + (11 - n)); alt.add("P" + clamp(n + 1, 1, 9)); alt.add("P" + clamp(n - 1, 1, 9)); alt.add("S" + clamp(hFr() ? 11 - n : n, 1, 9)); }
   else { alt.add("S" + clamp(10 - n, 1, 9)); alt.add("S" + clamp(n + 1, 1, 9)); alt.add("S" + clamp(n - 1, 1, 9)); alt.add("P" + clamp(n, 2, 9)); }
   const ch = [id, ...shuffle([...alt].filter(x => x !== id)).slice(0, 3)];
   return hBase("topo", { prompt: "Quel est le numéro de cette plume ?", icon: "wing", stage: "wing", w: { look: HTOPO, hl: [id] }, choices: shuffle(ch).map(x => ({ key: x, label: nm(x) })), answerKey: id, expl: `C'est <b>${esc(nm(id))}</b>. ${rule}` });
@@ -515,29 +521,31 @@ const HSCORE = ["vieille", "tombée ou en tuyau", "jusqu'à 1/3", "1/3 à 2/3", 
 function hMueQ() {
   const f = hMoultFormula(), mo = hMo(f), tot = f.reduce((a, b) => a + b, 0), r = Math.random();
   const w = { look: HTOPO, mo, vb: H_VBN };
-  const fstr = f.join("");
-  const expl = `Formule <b class="hform">${fstr}</b> (de P1 à P10), total <b>${tot}</b> sur 50.`;
+  const fd = hFr() ? f.slice().reverse() : f, fstr = fd.join("");
+  const sens = hFr() ? "de P1, externe, à P10, interne" : "de P1, interne, à P10, externe";
+  const expl = `Formule <b class="hform">${fstr}</b> (${sens}), total <b>${tot}</b> sur 50.`;
   if (r < .5) {
     const idx = [...f.keys()].filter(i => f[i] > 0 && f[i] < 5);
     const i = Math.random() < .75 && idx.length ? pick(idx) : rint(0, 9);
     const id = "P" + (i + 1), sc = f[i];
-    return hBase("mue", { format: "score", prompt: `Score de mue de ${id} ?`, icon: "gauge", stage: "wing", w: { ...w, hl: [id] }, answerKey: String(sc),
+    return hBase("mue", { format: "score", prompt: `Score de mue de ${hLab(id)} ?`, icon: "gauge", stage: "wing", w: { ...w, hl: [id] }, answerKey: String(sc),
       choices: [0, 1, 2, 3, 4, 5].map(v => ({ key: String(v), label: String(v), sub: HSCORE[v] })), mo, f,
-      expl: `${id} : <b>${sc}</b>, ${HSCORE[sc]}. ${expl}` });
+      expl: `${hLab(id)} : <b>${sc}</b>, ${HSCORE[sc]}. ${expl}`, fd });
   }
   if (r < .78) {
     const opts = new Set([tot]);
     while (opts.size < 4) { const d = pick([-6, -5, -4, -3, -2, 2, 3, 4, 5, 6]); const v = tot + d; if (v >= 0 && v <= 50) opts.add(v); }
     return hBase("mue", { prompt: "Score total des primaires ?", icon: "gauge", stage: "wing", w: { ...w, num: true }, answerKey: String(tot),
-      choices: shuffle([...opts]).map(v => ({ key: String(v), label: String(v), sub: "sur 50" })), mo, f, expl: `On additionne les 10 notes. ${expl}` });
+      choices: shuffle([...opts]).map(v => ({ key: String(v), label: String(v), sub: "sur 50" })), mo, f, fd, expl: `On additionne les 10 notes. ${expl}` });
   }
-  const rev = f.slice().reverse().join("");
-  const alt = f.slice(); const j = f.findIndex(v => v > 0 && v < 5); if (j >= 0) alt[j] = clamp(alt[j] + pick([-1, 1]), 1, 4); else alt[0] = alt[0] === 5 ? 4 : 1;
+  const rev = fd.slice().reverse().join("");
+  const alt = fd.slice(); const j = fd.findIndex(v => v > 0 && v < 5);
+  if (j >= 0) alt[j] = alt[j] === 1 ? 2 : alt[j] === 4 ? 3 : alt[j] + pick([-1, 1]); else alt[0] = alt[0] === 5 ? 4 : 1;
   const opts = [...new Set([fstr, rev, alt.join("")])];
-  for (let g = 0; opts.length < 3 && g < 20; g++) { const v = hMoultFormula().join(""); if (!opts.includes(v)) opts.push(v); }
+  for (let g = 0; opts.length < 3 && g < 20; g++) { const x = hMoultFormula(), v = (hFr() ? x.reverse() : x).join(""); if (!opts.includes(v)) opts.push(v); }
   return hBase("mue", { prompt: "Quelle est la formule de mue ?", icon: "gauge", stage: "wing", w: { ...w, num: true }, answerKey: fstr,
     choices: shuffle(opts).map(v => ({ key: v, label: v })), mo, f,
-    expl: `On note de P1 (la plus interne) à P10 (la plus externe), dans l'ordre où l'oiseau mue. ${expl}` });
+    fd, expl: `${hFr() ? "À la française, la formule se lit de P1 (externe) à P10 (interne) ; l'oiseau, lui, mue de l'intérieur vers l'extérieur." : "À l'anglaise, on note de P1 (interne) à P10 (externe), dans l'ordre où l'oiseau mue."} ${expl}` });
 }
 
 function hAgeQ(ses, spId) {
@@ -720,7 +728,7 @@ function handReveal(q) {
   let ids = null;
   const id = q.target === "feather" ? q.accept[0] : q.answerKey;
   if (q.ex === "topo" && q.stage === "tail") { ov.insertAdjacentHTML("beforeend", tailNums()); return; }
-  if (q.ex === "topo" && /^[PS]\d+$/.test(id || "")) ids = id[0] === "P" ? WGEO.filter(f => f.g === "RP" && f.id !== "P10").map(f => f.id) : WGEO.filter(f => f.g === "RS" || f.g === "TT").map(f => f.id);
+  if (q.ex === "topo" && /^[PS]\d+$/.test(id || "")) ids = id[0] === "P" ? WGEO.filter(f => f.g === "RP").map(f => f.id) : WGEO.filter(f => f.g === "RS" || f.g === "TT").map(f => f.id);
   if (q.ex === "mue" && q.format === "score") ids = WGEO.filter(f => f.g === "RP").map(f => f.id);
   if (ids) {
     ov.insertAdjacentHTML("beforeend", wingNums(ids));
@@ -740,7 +748,7 @@ function handFb(q, res) {
     if (q.tailg) bits.push(`<span class="hirow">${ic("wing", "xs")}<span>Rectrices ${q.tailg === "j" ? "étroites et pointues (juvéniles)" : "larges et arrondies (adulte)"}</span></span>`);
     if (bits.length && q.season === "aut") h += `<div class="hbits">${bits.join("")}</div>`;
   }
-  if (q.ex === "mue") h += `<div class="hform-row">${q.f.map((v, i) => `<span class="s${v}"><small>P${i + 1}</small>${v}</span>`).join("")}</div>`;
+  if (q.ex === "mue") { const fr = q.fd && q.fd !== q.f; h += `<div class="hform-row">${(q.fd || q.f).map((v, i) => `<span class="s${v}"><small>P${i + 1}</small>${v}</span>`).join("")}</div><div class="hform-ends"><span>${fr ? "externe" : "interne"}</span><span>${fr ? "interne" : "externe"}</span></div>`; }
   if (sp && sp.mode !== "none") h += `<button class="spcard hsplink" data-act="hsp" data-sp="${sp.id}"><span class="t"><b>${esc(sp.fr)}</b><span class="latin">${esc(sp.sci)}</span><span class="chips"><span class="chip fam">Post-juv. : ${esc(lc1(HPJ[sp.pj]))}</span><span class="chip ord">Adulte : ${esc(lc1(HAD[sp.ad]))}</span></span></span>${ic("info")}</button>`;
   return h;
 }
@@ -770,6 +778,7 @@ function handHubHtml() {
     <p>Prépare ton permis de baguage : nomme les plumes, note la mue, donne l'âge.</p></div>
   <button class="hmix" data-act="hgo" data-ex="mix"><span class="ic">${ic("shuffle")}</span><span class="tx"><b>Série mélangée</b><small>10 questions sur tout le programme</small></span>${ic("play")}</button>
   <div class="tiles">${HEX.map((m, i) => { const p = hPct(H.ex[m.k]); return `<button class="tile" style="--c:${m.c};animation-delay:${i * 35}ms" data-act="hgo" data-ex="${m.k}"><span class="ic">${ic(m.ic)}</span><span><b>${m.n}</b><small>${p == null ? m.d : p + " % de réussite"}</small></span></button>`; }).join("")}</div>
+  <div class="hset"><span class="tx">${ic("wing", "xs")}Primaires numérotées</span><div class="row"><button class="opt-btn ${hFr() ? "on" : ""}" data-act="hpnum" data-v="fr">À la française<small>P1 externe</small></button><button class="opt-btn ${hFr() ? "" : "on"}" data-act="hpnum" data-v="en">À l'anglaise<small>P1 interne</small></button></div></div>
   <div class="sec">${ic("book")}Fiches âge<span class="more">${spl.length} espèces</span></div>
   <div class="hspl">${spl.map(s => { const p = hPct(H.sp[s.id]); return `<button class="hspb" data-act="hsp" data-sp="${s.id}"><span class="mw">${featherPair(s)}</span><span class="tx"><b>${esc(s.fr)}</b><small>${s.mode === "wear" ? "frais ou usé" : s.mode === "comp" ? "mue complète" : "limite : " + s.key.map(k => WGROUPS[k].ab).join(", ")}${p == null ? "" : " · " + p + " %"}</small></span></button>`; }).join("")}</div>
   <p class="hsrc">${ic("info", "xs")} Critères simplifiés d'après le Ringers' DigiGuide (station d'Ottenby), EURING, le BTO et le CRBPO. Ils ne remplacent ni les guides (Svensson, Demongin…) ni ton formateur.</p>

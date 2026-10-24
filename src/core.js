@@ -50,7 +50,7 @@ const defaults = () => ({
   set: {
     zone: { id: 6753, name: "France" }, fmt: "qcm", names: "both", k: 5, diff: "moyen", photo: "ref",
     goal: 150, sfx: true, calm: false, sono: true, inat: "", xc: "", remind: "19:30", builder: null,
-    mapst: "relief", mapLab: true, mapIsl: true, slow: false, loop: false
+    mapst: "relief", mapLab: true, mapIsl: true, slow: false, loop: false, pnum: "fr"
   }
 });
 function loadState() {

@@ -1334,6 +1334,50 @@ details.bset > .launch{margin:20px 14px 14px}
 .rstars{display:flex;justify-content:center;margin-top:8px}
 .rstars .pstars .i{width:28px;height:28px}
 
+/* Hors ligne */
+.tacts:has(.pkbtn){grid-template-columns:1.25fr 1fr 1fr}
+.pkbtn{gap:6px}
+.pkbtn.ok{color:var(--good);border-color:rgba(59,229,157,.45)}
+.pkbtn.run{opacity:1;color:var(--muted)}
+.pkbtn .spin{width:16px;height:16px;border-width:2px}
+.pkoff{display:flex;align-items:center;gap:6px;margin:10px 0 0;padding:8px 12px;border-radius:12px;font-size:13px;color:#C2F7DF;background:rgba(59,229,157,.08);border:1px solid rgba(59,229,157,.3)}
+
+/* Défi de la semaine */
+.weekc{display:flex;align-items:center;gap:12px;width:100%;margin-top:12px;padding:12px 14px;border-radius:20px;text-align:left;background:var(--card);border:1px solid var(--line);background:linear-gradient(120deg,rgba(255,203,92,.16),color-mix(in srgb,var(--c) 10%,transparent));border-color:rgba(255,203,92,.34)}
+.weekc .ic{display:grid;place-items:center;flex:none;width:46px;height:46px;border-radius:15px;color:#2a1a02;background:linear-gradient(135deg,#FFE08A,#FFB547)}
+.weekc .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.weekc small{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+.weekc b{font:700 16px/1.15 var(--f-display)}
+.weekc .wsub{font-size:12.5px;color:var(--muted)}
+.weekc > .i{flex:none;color:var(--gold)}
+.wkhero .vs{background:var(--c);color:#0B111F}
+.wkhero p b{font:700 17px var(--f-display);color:var(--text)}
+.toplist.wk{margin-top:6px;width:100%;text-align:left}
+
+/* Sauvegarde en ligne */
+.ccode{margin:16px 0 8px;padding:16px 8px;border-radius:18px;font:700 clamp(19px,6vw,26px)/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em;color:var(--text);background:rgba(20,184,166,.1);border:1px dashed rgba(20,184,166,.5);user-select:all;-webkit-user-select:all}
+.cwarn{margin:0 0 16px;font-size:12.5px;line-height:1.45;text-align:center;color:#FFE3A6}
+.cwarn .i{width:14px;height:14px;vertical-align:-2px}
+.cpy{width:100%;margin-top:10px;padding:10px 12px;border-radius:14px;border:1px solid var(--line-2);background:rgba(0,0,0,.25);color:var(--text);font:13px/1.4 ui-monospace,Menlo,monospace;word-break:break-all;resize:none}
+.ccin{width:100%;height:56px;margin-top:12px;padding:0 14px;border-radius:16px;border:1px solid var(--line-2);background:rgba(0,0,0,.25);color:var(--text);font:700 20px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em;text-align:center;text-transform:uppercase}
+.tacts:has(.pkbtn) .btn{font-size:13px;padding:0 8px;gap:5px;white-space:nowrap}
+.zlong .zpair span{text-align:left;font-size:13.5px;line-height:1.42;padding:10px 11px}
+.zlong .zpair span b{color:#fff;font-weight:700}
+.zlong .zpair em{font-style:normal;color:var(--faint)}
+.zsrc{margin:12px 0 0;font-size:11.5px;color:var(--faint)}
+.zsrc a{color:var(--muted)}
+#wcrit .lsk{margin-top:12px}
+.wvs{display:flex;gap:10px;margin-top:12px;padding:11px 12px;border-radius:16px;background:rgba(31,209,242,.08);border:1px solid rgba(31,209,242,.3);font-size:14px;line-height:1.45;color:#DDF6FF}
+.wvs > .i{flex:none;width:18px;height:18px;margin-top:2px;color:var(--cyan)}
+.wvs small{display:block;margin-bottom:3px;font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan)}
+.wvs b{color:#fff}
+.news-v{display:flex;align-items:baseline;gap:8px;margin:14px 0 2px;padding-top:10px;border-top:1px solid var(--line)}
+.news-v:first-child{border-top:0;padding-top:0;margin-top:4px}
+.news-v b{font:700 15px var(--f-display);color:var(--cyan)}
+.news-v span{font-size:12px;color:var(--muted)}
+.vfoot b{color:var(--text)}
+.vfoot .lnk{color:var(--cyan);font-size:inherit;padding:0}
+
 </style>
 </head>
 <body>
@@ -2781,7 +2825,8 @@ function wikiDesc(t) {
     try { pg = await one(t.sci); } catch (e) { if (t.fr) { try { pg = await one(t.fr); } catch (e2) { /* rien */ } } }
     if (!pg) return null;
     const sec = pickSection(pg.extract, ["Description", "Identification", "Morphologie", "Caractéristiques", "Aspect"]);
-    return sec ? { text: sec, url: "https://fr.m.wikipedia.org/wiki/" + encodeURIComponent(pg.title.replace(/ /g, "_")), title: pg.title } : null;
+    const voice = pickSection(pg.extract, ["Voix", "Chant", "Vocalisation", "Cri"]);
+    return sec ? { text: sec, voice, full: String(pg.extract).slice(0, 80000), url: "https://fr.m.wikipedia.org/wiki/" + encodeURIComponent(pg.title.replace(/ /g, "_")), title: pg.title } : null;
   });
 }
 const clip = (s, n) => { s = String(s || "").replace(/\s+/g, " ").trim(); if (s.length <= n) return s; const cut = s.slice(0, n); const dot = cut.lastIndexOf(". "); return (dot > n * .5 ? cut.slice(0, dot + 1) : cut.replace(/\s\S*$/, "") + "…"); };
@@ -3612,6 +3657,7 @@ function endSession(aborted) {
   if (L.n > ses.lvl0 && !ses.lvlNow) { setTimeout(() => { sfx.lvl(); confetti(); }, 500); }
   save(true);
   topPush();
+  cloudAuto();
   if (!n) { SES = null; go("home"); return; }
   go("result", { ses, n, ok, badges, msgs });
   if (ok / n >= .8 || badges.length) setTimeout(() => confetti(), 450);
@@ -5183,22 +5229,115 @@ function sosiesHtml(a, b, mode = "fiche", ear) {
   return `<div class="why ${err ? "err" : "neu"}">${head}${leg}${rows}${memo}${act}${all}</div>`;
 }
 /* Paire inconnue : le lien de parenté dit où chercher, et on invite à écrire son propre moyen mnémo */
+/* ---------- Toutes les autres paires : les critères décrits pour chacun (Wikipédia), partie par partie ---------- */
+const WGRP = [
+  ["tete", "têtes?|calottes?|sourcils?|joues?|face|nuque|capuchons?|masques?|front|lores|iris|yeux|œil|oeil|cercles? oculaires?|huppes?|moustaches?|auriculaires?"],
+  ["bec", "becs?|mandibules?|cires?"],
+  ["dessous", "gorges?|poitrines?|ventres?|flancs?|dessous|parties inférieures|abdomen|plastron|bavettes?"],
+  ["dos", "dos|manteau|dessus|parties supérieures|scapulaires|croupions?"],
+  ["aile", "ailes?|alaires?|rémiges|primaires|secondaires|couvertures|miroirs?"],
+  ["queue", "queues?|rectrices|sus-caudales|sous-caudales|caudales?"],
+  ["pattes", "pattes?|tarses?|doigts|serres"]
+].map(([k, w]) => [k, new RegExp("(^|[^\\p{L}])(" + w + ")(?=[^\\p{L}]|$)", "iu")]);
+const WVOX = /(^|[^\p{L}])(chants?|cris?|voix|strophes?|notes?)(?=[^\p{L}]|$)/iu;
+const WCOL = /(^|[^\p{L}])((?:noir|blanc|gris|brun|roux|rousse|jaune|orang[ée]|rouge|vert|bleu|chamois|crème|olive|ocre|fauve|beige|rose|violet|pourpre|marron|cuivré|doré|argenté|ardoise|sombre|clair|pâle|strié|tacheté|barré|rayé|moucheté|uniforme)(?:e|s|es|che|ches)?)(?=[^\p{L}]|$)/giu;
+const WJUV = /(^|[^\p{L}])(juvéniles?|jeunes?|immatures?|poussins?)(?=[^\p{L}]|$)/iu;
+const wSentences = txt => (String(txt || "").replace(/\s+/g, " ").match(/[^.!?]+[.!?]+(?=\s|$)|[^.!?]+$/g) || []).map(x => x.trim()).filter(x => x.length > 12);
+/* La proposition qui parle de la partie (« la poitrine et la face sont orange »), pas toute la phrase */
+function wClause(sent, re) {
+  const parts = sent.split(/;\s+|,\s+(?=(?:la|le|les|l'|son|sa|ses|il|elle|mais|et|alors|tandis|chez)\b)/i);
+  if (parts.length < 2) return sent;
+  const p = parts.find(x => re.test(x));
+  if (!p || p.trim().length < 22) return sent;
+  let c = p.trim(); c = c[0].toUpperCase() + c.slice(1);
+  return /[.!?]$/.test(c) ? c : c + ".";
+}
+function wPick(sents, re, used) {
+  const cands = [];
+  sents.forEach((x, i) => {
+    if (!re.test(x) || /distingu|confon/i.test(x)) return;
+    const sc = (new RegExp(WCOL.source, "iu").test(x) ? 2 : 0) + (/\bplus\b|\bmoins\b/i.test(x) ? 1 : 0) - (WJUV.test(x) ? 2 : 0) - i * .05;
+    cands.push({ x, sc });
+  });
+  cands.sort((a, b) => b.sc - a.sc);
+  for (const { x } of cands) { const c = clip(wClause(x, re), 190); if (used && used.has(c)) continue; used?.add(c); return c; }
+  return "";
+}
+/* Longueur du corps en cm : « 60 à 70 cm », « mesure 33 cm »… (pas l'envergure) */
+function wSize(txt) {
+  const t = String(txt || "").replace(/\s+/g, " "), re = /(\d+(?:[,.]\d+)?)\s*(?:(?:à|-|–)\s*(\d+(?:[,.]\d+)?)\s*)?cm\b/g;
+  let m, best = null;
+  while ((m = re.exec(t))) {
+    const before = t.slice(Math.max(0, m.index - 70), m.index).toLowerCase();
+    if (/envergure|aile|queue|bec|tarse|œuf|oeuf/.test(before.slice(-35))) continue;
+    const a = parseFloat(m[1].replace(",", ".")), b = m[2] ? parseFloat(m[2].replace(",", ".")) : a, v = (a + b) / 2;
+    if (v < 7 || v > 200) continue;
+    const good = /longueur|mesure|long|taille|corps/.test(before);
+    if (!best || (good && !best.good)) best = { v, txt: m[2] ? `${m[1]} à ${m[2]} cm` : `${m[1]} cm`, good };
+    if (good) break;
+  }
+  return best;
+}
+/* Une phrase de l'article de l'un qui parle de l'autre (« se distingue du… », « contrairement au… ») */
+function wVersus(full, other) {
+  const names = [nameFr(other), other.sci].filter(Boolean).map(norm).filter(n => n.length > 3);
+  if (!full || !names.length) return "";
+  let best = "", bs = -1;
+  for (const x of wSentences(String(full).replace(/={2,}[^=\n]*={2,}/g, ". "))) {
+    const n = norm(x);
+    if (!names.some(nm => n.includes(nm))) continue;
+    const sc = (/distingu|confon|contrairement|diff[èe]r|plus (petit|grand|sombre|clair|court|long)|alors que|tandis que|s[ée]par/i.test(x) ? 3 : 0) + (new RegExp(WCOL.source, "iu").test(x) ? 1 : 0) - (x.length > 260 ? 1 : 0);
+    if (sc > bs) { bs = sc; best = x; }
+  }
+  return best ? clip(best, 260) : "";
+}
+const wBold = s => esc(s).replace(new RegExp(WCOL.source, "giu"), (x, p, w) => `${p}<b>${w}</b>`);
+const silGroup = t => { const f = famName(fam(t)) || ""; return /Accipitr|Falcon|Pandion|Strig|Tyton/.test(f) ? "hawk" : /Ardeid|Ciconi|Threskiorn|Gruid/.test(f) ? "heron" : "pass"; };
+async function fillWhy(t, c, ear) {
+  const box = $("#wcrit"); if (!box) return;
+  const get = async x => { const d = await wikiDesc(x).catch(() => null); if (d) return d; const w = await wiki(x).catch(() => null); return w ? { text: w.text, voice: null, url: w.url } : null; };
+  const [A, B] = await Promise.all([get(t), get(c)]);
+  if (!$("#wcrit") || $("#wcrit") !== box) return;
+  if (!A && !B) { box.innerHTML = box.dataset.fb ? decodeURIComponent(box.dataset.fb) : ""; return; }
+  const sa = wSentences(A?.text), sb = wSentences(B?.text), rows = [];
+  const za = wSize(A?.text), zb = wSize(B?.text);
+  const sizeRow = za && zb && Math.abs(za.v - zb.v) / Math.min(za.v, zb.v) >= .12;
+  const ua = new Set(), ub = new Set();
+  for (const [k, re] of WGRP) { const x = wPick(sa, re, ua), y = wPick(sb, re, ub); if (x || y) rows.push({ k, x, y, both: !!(x && y) }); }
+  const vx = wPick(wSentences(A?.voice), WVOX), vy = wPick(wSentences(B?.voice), WVOX);
+  if (vx || vy) rows[ear ? "unshift" : "push"]({ k: "voix", x: vx, y: vy, both: !!(vx && vy) });
+  const order = [...rows.filter(r => r.both), ...rows.filter(r => !r.both)].slice(0, sizeRow ? 4 : 5);
+  const vs = wVersus(A?.full, c) || wVersus(B?.full, t);
+  if (ear) { const v = order.findIndex(r => r.k === "voix"); if (v > 0) order.unshift(...order.splice(v, 1)); }
+  if (!order.length && !sizeRow && !wVersus(A?.full, c) && !wVersus(B?.full, t)) { box.innerHTML = box.dataset.fb ? decodeURIComponent(box.dataset.fb) : ""; return; }
+  const firstK = sizeRow && !ear ? "taille" : (order.find(r => r.both) || order[0])?.k;
+  const cell = (s, cls) => `<span class="${cls}">${s ? wBold(s) : `<em>Pas décrit</em>`}</span>`;
+  let h = vs ? `<div class="wvs">${ic("bulb", "xs")}<span><small>La différence, d'après Wikipédia</small>${wBold(vs)}</span></div>` : "";
+  if (sizeRow) {
+    const g = silGroup(t), lab = `<div class="zlab">${zMap("taille")}<b>Taille</b>${firstK === "taille" ? `<span class="zfirst">${ic("eye", "xs")}Regarde d'abord</span>` : ""}</div>`;
+    h += `<div class="zrow">${lab}${zTaille({ cm: Math.round(za.v) }, { cm: Math.round(zb.v) }, g)}<div class="zpair zcap"><span class="zsa"><b>${esc(za.txt)}</b></span><span class="zsb"><b>${esc(zb.txt)}</b></span></div></div>`;
+  }
+  h += order.map(r => `<div class="zrow ztxt zlong"><div class="zlab">${zMap(r.k)}<b>${esc(ZPART[r.k] === "Dos" ? "Dessus" : ZPART[r.k] === "Aile repliée" ? "Ailes" : ZPART[r.k])}</b>${r.k === firstK ? `<span class="zfirst">${ic("eye", "xs")}Regarde d'abord</span>` : ""}</div><div class="zpair">${cell(r.x, "zsa")}${cell(r.y, "zsb")}</div></div>`).join("");
+  h += `<p class="zsrc">D'après les descriptions de Wikipédia. ${A?.url ? `<a href="${esc(A.url)}" target="_blank" rel="noopener">${esc(nameFr(t))}</a>` : ""}${A?.url && B?.url ? " · " : ""}${B?.url ? `<a href="${esc(B.url)}" target="_blank" rel="noopener">${esc(nameFr(c))}</a>` : ""}</p>`;
+  box.innerHTML = h;
+}
 function relHtml(t, c, ear) {
   const gt = genus(t), gc = genus(c), ft = fam(t), fc = fam(c), ot = ord(t), oc = ord(c);
   let msg, parts;
   if (gt && gt === gc) { msg = `Même genre (<i>${esc(gt)}</i>) : tout se joue sur les détails.`; parts = ["tete", "bec", "dessous", "pattes", "voix"]; }
-  else if (ft && ft === fc) { msg = `Même famille (${esc(famName(ft))}) : compare la tête, le bec et le dessous.`; parts = ["tete", "bec", "dessous", "aile"]; }
-  else if (ot && ot === oc) { msg = `Même grand groupe (${esc(ordName(ot))}) : la forme du bec et la silhouette font la différence.`; parts = ["bec", "taille", "queue", "pattes"]; }
-  else { msg = ft && fc ? `Deux familles éloignées (${esc(famName(ft))} et ${esc(famName(fc))}) : commence par la silhouette, la taille et le milieu.` : "Deux oiseaux bien différents : commence par la silhouette, la taille et le milieu."; parts = ["taille", "bec", "pattes", "milieu"]; }
+  else if (ft && ft === fc) { msg = `Même famille (${esc(famName(ft))}) : voici ce qui les sépare.`; parts = ["tete", "bec", "dessous", "aile"]; }
+  else if (ot && ot === oc) { msg = `Même grand groupe (${esc(ordName(ot))}) : voici ce qui les sépare.`; parts = ["bec", "taille", "queue", "pattes"]; }
+  else { msg = ft && fc ? `Deux familles éloignées (${esc(famName(ft))} et ${esc(famName(fc))}).` : "Deux oiseaux bien différents."; parts = ["taille", "bec", "pattes", "milieu"]; }
   if (ear) { msg = "Écoute les deux chants l'un après l'autre : rythme, hauteur, notes répétées ou non. " + msg; parts = ["voix", ...parts.filter(x => x !== "voix")].slice(0, 4); }
-  return `<div class="why err gen"><div class="whyh"><span class="wi">${ic("zoom")}</span><span class="wt"><b>Pourquoi tu t'es trompé</b><small>${msg}</small></span></div>
-  <div class="zlook">${parts.map(p => `<span class="zchip">${zMap(p)}${esc(ZPART[p])}</span>`).join("")}</div>
-  <p class="zhint">${ear ? "Ouvre leurs fiches pour réécouter leurs chants." : "Touche les deux photos pour les comparer en grand."}</p>
+  const fb = `<div class="zlook">${parts.map(p => `<span class="zchip">${zMap(p)}${esc(ZPART[p])}</span>`).join("")}</div><p class="zhint">${ear ? "Ouvre leurs fiches pour réécouter leurs chants." : "Touche les deux photos pour les comparer en grand."}</p>`;
+  return `<div class="why err gen"><div class="whyh"><span class="wi">${ic(ear ? "wave" : "zoom")}</span><span class="wt"><b>Pourquoi tu t'es trompé</b><small>${msg}</small></span></div>
+  <div class="zleg"><span class="zsa">${esc(nameFr(t))} <em>c'était</em></span><span class="zsb">${esc(nameFr(c))} <em>ton choix</em></span></div>
+  <div id="wcrit" data-fb="${encodeURIComponent(fb)}"><div class="lsk"></div><div class="lsk short"></div><div class="lsk"></div></div>
   <div class="memo-act"><button class="chip" data-act="memoown">${ic("edit", "xs")}Écrire mon moyen mnémo</button></div><div class="memoin" hidden><textarea maxlength="280" placeholder="Ce qui les sépare, pour toi…"></textarea><button class="btn ghost" data-act="memosave" data-id="${t.id}">${ic("check")}Garder</button></div></div>`;
 }
 function whyHtml(t, c, drill, ear) {
   const h = sosiesHtml(t, c, "err", ear) || relHtml(t, c, ear);
-  return h + (drill ? `<div class="zdrill">${ic("duel", "xs")}Un duel d'entraînement sur ces deux-là t'attend à la fin.</div>` : "");
+  return h;
 }
 
 function drillWorthy(a, b) {
@@ -5472,8 +5611,9 @@ function liveMount() {
   const q = liveQ(), img = $("#limg");
   if (!q) return;
   LIVE.t0 = 0;
+  const idx = LIVE.i;
   const start = () => {
-    if (LIVE.t0 || LIVE.st !== "q") return;
+    if (LIVE.t0 || LIVE.st !== "q" || LIVE.i !== idx) return;
     LIVE.t0 = performance.now();
     const bar = $("#ltbar"), T = (LIVE.room?.T || 10) * 1000;
     if (bar) { bar.style.transition = "none"; bar.style.transform = "scaleX(1)"; void bar.offsetWidth; bar.style.transition = `transform ${T}ms linear`; bar.style.transform = "scaleX(0)"; }
@@ -5579,8 +5719,7 @@ function liveShare() {
   const url = location.href.split("#")[0] + "#duel=" + LIVE.code;
   const text = `Viens me défier sur Plumage ! Code ${LIVE.code}`;
   if (navigator.share) navigator.share({ title: "Duel Plumage", text, url }).catch(() => {});
-  else if (navigator.clipboard) navigator.clipboard.writeText(text + " " + url).then(() => toast("Lien copié !"), () => toast(url));
-  else toast(url);
+  else copyText(text + " " + url, "Lien copié !");
 }
 function liveViewHtml() {
   const r = LIVE.room, me = LIVE.role, ot = otherRole(me), o = r?.[ot], my = r?.[me];
@@ -5875,6 +6014,18 @@ function quizUnpack(s) {
 }
 const cleanTxt = (s, n) => String(s || "").replace(/[\u0000-\u001f<>]/g, "").replace(/\s+/g, " ").trim().slice(0, n);
 
+/* ---------- Copier : presse-papiers, sinon une fenêtre où le texte se sélectionne à la main ---------- */
+function copyText(text, ok = "Copié !") {
+  const manual = () => {
+    openLayer(`<div class="panel" role="dialog" aria-label="Copier"><button class="icon-btn close" data-act="close" aria-label="Fermer">${ic("x")}</button>
+    <div class="in" style="padding-top:22px"><h2>Copier</h2><p class="muted" style="font-size:14px">Sélectionne le texte, puis copie-le.</p>
+    <textarea class="cpy" readonly rows="4">${esc(text)}</textarea><button class="btn ghost wide" data-act="close" style="margin:12px 0 22px">${ic("check")}Fermer</button></div></div>`);
+    setTimeout(() => { const t = $(".cpy"); if (t) { t.focus(); t.select(); } }, 150);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => toast(ok), manual);
+  else manual();
+}
+
 /* ---------- Fenêtre « Partager ce quiz » ---------- */
 const SHARE = { cfg: null, link: "" };
 function openShare(cfg) {
@@ -5896,10 +6047,7 @@ function shareLinkNow() {
   if (navigator.share) navigator.share({ title: "Plumage", text, url: SHARE.link }).catch(() => {});
   else copyLink();
 }
-function copyLink() {
-  if (navigator.clipboard) navigator.clipboard.writeText(SHARE.link).then(() => toast("Lien copié !"), () => toast(SHARE.link));
-  else toast(SHARE.link);
-}
+function copyLink() { copyText(SHARE.link, "Lien copié !"); }
 function downloadQr() {
   try {
     const name = String(SHARE.cfg?.title || "quiz").replace(/ · [^·]*$/, "");
@@ -6020,8 +6168,9 @@ function defiMount() {
   const q = DEFI.deck[DEFI.i], img = $("#dimg");
   if (!q) return;
   DEFI.t0 = 0;
+  const idx = DEFI.i;
   const start = () => {
-    if (DEFI.t0 || DEFI.st !== "q" || DEFI.rev === DEFI.i) return;
+    if (DEFI.t0 || DEFI.st !== "q" || DEFI.i !== idx || DEFI.rev === DEFI.i) return;
     DEFI.t0 = performance.now();
     const bar = $("#dtbar"), T = DEFI.T * 1000;
     if (bar) { bar.style.transition = "none"; bar.style.transform = "scaleX(1)"; void bar.offsetWidth; bar.style.transition = `transform ${T}ms linear`; bar.style.transform = "scaleX(0)"; }
@@ -6057,12 +6206,14 @@ async function defiFinish() {
     DEFI.xp = true;
     const win = opp && me.pts > opp.pts, gain = me.ok * 6 + (win ? 25 : 0);
     if (gain) addXp(gain);
-    count("defis"); if (win) count("defiwin");
+    count(DEFI.role === "week" ? "weeks" : "defis"); if (win) count("defiwin");
     const m = markPlayed(); if (m) toast(m);
     checkBadges(); save(true); topPush();
     if (win) setTimeout(() => { sfx.lvl(); confetti(); }, 300);
+    cloudAuto();
   }
   go("defi");
+  if (DEFI.role === "week") { weekFinish(); return; }
   if (DEFI.role === "host") {
     try { DEFI.link = location.origin + location.pathname + "#defi=" + await packZ(JSON.stringify(defiPack())); }
     catch (e) { DEFI.link = ""; DEFI.err = "Lien impossible à créer."; }
@@ -6074,8 +6225,7 @@ function defiShare() {
   const me = defiScore(DEFI.deck, DEFI.ans, DEFI.T);
   const text = `Je te défie sur Plumage : ${DEFI.deck.length} photos d'oiseaux, ${DEFI.T} s par photo. J'ai fait ${fmt(me.pts)} points, à toi de me battre !`;
   if (navigator.share) navigator.share({ title: "Défi Plumage", text, url: DEFI.link }).catch(() => {});
-  else if (navigator.clipboard) navigator.clipboard.writeText(text + " " + DEFI.link).then(() => toast("Défi copié : colle-le dans un message."), () => toast(DEFI.link));
-  else toast(DEFI.link);
+  else copyText(text + " " + DEFI.link, "Défi copié : colle-le dans un message.");
 }
 async function openDefiLink(raw) {
   try {
@@ -6090,6 +6240,8 @@ async function openDefiLink(raw) {
 
 /* ---------- Écrans ---------- */
 function defiViewHtml() {
+  if (DEFI.role === "week" && DEFI.st === "intro") return weekIntroHtml();
+  if (DEFI.role === "week" && DEFI.st === "end") return weekEndHtml();
   const D = DEFI, head = t => `<header class="qbar"><button class="icon-btn" data-act="dquit" aria-label="Quitter">${ic("x")}</button><div class="ltitle">${t}</div><span style="width:44px"></span></header>`;
   if (D.st === "prep") return `<section class="view live defi">${head("Défi à distance")}<div class="lcard"><div class="lprep"><div class="spin"></div><b>Je choisis 10 photos d'oiseaux de ta zone…</b></div></div></section>`;
   if (D.st === "intro" && D.role === "guest") return `<section class="view live defi">${head("Défi reçu")}
@@ -6111,7 +6263,7 @@ function defiViewHtml() {
     const q = D.deck[D.i], sc = defiScore(D.deck.slice(0, D.i), D.ans, D.T);
     return `<section class="view live quiz defi">
   <header class="qbar"><button class="icon-btn" data-act="dquit" aria-label="Quitter">${ic("x")}</button>
-    <div class="lscore"><span class="me"><b id="dsc">${fmt(sc.pts)}</b><small>${esc(S.set.pseudo || "Toi")}</small></span><span class="qn">${D.i + 1}/${D.deck.length}</span>${D.opp ? `<span class="ot"><b>?</b><small>${esc(D.opp.n)}</small></span>` : `<span class="ot"><b>${ic("duel", "xs")}</b><small>défi</small></span>`}</div>
+    <div class="lscore"><span class="me"><b id="dsc">${fmt(sc.pts)}</b><small>${esc(S.set.pseudo || "Toi")}</small></span><span class="qn">${D.i + 1}/${D.deck.length}</span>${D.opp ? `<span class="ot"><b>?</b><small>${esc(D.opp.n)}</small></span>` : `<span class="ot"><b>${ic(D.role === "week" ? "trophy" : "duel", "xs")}</b><small>${D.role === "week" ? "semaine" : "défi"}</small></span>`}</div>
     <span style="width:44px"></span></header>
   <div class="timer"><i id="dtbar"></i></div>
   <div class="stage"><figure class="shot"><img class="main" id="dimg" alt="Oiseau à identifier" draggable="false"><span class="ret tl"></span><span class="ret tr"></span><span class="ret bl"></span><span class="ret br"></span><div class="spinner"><div class="spin"></div></div><figcaption class="credit">${esc(q.a || "")}</figcaption></figure></div>
@@ -6270,6 +6422,295 @@ function pathHomeCard() {
   if (!started.length) return "";
   const P = started.find(x => x.id === S.lastPath) || started[0], i = pathNext(P), d = pathDone(P), n = P.steps.length;
   return `<button class="pathhome" data-act="pgo" data-p="${P.id}" data-i="${i}" style="--c:${P.c}"><span class="ic">${ic(P.ic)}</span><span class="tx"><small>Ton parcours · étape ${i + 1}/${n}</small><b>${esc(P.steps[i].n)}</b><span class="pbar"><i style="width:${(100 * d / n).toFixed(0)}%"></i></span></span>${ic("play")}</button>`;
+}
+
+/* ---- terrain.js ---- */
+/* ============================================================
+   Plumage — hors ligne : l'appli s'ouvre sans réseau (service worker, voir sw.js)
+   et un « pack terrain » garde la liste d'une sortie et ses photos sur le téléphone.
+   ============================================================ */
+const PACKC = "plumage-pack";
+const PK = { run: false, done: 0, total: 0, tok: 0 };
+const packKey = (z, m, rec) => `${zoneKey(z)}|${rec ? "r" : m}`;
+const packOf = () => S.pack || null;
+const packMatches = () => { const p = packOf(); return !!p && p.k === packKey(tripZone(), TRIP.m, TRIP.rec); };
+const packExpand = p => (p?.list || []).map(([id, sci, fr, sq, md, c]) => ({ id, sci, fr, a: [], c, img: sq || md ? { sq, md, attr: "", lic: "" } : null }));
+/* Télécharge les photos de la liste (vignette + taille moyenne) dans le cache du téléphone */
+async function packDownload() {
+  const T = TRIP;
+  if (PK.run || !T.list || !T.list.length) return;
+  if (!("caches" in window)) { toast("Ce navigateur ne sait pas garder les photos hors ligne."); return; }
+  const list = T.list.slice(0, 150), tok = ++PK.tok;
+  const urls = [...new Set(list.flatMap(t => [t.img?.sq, t.img?.md].filter(Boolean)))];
+  Object.assign(PK, { run: true, done: 0, total: urls.length });
+  packUi();
+  let fail = 0;
+  try {
+    const cache = await caches.open(PACKC);
+    const one = async u => {
+      try {
+        let res = await fetch(u, { mode: "cors", cache: "no-store" }).catch(() => null);
+        if (!res || !res.ok) res = await fetch(u, { mode: "no-cors", cache: "no-store" });
+        await cache.put(u, res);
+      } catch (e) { fail++; }
+      PK.done++; if (PK.done % 4 === 0 || PK.done === PK.total) packUi();
+    };
+    const q = urls.slice();
+    await Promise.all(Array.from({ length: 4 }, async () => { while (q.length && tok === PK.tok) await one(q.shift()); }));
+  } catch (e) { fail = urls.length; }
+  if (tok !== PK.tok) return;
+  PK.run = false;
+  if (fail > urls.length / 2) { toast("Téléchargement interrompu (réseau ?). Réessaie avec une meilleure connexion."); packUi(); return; }
+  const z = tripZone();
+  S.pack = { k: packKey(z, T.m, T.rec), z, place: zoneLabel(z), m: T.m, rec: T.rec, at: Date.now(), n: list.length, list: list.map(t => [t.id, t.sci, t.fr || "", t.img?.sq || "", t.img?.md || "", t.c || 0]) };
+  save(true);
+  try { if (navigator.storage?.persist) await navigator.storage.persist(); } catch (e) { /* rien */ }
+  toast(`Prêt hors ligne : ${list.length} espèces et leurs photos.`);
+  packUi();
+}
+async function packDelete() {
+  PK.tok++; PK.run = false;
+  try { await caches.delete(PACKC); } catch (e) { /* rien */ }
+  S.pack = null; save(true);
+  toast("Pack terrain supprimé.");
+  rerender();
+}
+function packBtnHtml() {
+  if (PK.run) return `<button class="btn ghost pkbtn run" data-act="tpack" disabled><span class="spin"></span>${PK.done}/${PK.total}</button>`;
+  if (packMatches()) return `<button class="btn ghost pkbtn ok" data-act="tpack" aria-label="Pack hors ligne prêt">${ic("check")}Hors ligne</button>`;
+  return `<button class="btn ghost pkbtn" data-act="tpack" aria-label="Garder pour le terrain, sans réseau">${ic("down")}Hors ligne</button>`;
+}
+function packUi() { const b = $(".pkbtn"); if (b) b.outerHTML = packBtnHtml(); }
+/* Sans réseau : la liste du pack, si c'est la même sortie (ou sur demande) */
+function packFallback(force) {
+  const p = packOf();
+  if (!p || (!force && !packMatches())) return false;
+  TRIP.list = packExpand(p); TRIP.err = ""; TRIP.recent = null; TRIP.offline = true;
+  return true;
+}
+function packSettingsHtml() {
+  const p = packOf();
+  return `<div class="sec">${ic("down")}Hors ligne</div>
+  <div class="group">
+    <div class="set"><span class="lab"><b>${p ? `Pack terrain : ${esc(p.place)}` : "Aucun pack terrain"}</b><small>${p ? `${p.n} espèces avec photos · ${p.rec ? "en ce moment" : MONTHS_LONG[p.m - 1]} · ${esc(ago(p.at))}. Sans réseau : liste « Sur place » et quiz de sortie.` : "Dans « Préparer une sortie », touche « Hors ligne » pour garder la liste et ses photos avant de partir."}</small></span>${p ? `<button class="icon-btn" data-act="pkdel" aria-label="Supprimer le pack">${ic("trash")}</button>` : ""}</div>
+    <div class="set"><span class="lab"><b>L'appli s'ouvre sans réseau</b><small>Une fois ouverte une première fois, elle reste disponible hors ligne. Photos et sons des autres quiz demandent du réseau.</small></span></div>
+  </div>`;
+}
+
+/* ---- cloud.js ---- */
+/* ============================================================
+   Plumage — sauvegarde en ligne, facultative et chiffrée
+   Un code de 16 caractères, créé sur ton téléphone, sert à la fois d'adresse et de clé :
+   le serveur ne reçoit qu'un bloc chiffré (AES-GCM) rangé sous l'empreinte du code.
+   Sans le code, personne ne peut lire la sauvegarde, ni la retrouver.
+   ============================================================ */
+const CABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const cloudFmt = c => c.replace(/(.{4})(?=.)/g, "$1-");
+const cloudClean = s => String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 16);
+const cloudOk = () => !!(window.crypto && crypto.subtle);
+async function cloudKeys(code) {
+  const enc = new TextEncoder(), raw = enc.encode(cloudClean(code));
+  const id = bytesB64(new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode("plumage-save:" + cloudClean(code)))));
+  const base = await crypto.subtle.importKey("raw", raw, "PBKDF2", false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey({ name: "PBKDF2", salt: enc.encode("plumage-save-v1"), iterations: 150000, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+  return { id, key };
+}
+const cloudPayload = () => JSON.stringify({ ...S, set: { ...S.set, xc: "" }, cloud: null, pack: null });
+async function cloudPut(code) {
+  const { id, key } = await cloudKeys(code);
+  const zipped = await packZ(cloudPayload()), iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(zipped)));
+  const blob = new Uint8Array(iv.length + ct.length); blob.set(iv); blob.set(ct, iv.length);
+  await netReq("PUT", "saves/" + id, { v: 1, t: Date.now(), d: bytesB64(blob) });
+}
+async function cloudGet(code) {
+  const { id, key } = await cloudKeys(code);
+  const r = await netReq("GET", "saves/" + id);
+  if (!r || typeof r.d !== "string") return null;
+  const blob = b64Bytes(r.d);
+  const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: blob.slice(0, 12) }, key, blob.slice(12));
+  return { t: r.t, data: JSON.parse(await unpackZ(new TextDecoder().decode(plain))) };
+}
+let CLT = 0;
+/* Après chaque partie : mise à jour discrète (au plus toutes les 2 minutes) */
+function cloudAuto() {
+  if (!S.cloud?.code || !netOn() || !cloudOk() || Date.now() - (S.cloud.last || 0) < 120000) return;
+  clearTimeout(CLT);
+  CLT = setTimeout(async () => { try { await cloudPut(S.cloud.code); S.cloud.last = Date.now(); save(); } catch (e) { /* hors ligne : plus tard */ } }, 1500);
+}
+async function cloudEnable() {
+  if (!netOn()) { toast("La sauvegarde en ligne arrive bientôt."); return; }
+  if (!cloudOk()) { toast("Ce navigateur ne sait pas chiffrer : sauvegarde en ligne impossible."); return; }
+  const code = Array.from(crypto.getRandomValues(new Uint8Array(16)), b => CABC[b % 32]).join("");
+  try {
+    await cloudPut(code);
+    S.cloud = { code, last: Date.now() }; save(true);
+    openCloudCode(true);
+  } catch (e) { toast("Connexion impossible. Réessaie plus tard."); }
+}
+async function cloudNow() {
+  if (!S.cloud?.code) return;
+  try { await cloudPut(S.cloud.code); S.cloud.last = Date.now(); save(true); toast("Sauvegardé en ligne."); rerender(); }
+  catch (e) { toast("Connexion impossible. Réessaie plus tard."); }
+}
+async function cloudOff() {
+  const c = S.cloud?.code;
+  if (c && netOn()) { try { const { id } = await cloudKeys(c); await netReq("DELETE", "saves/" + id); } catch (e) { /* rien */ } }
+  S.cloud = null; save(true); closeLayer(); toast("Sauvegarde en ligne supprimée."); rerender();
+}
+function openCloudCode(fresh) {
+  const c = S.cloud?.code; if (!c) return;
+  openLayer(`<div class="panel cloudp" role="dialog" aria-label="Code de sauvegarde"><button class="icon-btn close" data-act="close" aria-label="Fermer">${ic("x")}</button>
+  <div class="in" style="padding-top:22px;text-align:center"><span class="inqic" style="--c:#14B8A6">${ic("shield")}</span>
+  <h2 style="margin-top:12px">${fresh ? "Sauvegarde en ligne activée" : "Ton code de sauvegarde"}</h2>
+  <p class="muted" style="font-size:14px">Note ce code quelque part (ou fais une capture d'écran). Sur un autre téléphone, il suffit de le taper pour tout récupérer.</p>
+  <div class="ccode" id="ccode">${cloudFmt(c)}</div>
+  <p class="cwarn">${ic("lock", "xs")} C'est la seule clé : sans lui, personne ne peut lire ta sauvegarde. Ne le donne à personne.</p>
+  <button class="btn primary wide" data-act="ccopy">${ic("copy")}Copier le code</button>
+  <button class="btn ghost wide" data-act="cloudoff" style="margin:10px 0 22px">${ic("trash")}Supprimer la sauvegarde en ligne</button></div></div>`, "cloudl");
+}
+function openCloudRestore() {
+  openLayer(`<div class="panel cloudp" role="dialog" aria-label="Récupérer ma progression"><button class="icon-btn close" data-act="close" aria-label="Fermer">${ic("x")}</button>
+  <div class="in" style="padding-top:22px"><h2>Récupérer ma progression</h2>
+  <p class="muted" style="font-size:14px">Tape le code de 16 caractères noté sur ton ancien téléphone. La progression de ce téléphone sera remplacée.</p>
+  <form id="crest" autocomplete="off"><input id="ccin" class="ccin" type="text" inputmode="text" autocapitalize="characters" spellcheck="false" maxlength="19" placeholder="XXXX-XXXX-XXXX-XXXX" aria-label="Code de sauvegarde">
+  <button class="btn primary wide" type="submit" style="margin:12px 0 22px">${ic("down")}Récupérer</button></form></div></div>`, "cloudl");
+  setTimeout(() => $("#ccin")?.focus(), 200);
+}
+async function cloudRestore(input) {
+  const code = cloudClean(input);
+  if (code.length !== 16) { toast("Le code fait 16 caractères."); return; }
+  if (!netOn()) { toast("La sauvegarde en ligne arrive bientôt."); return; }
+  try {
+    const r = await cloudGet(code);
+    if (!r) { toast("Aucune sauvegarde pour ce code. Vérifie-le."); return; }
+    if (!restoreFrom(r.data)) { toast("Sauvegarde illisible."); return; }
+    S.cloud = { code, last: Date.now() }; save(true);
+    closeLayer(); toast("Progression récupérée !"); go("home");
+  } catch (e) { toast(e && e.name === "OperationError" ? "Code incorrect." : "Connexion impossible. Réessaie plus tard."); }
+}
+function cloudSettingsHtml() {
+  const c = S.cloud;
+  return c
+    ? `<div class="set"><span class="lab"><b>Sauvegarde en ligne</b><small>Activée, chiffrée. Dernière : ${esc(ago(c.last))}. Mise à jour après tes parties.</small></span><button class="btn ghost" data-act="cloudcode">${ic("lock")}Code</button></div>
+    <div class="set"><span class="lab"><b>Sauvegarder maintenant</b></span><button class="btn ghost" data-act="cloudnow">${ic("up")}Envoyer</button></div>`
+    : `<div class="set"><span class="lab"><b>Sauvegarde en ligne</b><small>${netOn() ? "Facultative et chiffrée : un code de 16 caractères suffit pour tout retrouver sur un autre téléphone." : "Bientôt : un code de 16 caractères pour tout retrouver sur un autre téléphone."}</small></span><button class="btn ghost" data-act="cloudon">${ic("shield")}Activer</button></div>
+    <div class="set"><span class="lab"><b>J'ai déjà un code</b><small>Récupère ta progression depuis un autre téléphone.</small></span><button class="btn ghost" data-act="cloudrest">${ic("down")}Récupérer</button></div>`;
+}
+
+/* ---- semaine.js ---- */
+/* ============================================================
+   Plumage — défi de la semaine : les mêmes 10 photos pour tout le monde, un thème par semaine
+   Les questions sont tirées au sort à partir du numéro de la semaine (pas de serveur pour ça) ;
+   le classement de la semaine passe par la base en ligne : pseudo et points, premier essai seulement.
+   ============================================================ */
+function weekId(d = new Date()) {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day);
+  const y = t.getUTCFullYear(), w = Math.ceil(((t - Date.UTC(y, 0, 1)) / 864e5 + 1) / 7);
+  return `${y}-W${String(w).padStart(2, "0")}`;
+}
+function seeded(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const sPick = (r, a) => a[Math.floor(r() * a.length)];
+const sShuffle = (r, a) => { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
+/* Le thème de la semaine : un parcours (photos), deux de ses étapes */
+function weekTheme(wk = weekId()) {
+  const r = seeded(hashStr("plumage-semaine:" + wk)), P = sPick(r, PATHS.filter(p => !p.stim.includes("son")));
+  const steps = sShuffle(r, P.steps.map((_, i) => i)).slice(0, 2).sort((a, b) => a - b);
+  return { wk, P, steps, r };
+}
+const WEEK = { wk: "", deck: null, theme: null, list: null, err: "", load: 0, rload: 0 };
+async function weekDeck(wk = weekId()) {
+  if (WEEK.wk === wk && WEEK.deck) return WEEK.deck;
+  const th = weekTheme(wk), r = th.r;
+  const sp = (await Promise.all(th.steps.map(i => stepTaxa(th.P, i).catch(() => null)))).flat().filter(Boolean);
+  const uniq = [...new Map(sp.map(t => [t.id, t])).values()].sort((a, b) => a.id - b.id);
+  if (uniq.length < 5) throw new Error("EMPTY");
+  const det = await photosFor(uniq.map(t => t.id)).catch(() => uniq.map(() => []));
+  const targets = sShuffle(r, [...uniq, ...uniq]).slice(0, 10), used = new Map(), deck = [];
+  for (const t of targets) {
+    const i = uniq.findIndex(x => x.id === t.id), list = (det[i] || []).filter(ph => photoRef(ph.lg || ph.md));
+    const fall = t.img?.md && photoRef(t.img.md) ? [{ md: t.img.md, lg: sizeUrl(t.img.md, "large"), attr: t.img.attr }] : [];
+    const cands = (list.length ? list : fall).slice(0, 6), u = used.get(t.id) || new Set();
+    let k = Math.floor(r() * Math.max(1, cands.length)); for (let n = 0; n < cands.length && u.has(k); n++) k = (k + 1) % cands.length;
+    const ph = cands[k]; if (!ph) continue;
+    u.add(k); used.set(t.id, u);
+    const others = sShuffle(r, uniq.filter(x => x.id !== t.id)).slice(0, 3), ch = sShuffle(r, [t, ...others]);
+    const ref = photoRef(ph.lg || ph.md);
+    deck.push({ ref, p: photoUrl(ref, "medium"), l: photoUrl(ref, "large"), a: ph.attr || "", c: ch.map(x => ["s" + x.id, x.fr || x.sci, x.sci]), k: "s" + t.id });
+  }
+  if (deck.length < 6) throw new Error("EMPTY");
+  Object.assign(WEEK, { wk, deck, theme: th });
+  return deck;
+}
+const weekMine = () => S.week && S.week.wk === weekId() ? S.week : null;
+async function weekStart() {
+  const n = livePseudo(); if (!n) return;
+  const tok = ++WEEK.load;
+  clearTimeout(DEFI.tmr);
+  Object.assign(DEFI, { st: "prep", role: "week", err: "", opp: null, link: "", xp: !!weekMine(), T: 10 }); go("defi");
+  let deck = null;
+  try { deck = await weekDeck(); } catch (e) { deck = null; }
+  if (tok !== WEEK.load || VIEW !== "defi") return;
+  if (!deck) { Object.assign(DEFI, { st: "intro", err: "Impossible de préparer les photos (réseau ?)." }); go("defi"); return; }
+  deck.forEach(d => preload(d.l));
+  Object.assign(DEFI, { deck: deck.map(d => ({ ...d })), i: 0, ans: [], rev: -1, st: "q" }); go("defi");
+}
+/* Fin : le premier essai compte (et part au classement si tu l'as activé) */
+async function weekFinish() {
+  const sc = defiScore(DEFI.deck, DEFI.ans, DEFI.T), wk = weekId();
+  if (!weekMine()) {
+    S.week = { wk, p: sc.pts, ok: sc.ok, n: DEFI.deck.length, at: Date.now(), sent: false }; save(true);
+    if (netOn() && cleanName(S.set.pseudo)) {
+      try { await netReq("PUT", `weekly/${wk}/${myUid()}`, { n: cleanName(S.set.pseudo), p: sc.pts, t: Date.now() }); S.week.sent = true; save(); } catch (e) { /* hors ligne */ }
+    }
+  }
+  weekRank();
+}
+async function weekRank() {
+  if (!netOn()) return;
+  const wk = weekId(), tok = ++WEEK.rload;
+  try {
+    const d = await netReq("GET", `weekly/${wk}`, undefined, { orderBy: '"p"', limitToLast: 50 });
+    if (tok !== WEEK.rload) return;
+    WEEK.list = Object.entries(d || {}).filter(([, v]) => v && typeof v === "object").map(([uid, v]) => ({ uid, n: cleanName(v.n) || "?", p: Math.max(0, Math.round(+v.p || 0)), t: +v.t || 0 })).sort((a, b) => b.p - a.p || a.t - b.t);
+  } catch (e) { WEEK.list = null; }
+  if (VIEW === "defi" && DEFI.role === "week") { const b = $("#wrank"); if (b) b.innerHTML = weekRankHtml(); }
+}
+function weekRankHtml() {
+  if (!netOn()) return `<p class="muted note">Le classement de la semaine s'allume dès que le serveur de l'appli est branché.</p>`;
+  if (!WEEK.list) return `<div class="sono-ph" style="height:80px"><div class="spin"></div></div>`;
+  if (!WEEK.list.length) return `<p class="muted note">Personne d'autre pour l'instant : partage le défi !</p>`;
+  return `<ol class="toplist wk">${WEEK.list.slice(0, 20).map((r, i) => `<li class="${r.uid === S.uid ? "me" : ""} ${i < 3 ? "p" + (i + 1) : ""}"><span class="rk">${i < 3 ? ic("trophy") : i + 1}</span><span class="nm"><b>${esc(r.n)}${r.uid === S.uid ? " <small>(toi)</small>" : ""}</b></span><span class="xp">${fmt(r.p)}<small>pts</small></span></li>`).join("")}</ol>`;
+}
+function weekIntroHtml() {
+  const th = weekTheme(), mine = weekMine();
+  return `<section class="view live defi">
+  <div class="head"><button class="icon-btn" data-act="tab" data-tab="home" aria-label="Retour">${ic("back")}</button><h1 class="h1" style="flex:1">Défi de la semaine</h1></div>
+  <div class="lhero wkhero" style="--c:${th.P.c}"><span class="vs">${ic(th.P.ic)}</span><p><b>${esc(th.P.n)}</b><br>${th.steps.map(i => esc(th.P.steps[i].n)).join(" · ")}</p></div>
+  ${DEFI.err ? `<p class="lerr">${esc(DEFI.err)}</p>` : ""}
+  <div class="card lbox"><p style="margin:0 0 10px;font-size:14px;line-height:1.45">Les mêmes 10 photos pour tout le monde, 10 s par photo. ${mine ? `Ton essai de la semaine : <b>${fmt(mine.p)} points</b> (${mine.ok}/${mine.n}). Tu peux rejouer pour t'entraîner, sans changer ton score.` : "Seul ton premier essai compte : concentre-toi !"}</p>
+    <label class="fld"><span>Ton pseudo</span><input id="lpseudo" type="text" maxlength="16" autocomplete="nickname" placeholder="ex. Piaf33" value="${esc(S.set.pseudo || "")}"></label>
+    <button class="btn primary wide" data-act="wstart" style="margin-top:12px">${ic("play")}${mine ? "Rejouer (entraînement)" : "Jouer"}</button></div>
+  ${mine ? `<div class="sec">${ic("trophy")}Classement de la semaine</div><div id="wrank">${weekRankHtml()}</div>` : ""}
+  <p class="muted note">Nouveau thème chaque lundi. ${netOn() ? "Au classement : ton pseudo et tes points, rien d'autre." : ""}</p>
+</section>`;
+}
+function weekEndHtml() {
+  const D = DEFI, me = defiScore(D.deck, D.ans, D.T), N = D.deck.length, mine = weekMine();
+  const dots = `<span class="ddots">${D.deck.map((q, i) => `<i class="${livePts(D.ans[i], q, D.T) ? "ok" : "bad"}"></i>`).join("")}</span>`;
+  const training = mine && mine.at < Date.now() - 5000 && D.xp;
+  return `<section class="view live defi"><header class="qbar"><button class="icon-btn" data-act="dquit" aria-label="Quitter">${ic("x")}</button><div class="ltitle">Défi de la semaine</div><span style="width:44px"></span></header>
+  <div class="lcard lend"><div class="lbig dchal">${ic("trophy")}</div><h2>${fmt(me.pts)} points</h2><p class="muted">${me.ok}/${N} bonnes réponses${training ? " · entraînement" : ""}</p>${dots}
+  ${mine ? `<p class="muted note">Ton score de la semaine : <b>${fmt(mine.p)}</b>.</p>` : ""}
+  <div class="sec" style="justify-content:center">${ic("trophy")}Classement de la semaine</div><div id="wrank" style="width:100%">${weekRankHtml()}</div>
+  <button class="btn primary wide" data-act="wshare" style="margin-top:14px">${ic("duel")}Défier un ami sur ces photos</button>
+  <button class="btn ghost wide" data-act="dquit" style="margin-top:10px">${ic("back")}Accueil</button></div></section>`;
+}
+/* Carte de l'accueil */
+function weekCard() {
+  const th = weekTheme(), mine = weekMine();
+  return `<button class="weekc" data-act="week" style="--c:${th.P.c}"><span class="ic">${ic("trophy")}</span><span class="tx"><small>Défi de la semaine</small><b>${esc(th.P.n)}</b><span class="wsub">${mine ? `Ton score : ${fmt(mine.p)} pts${netOn() ? " · voir le classement" : ""}` : "10 photos, les mêmes pour tout le monde"}</span></span>${ic(mine ? "arrow" : "play")}</button>`;
 }
 
 /* ---- ui.js ---- */
@@ -6451,6 +6892,7 @@ VIEWS.home = () => {
     <span class="go">${ic("arrow")}</span>
   </button>
   ${pathHomeCard()}
+  ${weekCard()}
   ${S.favs.length ? `<div class="favs top" aria-label="Mes quiz">${S.favs.map((f, i) => `<button class="fav" data-act="fav" data-i="${i}">${ic("star")}${esc(f.title)}</button>`).join("")}</div>` : ""}
   ${installCard()}${backupCard()}
   <div class="quick">
@@ -6787,6 +7229,8 @@ function showFeedback(q, res, gain) {
   document.body.appendChild(el);
   fitImgs(el);
   if (q.kind === "taxon") fillLearn(q.t, q);
+  const ch = res.chosen?.t;
+  if (q.kind === "taxon" && ch && ch.id !== q.t.id && !sosVis(q.t.sci, ch.sci)) fillWhy(q.t, ch, q.stim === "son" || q.stim === "soncho");
   requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("show")));
   const cb = $("#combo");
   if (cb) {
@@ -7234,7 +7678,7 @@ VIEWS.result = ({ ses, n, ok, badges, msgs }) => {
   <button class="lvlbar" data-act="tab" data-tab="progress"><span class="badge">${L.n}</span><span class="meta"><b>${esc(L.rank)}</b><small>${fmt(L.cur)} / ${fmt(L.need)} XP</small><span class="bar"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span></span></button>
   ${badges.length ? `<div class="sec" style="justify-content:center">${ic("trophy")}Badge${badges.length > 1 ? "s" : ""} débloqué${badges.length > 1 ? "s" : ""}</div><div class="newbadges">${badges.map(b => `<span class="chip warn">${ic(b.ic)}${esc(b.n)}</span>`).join("")}</div>` : ""}
   ${ses.kind === "hand" && ses.hmiss?.length ? `<div class="sec" style="justify-content:center">${ic("replay")}Fiches à revoir</div><div class="missed">${[...new Set(ses.hmiss)].slice(0, 8).map(id => `<button class="mchip" data-act="hsp" data-sp="${id}">${featherPair(HSPI[id])}${esc(HSPI[id].fr)}</button>`).join("")}</div>` : ""}
-  ${confs.length ? `<div class="sec" style="justify-content:center">${ic("duel")}Pour ne plus confondre</div><div class="drills">${confs.map(([a, b]) => { const A = taxonById(a), B = taxonById(b); if (!A || !B) return ""; const m = sosVis(A.sci, B.sci)?.v.m; return `<button class="conf drill" data-act="duelgo" data-ids="${a},${b}"><img src="${esc(imgOf(A))}" alt=""><span class="vs">VS</span><img src="${esc(imgOf(B))}" alt=""><span class="tx">${esc(nameFr(A))}<small>${esc(nameFr(B))}</small>${m ? `<em>${esc(m)}</em>` : ""}</span><span class="go">Duel${ic("arrow", "xs")}</span></button>`; }).join("")}</div>` : ""}
+  ${confs.length ? `<div class="sec" style="justify-content:center">${ic("duel")}Envie de t'entraîner ?</div><p class="muted" style="margin:-4px 0 10px;font-size:13px">Si tu veux : un petit duel sur les oiseaux que tu as confondus.</p><div class="drills">${confs.map(([a, b]) => { const A = taxonById(a), B = taxonById(b); if (!A || !B) return ""; const m = sosVis(A.sci, B.sci)?.v.m; return `<button class="conf drill" data-act="duelgo" data-ids="${a},${b}"><img src="${esc(imgOf(A))}" alt=""><span class="vs">VS</span><img src="${esc(imgOf(B))}" alt=""><span class="tx">${esc(nameFr(A))}<small>${esc(nameFr(B))}</small>${m ? `<em>${esc(m)}</em>` : ""}</span><span class="go">Duel${ic("arrow", "xs")}</span></button>`; }).join("")}</div>` : ""}
   ${missed.length ? `<div class="sec" style="justify-content:center">${ic("replay")}À revoir</div><div class="missed">${missed.map(t => `<button class="mchip" data-act="fiche" data-id="${t.id}"><img src="${esc(imgOf(t))}" alt="">${esc(nameFr(t))}</button>`).join("")}</div>` : ""}
   ${PP ? `<div class="actions"><button class="btn ghost" data-act="path" data-p="${PP.id}">${ic("map")}Parcours</button>${pnext >= 0 ? `<button class="btn primary" data-act="pgo" data-p="${PP.id}" data-i="${pnext}">${ic("play")}Étape suivante</button>` : `<button class="btn primary" data-act="again">${ic("replay")}${ses.pathStars ? "Refaire" : "Recommencer"}</button>`}</div>` : `<div class="actions">${ses.kind === "hand" ? `<button class="btn ghost" data-act="hhub">${ic("back")}Piaf en main</button>` : `<button class="btn ghost" data-act="home">${ic("back")}Accueil</button>`}${shareable(ses.cfg) ? `<button class="btn ghost sq" data-act="qshare" aria-label="Partager ce quiz">${ic("ext")}</button>` : ""}<button class="btn primary" data-act="again">${ic("replay")}Rejouer</button></div>`}
 </section>`;
@@ -7253,24 +7697,35 @@ const TOUR = [
   { ic: "book", c: "#A58BFF", t: "Ton carnet", d: "Chaque oiseau rencontré rejoint ton carnet. Touche une photo pour l'agrandir, ouvre la fiche pour son chant, sa carte et ses sosies." },
   { ic: "shield", c: "#14B8A6", t: "Tout reste chez toi", d: "Pas de compte : ta progression vit sur ce téléphone. Sauvegarde-la de temps en temps (Réglages) et installe l'appli sur l'écran d'accueil." }
 ];
+/* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
-  { v: "2026-10-25.4", items: [
+  { v: "2026-10-25.6", n: "2.5", items: [
+    { ic: "zoom", t: "Les vrais critères, pour tous les oiseaux", d: "Après une erreur, quelle que soit la paire : taille, tête, bec, dessous, ailes, queue, pattes de chacun, et la phrase qui fait la différence." },
+    { ic: "duel", t: "Le duel d'entraînement est proposé", d: "En fin de partie, seulement si tu en as envie." },
+    { ic: "tag", t: "Numéros de version", d: "Chaque mise à jour a son numéro : tu le retrouves en bas des Réglages, avec toutes les nouveautés." }
+  ] },
+  { v: "2026-10-25.5", n: "2.4", items: [
+    { ic: "down", t: "Hors ligne", d: "L'appli s'ouvre sans réseau. Dans « Préparer une sortie », « Hors ligne » garde la liste et ses photos pour le terrain." },
+    { ic: "trophy", t: "Défi de la semaine", d: "Un thème par semaine, les mêmes 10 photos pour tout le monde. Seul ton premier essai compte." },
+    { ic: "shield", t: "Sauvegarde en ligne", d: "Facultative et chiffrée : un code de 16 caractères pour tout retrouver sur un autre téléphone." }
+  ] },
+  { v: "2026-10-25.4", n: "2.3", items: [
     { ic: "duel", t: "Défi à distance", d: "Joue 10 photos, envoie le lien : ton ami tente de battre ton score, quand il veut. Ça marche tout de suite, sans serveur." },
     { ic: "map", t: "Parcours guidés", d: "Jardin, limicoles, rapaces, canards, goélands et sternes, chants : quelques oiseaux à la fois, étape par étape." }
   ] },
-  { v: "2026-10-25.3", items: [
+  { v: "2026-10-25.3", n: "2.2", items: [
     { ic: "spark", t: "Recettes Sur mesure", d: "10 quiz tout prêts en un geste : jardin, limicoles, goélands, chants de saison, rapaces…" },
     { ic: "ext", t: "Partage un quiz", d: "Par lien ou QR code : un ami, une sortie ou un panneau sur un site lance exactement le même quiz." },
     { ic: "chart", t: "Progrès plus clair", d: "L'essentiel en haut, le détail replié." }
   ] },
-  { v: "2026-10-25.2", items: [
+  { v: "2026-10-25.2", n: "2.1", items: [
     { ic: "zoom", t: "Pourquoi tu t'es trompé", d: "Après une erreur : des loupes sur ce qui diffère entre les deux oiseaux, et par quoi commencer." },
     { ic: "bulb", t: "Moyens mnémo", d: "Une phrase pour retenir chaque paire de sosies : garde-la dans ta fiche, ou écris la tienne." },
     { ic: "duel", t: "Duels d'entraînement", d: "En fin de série, un duel sur les oiseaux que tu viens de confondre." },
     { ic: "replay", t: "Tes confusions reviennent", d: "Les oiseaux que tu confonds réapparaissent parmi les choix, jusqu'à ce que tu les sépares." },
     { ic: "duel", t: "16 nouveaux sosies", d: "Moineaux, pinsons, tourterelles, pigeons, goélands, gravelots, aigrettes, grives, roitelets, hirondelles…" }
   ] },
-  { v: "2026-10-25", items: [
+  { v: "2026-10-25", n: "2.0", items: [
     { ic: "sliders", t: "Sur mesure mis en avant", d: "Ton quiz à toi en un geste, juste sous la série du jour, avec tes quiz enregistrés." },
     { ic: "ring", t: "Piaf en main", d: "Entraînement au baguage : topographie de l'aile, score de mue, âge par la mue, codes d'âge." },
     { ic: "spark", t: "Âge des oiseaux", d: "Dans Sur mesure : un quiz rien que sur les juvéniles, ou les adultes." },
@@ -7292,12 +7747,15 @@ function tourHtml() {
 }
 function openTour(i = 0) { TOURST.i = i; openLayer(tourHtml(), "tourl"); }
 function endTour() { S.hint = { ...(S.hint || {}), tour: Date.now(), news: NEWS[0].v }; save(); closeLayer(); }
+const APP_VERSION = NEWS[0].n;
+const vDate = v => { const [y, m, d] = v.split(".")[0].split("-").map(Number); return `${d} ${MONTHS_LONG[m - 1]} ${y}`; };
 function newsHtml(all) {
   const seen = all ? "" : (S.hint?.news || "");
-  const items = NEWS.filter(n => n.v > seen).flatMap(n => n.items);
+  const list = NEWS.filter(n => n.v > seen);
+  let k = 0;
   return `<div class="panel news" role="dialog" aria-label="Nouveautés"><button class="icon-btn close" data-act="newsok" aria-label="Fermer">${ic("x")}</button>
-  <div class="in" style="padding-top:22px"><span class="eyebrow">${ic("spark", "xs")} Mise à jour</span><h2 style="margin-top:8px">Quoi de neuf ?</h2>
-  <div class="news-list">${items.map((x, k) => `<div class="news-it" style="animation-delay:${k * 60}ms"><span class="ic">${ic(x.ic)}</span><span><b>${esc(x.t)}</b><small>${esc(x.d)}</small></span></div>`).join("")}</div>
+  <div class="in" style="padding-top:22px"><span class="eyebrow">${ic("spark", "xs")} Mise à jour · version ${esc(APP_VERSION)}</span><h2 style="margin-top:8px">${all ? "Toutes les versions" : "Quoi de neuf ?"}</h2>
+  <div class="news-list">${list.map(n => `${list.length > 1 ? `<div class="news-v"><b>v${esc(n.n)}</b><span>${esc(vDate(n.v))}</span></div>` : ""}${n.items.map(x => `<div class="news-it" style="animation-delay:${(k++) * 50}ms"><span class="ic">${ic(x.ic)}</span><span><b>${esc(x.t)}</b><small>${esc(x.d)}</small></span></div>`).join("")}`).join("")}</div>
   <button class="btn primary wide" data-act="newsok" style="margin:18px 0 22px">${ic("check")}Super !</button></div></div>`;
 }
 function openNews(all) { openLayer(newsHtml(all), "newsl"); }
@@ -7409,23 +7867,24 @@ VIEWS.trip = () => {
 MOUNT.trip = () => { if (TRIP.mode === "prep") loadTrip(); else $("#tsearch")?.focus({ preventScroll: true }); };
 async function loadTrip() {
   const T = TRIP, z = tripZone(), m = T.m, rec = T.rec, tok = ++T.load, now = m === new Date().getMonth() + 1;
-  T.list = null; T.err = ""; T.recent = null;
+  T.list = null; T.err = ""; T.recent = null; T.offline = false;
   const box = $("#tlist"); if (box) box.innerHTML = tripListHtml();
   try {
     const [list, recent] = await Promise.all([tripSpecies(z, m, rec), !rec && now ? tripSpecies(z, m, true).catch(() => null) : null]);
     if (tok !== T.load) return;
     T.list = list; T.recent = recent ? new Set(recent.map(t => t.id)) : null;
-  } catch (e) { if (tok !== T.load) return; T.err = "Liste indisponible pour l'instant (réseau ?)."; }
+  } catch (e) { if (tok !== T.load) return; if (packFallback()) toast("Hors ligne : la liste de ton pack terrain."); else T.err = "Liste indisponible pour l'instant (réseau ?)."; }
   const b = $("#tlist"); if (b && VIEW === "trip") b.innerHTML = tripListHtml();
 }
 function tripListHtml() {
   const T = TRIP;
-  if (T.err) return `<div class="empty">${ic("binoc")}<b>${esc(T.err)}</b><button class="btn primary" data-act="tload">${ic("replay")}Réessayer</button></div>`;
+  if (T.err) return `<div class="empty">${ic("binoc")}<b>${esc(T.err)}</b><button class="btn primary" data-act="tload">${ic("replay")}Réessayer</button>${packOf() ? `<button class="btn ghost" data-act="tpackopen" style="margin-top:8px">${ic("down")}Ouvrir mon pack hors ligne (${esc(packOf().place)})</button>` : ""}</div>`;
   if (!T.list) return `<div class="tload"><div class="spin"></div><small>Recherche des oiseaux observés dans la zone…</small></div>`;
   if (!T.list.length) return `<div class="empty">${ic("binoc")}<b>Aucune observation trouvée</b><p>Élargis la zone ou change de période.</p></div>`;
   const max = T.list[0].c || 1, known = T.list.filter(t => S.sp[t.id]?.n).length, rec = T.recent ? T.list.filter(t => T.recent.has(t.id)).length : 0;
   return `<div class="tsum"><b>${T.list.length} espèces</b> observées ${T.rec ? "ces 30 derniers jours" : "en " + MONTHS_LONG[T.m - 1]} · ${known} déjà dans ton carnet${rec ? ` · <span class="dot"></span>${rec} vues ces 30 derniers jours` : ""}</div>
-  <div class="tacts"><button class="btn primary" data-act="tquiz">${ic("play")}Réviser</button><button class="btn ghost" data-act="tfield">${ic("check")}Sur place</button></div>
+  ${T.offline ? `<p class="pkoff">${ic("down", "xs")}Sans réseau : liste du pack terrain (${esc(packOf()?.place || "")}).</p>` : ""}
+  <div class="tacts"><button class="btn primary" data-act="tquiz">${ic("play")}Réviser</button><button class="btn ghost" data-act="tfield">${ic("check")}Sur place</button>${packBtnHtml()}</div>
   <div class="tl">${T.list.slice(0, 150).map(t => { const r = S.sp[t.id], p = Math.max(.04, (t.c || 0) / max); return `<button class="trow" data-act="fiche" data-id="${t.id}"><img src="${esc(t.img?.sq || "")}" alt="" loading="lazy"><span class="tx"><b>${esc(nameFr(t))}</b><small class="latin">${esc(t.sci)}</small></span><span class="fq" title="${t.c || 0} observations"><i style="width:${(p * 100).toFixed(0)}%"></i></span>${T.recent?.has(t.id) ? `<span class="dot" title="Vue ces 30 derniers jours"></span>` : ""}${r?.n ? starsHtml(stars(r)) : ""}</button>`; }).join("")}</div>
   <p class="muted note">La barre montre le nombre d'observations iNaturalist validées dans la zone. Une espèce discrète peut être sous-représentée.</p>`;
 }
@@ -7437,7 +7896,7 @@ function tripQuiz() {
   if (sp.length < 4) { toast("Pas assez d'espèces avec photo pour un quiz."); return; }
   S.trips = [{ id, z, m: T.m, rec: T.rec, at: Date.now(), sp }, ...(S.trips || [])].slice(0, 4);
   save();
-  LASTCFG = { kind: "quiz", title: `Sortie · ${zoneLabel(z)} · ${T.rec ? "en ce moment" : MONTHS_LONG[T.m - 1]}`, icon: "binoc", trip: id, zone: z, stim: ["photo", "photo", "son", "field"], target: "species", names: S.set.names, format: S.set.fmt || "qcm", k: S.set.k, diff: S.set.diff, len: 12, timer: 0 };
+  LASTCFG = { kind: "quiz", title: `Sortie · ${zoneLabel(z)} · ${T.rec ? "en ce moment" : MONTHS_LONG[T.m - 1]}`, icon: "binoc", trip: id, zone: z, stim: T.offline || !navigator.onLine ? ["photo"] : ["photo", "photo", "son", "field"], target: "species", names: S.set.names, format: S.set.fmt || "qcm", k: S.set.k, diff: S.set.diff, len: 12, timer: 0 };
   startSession(LASTCFG);
 }
 function tripSeen() { const d = dayKey(), p = tripPlace(); return new Set((S.obs || []).filter(o => o.d === d && o.p === p).map(o => o.id)); }
@@ -7530,7 +7989,7 @@ const SOURCES = [
   ["EURING", "https://euring.org", "Piaf en main : les codes d'âge (1 à 6…) et l'échelle du score de mue des primaires (0 à 5).", "Code d'échange EURING 2000+."],
   ["BTO", "https://www.bto.org", "Piaf en main : la notation de la mue des primaires et les espèces à mue post-juvénile complète.", "British Trust for Ornithology."],
   ["CRBPO (MNHN)", "https://crbpo.mnhn.fr", "Piaf en main : la notation française des âges (1A, +1A, 2A…) et les stratégies de mue présentées en formation.", "Centre de Recherches sur la Biologie des Populations d'Oiseaux."],
-  ["Firebase Realtime Database (Google)", "https://firebase.google.com/docs/database", "Le classement XP et le duel en direct, seulement quand tu les utilises.", "Données réduites au pseudo, à l'XP et aux parties en cours."],
+  ["Firebase Realtime Database (Google)", "https://firebase.google.com/docs/database", "Le classement XP, le duel en direct, le classement du défi de la semaine et la sauvegarde en ligne, seulement quand tu les utilises.", "Données réduites au pseudo, à l'XP, aux points de la semaine, aux parties en cours et à ta sauvegarde chiffrée."],
   ["Critères des sosies", "", "Les tableaux « Comment les distinguer » des Duels : résumé simplifié des critères classiques des guides de terrain, rédigé pour l'appli.", "En cas de doute, ton guide de terrain fait foi."],
   ["Racines latines", "", "Le petit dictionnaire qui décode les noms scientifiques, rédigé pour l'appli.", "—"],
   ["Faune France", "https://www.faune-france.org", "Un simple lien depuis les fiches : ses données ne sont pas ouvertes.", "—"],
@@ -7552,7 +8011,10 @@ VIEWS.about = () => `<section class="view about">
     <li><b>Ta clé xeno-canto</b> (facultative) reste sur ton appareil et n'est envoyée qu'à xeno-canto. Elle n'est pas incluse dans tes sauvegardes.</li>
     <li><b>Tes sauvegardes</b> ne partent que là où tu les envoies (Fichiers, iCloud, mail…).</li>
     <li><b>Classement (facultatif)</b> : seulement si tu l'actives, ton pseudo, ton XP et la date sont publiés sur le serveur de l'appli (Firebase, de Google). Le désactiver efface ta ligne.</li>
-    <li><b>Duel en direct (facultatif)</b> : pendant une partie, les pseudos, les questions et les réponses passent par ce même serveur, puis la partie est effacée.</li></ul>
+    <li><b>Duel en direct (facultatif)</b> : pendant une partie, les pseudos, les questions et les réponses passent par ce même serveur, puis la partie est effacée.</li>
+    <li><b>Défi de la semaine</b> : ton premier essai de la semaine (pseudo et points) rejoint le classement de la semaine, si tu as choisi un pseudo.</li>
+    <li><b>Sauvegarde en ligne (facultative)</b> : ta progression est chiffrée sur ton téléphone avec un code de 16 caractères que toi seul connais ; le serveur ne reçoit qu'un bloc illisible. Sans le code, personne ne peut la lire, ni la retrouver.</li>
+    <li><b>Défi à distance et quiz partagés</b> : rien ne passe par un serveur ; le lien que tu envoies contient les questions (ou les réglages du quiz), ton pseudo et tes réponses.</li></ul>
     <h3>Hébergement</h3>
     <ul><li>L'appli est hébergée par GitHub Pages. GitHub enregistre l'adresse IP des visiteurs pour des raisons de sécurité.</li>
     <li>Les polices et la bibliothèque de cartes sont hébergées avec l'appli : aucun appel à Google Fonts ni à un CDN.</li></ul>
@@ -7723,11 +8185,14 @@ VIEWS.settings = () => `<section class="view settings">
   <div class="group">
     <div class="set"><span class="lab"><b>Carnet en tableau</b><small>Toutes tes espèces avec dates et réussite (CSV pour Excel).</small></span><button class="btn ghost" data-act="csv">${ic("down")}CSV</button></div>
     <div class="set"><span class="lab"><b>Envoyer ma sauvegarde</b><small><span id="bklast">${S.bk?.last ? "Dernière : " + esc(ago(S.bk.last)) + "." : "Jamais faite."}</span> Vers Fichiers, iCloud ou un mail (ta clé xeno-canto n'y est pas).</small></span><button class="btn ghost" data-act="backup">${ic("down")}Sauvegarder</button></div>
+    ${cloudSettingsHtml()}
     <div class="set"><span class="lab"><b>Importer</b><small>Restaure une sauvegarde sur ce téléphone.</small></span><label class="btn ghost" style="cursor:pointer">${ic("up")}Importer<input type="file" id="importf" accept="application/json,.json" hidden></label></div>
     <div class="set"><span class="lab"><b>Tout effacer</b><small>Remet l'appli à zéro sur cet appareil.</small></span><button class="btn ghost" data-act="reset" id="resetBtn">${ic("trash")}Effacer</button></div>
   </div>
-  <div class="group" style="margin-top:18px"><button class="set link" data-act="tour">${ic("info")}<span class="lab"><b>Revoir la présentation</b><small>Le tour de l'appli en 6 écrans.</small></span>${ic("arrow")}</button><button class="set link" data-act="news">${ic("spark")}<span class="lab"><b>Nouveautés</b><small>Ce qui a changé dans la dernière mise à jour.</small></span>${ic("arrow")}</button></div>
+  ${packSettingsHtml()}
+  <div class="group" style="margin-top:18px"><button class="set link" data-act="tour">${ic("info")}<span class="lab"><b>Revoir la présentation</b><small>Le tour de l'appli en 6 écrans.</small></span>${ic("arrow")}</button><button class="set link" data-act="news">${ic("spark")}<span class="lab"><b>Nouveautés · v${esc(APP_VERSION)}</b><small>Toutes les versions et ce qu'elles ont apporté.</small></span>${ic("arrow")}</button></div>
   <div class="group" style="margin-top:18px"><button class="set link" data-act="tab" data-tab="about">${ic("shield")}<span class="lab"><b>Confidentialité et sources</b><small>Ce qui reste sur ton téléphone, ce qui en sort, et d'où viennent les données.</small></span>${ic("arrow", "s")}</button></div>
+  <p class="foot vfoot"><b>Plumage v${esc(APP_VERSION)}</b> · ${esc(vDate(NEWS[0].v))} · <button class="lnk" data-act="news">toutes les versions</button></p>
   <p class="foot">Photos, sons et données : iNaturalist, Wikipédia, Wikimedia Commons et xeno-canto, avec l'auteur et la licence de chaque média. Ta progression reste sur cet appareil.</p>
 </section>`;
 
@@ -8373,6 +8838,15 @@ const ACT = {
   path: el => { PATHV.id = el.dataset.p; PATHV.open = -1; go("path"); },
   pstep: el => { const i = +el.dataset.i, P = PATHI[PATHV.id], cur = PATHV.open === -1 ? pathNext(P) : PATHV.open; PATHV.open = cur === i ? -2 : i; go("path"); },
   pgo: el => { const P = PATHI[el.dataset.p || PATHV.id], i = +el.dataset.i; if (!P || !(i >= 0) || !stepOpen(P, i)) return; PATHV.id = P.id; LASTCFG = pathCfg(P, i); startSession(LASTCFG); },
+  week: () => { closeLayer(); clearTimeout(DEFI.tmr); Object.assign(DEFI, { role: "week", st: "intro", err: "", opp: null }); go("defi"); if (weekMine()) weekRank(); },
+  wstart: () => weekStart(),
+  wshare: async () => { try { DEFI.link = location.origin + location.pathname + "#defi=" + await packZ(JSON.stringify(defiPack())); defiShare(); } catch (e) { toast("Lien impossible à créer."); } },
+  cloudon: () => cloudEnable(),
+  cloudnow: () => cloudNow(),
+  cloudcode: () => openCloudCode(false),
+  cloudrest: () => openCloudRestore(),
+  cloudoff: () => cloudOff(),
+  ccopy: () => { const c = cloudFmt(S.cloud?.code || ""); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(c).then(() => toast("Code copié."), () => toast("Sélectionne le code pour le copier.")); else toast("Sélectionne le code pour le copier."); },
   duelgo: el => {
     let cfg;
     if (el.dataset.ids) { const [a, b] = el.dataset.ids.split(",").map(Number); const ra = S.sp[a], rb = S.sp[b]; cfg = duelCfg([ra.sci, rb.sci, ra.fr, rb.fr]); cfg.ids = [a, b]; }
@@ -8419,6 +8893,9 @@ const ACT = {
   tmonth: el => { TRIP.m = +el.dataset.m; TRIP.rec = false; go("trip"); },
   trec: el => { TRIP.rec = el.dataset.v === "1"; if (TRIP.rec) TRIP.m = new Date().getMonth() + 1; go("trip"); },
   tload: () => loadTrip(),
+  tpack: () => { if (PK.run) return; if (packMatches()) { toast(`Déjà prêt hors ligne : ${packOf().n} espèces. Pour l'effacer : Réglages, Hors ligne.`); return; } packDownload(); },
+  tpackopen: () => { const p = packOf(); if (!p) return; if (p.z !== undefined) { TRIP.z = p.z; } TRIP.m = p.m; TRIP.rec = p.rec; packFallback(true); const b = $("#tlist"); if (b) b.innerHTML = tripListHtml(); },
+  pkdel: () => packDelete(),
   tquiz: () => tripQuiz(),
   tfield: () => { TRIP.mode = "field"; TRIP.q = ""; go("trip"); },
   tprep: () => { TRIP.mode = "prep"; go("trip"); },
@@ -8471,6 +8948,7 @@ function onKey(e) {
   else if (e.key.toLowerCase() === "r") { unlockAudio(); sndPlay(); }
 }
 function onSubmit(e) {
+  if (e.target.id === "crest") { e.preventDefault(); cloudRestore($("#ccin")?.value || ""); return; }
   if (e.target.id === "ljoin") { e.preventDefault(); $("#lcode")?.blur(); liveJoin($("#lcode")?.value || ""); return; }
   if (e.target.id === "typer") {
     e.preventDefault();
@@ -8511,18 +8989,23 @@ function onChange(e) {
     const fr = new FileReader();
     fr.onload = () => {
       try {
-        const o = JSON.parse(fr.result);
-        if (!o || typeof o !== "object" || !o.sp || !o.set) throw new Error("format");
-        const d = defaults();
-        const xc = S.set.xc;
-        S = { ...d, ...o, set: { ...d.set, ...o.set, xc: o.set.xc || xc }, streak: { ...d.streak, ...(o.streak || {}) }, best: { ...d.best, ...(o.best || {}) } };
-        if (!o.v) S.v = 1;
-        migrate();
-        save(true); toast("Progression restaurée !"); go("home");
+        if (!restoreFrom(JSON.parse(fr.result))) throw new Error("format");
+        toast("Progression restaurée !"); go("home");
       } catch (err) { toast("Fichier non reconnu."); }
     };
     fr.readAsText(t.files[0]);
   }
+}
+
+/* Remplace la progression par une sauvegarde (fichier ou en ligne) ; garde la clé xeno-canto et le pack de ce téléphone */
+function restoreFrom(o) {
+  if (!o || typeof o !== "object" || !o.sp || !o.set || typeof o.sp !== "object") return false;
+  const d = defaults(), xc = S.set.xc, pack = S.pack || null, cloud = S.cloud || null;
+  S = { ...d, ...o, set: { ...d.set, ...o.set, xc: o.set.xc || xc }, streak: { ...d.streak, ...(o.streak || {}) }, best: { ...d.best, ...(o.best || {}) }, pack, cloud: o.cloud || cloud };
+  if (!o.v) S.v = 1;
+  migrate();
+  save(true);
+  return true;
 }
 
 /* ---------- Démarrage ---------- */
@@ -8539,6 +9022,8 @@ function openLinkHash() {
 }
 function init() {
   SILENT = makeSilent();
+  /* Service worker : l'appli s'ouvre sans réseau (pas pendant les tests automatiques, qui simulent le réseau) */
+  if ("serviceWorker" in navigator && location.hostname !== "plumage.test" && (location.protocol === "https:" || location.hostname === "localhost")) navigator.serviceWorker.register("sw.js").catch(() => {});
   if (S.set.calm) document.body.classList.add("calm");
   document.addEventListener("click", onClick);
   document.addEventListener("keydown", onKey);

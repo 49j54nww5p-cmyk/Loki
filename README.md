@@ -16,19 +16,33 @@ Sur iPhone : ouvre le lien dans Safari, bouton Partager, puis « Sur l'écran d'
 - **Classement XP** de tous les joueurs (top 100), facultatif : seuls le pseudo et l'XP sont publiés
 - **Défi à distance** (sans serveur) : tu joues 10 photos, tu envoies le lien ; ton ami rejoue les mêmes photos quand il veut et découvre qui a gagné. Le lien ne contient que les numéros des photos iNaturalist, leurs crédits, les noms proposés, ton pseudo et tes réponses
 - **Parcours guidés** : 6 parcours pas à pas (jardin, limicoles, rapaces, canards et oiseaux d'eau, mouettes-goélands-sternes, chants), 26 étapes de 4 ou 5 espèces ; on découvre les oiseaux, puis 8 questions où l'on choisit parmi eux ; 6 bonnes réponses ouvrent l'étape suivante, étoiles et reprise depuis l'accueil
+- **Défi de la semaine** : un thème par semaine (deux étapes d'un parcours), les mêmes 10 photos pour tout le monde, tirées au sort à partir du numéro de la semaine ; seul le premier essai compte et rejoint le classement de la semaine (pseudo et points) ; on peut ensuite défier un ami sur ces photos
+- **Hors ligne** : l'appli s'ouvre sans réseau (service worker) ; dans « Préparer une sortie », « Hors ligne » garde la liste et les photos des espèces attendues (liste « Sur place » et quiz de sortie sans réseau)
 - **Modes** : Photo, Chants (avec sonogramme), Latin ↔ français, Familles, Duels de sosies, Géo, Racines latines, Sur mesure
 - **Sur mesure** : zone (n'importe quel lieu iNaturalist, autour de moi, le monde), groupes de familles, espèces communes / de saison / raretés / exotiques / tes propres observations, type de question (photo, photo de terrain, chant, « quel chant ? », nom français, nom latin), réponse attendue (espèce, genre, famille, ordre), QCM de 2 à 6 choix, vignettes, saisie libre, flashcards, leurres de facile à expert, chrono
 - **Progression** : l'essentiel en haut (niveau, série, espèces, maîtrisées, réussite, objectif du jour, réviser), le détail replié (confusions, mémoire à long terme, durée, types de questions, familles, historique, badges)
 - **Géo** façon GeoGuessr : 5 oiseaux observés dans un rayon de 10 km, n'importe où dans le monde ; tu poses ton pin, points par paliers selon la distance. Fonds Relief (montagnes et fonds marins), Satellite, Topo, Océans, Nuit ; petites îles mises en évidence, carte plein écran
 - **Photos** : cadrage sans coupe, grande taille d'office, visionneuse HD au toucher (zoom à deux doigts, double-tap, glisser entre les photos)
 - **Maîtrise réelle** : une espèce n'est « maîtrisée » qu'après avoir été reconnue sur 3 photos différentes (dont 1 de terrain), sur 3 jours ; photos jamais vues en priorité ; mémoire à long terme mesurée à 1 semaine et 1 mois
+- **Après une erreur, pour n'importe quelle paire** : critères de chacun partie par partie (taille avec silhouettes à l'échelle, tête, bec, dessous, dessus, ailes, queue, pattes, voix), tirés des descriptions Wikipédia, et la phrase de l'article qui les distingue quand elle existe
 - **Sosies** : 52 paires d'oiseaux qui se ressemblent, avec leurs critères ; après une erreur, « Pourquoi tu t'es trompé » montre en loupes dessinées ce qui diffère (bec, tête, pattes, aile, queue, croupion, dessous, dos, taille), par quoi commencer, et un moyen mnémo à garder dans sa fiche ou à écrire soi-même ; en fin de série, un duel d'entraînement sur les paires confondues ; les espèces confondues reviennent parmi les choix
 - **Préparer une sortie** : espèces attendues dans un lieu (ou un point choisi sur la carte) et une période, quiz dessus avant de partir, liste à cocher sur place qui alimente le carnet (« Observées »)
 - **Chants** : spectrogramme sur chaque enregistrement quand c'est possible (Wikimedia Commons, xeno-canto), ralenti ×0,5, écoute en boucle, tri chant / cri / alarme
-- **Sauvegarde** : envoi en un geste vers Fichiers, iCloud ou un mail, avec rappel régulier
+- **Sauvegarde** : envoi en un geste vers Fichiers, iCloud ou un mail, avec rappel régulier ; **sauvegarde en ligne** facultative et chiffrée (AES-GCM) avec un code de 16 caractères créé sur le téléphone : le serveur ne reçoit qu'un bloc illisible rangé sous l'empreinte du code
 - **Fiches espèces** : galerie, présence par mois, carte des observations, chants, description Wikipédia, espèces qui ressemblent, ton astuce perso
 - **Âge des oiseaux** (Sur mesure) : quiz limité aux juvéniles ou aux adultes, d'après les annotations iNaturalist
 - **Piaf en main** (entraînement au permis de baguage) : aile dessinée à toucher (topographie, numérotation P / S / tertiaires / rectrices, primaires à la française ou à l'anglaise), score de mue 0-5 et formule des primaires, âge par les limites de mue (1A, +1A, 2A, +2A avec code EURING), codes d'âge, stratégies de mue ; fiches âge pour 18 passereaux (jeune contre adulte, iris, rectrices)
+
+## Versions
+
+Le numéro de version s'affiche en bas des Réglages ; « Nouveautés » liste toutes les versions.
+
+- **2.5** (25 octobre 2026) : après une erreur, les vrais critères pour n'importe quelle paire d'oiseaux (taille, tête, bec, dessous, dessus, ailes, queue, pattes, voix, d'après Wikipédia, et la phrase qui fait la différence) ; duel d'entraînement seulement proposé ; numéros de version
+- **2.4** : hors ligne (service worker, pack terrain), défi de la semaine, sauvegarde en ligne chiffrée
+- **2.3** : défi à distance sans serveur, parcours guidés
+- **2.2** : recettes Sur mesure, partage de quiz par lien et QR code, page Progrès résumée
+- **2.1** : « Pourquoi tu t'es trompé » (loupes sur 52 paires de sosies, moyens mnémo), duels d'entraînement, confusions qui reviennent
+- **2.0** : Sur mesure mis en avant, Piaf en main, âge des oiseaux, Géo réparé, présentation, classement XP et duel en direct (serveur à brancher)
 
 ## Données
 
@@ -39,7 +53,7 @@ Sur iPhone : ouvre le lien dans Safari, bouton Partager, puis « Sur l'écran d'
 - Sons : iNaturalist, Wikimedia Commons et xeno-canto (avec ta clé).
 - La progression reste dans le navigateur de l'appareil (sauvegarde / restauration dans Réglages). Pas de compte, pas de traceur : détails dans Réglages › Confidentialité et sources.
 - Polices (SIL OFL) et Leaflet (BSD-2) sont hébergés avec l'appli : aucun appel à Google Fonts ni à un CDN.
-- Classement et duels : Firebase Realtime Database (Google), appelée en REST sans bibliothèque. Le classement ne reçoit que pseudo, XP et date, et seulement si tu l'actives ; une partie de duel (pseudos, questions, réponses) est effacée quand l'hôte la quitte.
+- Classements, duel en direct et sauvegarde en ligne : Firebase Realtime Database (Google), appelée en REST sans bibliothèque. Le classement ne reçoit que pseudo, XP et date, et seulement si tu l'actives ; une partie de duel (pseudos, questions, réponses) est effacée quand l'hôte la quitte.
 
 ## Développement
 

@@ -7,7 +7,7 @@ const ROOT = __dirname, SRC = path.join(ROOT, "src"), DIST = process.env.OUT ? p
 fs.mkdirSync(DIST, { recursive: true });
 
 const css = fs.readFileSync(path.join(SRC, "styles.css"), "utf8");
-const js = ["data.js", "core.js", "engine.js", "hand.js", "sosies.js", "net.js", "partage.js", "defi.js", "parcours.js", "ui.js"].map(f => `/* ---- ${f} ---- */\n` + fs.readFileSync(path.join(SRC, f), "utf8")).join("\n");
+const js = ["data.js", "core.js", "engine.js", "hand.js", "sosies.js", "net.js", "partage.js", "defi.js", "parcours.js", "terrain.js", "cloud.js", "semaine.js", "ui.js"].map(f => `/* ---- ${f} ---- */\n` + fs.readFileSync(path.join(SRC, f), "utf8")).join("\n");
 const html = fs.readFileSync(path.join(SRC, "shell.html"), "utf8")
   .replace("/*__CSS__*/", () => css)
   .replace("/*__JS__*/", () => js);
@@ -36,6 +36,12 @@ const manifest = {
   ]
 };
 fs.writeFileSync(path.join(DIST, "manifest.webmanifest"), JSON.stringify(manifest, null, 2));
+
+/* Service worker : coquille de l'appli en cache (s'ouvre sans réseau), photos du pack terrain hors ligne */
+const walk = (d, base = "") => fs.readdirSync(d).flatMap(f => { const a = path.join(d, f), r = base + f; return fs.statSync(a).isDirectory() ? walk(a, r + "/") : [r]; });
+const shell = ["./", "index.html", "manifest.webmanifest", "icon.svg", "icon-180.png", "icon-192.png", "icon-512.png", ...walk(path.join(ROOT, "assets")).filter(f => !/\.txt$|\.md$/i.test(f))];
+const ver = require("crypto").createHash("sha1").update(html + JSON.stringify(shell)).digest("hex").slice(0, 10);
+fs.writeFileSync(path.join(DIST, "sw.js"), fs.readFileSync(path.join(SRC, "sw.js"), "utf8").replace("__VERSION__", ver).replace("/*__SHELL__*/[]", JSON.stringify(shell)));
 
 (async () => {
   const full = Buffer.from(icon(0));

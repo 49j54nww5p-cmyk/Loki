@@ -53,12 +53,19 @@ const fs = require("fs");
       if (q.lvl === "species") {
         const w = await p.evaluate(() => ({ any: !!document.querySelector(".fb .why"), gen: !!document.querySelector(".fb .why.gen") }));
         if (!w.any) fail("pas d'aide après une erreur d'espèce");
-        whys++; if (w.gen) gens++;
+        whys++;
+        if (w.gen) {
+          gens++;
+          await p.waitForSelector(".fb #wcrit .zrow, .fb #wcrit .wvs", { timeout: 10000 }).catch(() => fail("pas de critères pour une paire quelconque"));
+          const rows = await p.evaluate(() => document.querySelectorAll(".fb #wcrit .zrow").length);
+          if (rows < 3) fail("trop peu de critères : " + rows);
+          if (gens === 1) { await p.waitForTimeout(300); await p.evaluate(() => document.querySelector(".fb .why.gen").scrollIntoView()); await p.screenshot({ path: "test/shots/s2-why-gen.png" }); }
+        }
+        if (await p.$(".fb .zdrill")) fail("le duel ne doit plus être annoncé comme obligatoire");
       }
     } else if (q.f === "type") { await p.fill("#ans", "zzz"); await p.keyboard.press("Enter"); await p.waitForSelector(".fb.show"); }
     else if (q.f === "flash") { await p.click("[data-act=reveal]"); await p.click("[data-act=self][data-v='0']"); await p.waitForSelector(".fb.show"); }
     else { await p.click(`[data-k="${q.ak}"]`).catch(() => {}); await p.waitForSelector(".fb.show"); }
-    if (gens === 1 && whys) { await p.screenshot({ path: "test/shots/s2-why-gen.png" }); gens++; }
     await p.click(".fb [data-act=next]");
   }
   await p.waitForSelector(".view.result");

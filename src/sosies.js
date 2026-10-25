@@ -745,22 +745,115 @@ function sosiesHtml(a, b, mode = "fiche", ear) {
   return `<div class="why ${err ? "err" : "neu"}">${head}${leg}${rows}${memo}${act}${all}</div>`;
 }
 /* Paire inconnue : le lien de parenté dit où chercher, et on invite à écrire son propre moyen mnémo */
+/* ---------- Toutes les autres paires : les critères décrits pour chacun (Wikipédia), partie par partie ---------- */
+const WGRP = [
+  ["tete", "têtes?|calottes?|sourcils?|joues?|face|nuque|capuchons?|masques?|front|lores|iris|yeux|œil|oeil|cercles? oculaires?|huppes?|moustaches?|auriculaires?"],
+  ["bec", "becs?|mandibules?|cires?"],
+  ["dessous", "gorges?|poitrines?|ventres?|flancs?|dessous|parties inférieures|abdomen|plastron|bavettes?"],
+  ["dos", "dos|manteau|dessus|parties supérieures|scapulaires|croupions?"],
+  ["aile", "ailes?|alaires?|rémiges|primaires|secondaires|couvertures|miroirs?"],
+  ["queue", "queues?|rectrices|sus-caudales|sous-caudales|caudales?"],
+  ["pattes", "pattes?|tarses?|doigts|serres"]
+].map(([k, w]) => [k, new RegExp("(^|[^\\p{L}])(" + w + ")(?=[^\\p{L}]|$)", "iu")]);
+const WVOX = /(^|[^\p{L}])(chants?|cris?|voix|strophes?|notes?)(?=[^\p{L}]|$)/iu;
+const WCOL = /(^|[^\p{L}])((?:noir|blanc|gris|brun|roux|rousse|jaune|orang[ée]|rouge|vert|bleu|chamois|crème|olive|ocre|fauve|beige|rose|violet|pourpre|marron|cuivré|doré|argenté|ardoise|sombre|clair|pâle|strié|tacheté|barré|rayé|moucheté|uniforme)(?:e|s|es|che|ches)?)(?=[^\p{L}]|$)/giu;
+const WJUV = /(^|[^\p{L}])(juvéniles?|jeunes?|immatures?|poussins?)(?=[^\p{L}]|$)/iu;
+const wSentences = txt => (String(txt || "").replace(/\s+/g, " ").match(/[^.!?]+[.!?]+(?=\s|$)|[^.!?]+$/g) || []).map(x => x.trim()).filter(x => x.length > 12);
+/* La proposition qui parle de la partie (« la poitrine et la face sont orange »), pas toute la phrase */
+function wClause(sent, re) {
+  const parts = sent.split(/;\s+|,\s+(?=(?:la|le|les|l'|son|sa|ses|il|elle|mais|et|alors|tandis|chez)\b)/i);
+  if (parts.length < 2) return sent;
+  const p = parts.find(x => re.test(x));
+  if (!p || p.trim().length < 22) return sent;
+  let c = p.trim(); c = c[0].toUpperCase() + c.slice(1);
+  return /[.!?]$/.test(c) ? c : c + ".";
+}
+function wPick(sents, re, used) {
+  const cands = [];
+  sents.forEach((x, i) => {
+    if (!re.test(x) || /distingu|confon/i.test(x)) return;
+    const sc = (new RegExp(WCOL.source, "iu").test(x) ? 2 : 0) + (/\bplus\b|\bmoins\b/i.test(x) ? 1 : 0) - (WJUV.test(x) ? 2 : 0) - i * .05;
+    cands.push({ x, sc });
+  });
+  cands.sort((a, b) => b.sc - a.sc);
+  for (const { x } of cands) { const c = clip(wClause(x, re), 190); if (used && used.has(c)) continue; used?.add(c); return c; }
+  return "";
+}
+/* Longueur du corps en cm : « 60 à 70 cm », « mesure 33 cm »… (pas l'envergure) */
+function wSize(txt) {
+  const t = String(txt || "").replace(/\s+/g, " "), re = /(\d+(?:[,.]\d+)?)\s*(?:(?:à|-|–)\s*(\d+(?:[,.]\d+)?)\s*)?cm\b/g;
+  let m, best = null;
+  while ((m = re.exec(t))) {
+    const before = t.slice(Math.max(0, m.index - 70), m.index).toLowerCase();
+    if (/envergure|aile|queue|bec|tarse|œuf|oeuf/.test(before.slice(-35))) continue;
+    const a = parseFloat(m[1].replace(",", ".")), b = m[2] ? parseFloat(m[2].replace(",", ".")) : a, v = (a + b) / 2;
+    if (v < 7 || v > 200) continue;
+    const good = /longueur|mesure|long|taille|corps/.test(before);
+    if (!best || (good && !best.good)) best = { v, txt: m[2] ? `${m[1]} à ${m[2]} cm` : `${m[1]} cm`, good };
+    if (good) break;
+  }
+  return best;
+}
+/* Une phrase de l'article de l'un qui parle de l'autre (« se distingue du… », « contrairement au… ») */
+function wVersus(full, other) {
+  const names = [nameFr(other), other.sci].filter(Boolean).map(norm).filter(n => n.length > 3);
+  if (!full || !names.length) return "";
+  let best = "", bs = -1;
+  for (const x of wSentences(String(full).replace(/={2,}[^=\n]*={2,}/g, ". "))) {
+    const n = norm(x);
+    if (!names.some(nm => n.includes(nm))) continue;
+    const sc = (/distingu|confon|contrairement|diff[èe]r|plus (petit|grand|sombre|clair|court|long)|alors que|tandis que|s[ée]par/i.test(x) ? 3 : 0) + (new RegExp(WCOL.source, "iu").test(x) ? 1 : 0) - (x.length > 260 ? 1 : 0);
+    if (sc > bs) { bs = sc; best = x; }
+  }
+  return best ? clip(best, 260) : "";
+}
+const wBold = s => esc(s).replace(new RegExp(WCOL.source, "giu"), (x, p, w) => `${p}<b>${w}</b>`);
+const silGroup = t => { const f = famName(fam(t)) || ""; return /Accipitr|Falcon|Pandion|Strig|Tyton/.test(f) ? "hawk" : /Ardeid|Ciconi|Threskiorn|Gruid/.test(f) ? "heron" : "pass"; };
+async function fillWhy(t, c, ear) {
+  const box = $("#wcrit"); if (!box) return;
+  const get = async x => { const d = await wikiDesc(x).catch(() => null); if (d) return d; const w = await wiki(x).catch(() => null); return w ? { text: w.text, voice: null, url: w.url } : null; };
+  const [A, B] = await Promise.all([get(t), get(c)]);
+  if (!$("#wcrit") || $("#wcrit") !== box) return;
+  if (!A && !B) { box.innerHTML = box.dataset.fb ? decodeURIComponent(box.dataset.fb) : ""; return; }
+  const sa = wSentences(A?.text), sb = wSentences(B?.text), rows = [];
+  const za = wSize(A?.text), zb = wSize(B?.text);
+  const sizeRow = za && zb && Math.abs(za.v - zb.v) / Math.min(za.v, zb.v) >= .12;
+  const ua = new Set(), ub = new Set();
+  for (const [k, re] of WGRP) { const x = wPick(sa, re, ua), y = wPick(sb, re, ub); if (x || y) rows.push({ k, x, y, both: !!(x && y) }); }
+  const vx = wPick(wSentences(A?.voice), WVOX), vy = wPick(wSentences(B?.voice), WVOX);
+  if (vx || vy) rows[ear ? "unshift" : "push"]({ k: "voix", x: vx, y: vy, both: !!(vx && vy) });
+  const order = [...rows.filter(r => r.both), ...rows.filter(r => !r.both)].slice(0, sizeRow ? 4 : 5);
+  const vs = wVersus(A?.full, c) || wVersus(B?.full, t);
+  if (ear) { const v = order.findIndex(r => r.k === "voix"); if (v > 0) order.unshift(...order.splice(v, 1)); }
+  if (!order.length && !sizeRow && !wVersus(A?.full, c) && !wVersus(B?.full, t)) { box.innerHTML = box.dataset.fb ? decodeURIComponent(box.dataset.fb) : ""; return; }
+  const firstK = sizeRow && !ear ? "taille" : (order.find(r => r.both) || order[0])?.k;
+  const cell = (s, cls) => `<span class="${cls}">${s ? wBold(s) : `<em>Pas décrit</em>`}</span>`;
+  let h = vs ? `<div class="wvs">${ic("bulb", "xs")}<span><small>La différence, d'après Wikipédia</small>${wBold(vs)}</span></div>` : "";
+  if (sizeRow) {
+    const g = silGroup(t), lab = `<div class="zlab">${zMap("taille")}<b>Taille</b>${firstK === "taille" ? `<span class="zfirst">${ic("eye", "xs")}Regarde d'abord</span>` : ""}</div>`;
+    h += `<div class="zrow">${lab}${zTaille({ cm: Math.round(za.v) }, { cm: Math.round(zb.v) }, g)}<div class="zpair zcap"><span class="zsa"><b>${esc(za.txt)}</b></span><span class="zsb"><b>${esc(zb.txt)}</b></span></div></div>`;
+  }
+  h += order.map(r => `<div class="zrow ztxt zlong"><div class="zlab">${zMap(r.k)}<b>${esc(ZPART[r.k] === "Dos" ? "Dessus" : ZPART[r.k] === "Aile repliée" ? "Ailes" : ZPART[r.k])}</b>${r.k === firstK ? `<span class="zfirst">${ic("eye", "xs")}Regarde d'abord</span>` : ""}</div><div class="zpair">${cell(r.x, "zsa")}${cell(r.y, "zsb")}</div></div>`).join("");
+  h += `<p class="zsrc">D'après les descriptions de Wikipédia. ${A?.url ? `<a href="${esc(A.url)}" target="_blank" rel="noopener">${esc(nameFr(t))}</a>` : ""}${A?.url && B?.url ? " · " : ""}${B?.url ? `<a href="${esc(B.url)}" target="_blank" rel="noopener">${esc(nameFr(c))}</a>` : ""}</p>`;
+  box.innerHTML = h;
+}
 function relHtml(t, c, ear) {
   const gt = genus(t), gc = genus(c), ft = fam(t), fc = fam(c), ot = ord(t), oc = ord(c);
   let msg, parts;
   if (gt && gt === gc) { msg = `Même genre (<i>${esc(gt)}</i>) : tout se joue sur les détails.`; parts = ["tete", "bec", "dessous", "pattes", "voix"]; }
-  else if (ft && ft === fc) { msg = `Même famille (${esc(famName(ft))}) : compare la tête, le bec et le dessous.`; parts = ["tete", "bec", "dessous", "aile"]; }
-  else if (ot && ot === oc) { msg = `Même grand groupe (${esc(ordName(ot))}) : la forme du bec et la silhouette font la différence.`; parts = ["bec", "taille", "queue", "pattes"]; }
-  else { msg = ft && fc ? `Deux familles éloignées (${esc(famName(ft))} et ${esc(famName(fc))}) : commence par la silhouette, la taille et le milieu.` : "Deux oiseaux bien différents : commence par la silhouette, la taille et le milieu."; parts = ["taille", "bec", "pattes", "milieu"]; }
+  else if (ft && ft === fc) { msg = `Même famille (${esc(famName(ft))}) : voici ce qui les sépare.`; parts = ["tete", "bec", "dessous", "aile"]; }
+  else if (ot && ot === oc) { msg = `Même grand groupe (${esc(ordName(ot))}) : voici ce qui les sépare.`; parts = ["bec", "taille", "queue", "pattes"]; }
+  else { msg = ft && fc ? `Deux familles éloignées (${esc(famName(ft))} et ${esc(famName(fc))}).` : "Deux oiseaux bien différents."; parts = ["taille", "bec", "pattes", "milieu"]; }
   if (ear) { msg = "Écoute les deux chants l'un après l'autre : rythme, hauteur, notes répétées ou non. " + msg; parts = ["voix", ...parts.filter(x => x !== "voix")].slice(0, 4); }
-  return `<div class="why err gen"><div class="whyh"><span class="wi">${ic("zoom")}</span><span class="wt"><b>Pourquoi tu t'es trompé</b><small>${msg}</small></span></div>
-  <div class="zlook">${parts.map(p => `<span class="zchip">${zMap(p)}${esc(ZPART[p])}</span>`).join("")}</div>
-  <p class="zhint">${ear ? "Ouvre leurs fiches pour réécouter leurs chants." : "Touche les deux photos pour les comparer en grand."}</p>
+  const fb = `<div class="zlook">${parts.map(p => `<span class="zchip">${zMap(p)}${esc(ZPART[p])}</span>`).join("")}</div><p class="zhint">${ear ? "Ouvre leurs fiches pour réécouter leurs chants." : "Touche les deux photos pour les comparer en grand."}</p>`;
+  return `<div class="why err gen"><div class="whyh"><span class="wi">${ic(ear ? "wave" : "zoom")}</span><span class="wt"><b>Pourquoi tu t'es trompé</b><small>${msg}</small></span></div>
+  <div class="zleg"><span class="zsa">${esc(nameFr(t))} <em>c'était</em></span><span class="zsb">${esc(nameFr(c))} <em>ton choix</em></span></div>
+  <div id="wcrit" data-fb="${encodeURIComponent(fb)}"><div class="lsk"></div><div class="lsk short"></div><div class="lsk"></div></div>
   <div class="memo-act"><button class="chip" data-act="memoown">${ic("edit", "xs")}Écrire mon moyen mnémo</button></div><div class="memoin" hidden><textarea maxlength="280" placeholder="Ce qui les sépare, pour toi…"></textarea><button class="btn ghost" data-act="memosave" data-id="${t.id}">${ic("check")}Garder</button></div></div>`;
 }
 function whyHtml(t, c, drill, ear) {
   const h = sosiesHtml(t, c, "err", ear) || relHtml(t, c, ear);
-  return h + (drill ? `<div class="zdrill">${ic("duel", "xs")}Un duel d'entraînement sur ces deux-là t'attend à la fin.</div>` : "");
+  return h;
 }
 
 function drillWorthy(a, b) {

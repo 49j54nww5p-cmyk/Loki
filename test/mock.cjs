@@ -168,7 +168,10 @@ async function handle(route) {
     const title = q.titles || "";
     const sp = allSp.find(x => x.sci === title || x.fr === title);
     if (!sp) return json(route, { query: { pages: { "-1": { title, missing: "" } } } });
-    const extract = `Le ${sp.fr.toLowerCase()} est un oiseau.\n\n\n== Description ==\nIl mesure 14 cm pour une envergure de 22 cm. Le dessus est brun olive, la poitrine et la face sont orange vif bordées de gris. Les juvéniles sont tachetés de brun, sans orange.\n\n\n=== Chant ===\nChant flûté et mélancolique.\n\n\n== Répartition ==\nToute l'Europe.`;
+    /* description différente selon l'espèce (taille, couleurs) et une phrase de comparaison avec une voisine */
+    const i = allSp.indexOf(sp), nb = allSp[(i + 1) % allSp.length], cm = 12 + (sp.id % 9) * 4;
+    const bec = ["fin et noir", "court et conique", "long et droit", "jaune vif", "crochu"][sp.id % 5], dos = ["brun olive", "gris ardoise", "roux", "noir"][sp.id % 4];
+    const extract = `Le ${sp.fr.toLowerCase()} est un oiseau.\n\n\n== Description ==\nIl mesure ${cm} cm pour une envergure de ${cm * 2} cm. Le bec est ${bec}. Le dessus est ${dos}, la poitrine et la face sont orange vif bordées de gris. La queue est assez longue. Les juvéniles sont tachetés de brun, sans orange.\n\n\n== Espèces similaires ==\nIl se distingue du ${nb.fr.toLowerCase()} par son bec ${bec} et son dos ${dos}.\n\n\n=== Chant ===\nChant flûté et mélancolique.\n\n\n== Répartition ==\nToute l'Europe.`;
     return json(route, { query: { pages: { "123": { pageid: 123, title: sp.fr, extract } } } });
   }
   if (host === "fr.wikipedia.org") {

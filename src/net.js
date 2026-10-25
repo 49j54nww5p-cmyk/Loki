@@ -260,8 +260,9 @@ function liveMount() {
   const q = liveQ(), img = $("#limg");
   if (!q) return;
   LIVE.t0 = 0;
+  const idx = LIVE.i;
   const start = () => {
-    if (LIVE.t0 || LIVE.st !== "q") return;
+    if (LIVE.t0 || LIVE.st !== "q" || LIVE.i !== idx) return;
     LIVE.t0 = performance.now();
     const bar = $("#ltbar"), T = (LIVE.room?.T || 10) * 1000;
     if (bar) { bar.style.transition = "none"; bar.style.transform = "scaleX(1)"; void bar.offsetWidth; bar.style.transition = `transform ${T}ms linear`; bar.style.transform = "scaleX(0)"; }
@@ -367,8 +368,7 @@ function liveShare() {
   const url = location.href.split("#")[0] + "#duel=" + LIVE.code;
   const text = `Viens me défier sur Plumage ! Code ${LIVE.code}`;
   if (navigator.share) navigator.share({ title: "Duel Plumage", text, url }).catch(() => {});
-  else if (navigator.clipboard) navigator.clipboard.writeText(text + " " + url).then(() => toast("Lien copié !"), () => toast(url));
-  else toast(url);
+  else copyText(text + " " + url, "Lien copié !");
 }
 function liveViewHtml() {
   const r = LIVE.room, me = LIVE.role, ot = otherRole(me), o = r?.[ot], my = r?.[me];

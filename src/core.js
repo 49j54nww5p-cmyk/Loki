@@ -702,7 +702,8 @@ function wikiDesc(t) {
     try { pg = await one(t.sci); } catch (e) { if (t.fr) { try { pg = await one(t.fr); } catch (e2) { /* rien */ } } }
     if (!pg) return null;
     const sec = pickSection(pg.extract, ["Description", "Identification", "Morphologie", "Caractéristiques", "Aspect"]);
-    return sec ? { text: sec, url: "https://fr.m.wikipedia.org/wiki/" + encodeURIComponent(pg.title.replace(/ /g, "_")), title: pg.title } : null;
+    const voice = pickSection(pg.extract, ["Voix", "Chant", "Vocalisation", "Cri"]);
+    return sec ? { text: sec, voice, full: String(pg.extract).slice(0, 80000), url: "https://fr.m.wikipedia.org/wiki/" + encodeURIComponent(pg.title.replace(/ /g, "_")), title: pg.title } : null;
   });
 }
 const clip = (s, n) => { s = String(s || "").replace(/\s+/g, " ").trim(); if (s.length <= n) return s; const cut = s.slice(0, n); const dot = cut.lastIndexOf(". "); return (dot > n * .5 ? cut.slice(0, dot + 1) : cut.replace(/\s\S*$/, "") + "…"); };

@@ -224,6 +224,18 @@ function quizUnpack(s) {
 }
 const cleanTxt = (s, n) => String(s || "").replace(/[\u0000-\u001f<>]/g, "").replace(/\s+/g, " ").trim().slice(0, n);
 
+/* ---------- Copier : presse-papiers, sinon une fenêtre où le texte se sélectionne à la main ---------- */
+function copyText(text, ok = "Copié !") {
+  const manual = () => {
+    openLayer(`<div class="panel" role="dialog" aria-label="Copier"><button class="icon-btn close" data-act="close" aria-label="Fermer">${ic("x")}</button>
+    <div class="in" style="padding-top:22px"><h2>Copier</h2><p class="muted" style="font-size:14px">Sélectionne le texte, puis copie-le.</p>
+    <textarea class="cpy" readonly rows="4">${esc(text)}</textarea><button class="btn ghost wide" data-act="close" style="margin:12px 0 22px">${ic("check")}Fermer</button></div></div>`);
+    setTimeout(() => { const t = $(".cpy"); if (t) { t.focus(); t.select(); } }, 150);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => toast(ok), manual);
+  else manual();
+}
+
 /* ---------- Fenêtre « Partager ce quiz » ---------- */
 const SHARE = { cfg: null, link: "" };
 function openShare(cfg) {
@@ -245,10 +257,7 @@ function shareLinkNow() {
   if (navigator.share) navigator.share({ title: "Plumage", text, url: SHARE.link }).catch(() => {});
   else copyLink();
 }
-function copyLink() {
-  if (navigator.clipboard) navigator.clipboard.writeText(SHARE.link).then(() => toast("Lien copié !"), () => toast(SHARE.link));
-  else toast(SHARE.link);
-}
+function copyLink() { copyText(SHARE.link, "Lien copié !"); }
 function downloadQr() {
   try {
     const name = String(SHARE.cfg?.title || "quiz").replace(/ · [^·]*$/, "");

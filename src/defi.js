@@ -78,8 +78,9 @@ function defiMount() {
   const q = DEFI.deck[DEFI.i], img = $("#dimg");
   if (!q) return;
   DEFI.t0 = 0;
+  const idx = DEFI.i;
   const start = () => {
-    if (DEFI.t0 || DEFI.st !== "q" || DEFI.rev === DEFI.i) return;
+    if (DEFI.t0 || DEFI.st !== "q" || DEFI.i !== idx || DEFI.rev === DEFI.i) return;
     DEFI.t0 = performance.now();
     const bar = $("#dtbar"), T = DEFI.T * 1000;
     if (bar) { bar.style.transition = "none"; bar.style.transform = "scaleX(1)"; void bar.offsetWidth; bar.style.transition = `transform ${T}ms linear`; bar.style.transform = "scaleX(0)"; }
@@ -115,12 +116,14 @@ async function defiFinish() {
     DEFI.xp = true;
     const win = opp && me.pts > opp.pts, gain = me.ok * 6 + (win ? 25 : 0);
     if (gain) addXp(gain);
-    count("defis"); if (win) count("defiwin");
+    count(DEFI.role === "week" ? "weeks" : "defis"); if (win) count("defiwin");
     const m = markPlayed(); if (m) toast(m);
     checkBadges(); save(true); topPush();
     if (win) setTimeout(() => { sfx.lvl(); confetti(); }, 300);
+    cloudAuto();
   }
   go("defi");
+  if (DEFI.role === "week") { weekFinish(); return; }
   if (DEFI.role === "host") {
     try { DEFI.link = location.origin + location.pathname + "#defi=" + await packZ(JSON.stringify(defiPack())); }
     catch (e) { DEFI.link = ""; DEFI.err = "Lien impossible à créer."; }
@@ -132,8 +135,7 @@ function defiShare() {
   const me = defiScore(DEFI.deck, DEFI.ans, DEFI.T);
   const text = `Je te défie sur Plumage : ${DEFI.deck.length} photos d'oiseaux, ${DEFI.T} s par photo. J'ai fait ${fmt(me.pts)} points, à toi de me battre !`;
   if (navigator.share) navigator.share({ title: "Défi Plumage", text, url: DEFI.link }).catch(() => {});
-  else if (navigator.clipboard) navigator.clipboard.writeText(text + " " + DEFI.link).then(() => toast("Défi copié : colle-le dans un message."), () => toast(DEFI.link));
-  else toast(DEFI.link);
+  else copyText(text + " " + DEFI.link, "Défi copié : colle-le dans un message.");
 }
 async function openDefiLink(raw) {
   try {
@@ -148,6 +150,8 @@ async function openDefiLink(raw) {
 
 /* ---------- Écrans ---------- */
 function defiViewHtml() {
+  if (DEFI.role === "week" && DEFI.st === "intro") return weekIntroHtml();
+  if (DEFI.role === "week" && DEFI.st === "end") return weekEndHtml();
   const D = DEFI, head = t => `<header class="qbar"><button class="icon-btn" data-act="dquit" aria-label="Quitter">${ic("x")}</button><div class="ltitle">${t}</div><span style="width:44px"></span></header>`;
   if (D.st === "prep") return `<section class="view live defi">${head("Défi à distance")}<div class="lcard"><div class="lprep"><div class="spin"></div><b>Je choisis 10 photos d'oiseaux de ta zone…</b></div></div></section>`;
   if (D.st === "intro" && D.role === "guest") return `<section class="view live defi">${head("Défi reçu")}
@@ -169,7 +173,7 @@ function defiViewHtml() {
     const q = D.deck[D.i], sc = defiScore(D.deck.slice(0, D.i), D.ans, D.T);
     return `<section class="view live quiz defi">
   <header class="qbar"><button class="icon-btn" data-act="dquit" aria-label="Quitter">${ic("x")}</button>
-    <div class="lscore"><span class="me"><b id="dsc">${fmt(sc.pts)}</b><small>${esc(S.set.pseudo || "Toi")}</small></span><span class="qn">${D.i + 1}/${D.deck.length}</span>${D.opp ? `<span class="ot"><b>?</b><small>${esc(D.opp.n)}</small></span>` : `<span class="ot"><b>${ic("duel", "xs")}</b><small>défi</small></span>`}</div>
+    <div class="lscore"><span class="me"><b id="dsc">${fmt(sc.pts)}</b><small>${esc(S.set.pseudo || "Toi")}</small></span><span class="qn">${D.i + 1}/${D.deck.length}</span>${D.opp ? `<span class="ot"><b>?</b><small>${esc(D.opp.n)}</small></span>` : `<span class="ot"><b>${ic(D.role === "week" ? "trophy" : "duel", "xs")}</b><small>${D.role === "week" ? "semaine" : "défi"}</small></span>`}</div>
     <span style="width:44px"></span></header>
   <div class="timer"><i id="dtbar"></i></div>
   <div class="stage"><figure class="shot"><img class="main" id="dimg" alt="Oiseau à identifier" draggable="false"><span class="ret tl"></span><span class="ret tr"></span><span class="ret bl"></span><span class="ret br"></span><div class="spinner"><div class="spin"></div></div><figcaption class="credit">${esc(q.a || "")}</figcaption></figure></div>

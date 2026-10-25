@@ -983,6 +983,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-10-25.7", n: "2.6", items: [
+    { ic: "bulb", t: "Boîte à idées", d: "Une envie, un bug, un oiseau mal nommé : Réglages, « Boîte à idées ». Tout est lu." }
+  ] },
   { v: "2026-10-25.6", n: "2.5", items: [
     { ic: "zoom", t: "Les vrais critères, pour tous les oiseaux", d: "Après une erreur, quelle que soit la paire : taille, tête, bec, dessous, ailes, queue, pattes de chacun, et la phrase qui fait la différence." },
     { ic: "duel", t: "Le duel d'entraînement est proposé", d: "En fin de partie, seulement si tu en as envie." },
@@ -1040,7 +1043,8 @@ function newsHtml(all) {
   return `<div class="panel news" role="dialog" aria-label="Nouveautés"><button class="icon-btn close" data-act="newsok" aria-label="Fermer">${ic("x")}</button>
   <div class="in" style="padding-top:22px"><span class="eyebrow">${ic("spark", "xs")} Mise à jour · version ${esc(APP_VERSION)}</span><h2 style="margin-top:8px">${all ? "Toutes les versions" : "Quoi de neuf ?"}</h2>
   <div class="news-list">${list.map(n => `${list.length > 1 ? `<div class="news-v"><b>v${esc(n.n)}</b><span>${esc(vDate(n.v))}</span></div>` : ""}${n.items.map(x => `<div class="news-it" style="animation-delay:${(k++) * 50}ms"><span class="ic">${ic(x.ic)}</span><span><b>${esc(x.t)}</b><small>${esc(x.d)}</small></span></div>`).join("")}`).join("")}</div>
-  <button class="btn primary wide" data-act="newsok" style="margin:18px 0 22px">${ic("check")}Super !</button></div></div>`;
+  <button class="btn primary wide" data-act="newsok" style="margin:18px 0 10px">${ic("check")}Super !</button>
+  <button class="btn ghost wide" data-act="ideas" style="margin:0 0 22px">${ic("bulb")}Une idée pour la suite ?</button></div></div>`;
 }
 function openNews(all) { openLayer(newsHtml(all), "newsl"); }
 /* Au lancement : la présentation pour un nouveau joueur, sinon les nouveautés pas encore vues */
@@ -1298,6 +1302,7 @@ VIEWS.about = () => `<section class="view about">
     <li><b>Duel en direct (facultatif)</b> : pendant une partie, les pseudos, les questions et les réponses passent par ce même serveur, puis la partie est effacée.</li>
     <li><b>Défi de la semaine</b> : ton premier essai de la semaine (pseudo et points) rejoint le classement de la semaine, si tu as choisi un pseudo.</li>
     <li><b>Sauvegarde en ligne (facultative)</b> : ta progression est chiffrée sur ton téléphone avec un code de 16 caractères que toi seul connais ; le serveur ne reçoit qu'un bloc illisible. Sans le code, personne ne peut la lire, ni la retrouver.</li>
+    <li><b>Boîte à idées</b> : ton message, son type, la version de l'appli et, si tu le donnes, un moyen de te répondre. Seul le responsable de l'appli peut les lire.</li>
     <li><b>Défi à distance et quiz partagés</b> : rien ne passe par un serveur ; le lien que tu envoies contient les questions (ou les réglages du quiz), ton pseudo et tes réponses.</li></ul>
     <h3>Hébergement</h3>
     <ul><li>L'appli est hébergée par GitHub Pages. GitHub enregistre l'adresse IP des visiteurs pour des raisons de sécurité.</li>
@@ -1474,7 +1479,7 @@ VIEWS.settings = () => `<section class="view settings">
     <div class="set"><span class="lab"><b>Tout effacer</b><small>Remet l'appli à zéro sur cet appareil.</small></span><button class="btn ghost" data-act="reset" id="resetBtn">${ic("trash")}Effacer</button></div>
   </div>
   ${packSettingsHtml()}
-  <div class="group" style="margin-top:18px"><button class="set link" data-act="tour">${ic("info")}<span class="lab"><b>Revoir la présentation</b><small>Le tour de l'appli en 6 écrans.</small></span>${ic("arrow")}</button><button class="set link" data-act="news">${ic("spark")}<span class="lab"><b>Nouveautés · v${esc(APP_VERSION)}</b><small>Toutes les versions et ce qu'elles ont apporté.</small></span>${ic("arrow")}</button></div>
+  <div class="group" style="margin-top:18px"><button class="set link" data-act="tour">${ic("info")}<span class="lab"><b>Revoir la présentation</b><small>Le tour de l'appli en 6 écrans.</small></span>${ic("arrow")}</button><button class="set link" data-act="ideas">${ic("bulb")}<span class="lab"><b>Boîte à idées</b><small>Une envie, un bug, un oiseau mal nommé : dis-le.</small></span>${ic("arrow")}</button><button class="set link" data-act="news">${ic("spark")}<span class="lab"><b>Nouveautés · v${esc(APP_VERSION)}</b><small>Toutes les versions et ce qu'elles ont apporté.</small></span>${ic("arrow")}</button></div>
   <div class="group" style="margin-top:18px"><button class="set link" data-act="tab" data-tab="about">${ic("shield")}<span class="lab"><b>Confidentialité et sources</b><small>Ce qui reste sur ton téléphone, ce qui en sort, et d'où viennent les données.</small></span>${ic("arrow", "s")}</button></div>
   <p class="foot vfoot"><b>Plumage v${esc(APP_VERSION)}</b> · ${esc(vDate(NEWS[0].v))} · <button class="lnk" data-act="news">toutes les versions</button></p>
   <p class="foot">Photos, sons et données : iNaturalist, Wikipédia, Wikimedia Commons et xeno-canto, avec l'auteur et la licence de chaque média. Ta progression reste sur cet appareil.</p>
@@ -2131,6 +2136,8 @@ const ACT = {
   cloudrest: () => openCloudRestore(),
   cloudoff: () => cloudOff(),
   ccopy: () => { const c = cloudFmt(S.cloud?.code || ""); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(c).then(() => toast("Code copié."), () => toast("Sélectionne le code pour le copier.")); else toast("Sélectionne le code pour le copier."); },
+  ideas: () => openIdeas(),
+  idk: el => { IDEA.k = el.dataset.v; $$("[data-act=idk]").forEach(b => b.classList.toggle("on", b === el)); const t = $("#idtxt"); if (t) t.placeholder = IDEA.k === "bug" ? "Ce qui s'est passé, et sur quel écran…" : IDEA.k === "oiseau" ? "Quel oiseau, et qu'est-ce qui cloche (nom, photo, son, critère)…" : "Ton idée, en quelques mots…"; },
   duelgo: el => {
     let cfg;
     if (el.dataset.ids) { const [a, b] = el.dataset.ids.split(",").map(Number); const ra = S.sp[a], rb = S.sp[b]; cfg = duelCfg([ra.sci, rb.sci, ra.fr, rb.fr]); cfg.ids = [a, b]; }
@@ -2232,6 +2239,7 @@ function onKey(e) {
   else if (e.key.toLowerCase() === "r") { unlockAudio(); sndPlay(); }
 }
 function onSubmit(e) {
+  if (e.target.id === "ideaf") { e.preventDefault(); ideaSend(); return; }
   if (e.target.id === "crest") { e.preventDefault(); cloudRestore($("#ccin")?.value || ""); return; }
   if (e.target.id === "ljoin") { e.preventDefault(); $("#lcode")?.blur(); liveJoin($("#lcode")?.value || ""); return; }
   if (e.target.id === "typer") {
@@ -2316,6 +2324,7 @@ function init() {
   document.addEventListener("change", onChange);
   if (!openLinkHash()) { const h = location.hash.replace("#", ""); go(["carnet", "progress", "settings", "about", "top"].includes(h) ? h : "home"); }
   window.addEventListener("hashchange", () => { if (!SES || SES.ended) openLinkHash(); });
+  setTimeout(() => ideaFlush().catch(() => {}), 5000);
   setTimeout(maybeIntro, 900);
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) { /* rien */ }
   loadTaxo().catch(() => {});

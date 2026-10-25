@@ -37,7 +37,8 @@ Sur iPhone : ouvre le lien dans Safari, bouton Partager, puis « Sur l'écran d'
 
 Le numéro de version s'affiche en bas des Réglages ; « Nouveautés » liste toutes les versions.
 
-- **2.5** (25 octobre 2026) : après une erreur, les vrais critères pour n'importe quelle paire d'oiseaux (taille, tête, bec, dessous, dessus, ailes, queue, pattes, voix, d'après Wikipédia, et la phrase qui fait la différence) ; duel d'entraînement seulement proposé ; numéros de version
+- **2.6** (25 octobre 2026) : boîte à idées (idée, bug, erreur sur un oiseau), lisible seulement par le responsable de l'appli
+- **2.5** : après une erreur, les vrais critères pour n'importe quelle paire d'oiseaux (taille, tête, bec, dessous, dessus, ailes, queue, pattes, voix, d'après Wikipédia, et la phrase qui fait la différence) ; duel d'entraînement seulement proposé ; numéros de version
 - **2.4** : hors ligne (service worker, pack terrain), défi de la semaine, sauvegarde en ligne chiffrée
 - **2.3** : défi à distance sans serveur, parcours guidés
 - **2.2** : recettes Sur mesure, partage de quiz par lien et QR code, page Progrès résumée

@@ -11,11 +11,11 @@ function go(v, data) {
   closeViewer(true);
   document.body.classList.remove("gfull");
   VIEW = v; VDATA = data;
-  document.body.classList.toggle("inquiz", ["quiz", "loading", "result", "error", "builder", "trip", "hand", "handsp", "live"].includes(v));
+  document.body.classList.toggle("inquiz", ["quiz", "loading", "result", "error", "builder", "trip", "hand", "handsp", "live", "defi", "paths", "path"].includes(v));
   const tabv = v === "about" ? "settings" : v;
   $$("#nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === tabv));
   if (v !== "quiz") setAmbient(null);
-  if (v !== "result" && v !== "quiz" && v !== "live") stopFx();
+  if (v !== "result" && v !== "quiz" && v !== "live" && v !== "defi") stopFx();
   const app = $("#app");
   app.classList.remove("waiting");
   app.innerHTML = (VIEWS[v] || VIEWS.home)(data);
@@ -53,7 +53,7 @@ function floatXp(n) {
 let FXID = 0;
 function stopFx() { FXID++; const cv = $("#fx"); if (cv) cv.getContext("2d").clearRect(0, 0, cv.width, cv.height); }
 function confetti(n = 90) {
-  if (VIEW !== "result" && VIEW !== "quiz" && VIEW !== "live") return;
+  if (VIEW !== "result" && VIEW !== "quiz" && VIEW !== "live" && VIEW !== "defi") return;
   if (S.set.calm || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
   const id = ++FXID;
   const cv = $("#fx"), dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -117,7 +117,7 @@ async function pickZone(zk, apply) {
 }
 
 /* ---------- Accueil ---------- */
-const MODEGROUPS = [["Reconnaître", "eye", ["photo", "chant", "ecrire", "duel"]], ["Comprendre", "book", ["latin", "famille", "racines", "main"]], ["Explorer", "globe", ["geo", "sortie"]]];
+const MODEGROUPS = [["Reconnaître", "eye", ["photo", "chant", "ecrire", "duel"]], ["Comprendre", "book", ["latin", "famille", "racines", "main"]], ["Explorer", "globe", ["parcours", "geo", "sortie"]]];
 const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 const isStandalone = () => window.navigator.standalone === true || !!(window.matchMedia && matchMedia("(display-mode: standalone)").matches);
 const installCard = () => isIOS() && !isStandalone() && Date.now() - (S.hint?.install || 0) > 30 * DAY
@@ -171,10 +171,11 @@ VIEWS.home = () => {
   </div>
   <button class="perso-cta" data-act="mode" data-mode="perso">
     <span class="ic">${ic("sliders")}</span>
-    <span class="tx"><b>Sur mesure</b><small>Ton quiz à toi, réglé au millimètre</small>
-      <span class="pills"><span>${ic("pin", "xs")}Lieu</span><span>${ic("tree", "xs")}Familles</span><span>${ic("spark", "xs")}Âge</span><span>${ic("wave", "xs")}Chants</span><span>${ic("clock", "xs")}Chrono</span></span></span>
+    <span class="tx"><b>Sur mesure</b><small>Une recette en un geste, ou tout régler toi-même</small>
+      <span class="pills"><span>${ic("spark", "xs")}10 recettes</span><span>${ic("pin", "xs")}Lieu</span><span>${ic("tree", "xs")}Familles</span><span>${ic("wave", "xs")}Chants</span><span>${ic("clock", "xs")}Chrono</span></span></span>
     <span class="go">${ic("arrow")}</span>
   </button>
+  ${pathHomeCard()}
   ${S.favs.length ? `<div class="favs top" aria-label="Mes quiz">${S.favs.map((f, i) => `<button class="fav" data-act="fav" data-i="${i}">${ic("star")}${esc(f.title)}</button>`).join("")}</div>` : ""}
   ${installCard()}${backupCard()}
   <div class="quick">
@@ -942,8 +943,9 @@ function geoValidate() {
 /* ---------- Bilan ---------- */
 VIEWS.result = ({ ses, n, ok, badges, msgs }) => {
   const C = 2 * Math.PI * 84, p = n ? ok / n : 0;
-  const title = p === 1 ? "Sans faute !" : p >= .8 ? "Superbe série !" : p >= .5 ? "Belle progression" : "Chaque erreur compte";
-  const lead = ses.kind === "hand" ? (p === 1 ? "Rien à redire : tu peux passer à la station !" : "Ouvre les fiches des espèces ratées, puis rejoue.") : p === 1 ? "Rien à redire, tu peux viser plus dur." : p >= .5 ? "Les erreurs reviendront en révision au bon moment." : "Tes erreurs reviendront vite en révision : c'est comme ça qu'on retient.";
+  const PP = ses.kind === "path" ? PATHI[ses.cfg.path] : null, pnext = PP && ses.pathStars && ses.cfg.step + 1 < PP.steps.length ? ses.cfg.step + 1 : -1;
+  const title = PP ? (ses.pathStars ? (ses.pathDoneNow ? "Parcours terminé !" : "Étape validée !") : "Presque !") : p === 1 ? "Sans faute !" : p >= .8 ? "Superbe série !" : p >= .5 ? "Belle progression" : "Chaque erreur compte";
+  const lead = PP ? (ses.pathStars ? (pnext >= 0 ? `Prochaine étape : ${PP.steps[pnext].n}.` : "Bravo, tu as bouclé ce parcours.") : `Il faut ${PASS} bonnes réponses sur ${PLEN} pour avancer. Relance l'étape : les erreurs t'aident à retenir.`) : ses.kind === "hand" ? (p === 1 ? "Rien à redire : tu peux passer à la station !" : "Ouvre les fiches des espèces ratées, puis rejoue.") : p === 1 ? "Rien à redire, tu peux viser plus dur." : p >= .5 ? "Les erreurs reviendront en révision au bon moment." : "Tes erreurs reviendront vite en révision : c'est comme ça qu'on retient.";
   const L = level();
   const missed = [...new Map(ses.missed.map(t => [t.id, t])).values()].slice(0, 8);
   const confs = ses.kind === "duel" ? [] : [...new Map((ses.confs || []).map(([a, b]) => [Math.min(a, b) + "," + Math.max(a, b), [a, b]])).values()]
@@ -951,7 +953,7 @@ VIEWS.result = ({ ses, n, ok, badges, msgs }) => {
   return `<section class="view result">
   <div class="score"><svg viewBox="0 0 190 190" aria-hidden="true"><circle class="track" cx="95" cy="95" r="84"/><circle class="prog" id="scoreProg" cx="95" cy="95" r="84" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${C.toFixed(1)}" data-off="${(C * (1 - p)).toFixed(1)}"/></svg>
     <div class="val"><b>${ok}<span style="font-size:24px;color:var(--muted)">/${n}</span></b><small>${esc(ses.title || "")}</small></div></div>
-  <h1>${title}</h1><div class="lead">${lead}</div>
+  <h1>${title}</h1>${PP && ses.pathStars ? `<div class="rstars">${starsRow(ses.pathStars)}</div>` : ""}<div class="lead">${esc(lead)}</div>
   ${msgs.map(m => `<div class="chip warn" style="margin-top:12px">${ic("shield")}${esc(m)}</div>`).join("")}
   <div class="trio"><div class="xp"><b>+${fmt(ses.xp)}</b><small>XP</small></div><div><b>×${ses.maxCombo}</b><small>meilleur combo</small></div>${ses.kind === "hand" ? `<div><b>${Math.round(p * 100)} %</b><small>réussite</small></div>` : `<div><b>${ses.newSp.length}</b><small>nouvelle${ses.newSp.length > 1 ? "s" : ""}</small></div>`}</div>
   <button class="lvlbar" data-act="tab" data-tab="progress"><span class="badge">${L.n}</span><span class="meta"><b>${esc(L.rank)}</b><small>${fmt(L.cur)} / ${fmt(L.need)} XP</small><span class="bar"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span></span></button>
@@ -959,7 +961,7 @@ VIEWS.result = ({ ses, n, ok, badges, msgs }) => {
   ${ses.kind === "hand" && ses.hmiss?.length ? `<div class="sec" style="justify-content:center">${ic("replay")}Fiches à revoir</div><div class="missed">${[...new Set(ses.hmiss)].slice(0, 8).map(id => `<button class="mchip" data-act="hsp" data-sp="${id}">${featherPair(HSPI[id])}${esc(HSPI[id].fr)}</button>`).join("")}</div>` : ""}
   ${confs.length ? `<div class="sec" style="justify-content:center">${ic("duel")}Pour ne plus confondre</div><div class="drills">${confs.map(([a, b]) => { const A = taxonById(a), B = taxonById(b); if (!A || !B) return ""; const m = sosVis(A.sci, B.sci)?.v.m; return `<button class="conf drill" data-act="duelgo" data-ids="${a},${b}"><img src="${esc(imgOf(A))}" alt=""><span class="vs">VS</span><img src="${esc(imgOf(B))}" alt=""><span class="tx">${esc(nameFr(A))}<small>${esc(nameFr(B))}</small>${m ? `<em>${esc(m)}</em>` : ""}</span><span class="go">Duel${ic("arrow", "xs")}</span></button>`; }).join("")}</div>` : ""}
   ${missed.length ? `<div class="sec" style="justify-content:center">${ic("replay")}À revoir</div><div class="missed">${missed.map(t => `<button class="mchip" data-act="fiche" data-id="${t.id}"><img src="${esc(imgOf(t))}" alt="">${esc(nameFr(t))}</button>`).join("")}</div>` : ""}
-  <div class="actions">${ses.kind === "hand" ? `<button class="btn ghost" data-act="hhub">${ic("back")}Piaf en main</button>` : `<button class="btn ghost" data-act="home">${ic("back")}Accueil</button>`}${shareable(ses.cfg) ? `<button class="btn ghost sq" data-act="qshare" aria-label="Partager ce quiz">${ic("ext")}</button>` : ""}<button class="btn primary" data-act="again">${ic("replay")}Rejouer</button></div>
+  ${PP ? `<div class="actions"><button class="btn ghost" data-act="path" data-p="${PP.id}">${ic("map")}Parcours</button>${pnext >= 0 ? `<button class="btn primary" data-act="pgo" data-p="${PP.id}" data-i="${pnext}">${ic("play")}Étape suivante</button>` : `<button class="btn primary" data-act="again">${ic("replay")}${ses.pathStars ? "Refaire" : "Recommencer"}</button>`}</div>` : `<div class="actions">${ses.kind === "hand" ? `<button class="btn ghost" data-act="hhub">${ic("back")}Piaf en main</button>` : `<button class="btn ghost" data-act="home">${ic("back")}Accueil</button>`}${shareable(ses.cfg) ? `<button class="btn ghost sq" data-act="qshare" aria-label="Partager ce quiz">${ic("ext")}</button>` : ""}<button class="btn primary" data-act="again">${ic("replay")}Rejouer</button></div>`}
 </section>`;
 };
 MOUNT.result = () => {
@@ -971,12 +973,16 @@ MOUNT.result = () => {
 const TOUR = [
   { ic: "bird", c: "#1FD1F2", t: "Bienvenue sur Plumage", d: "Apprends à reconnaître les oiseaux avec de vraies photos et de vrais chants, en direct d'iNaturalist." },
   { ic: "spark", c: "#FFCB5C", t: "La série du jour", d: "12 questions, environ 4 minutes. Joue chaque jour : la flamme compte tes jours d'affilée." },
-  { ic: "sliders", c: "#FF8B3D", t: "Plein de façons de jouer", d: "Photos, chants, latin, familles, sosies, géo, baguage… Sur mesure pour régler ton propre quiz, et des duels contre tes amis." },
+  { ic: "sliders", c: "#FF8B3D", t: "Plein de façons de jouer", d: "Photos, chants, latin, familles, sosies, géo, baguage, parcours pas à pas… Sur mesure pour régler ton propre quiz, et des défis contre tes amis." },
   { ic: "replay", c: "#3BE59D", t: "Tu retiens pour de bon", d: "Après une erreur, des loupes te montrent ce qui diffère. Tes erreurs reviennent ensuite en révision, au bon moment." },
   { ic: "book", c: "#A58BFF", t: "Ton carnet", d: "Chaque oiseau rencontré rejoint ton carnet. Touche une photo pour l'agrandir, ouvre la fiche pour son chant, sa carte et ses sosies." },
   { ic: "shield", c: "#14B8A6", t: "Tout reste chez toi", d: "Pas de compte : ta progression vit sur ce téléphone. Sauvegarde-la de temps en temps (Réglages) et installe l'appli sur l'écran d'accueil." }
 ];
 const NEWS = [
+  { v: "2026-10-25.4", items: [
+    { ic: "duel", t: "Défi à distance", d: "Joue 10 photos, envoie le lien : ton ami tente de battre ton score, quand il veut. Ça marche tout de suite, sans serveur." },
+    { ic: "map", t: "Parcours guidés", d: "Jardin, limicoles, rapaces, canards, goélands et sternes, chants : quelques oiseaux à la fois, étape par étape." }
+  ] },
   { v: "2026-10-25.3", items: [
     { ic: "spark", t: "Recettes Sur mesure", d: "10 quiz tout prêts en un geste : jardin, limicoles, goélands, chants de saison, rapaces…" },
     { ic: "ext", t: "Partage un quiz", d: "Par lien ou QR code : un ami, une sortie ou un panneau sur un site lance exactement le même quiz." },
@@ -1036,6 +1042,11 @@ VIEWS.top = () => topViewHtml();
 MOUNT.top = () => topMount();
 VIEWS.live = () => liveViewHtml();
 MOUNT.live = () => liveMount();
+VIEWS.defi = () => defiViewHtml();
+MOUNT.defi = () => defiMount();
+VIEWS.paths = () => pathsListHtml();
+VIEWS.path = () => pathHtml();
+MOUNT.path = () => pathMount();
 
 /* ---------- Constructeur « Sur mesure » ---------- */
 const defaultB = () => ({ zone: S.set.zone, guilds: [], fams: [], freq: "common", size: 100, stim: ["photo"], age: "all", target: "species", names: S.set.names, format: "qcm", k: S.set.k, diff: S.set.diff, len: 10, timer: 0 });
@@ -1502,6 +1513,7 @@ function openDuelPicker() {
   openLayer(`<div class="panel"><button class="icon-btn close" data-act="close" aria-label="Fermer">${ic("x")}</button><div class="in" style="padding-top:22px">
     <h2>Duels</h2>
     <button class="livecta" data-act="live"><span class="ic">${ic("bolt")}</span><span class="tx"><b>Duel en direct, à deux</b><small>1 contre 1, chacun son téléphone, chrono à chaque question</small></span>${ic("arrow")}</button>
+    <button class="livecta defic" data-act="defi"><span class="ic">${ic("duel")}</span><span class="tx"><b>Défi à distance</b><small>Tu joues 10 photos, tu envoies le lien : ton ami tente de battre ton score, quand il veut</small></span>${ic("arrow")}</button>
     <div class="sec">${ic("duel")}Les sosies</div><p class="muted" style="margin:-4px 0 4px;font-size:14px">Deux sosies, 8 questions pour les départager.</p>
     ${conf.length ? `<div class="sec">${ic("replay")}Tes confusions</div><div style="display:flex;flex-direction:column;gap:8px">${conf.map(c => { const a = S.sp[c.a], b = S.sp[c.b]; return `<button class="conf" data-act="duelgo" data-ids="${c.a},${c.b}" style="text-align:left"><img src="${esc(a.img || a.md)}" alt=""><span class="vs">VS</span><img src="${esc(b.img || b.md)}" alt=""><span class="tx">${esc(a.fr || a.sci)}<small>${esc(b.fr || b.sci)} · ${c.n}×</small></span>${ic("arrow")}</button>`; }).join("")}</div>` : ""}
     <div class="sec">${ic("duel")}Grands classiques</div>
@@ -1939,6 +1951,7 @@ const ACT = {
     if (k === "sortie") { TRIP.mode = "prep"; go("trip"); return; }
     if (k === "duel") { openDuelPicker(); return; }
     if (k === "main") { go("hand"); return; }
+    if (k === "parcours") { go("paths"); return; }
     LASTCFG = modeCfg(k); startSession(LASTCFG);
   },
   histplay: el => { const h = (S.hist || [])[+el.dataset.i]; if (h?.cfg) { LASTCFG = { ...h.cfg }; startSession(LASTCFG); } },
@@ -2072,6 +2085,19 @@ const ACT = {
   shpng: () => downloadQr(),
   inqplay: async () => { const cfg = await incomingCfg().catch(() => null); if (!cfg) { toast("Quiz illisible."); return; } LASTCFG = cfg; startSession(cfg); },
   inqsave: async () => { const cfg = await incomingCfg().catch(() => null); if (!cfg) return; S.favs.unshift({ title: cfg.title, cfg }); S.favs = S.favs.slice(0, 12); save(); closeLayer(); if (VIEW === "home") rerender(); toast("Gardé dans « Mes quiz » sur l'accueil."); },
+  defi: () => { closeLayer(); defiNew(); go("defi"); },
+  dT: el => { DEFI.T = +el.dataset.v; S.set.liveT = DEFI.T; save(); $$("[data-act=dT]").forEach(b => b.classList.toggle("on", b === el)); },
+  dstart: () => defiPrepare(),
+  daccept: () => { if (livePseudo()) defiAccept(); },
+  dpick: el => defiAnswer(el.dataset.k),
+  dshare: () => defiShare(),
+  dagain: () => { defiNew(); defiPrepare(); },
+  dback: () => { defiNew(); go("defi"); },
+  dquit: () => { clearTimeout(DEFI.tmr); DEFI.load++; DEFI.st = ""; go("home"); },
+  paths: () => go("paths"),
+  path: el => { PATHV.id = el.dataset.p; PATHV.open = -1; go("path"); },
+  pstep: el => { const i = +el.dataset.i, P = PATHI[PATHV.id], cur = PATHV.open === -1 ? pathNext(P) : PATHV.open; PATHV.open = cur === i ? -2 : i; go("path"); },
+  pgo: el => { const P = PATHI[el.dataset.p || PATHV.id], i = +el.dataset.i; if (!P || !(i >= 0) || !stepOpen(P, i)) return; PATHV.id = P.id; LASTCFG = pathCfg(P, i); startSession(LASTCFG); },
   duelgo: el => {
     let cfg;
     if (el.dataset.ids) { const [a, b] = el.dataset.ids.split(",").map(Number); const ra = S.sp[a], rb = S.sp[b]; cfg = duelCfg([ra.sci, rb.sci, ra.fr, rb.fr]); cfg.ids = [a, b]; }
@@ -2158,6 +2184,7 @@ function onKey(e) {
   if (tg && tg.matches && tg.matches("input, textarea")) { if (e.key === "Escape") tg.blur(); return; }
   if (e.key === "Escape") { if (!$("#layer").hidden) closeLayer(); return; }
   if (VIEW === "live" && LIVE.st === "q" && /^[1-6]$/.test(e.key)) { $$("#lans [data-act=lpick]")[+e.key - 1]?.click(); return; }
+  if (VIEW === "defi" && DEFI.st === "q" && /^[1-6]$/.test(e.key)) { $$("#dans [data-act=dpick]")[+e.key - 1]?.click(); return; }
   if (VIEW !== "quiz" || !$("#layer").hidden) return;
   const fbOpen = $("#fb");
   const hq = SES?.q;
@@ -2227,10 +2254,11 @@ function onChange(e) {
 /* Liens reçus : #duel=CODE (duel en direct), #q=… (quiz partagé) */
 function openLinkHash() {
   const h = location.hash.replace("#", "");
-  const dm = h.match(/^duel=([A-Za-z0-9]{5})$/), qm = h.match(/^q=([A-Za-z0-9_-]{4,2000})$/);
-  if (!dm && !qm) return false;
+  const dm = h.match(/^duel=([A-Za-z0-9]{5})$/), qm = h.match(/^q=([A-Za-z0-9_-]{4,2000})$/), fm = h.match(/^defi=([A-Za-z0-9_-]{8,9000})$/);
+  if (!dm && !qm && !fm) return false;
   history.replaceState(null, "", location.pathname + location.search);
   if (dm) { LIVE.joinCode = dm[1].toUpperCase(); go("live"); }
+  else if (fm) { go("home"); openDefiLink(fm[1]); }
   else { go("home"); openIncoming(qm[1]); }
   return true;
 }

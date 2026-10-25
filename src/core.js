@@ -854,7 +854,8 @@ function checkBadges() {
     ear50: (c.ear || 0) >= 50, latin100: (c.latin || 0) >= 100, fam50: (c.famok || 0) >= 50,
     col50: n >= 50, col150: n >= 150, col300: n >= 300, master25: mastered >= 25,
     duel10: (c.duelwin || 0) >= 10, geo20: (c.geook || 0) >= 20, rare: (c.rare || 0) >= 1,
-    roots50: (c.rootok || 0) >= 50, typing25: (c.typeok || 0) >= 25, early: (c.early || 0) >= 1, night: (c.night || 0) >= 1, bague50: (c.handok || 0) >= 50
+    roots50: (c.rootok || 0) >= 50, typing25: (c.typeok || 0) >= 25, early: (c.early || 0) >= 1, night: (c.night || 0) >= 1, bague50: (c.handok || 0) >= 50,
+    path1: (c.paths || 0) >= 1, defi3: (c.defiwin || 0) >= 3
   };
   const got = [];
   for (const b of BADGES) if (!S.badges[b.id] && test[b.id]) { S.badges[b.id] = dayKey(); got.push(b); }

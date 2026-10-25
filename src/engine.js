@@ -14,7 +14,8 @@ const MODES = [
   { k: "ecrire", n: "Écrire", d: "Tape le nom", ic: "keyboard", c: "#7DD3FC" },
   { k: "sortie", n: "Sortie", d: "Prépare-la", ic: "binoc", c: "#3BE59D" },
   { k: "main", n: "Piaf en main", d: "Mue et âge", ic: "ring", c: "#E9B872" },
-  { k: "perso", n: "Sur mesure", d: "Tout régler", ic: "sliders", c: "#FFCB5C" }
+  { k: "perso", n: "Sur mesure", d: "Tout régler", ic: "sliders", c: "#FFCB5C" },
+  { k: "parcours", n: "Parcours", d: "Pas à pas", ic: "map", c: "#3BE59D" }
 ];
 
 function photoStim() { return S.set.photo === "field" ? ["field"] : S.set.photo === "mix" ? ["photo", "field"] : ["photo"]; }
@@ -120,6 +121,8 @@ async function prepare(ses) {
     try { await ensureLeaflet(); } catch (e) { ses.geoQcm = true; }
   } else if (ses.kind === "root") {
     ses.pool = { list: Object.keys(S.sp).map(fromRec).filter(Boolean), byId: new Map() };
+  } else if (ses.kind === "path") {
+    await preparePath(ses);
   } else if (ses.kind === "hand") {
     ses.plan = planHand(ses);
     ses.len = ses.plan.length;
@@ -657,6 +660,7 @@ function endSession(aborted) {
       if (!today().serie) { addXp(50); ses.xp += 50; }
       today().serie = 1;
     }
+    if (ses.kind === "path") { S.lastPath = ses.cfg.path; pathSettle(ses, n, ok, aborted); }
   }
   if (n && S.hist && S.hist[0]) S.hist[0].xp = ses.xp;
   const badges = checkBadges();

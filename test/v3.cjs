@@ -43,7 +43,7 @@ const IOS = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/
     await p.evaluate(() => { const now = Math.floor(Date.now() / 60000); S.att = []; for (let i = 0; i < 8; i++) { S.att.push([now - 12 * 1440, 2000 + i, 1, "p", 0]); S.att.push([now - 2 * 1440, 2000 + i, i < 6 ? 1 : 0, "p", 0]); } save(true); go("progress"); });
     await p.waitForTimeout(500);
     console.log("retention", await p.evaluate(() => JSON.stringify(retention(7, 30))));
-    await p.evaluate(() => { const s = [...document.querySelectorAll(".sec")].find(x => /Mémoire/.test(x.textContent)); s.scrollIntoView(); window.scrollBy(0, -80); }); await p.waitForTimeout(300);
+    await p.evaluate(() => { const d = document.querySelector("details.pv[data-k=mem]"); if (!d.open) d.querySelector("summary").click(); d.scrollIntoView(); window.scrollBy(0, -80); }); await p.waitForTimeout(300);
     await shot("112-retention");
     // 5) Sortie : liste, quiz, sur place
     await p.evaluate(() => ACT.home()); await p.waitForTimeout(300);

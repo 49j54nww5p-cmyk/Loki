@@ -26,7 +26,7 @@ const fs = require("fs");
   if (info.rows < 3 || info.lenses < 4 || !info.memo || info.first !== "Pattes" || !/pattes/.test(info.sub)) fail("bloc erreur " + JSON.stringify(info));
   await p.evaluate(() => document.querySelector(".fb .why").scrollIntoView());
   await p.waitForTimeout(300);
-  await p.screenshot({ path: "test/shots/92-why.png" });
+  await p.screenshot({ path: "test/shots/s1-why.png" });
   const tid = await p.evaluate(() => SES.q.t.id);
   await p.click(".fb [data-act=memokeep]");
   if (!/bottes/.test(await p.evaluate(id => S.sp[id].note || "", tid))) fail("moyen mnémo non gardé");
@@ -58,7 +58,7 @@ const fs = require("fs");
     } else if (q.f === "type") { await p.fill("#ans", "zzz"); await p.keyboard.press("Enter"); await p.waitForSelector(".fb.show"); }
     else if (q.f === "flash") { await p.click("[data-act=reveal]"); await p.click("[data-act=self][data-v='0']"); await p.waitForSelector(".fb.show"); }
     else { await p.click(`[data-k="${q.ak}"]`).catch(() => {}); await p.waitForSelector(".fb.show"); }
-    if (gens === 1 && whys) { await p.screenshot({ path: "test/shots/93-why-gen.png" }); gens++; }
+    if (gens === 1 && whys) { await p.screenshot({ path: "test/shots/s2-why-gen.png" }); gens++; }
     await p.click(".fb [data-act=next]");
   }
   await p.waitForSelector(".view.result");
@@ -66,7 +66,7 @@ const fs = require("fs");
   if (nearClicked && !drills) fail("aucun duel d'entraînement au bilan");
   const silly = await p.evaluate(() => [...document.querySelectorAll(".drills .conf.drill")].map(b => b.dataset.ids.split(",").map(Number)).filter(([a, b]) => !drillWorthy(a, b)).length);
   if (silly) fail("duel proposé pour une paire sans rapport");
-  await p.screenshot({ path: "test/shots/94-drills.png", fullPage: true });
+  await p.screenshot({ path: "test/shots/s3-drills.png", fullPage: true });
 
   // 3) Fiche du pouillot véloce : loupes « comment les distinguer »
   await p.evaluate(id => openFiche(taxonById(id)), tid);

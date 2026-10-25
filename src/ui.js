@@ -959,7 +959,7 @@ VIEWS.result = ({ ses, n, ok, badges, msgs }) => {
   ${ses.kind === "hand" && ses.hmiss?.length ? `<div class="sec" style="justify-content:center">${ic("replay")}Fiches à revoir</div><div class="missed">${[...new Set(ses.hmiss)].slice(0, 8).map(id => `<button class="mchip" data-act="hsp" data-sp="${id}">${featherPair(HSPI[id])}${esc(HSPI[id].fr)}</button>`).join("")}</div>` : ""}
   ${confs.length ? `<div class="sec" style="justify-content:center">${ic("duel")}Pour ne plus confondre</div><div class="drills">${confs.map(([a, b]) => { const A = taxonById(a), B = taxonById(b); if (!A || !B) return ""; const m = sosVis(A.sci, B.sci)?.v.m; return `<button class="conf drill" data-act="duelgo" data-ids="${a},${b}"><img src="${esc(imgOf(A))}" alt=""><span class="vs">VS</span><img src="${esc(imgOf(B))}" alt=""><span class="tx">${esc(nameFr(A))}<small>${esc(nameFr(B))}</small>${m ? `<em>${esc(m)}</em>` : ""}</span><span class="go">Duel${ic("arrow", "xs")}</span></button>`; }).join("")}</div>` : ""}
   ${missed.length ? `<div class="sec" style="justify-content:center">${ic("replay")}À revoir</div><div class="missed">${missed.map(t => `<button class="mchip" data-act="fiche" data-id="${t.id}"><img src="${esc(imgOf(t))}" alt="">${esc(nameFr(t))}</button>`).join("")}</div>` : ""}
-  <div class="actions">${ses.kind === "hand" ? `<button class="btn ghost" data-act="hhub">${ic("back")}Piaf en main</button>` : `<button class="btn ghost" data-act="home">${ic("back")}Accueil</button>`}<button class="btn primary" data-act="again">${ic("replay")}Rejouer</button></div>
+  <div class="actions">${ses.kind === "hand" ? `<button class="btn ghost" data-act="hhub">${ic("back")}Piaf en main</button>` : `<button class="btn ghost" data-act="home">${ic("back")}Accueil</button>`}${shareable(ses.cfg) ? `<button class="btn ghost sq" data-act="qshare" aria-label="Partager ce quiz">${ic("ext")}</button>` : ""}<button class="btn primary" data-act="again">${ic("replay")}Rejouer</button></div>
 </section>`;
 };
 MOUNT.result = () => {
@@ -977,6 +977,11 @@ const TOUR = [
   { ic: "shield", c: "#14B8A6", t: "Tout reste chez toi", d: "Pas de compte : ta progression vit sur ce téléphone. Sauvegarde-la de temps en temps (Réglages) et installe l'appli sur l'écran d'accueil." }
 ];
 const NEWS = [
+  { v: "2026-10-25.3", items: [
+    { ic: "spark", t: "Recettes Sur mesure", d: "10 quiz tout prêts en un geste : jardin, limicoles, goélands, chants de saison, rapaces…" },
+    { ic: "ext", t: "Partage un quiz", d: "Par lien ou QR code : un ami, une sortie ou un panneau sur un site lance exactement le même quiz." },
+    { ic: "chart", t: "Progrès plus clair", d: "L'essentiel en haut, le détail replié." }
+  ] },
   { v: "2026-10-25.2", items: [
     { ic: "zoom", t: "Pourquoi tu t'es trompé", d: "Après une erreur : des loupes sur ce qui diffère entre les deux oiseaux, et par quoi commencer." },
     { ic: "bulb", t: "Moyens mnémo", d: "Une phrase pour retenir chaque paire de sosies : garde-la dans ta fiche, ou écris la tienne." },
@@ -1057,9 +1062,13 @@ function optRow(field, list, multi, wrap) {
 VIEWS.builder = () => {
   const B = getB();
   const famChips = B.fams.map(id => { const f = TAXO.fam.get(id); return f ? `<button class="chip fam" data-act="bfamdel" data-id="${id}">${esc(f.fr)} ${ic("x", "xs")}</button>` : ""; }).join("");
+  const bopen = (S.pv || {}).bset ?? false;
   return `<section class="view builder">
-  <div class="head"><button class="icon-btn" data-act="home" aria-label="Retour">${ic("back")}</button><div><h1>Sur mesure</h1><p>Règle tout, puis lance.</p></div></div>
+  <div class="head"><button class="icon-btn" data-act="home" aria-label="Retour">${ic("back")}</button><div><h1>Sur mesure</h1><p>Une recette en un geste, ou règle tout toi-même.</p></div></div>
   <div class="opt"><div class="opt-h">${ic("pin")}Zone<span class="val">${esc(zoneLabel(B.zone))}</span></div><div class="row">${zoneChips(B.zone, "bzone")}</div></div>
+  <div class="sec">${ic("spark")}Recettes</div>
+  ${recipesHtml()}
+  <details class="bset"${bopen ? " open" : ""} data-k="bset"><summary data-act="pvt"><span class="pvi">${ic("sliders")}</span><span class="pvt"><b>Régler moi-même</b><small>${esc(builderTitle(B))}</small></span><span class="pvc">${ic("chev")}</span></summary>
   <div class="opt"><div class="opt-h">${ic("tree")}Oiseaux<span class="val">${B.guilds.length || B.fams.length ? (B.guilds.length + B.fams.length) + " groupe(s)" : "Tous"}</span></div>
     <div class="row"><button class="opt-btn ${!B.guilds.length && !B.fams.length ? "on" : ""}" data-act="ball">${ic("bird")}Tous</button>${GUILDS.map(g => `<button class="opt-btn ${B.guilds.includes(g.n) ? "on" : ""}" data-act="bguild" data-g="${esc(g.n)}">${esc(g.n)}</button>`).join("")}<button class="opt-btn" data-act="bfam">${ic("search")}Une famille…</button></div>
     ${famChips ? `<div class="selfam">${famChips}</div>` : ""}</div>
@@ -1073,7 +1082,8 @@ VIEWS.builder = () => {
     ${B.format === "qcm" || B.format === "tiles" ? `<div style="display:flex;align-items:center;gap:14px;margin-top:10px;flex-wrap:wrap"><div class="stepper"><button data-act="bk" data-d="-1" aria-label="Moins de choix">${ic("minus")}</button><output>${B.k}</output><button data-act="bk" data-d="1" aria-label="Plus de choix">${ic("plus")}</button></div><span class="muted" style="font-size:13px">choix par question</span></div>` : ""}</div>
   <div class="opt"><div class="opt-h">${ic("bolt")}Difficulté des leurres</div>${optRow("diff", BOPT.diff)}</div>
   <div class="opt"><div class="opt-h">${ic("clock")}Longueur & chrono</div>${optRow("len", BOPT.len)}<div style="margin-top:8px">${optRow("timer", BOPT.timer)}</div></div>
-  <div class="launch"><button class="btn ghost" data-act="bsave" aria-label="Enregistrer ce quiz">${ic("star")}</button><button class="btn primary" data-act="blaunch">${ic("play")}Lancer</button></div>
+  <div class="launch"><button class="btn ghost" data-act="bsave" aria-label="Enregistrer ce quiz">${ic("star")}</button><button class="btn ghost" data-act="bshare" aria-label="Partager ce quiz">${ic("ext")}</button><button class="btn primary" data-act="blaunch">${ic("play")}Lancer</button></div>
+  </details>
 </section>`;
 };
 function builderTitle(B) {
@@ -1083,6 +1093,7 @@ function builderTitle(B) {
 }
 async function builderCfg(B) {
   let taxa = [...B.fams];
+  if (B.fnames?.length) { await loadTaxo(); for (const n of B.fnames) { const f = TAXO.famByName.get(n); if (f) taxa.push(f.id); } }
   if (B.guilds.length) {
     await loadTaxo();
     for (const g of GUILDS.filter(x => B.guilds.includes(x.n))) for (const n of g.f) { const f = TAXO.famByName.get(n); if (f) taxa.push(f.id); }
@@ -1327,7 +1338,7 @@ function chartHtml() {
 VIEWS.progress = () => {
   const L = level(), C = 2 * Math.PI * 40, st = liveStreak();
   const recs = Object.values(S.sp).filter(r => r.n > 0);
-  const master = recs.filter(r => stars(r) === 3).length;
+  const master = recs.filter(r => stars(r) === 3).length, due = dueList().length;
   const tot = Object.values(S.stats).reduce((a, s) => ({ n: a.n + s.n, ok: a.ok + s.ok }), { n: 0, ok: 0 });
   const td = S.days[dayKey()] || { xp: 0, q: 0 };
   const cats = [["photo", "Photos", "frame"], ["son", "Chants", "wave"], ["nom", "Noms", "quill"], ["fam", "Familles", "tree"], ["type", "Saisie", "keyboard"], ["geo", "Géo", "globe"], ["root", "Racines", "root"], ["hand", "Piaf en main", "ring"]].filter(([k]) => S.stats[k]?.n);
@@ -1340,37 +1351,39 @@ VIEWS.progress = () => {
   const weak = fs.filter(x => !bestIds.has(x.f) && x.p < .8).sort((a, b) => a.p - b.p).slice(0, 3);
   const famRow = (x, train) => `<div class="hbar fam"><span class="t">${esc(famName(x.f))}<small>${x.sp} esp. · ${x.n} rép.</small></span><span class="b"><i style="width:${(x.p * 100).toFixed(0)}%"></i></span><span class="v">${Math.round(x.p * 100)} %</span>${train ? `<button class="chip warn" data-act="ftrain" data-f="${x.f}">${ic("play", "xs")}Revoir</button>` : ""}</div>`;
   const hist = (S.hist || []).slice(0, 10);
+  const r7 = retention(7, 30), r30 = retention(30, 1e6), rv = x => x.n >= 3 ? Math.round(x.p * 100) + " %" : "–", rsub = x => x.n ? `${x.n} retour${x.n > 1 ? "s" : ""} mesuré${x.n > 1 ? "s" : ""}` : "pas encore de données";
+  const catP = cats.map(([k, l, i]) => ({ k, l, i, p: S.stats[k].ok / S.stats[k].n })), catBest = catP.slice().sort((a, b) => b.p - a.p)[0];
+  const pv = S.pv || {}, nb = Object.keys(S.badges).length;
+  /* Un bloc repliable : titre, une ligne de résumé, le détail au toucher */
+  const box = (k, icon, title, sum, body, def) => `<details class="pv"${(pv[k] ?? def) ? " open" : ""} data-k="${k}"><summary data-act="pvt"><span class="pvi">${ic(icon)}</span><span class="pvt"><b>${title}</b><small>${sum}</small></span><span class="pvc">${ic("chev")}</span></summary><div class="pvb">${body}</div></details>`;
   return `<section class="view progress">
-  <button class="topcard" data-act="tab" data-tab="top"><span class="ic">${ic("trophy")}</span><span class="tx"><b>Classement</b><small>Ton XP face à tous les joueurs</small></span>${ic("arrow")}</button>
-  <div class="big-lvl"><div class="lring"><svg viewBox="0 0 96 96" aria-hidden="true"><circle class="track" cx="48" cy="48" r="40"/><circle class="prog" cx="48" cy="48" r="40" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - L.p)).toFixed(1)}"/></svg><b>${L.n}</b></div>
-    <div><h2>${esc(L.rank)}</h2><p>${fmt(L.need - L.cur)} XP avant le niveau ${L.n + 1}${L.n < RANKS.length ? " · " + esc(RANKS[Math.min(L.n, RANKS.length - 1)]) : ""}</p><p>${fmt(S.xp)} XP au total</p></div></div>
-  <div class="grid2">
-    <div class="stat"><small>${ic("flame")}Jours d'affilée</small><b>${st}</b><div class="sub">Record : ${S.streak.best}</div><div class="jokers" title="Jokers : sauvent ta série si tu rates un jour">${[0, 1, 2].map(i => ic("shield", i < S.streak.jokers ? "" : "off")).join("")}</div></div>
-    <div class="stat"><small>${ic("book")}Espèces</small><b>${recs.length}</b><div class="sub">${master} maîtrisée${master > 1 ? "s" : ""} · ${dueList().length} à revoir</div></div>
-    <div class="stat"><small>${ic("sun")}Aujourd'hui</small><b>${fmt(td.xp)}</b><div class="sub">XP · ${td.q || 0} question${td.q > 1 ? "s" : ""}</div></div>
-    <div class="stat"><small>${ic("check")}Réussite</small><b>${tot.n ? Math.round(100 * tot.ok / tot.n) : 0} %</b><div class="sub">sur ${fmt(tot.n)} réponses</div></div>
+  <div class="psum">
+    <div class="psh"><div class="lring"><svg viewBox="0 0 96 96" aria-hidden="true"><circle class="track" cx="48" cy="48" r="40"/><circle class="prog" cx="48" cy="48" r="40" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - L.p)).toFixed(1)}"/></svg><b>${L.n}</b></div>
+      <div class="pst"><h2>${esc(L.rank)}</h2><p>${fmt(S.xp)} XP · encore ${fmt(L.need - L.cur)} pour le niveau ${L.n + 1}</p></div></div>
+    <div class="pnums">
+      <div><b>${ic("flame")}${st}</b><small>jour${st > 1 ? "s" : ""} d'affilée</small></div>
+      <div><b>${recs.length}</b><small>espèce${recs.length > 1 ? "s" : ""}</small></div>
+      <div><b>${ic("star")}${master}</b><small>maîtrisée${master > 1 ? "s" : ""}</small></div>
+      <div><b>${tot.n ? Math.round(100 * tot.ok / tot.n) : 0}<i>%</i></b><small>réussite</small></div>
+    </div>
+    <div class="pgoal"><span class="lab">${ic("sun", "xs")}Aujourd'hui</span><span class="bar"><i style="width:${(gp * 100).toFixed(1)}%"></i></span><span class="v">${fmt(td.xp)} / ${fmt(goal)} XP</span></div>
+    <div class="pact">${due ? `<button class="btn warm" data-act="review" aria-label="Réviser ${due} espèce${due > 1 ? "s" : ""}">${ic("replay")}Réviser<span class="pn">${due}</span></button>` : `<button class="btn ghost" data-act="daily">${ic("spark")}Série du jour</button>`}<button class="btn ghost" data-act="tab" data-tab="top">${ic("trophy")}Classement</button></div>
   </div>
-  <p class="muted note">Maîtrisée = reconnue sur 3 photos différentes, dont 1 de terrain, sur 3 jours différents.</p>
-  ${(() => { const r7 = retention(7, 30), r30 = retention(30, 1e6), v = x => x.n >= 3 ? Math.round(x.p * 100) + " %" : "–", sub = x => x.n ? `${x.n} retour${x.n > 1 ? "s" : ""} mesuré${x.n > 1 ? "s" : ""}` : "pas encore de données"; return `<div class="sec">${ic("clock")}Mémoire à long terme</div>
-  <div class="grid2"><div class="stat"><small>${ic("cal")}Après 1 semaine</small><b>${v(r7)}</b><div class="sub">${sub(r7)}</div></div><div class="stat"><small>${ic("cal")}Après 1 mois</small><b>${v(r30)}</b><div class="sub">${sub(r30)}</div></div></div>
-  <p class="muted note">Part des espèces encore reconnues quand elles reviennent une semaine (ou un mois) après une réussite. C'est le meilleur signe d'un apprentissage durable ; les révisions les font revenir au bon moment.</p>`; })()}
-  <div class="sec">${ic("star")}Objectif du jour<span class="more">${fmt(td.xp)} / ${fmt(goal)} XP</span></div>
-  <div class="card goalc"><span class="bar"><i style="width:${(gp * 100).toFixed(1)}%"></i></span><small>${gp >= 1 ? "Objectif atteint, bravo !" : `Encore ${fmt(goal - td.xp)} XP. Réglable dans Réglages.`}</small></div>
-  <div class="sec">${ic("chart")}Sur la durée</div>
-  <div class="grid2">
-    <div class="stat"><small>${ic("cal")}7 derniers jours</small><b>${fmt(w7.xp)} XP</b><div class="sub">${w7.q} réponses · ${pct(w7) ?? "–"} % bonnes${trend != null ? ` · <span style="color:${trend >= 0 ? "var(--good)" : "var(--bad)"}">${trend >= 0 ? "+" : ""}${trend} pts</span>` : ""}</div><div class="sub">${w7.active} jour${w7.active > 1 ? "s" : ""} joué${w7.active > 1 ? "s" : ""} sur 7</div></div>
+  ${conf.length ? box("conf", "duel", "Tes confusions", `${conf.length} paire${conf.length > 1 ? "s" : ""} à départager`, `<div class="pconf">${conf.map(c => { const a = S.sp[c.a], b = S.sp[c.b]; return `<div class="conf"><img src="${esc(a.img || a.md)}" alt=""><span class="vs">VS</span><img src="${esc(b.img || b.md)}" alt=""><span class="tx">${esc(a.fr || a.sci)}<small>${esc(b.fr || b.sci)} · ${c.n}×</small></span><button class="btn primary" data-act="duelgo" data-ids="${c.a},${c.b}">Duel</button></div>`; }).join("")}</div>`, true) : ""}
+  ${box("mem", "clock", "Mémoire à long terme", `1 semaine : ${rv(r7)} · 1 mois : ${rv(r30)}`, `<div class="grid2"><div class="stat"><small>${ic("cal")}Après 1 semaine</small><b>${rv(r7)}</b><div class="sub">${rsub(r7)}</div></div><div class="stat"><small>${ic("cal")}Après 1 mois</small><b>${rv(r30)}</b><div class="sub">${rsub(r30)}</div></div></div>
+  <p class="muted note">Part des espèces encore reconnues quand elles reviennent une semaine (ou un mois) après une réussite. Maîtrisée = reconnue sur 3 photos différentes, dont 1 de terrain, sur 3 jours différents.</p>`)}
+  ${box("time", "chart", "Sur la durée", `7 jours : ${fmt(w7.xp)} XP · ${pct(w7) ?? "–"} % bonnes${trend != null ? ` · <span style="color:${trend >= 0 ? "var(--good)" : "var(--bad)"}">${trend >= 0 ? "+" : ""}${trend} pts</span>` : ""}`, `<div class="grid2">
+    <div class="stat"><small>${ic("cal")}7 derniers jours</small><b>${fmt(w7.xp)} XP</b><div class="sub">${w7.q} réponses · ${pct(w7) ?? "–"} % bonnes</div><div class="sub">${w7.active} jour${w7.active > 1 ? "s" : ""} joué${w7.active > 1 ? "s" : ""} sur 7</div></div>
     <div class="stat"><small>${ic("cal")}30 derniers jours</small><b>${fmt(w30.xp)} XP</b><div class="sub">${w30.q} réponses · ${pct(w30) ?? "–"} % bonnes</div><div class="sub">${w30.active} jour${w30.active > 1 ? "s" : ""} joué${w30.active > 1 ? "s" : ""} sur 30</div></div>
   </div>
   <div class="sec">${ic("cal")}12 dernières semaines</div><div class="card" style="padding:14px">${heatHtml()}</div>
-  <div class="sec">${ic("chart")}14 derniers jours</div><div class="card" style="padding:14px">${chartHtml()}</div>
-  ${cats.length ? `<div class="sec">${ic("eye")}Bonnes réponses par type de question</div><div class="card hbars" style="padding:14px">${cats.map(([k, l, i]) => { const s = S.stats[k], p = s.ok / s.n; return `<div class="hbar"><span class="t">${ic(i)}${l}</span><span class="b"><i style="width:${(p * 100).toFixed(0)}%"></i></span><span class="v">${Math.round(p * 100)} %</span></div>`; }).join("")}</div>` : ""}
-  ${best.length ? `<div class="sec">${ic("tree")}Familles les mieux maîtrisées</div><div class="card hbars" style="padding:14px">${best.map(x => famRow(x)).join("")}</div>` : ""}
-  ${weak.length ? `<div class="sec">${ic("replay")}Familles à retravailler</div><div class="card hbars" style="padding:14px">${weak.map(x => famRow(x, true)).join("")}</div>` : ""}
-  ${!fs.length ? `<p class="muted" style="font-size:13px;margin:14px 2px 0">Les familles fortes et à retravailler apparaîtront après quelques parties (4 réponses par famille minimum).</p>` : ""}
-  ${hist.length ? `<div class="sec">${ic("clock")}Historique des parties</div><div class="group">${hist.map((h, i) => `<div class="set"><span class="lab"><b>${esc(h.title || "Partie")}</b><small>${esc(ago(h.t))} · ${h.ok}/${h.n} bonnes · +${fmt(h.xp)} XP</small></span><button class="icon-btn" data-act="histplay" data-i="${i}" aria-label="Rejouer">${ic("replay")}</button></div>`).join("")}</div>` : ""}
-  ${conf.length ? `<div class="sec">${ic("duel")}Tes confusions</div><div style="display:flex;flex-direction:column;gap:8px">${conf.map(c => { const a = S.sp[c.a], b = S.sp[c.b]; return `<div class="conf"><img src="${esc(a.img || a.md)}" alt=""><span class="vs">VS</span><img src="${esc(b.img || b.md)}" alt=""><span class="tx">${esc(a.fr || a.sci)}<small>${esc(b.fr || b.sci)} · ${c.n}×</small></span><button class="btn primary" data-act="duelgo" data-ids="${c.a},${c.b}">Duel</button></div>`; }).join("")}</div>` : ""}
-  <div class="sec">${ic("trophy")}Badges<span class="more">${Object.keys(S.badges).length} / ${BADGES.length}</span></div>
-  <div class="badges">${BADGES.map(b => `<div class="bdg ${S.badges[b.id] ? "" : "off"}"><span class="md">${ic(b.ic)}</span><b>${esc(b.n)}</b><small>${esc(b.d)}</small></div>`).join("")}</div>
+  <div class="sec">${ic("chart")}14 derniers jours</div><div class="card" style="padding:14px">${chartHtml()}</div>`)}
+  ${cats.length ? box("cats", "eye", "Par type de question", `Le plus fort : ${esc(catBest.l)} ${Math.round(catBest.p * 100)} %`, `<div class="hbars">${catP.map(x => `<div class="hbar"><span class="t">${ic(x.i)}${x.l}</span><span class="b"><i style="width:${(x.p * 100).toFixed(0)}%"></i></span><span class="v">${Math.round(x.p * 100)} %</span></div>`).join("")}</div>`) : ""}
+  ${box("fam", "tree", "Familles", weak.length ? `${weak.length} à retravailler` : best.length ? `Point fort : ${esc(famName(best[0].f))}` : "Après quelques parties", `${best.length ? `<div class="sec">${ic("star")}Les mieux maîtrisées</div><div class="hbars">${best.map(x => famRow(x)).join("")}</div>` : ""}
+  ${weak.length ? `<div class="sec">${ic("replay")}À retravailler</div><div class="hbars">${weak.map(x => famRow(x, true)).join("")}</div>` : ""}
+  ${!fs.length ? `<p class="muted note">Elles apparaîtront après quelques parties (4 réponses par famille minimum).</p>` : ""}`)}
+  ${hist.length ? box("hist", "clock", "Historique", `${hist.length} dernière${hist.length > 1 ? "s" : ""} partie${hist.length > 1 ? "s" : ""}`, `<div class="group">${hist.map((h, i) => `<div class="set"><span class="lab"><b>${esc(h.title || "Partie")}</b><small>${esc(ago(h.t))} · ${h.ok}/${h.n} bonnes · +${fmt(h.xp)} XP</small></span><button class="icon-btn" data-act="histplay" data-i="${i}" aria-label="Rejouer">${ic("replay")}</button></div>`).join("")}</div>`) : ""}
+  ${box("bdg", "trophy", "Badges", `${nb} / ${BADGES.length} débloqués`, `<div class="badges">${BADGES.map(b => `<div class="bdg ${S.badges[b.id] ? "" : "off"}"><span class="md">${ic(b.ic)}</span><b>${esc(b.n)}</b><small>${esc(b.d)}</small></div>`).join("")}</div>`)}
 </section>`;
 };
 
@@ -2050,6 +2063,15 @@ const ACT = {
     toast("Ton moyen mnémo est gardé : il reviendra en indice.");
   },
   lexp: el => { const sec = el.closest(".lsec"); const p = sec?.querySelector("p.clamp"); if (!p) return; p.classList.remove("clamp"); sec.querySelector(".lmore2")?.remove(); },
+  pvt: el => { const d = el.closest("details"); if (!d) return; d.open = !d.open; S.pv = { ...(S.pv || {}), [d.dataset.k]: d.open }; save(); },
+  recipe: async el => { const r = RECIPES.find(x => x.id === el.dataset.r); if (!r) return; try { const cfg = await recipeCfg(r); LASTCFG = cfg; startSession(cfg); } catch (e) { toast("Familles indisponibles (réseau ?)."); } },
+  bshare: async () => { try { openShare(await builderCfg(getB())); } catch (e) { toast("Partage impossible pour l'instant."); } },
+  qshare: () => openShare(SES?.cfg || LASTCFG),
+  shlink: () => shareLinkNow(),
+  shcopy: () => copyLink(),
+  shpng: () => downloadQr(),
+  inqplay: async () => { const cfg = await incomingCfg().catch(() => null); if (!cfg) { toast("Quiz illisible."); return; } LASTCFG = cfg; startSession(cfg); },
+  inqsave: async () => { const cfg = await incomingCfg().catch(() => null); if (!cfg) return; S.favs.unshift({ title: cfg.title, cfg }); S.favs = S.favs.slice(0, 12); save(); closeLayer(); if (VIEW === "home") rerender(); toast("Gardé dans « Mes quiz » sur l'accueil."); },
   duelgo: el => {
     let cfg;
     if (el.dataset.ids) { const [a, b] = el.dataset.ids.split(",").map(Number); const ra = S.sp[a], rb = S.sp[b]; cfg = duelCfg([ra.sci, rb.sci, ra.fr, rb.fr]); cfg.ids = [a, b]; }
@@ -2202,6 +2224,16 @@ function onChange(e) {
 }
 
 /* ---------- Démarrage ---------- */
+/* Liens reçus : #duel=CODE (duel en direct), #q=… (quiz partagé) */
+function openLinkHash() {
+  const h = location.hash.replace("#", "");
+  const dm = h.match(/^duel=([A-Za-z0-9]{5})$/), qm = h.match(/^q=([A-Za-z0-9_-]{4,2000})$/);
+  if (!dm && !qm) return false;
+  history.replaceState(null, "", location.pathname + location.search);
+  if (dm) { LIVE.joinCode = dm[1].toUpperCase(); go("live"); }
+  else { go("home"); openIncoming(qm[1]); }
+  return true;
+}
 function init() {
   SILENT = makeSilent();
   if (S.set.calm) document.body.classList.add("calm");
@@ -2210,10 +2242,8 @@ function init() {
   document.addEventListener("submit", onSubmit);
   document.addEventListener("input", onInput);
   document.addEventListener("change", onChange);
-  const h = location.hash.replace("#", "");
-  const dm = h.match(/^duel=([A-Za-z0-9]{5})$/);
-  if (dm) { LIVE.joinCode = dm[1].toUpperCase(); history.replaceState(null, "", location.pathname + location.search); go("live"); }
-  else go(["carnet", "progress", "settings", "about", "top"].includes(h) ? h : "home");
+  if (!openLinkHash()) { const h = location.hash.replace("#", ""); go(["carnet", "progress", "settings", "about", "top"].includes(h) ? h : "home"); }
+  window.addEventListener("hashchange", () => { if (!SES || SES.ended) openLinkHash(); });
   setTimeout(maybeIntro, 900);
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) { /* rien */ }
   loadTaxo().catch(() => {});

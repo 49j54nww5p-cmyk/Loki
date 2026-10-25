@@ -92,6 +92,7 @@ const ONLY = process.argv[2] || "all";
     await page.click("[data-act=mode][data-mode=perso]");
     await page.waitForSelector(".view.builder");
     await shot("30-builder", true);
+    if (!(await page.evaluate(() => document.querySelector("details.bset").open))) await page.click("details.bset > summary");
     await page.click("[data-act=bguild][data-g='Limicoles']");
     await page.click("[data-act=b][data-f=stim][data-v=la]");
     await page.click("[data-act=b][data-f=stim][data-v=photo]");

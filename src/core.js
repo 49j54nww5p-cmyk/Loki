@@ -375,6 +375,20 @@ function lexAdd(t) {
   if (!t || !t.id || !t.sci) return;
   if (!LEX.has(t.id)) LEX.set(t.id, { id: t.id, sci: t.sci, fr: t.fr || "", img: t.img?.sq || t.img || "", f: t.f || 0, n: norm((t.fr || "") + " " + t.sci) });
 }
+/* Espèce dont le nom tapé correspond (à une faute près) */
+function lexExact(v) {
+  const a = norm(v);
+  if (a.length < 4) return null;
+  let best = null, bd = 9;
+  for (const e of LEX.values()) for (const n of [norm(e.fr), norm(e.sci)]) {
+    if (!n) continue;
+    const d = n === a ? 0 : Math.abs(n.length - a.length) > 2 ? 9 : lev(a, n);
+    if (d < bd && d <= (n.length <= 7 ? 0 : 1)) { bd = d; best = e; }
+  }
+  if (!best) return null;
+  const img = best.img ? { sq: best.img, md: sizeUrl(best.img, "medium"), attr: "", lic: "" } : null;
+  return { id: best.id, sci: best.sci, fr: best.fr, f: best.f || 0, a: [], img };
+}
 let LEXP = null;
 function loadLexicon() {
   for (const [id, r] of Object.entries(S.sp)) lexAdd({ id: +id, sci: r.sci, fr: r.fr, img: r.img, f: r.f });

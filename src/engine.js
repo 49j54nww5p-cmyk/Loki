@@ -286,6 +286,8 @@ async function speciesDistractors(ses, t, n, diff, needImg) {
   const P = ses.pool ? ses.pool.list : [];
   const out = [], used = new Set([t.id]);
   const add = x => { if (x && x.id && !used.has(x.id) && out.length < n && (!needImg || x.img)) { used.add(x.id); out.push(x); } };
+  const cf = S.sp[t.id]?.conf || {};
+  if (diff !== "facile") Object.keys(cf).sort((a, b) => cf[b] - cf[a]).slice(0, 2).forEach(id => { if (Math.random() < .55) add(P.find(x => x.id === +id) || fromRec(id)); });
   if (diff === "expert") (await similar(t, ses.zone).catch(() => [])).slice(0, 10).forEach(add);
   if (diff !== "facile") {
     const lim = diff === "expert" ? n : Math.ceil(n / 2);
@@ -335,6 +337,9 @@ async function makeChoices(ses, q) {
 function hintsFor(q) {
   const t = q.t, out = [], r = S.sp[t.id], f = fam(t), o = ord(t);
   if (r?.note) out.push({ ic: "edit", tx: "Ton astuce : " + r.note });
+  if (q.level === "species" && (q.stim === "photo" || q.stim === "field") && typeof sosFirst === "function") {
+    for (const c of q.choices || []) { const x = c.t && c.t.id !== t.id ? sosFirst(t.sci, c.t.sci) : ""; if (x) { out.push({ ic: "eye", tx: "Regarde d'abord " + x }); break; } }
+  }
   const meanings = decodeLatin(t.sci).filter(d => !(q.stim === "fr" && d.w === genus(t).toLowerCase())).map(d => "« " + d.m + " »");
   if (q.level === "species") {
     if (q.stim === "la") {
@@ -572,6 +577,7 @@ function settle(res) {
     if (!ok && res.chosen?.t && q.level === "species" && res.chosen.t.id !== q.t.id) {
       rec(res.chosen.t);
       r.conf[res.chosen.t.id] = (r.conf[res.chosen.t.id] || 0) + 1;
+      (ses.confs || (ses.confs = [])).push([q.t.id, res.chosen.t.id]);
     }
     if (!ok) ses.missed.push(q.t);
   } else if (q.kind === "geo") { bump("geo", ok); if (ok) count("geook"); }

@@ -500,7 +500,23 @@ const DUELS = [
   ["Parus major", "Periparus ater", "Mésange charbonnière", "Mésange noire"],
   ["Corvus corax", "Corvus corone", "Grand Corbeau", "Corneille noire"],
   ["Sylvia atricapilla", "Sylvia borin", "Fauvette à tête noire", "Fauvette des jardins"],
-  ["Emberiza citrinella", "Emberiza cirlus", "Bruant jaune", "Bruant zizi"]
+  ["Emberiza citrinella", "Emberiza cirlus", "Bruant jaune", "Bruant zizi"],
+  ["Passer domesticus", "Passer montanus", "Moineau domestique", "Moineau friquet"],
+  ["Fringilla coelebs", "Fringilla montifringilla", "Pinson des arbres", "Pinson du Nord"],
+  ["Streptopelia decaocto", "Streptopelia turtur", "Tourterelle turque", "Tourterelle des bois"],
+  ["Columba palumbus", "Columba oenas", "Pigeon ramier", "Pigeon colombin"],
+  ["Corvus corone", "Coloeus monedula", "Corneille noire", "Choucas des tours"],
+  ["Larus argentatus", "Larus fuscus", "Goéland argenté", "Goéland brun"],
+  ["Chroicocephalus ridibundus", "Larus canus", "Mouette rieuse", "Goéland cendré"],
+  ["Calidris alpina", "Calidris alba", "Bécasseau variable", "Bécasseau sanderling"],
+  ["Charadrius hiaticula", "Charadrius alexandrinus", "Grand Gravelot", "Gravelot à collier interrompu"],
+  ["Egretta garzetta", "Ardea alba", "Aigrette garzette", "Grande Aigrette"],
+  ["Buteo buteo", "Milvus migrans", "Buse variable", "Milan noir"],
+  ["Turdus viscivorus", "Turdus philomelos", "Grive draine", "Grive musicienne"],
+  ["Regulus regulus", "Regulus ignicapilla", "Roitelet huppé", "Roitelet à triple bandeau"],
+  ["Hirundo rustica", "Delichon urbicum", "Hirondelle rustique", "Hirondelle de fenêtre"],
+  ["Thalasseus sandvicensis", "Sterna hirundo", "Sterne caugek", "Sterne pierregarin"],
+  ["Falco tinnunculus", "Accipiter nisus", "Faucon crécerelle", "Épervier d'Europe"]
 ];
 
 /* Continents (identifiants iNaturalist de secours, vérifiés à la volée) */
@@ -569,7 +585,23 @@ const DUELTIPS = {
   "Parus major|Periparus ater": { r: [["Dessous", "jaune, cravate noire", "chamois, sans jaune"], ["Nuque", "noire", "tache blanche"], ["Ailes", "une barre blanche", "deux barres blanches"]], n: "La mésange noire, très petite, fréquente surtout les conifères." },
   "Corvus corax|Corvus corone": { r: [["Taille", "grand, comme une buse", "nettement plus petite"], ["Queue en vol", "en losange", "carrée à arrondie"], ["Voix", "« krok » grave", "« kraa » rauque"]], n: "Le grand corbeau a un bec massif et une gorge hérissée ; il fait des acrobaties en vol." },
   "Sylvia atricapilla|Sylvia borin": { r: [["Tête", "calotte noire (mâle) ou rousse (femelle)", "sans calotte"], ["Plumage", "gris, bien contrasté", "gris-brun uniforme, sans marque"], ["Chant", "gazouillis qui finit en strophe flûtée", "long gazouillis régulier, sans finale"]], n: "La fauvette des jardins a un bec court et épais et un œil sombre « doux »." },
-  "Emberiza citrinella|Emberiza cirlus": { r: [["Mâle", "tête jaune vif", "gorge et trait de l'œil noirs, bande vert olive sur la poitrine"], ["Croupion", "roux", "gris-olive"], ["Chant", "« ti-ti-ti-ti-tiiii » finissant en note longue", "trille sec et monotone"]], n: "Chez les femelles, le croupion est le meilleur critère." }
+  "Emberiza citrinella|Emberiza cirlus": { r: [["Mâle", "tête jaune vif", "gorge et trait de l'œil noirs, bande vert olive sur la poitrine"], ["Croupion", "roux", "gris-olive"], ["Chant", "« ti-ti-ti-ti-tiiii » finissant en note longue", "trille sec et monotone"]], n: "Chez les femelles, le croupion est le meilleur critère." },
+  "Passer domesticus|Passer montanus": { r: [["Calotte", "grise (mâle), brune (femelle)", "brun chocolat, mâle et femelle pareils"], ["Joue", "grise, sans tache", "blanche, avec une tache noire"], ["Bavette", "grande (mâle)", "petite"]], n: "Chez le friquet, mâle et femelle se ressemblent. Il vit plutôt à la campagne, dans les haies et les vergers." },
+  "Fringilla coelebs|Fringilla montifringilla": { r: [["Croupion", "vert-olive", "blanc, bien visible à l'envol"], ["Poitrine", "rose-saumon (mâle)", "orange, ventre blanc"], ["Épaule", "blanche", "orange"]], n: "Le pinson du Nord est un visiteur d'hiver, souvent en bandes sous les hêtres." },
+  "Streptopelia decaocto|Streptopelia turtur": { r: [["Cou", "fin demi-collier noir", "plaque rayée noir et blanc"], ["Dos", "beige uni", "écailles rousses à centre noir"], ["Chant", "« dou-dou-dou » en trois temps", "« turrr turrr » ronronnant"]], n: "La tourterelle des bois est une migratrice d'été, discrète et en fort déclin ; la turque vit toute l'année près des maisons." },
+  "Columba palumbus|Columba oenas": { r: [["Cou", "tache blanche (adulte)", "reflet vert, sans blanc"], ["Aile en vol", "large croissant blanc", "pas de blanc, bord de fuite sombre"], ["Taille", "grand, longue queue", "plus petit, plus compact"]], n: "Le colombin a l'œil sombre et deux petites barres noires sur l'aile ; il niche dans les cavités des vieux arbres." },
+  "Corvus corone|Coloeus monedula": { r: [["Nuque", "noire", "grise"], ["Œil", "sombre", "blanc-bleuté"], ["Taille", "grande", "d'un pigeon"]], n: "Le choucas vit en groupes bavards, souvent autour des clochers et des falaises." },
+  "Larus argentatus|Larus fuscus": { r: [["Dos (adulte)", "gris pâle", "gris ardoise foncé"], ["Pattes (adulte)", "roses", "jaunes"], ["Silhouette", "plus massif", "ailes plus longues et fines"]], n: "Les immatures sont bien plus délicats : fie-toi d'abord aux adultes." },
+  "Chroicocephalus ridibundus|Larus canus": { r: [["Bec", "fin, rouge sombre", "jaune-vert, anneau sombre en hiver"], ["Pattes", "rouge sombre", "jaune-vert"], ["Ailes (adulte)", "triangle blanc sur le bord avant", "bout noir avec de gros points blancs"]], n: "Le goéland cendré a l'œil sombre et un « air doux » ; il est un peu plus grand que la mouette rieuse." },
+  "Calidris alpina|Calidris alba": { r: [["Bec", "long, courbé au bout", "court, droit, épais"], ["Plumage d'hiver", "gris-brun", "très pâle, presque blanc, épaule noire"], ["Allure", "fouille la vase", "court au bord des vagues comme un jouet mécanique"]], n: "Le sanderling n'a pas de doigt arrière et vit surtout sur les plages de sable." },
+  "Charadrius hiaticula|Charadrius alexandrinus": { r: [["Collier", "noir et complet", "interrompu : une tache de chaque côté"], ["Pattes", "orange", "sombres"], ["Bec", "orange à pointe noire", "noir et fin"]], n: "Le gravelot à collier interrompu niche sur les plages ; il est très sensible au dérangement." },
+  "Egretta garzetta|Ardea alba": { r: [["Taille", "moyenne", "très grande, comme un héron cendré"], ["Bec", "noir", "jaune (noir en période de noces)"], ["Pattes", "noires, doigts jaunes", "toutes noires"]], n: "Chez la grande aigrette, la commissure du bec se prolonge derrière l'œil." },
+  "Buteo buteo|Milvus migrans": { r: [["Queue", "arrondie en éventail", "échancrée, elle pivote comme un gouvernail"], ["Tête", "brune", "pâle et striée"], ["Vol", "tourne en cercles, ailes en V", "souple, ailes coudées, queue mobile"]], n: "Le milan noir est un migrateur d'été, souvent près de l'eau et des décharges." },
+  "Turdus viscivorus|Turdus philomelos": { r: [["Taches", "grosses et rondes", "petites, en pointe de flèche"], ["Dessous de l'aile", "blanc", "chamois-orangé"], ["Taille", "grande, gris-brun pâle", "plus petite"]], n: "La draine a des coins blancs à la queue ; elle chante même par mauvais temps." },
+  "Regulus regulus|Regulus ignicapilla": { r: [["Face", "unie, l'œil noir ressort", "sourcil blanc et trait noir dans l'œil"], ["Calotte", "jaune (orange au centre chez le mâle)", "orange vif bordé de noir"], ["Épaules", "vert-olive", "dorées-bronze"]], n: "Les deux sont minuscules ; le huppé aime les conifères, le triple bandeau aussi les feuillus." },
+  "Hirundo rustica|Delichon urbicum": { r: [["Croupion", "sombre", "blanc"], ["Gorge", "rouge, bande bleue", "toute blanche"], ["Queue", "longs filets", "courte, fourchue, sans filets"]], n: "L'hirondelle de fenêtre bâtit son nid de boue sous les avant-toits ; la rustique niche dans les granges." },
+  "Thalasseus sandvicensis|Sterna hirundo": { r: [["Bec", "noir à pointe jaune", "rouge-orangé à pointe noire"], ["Calotte", "huppe ébouriffée", "lisse"], ["Pattes", "noires", "rouges"]], n: "La caugek est plus grande et plus pâle, avec un cri grinçant « kirrik »." },
+  "Falco tinnunculus|Accipiter nisus": { r: [["Ailes", "pointues", "larges et arrondies, doigts écartés"], ["Dessus", "roux tacheté (mâle : tête grise)", "gris-bleu ou brun, uni"], ["Chasse", "fait du surplace", "fonce en rase-mottes, par surprise"]], n: "La crécerelle a l'œil noir, l'épervier l'œil jaune vif." }
 };
 
 /* Îles à mettre en évidence sur la carte Géo : [nom, lat, lng, taille approx. en km].

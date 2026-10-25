@@ -440,6 +440,7 @@ function fbHtml(q, res, gain) {
   const chosen = res.chosen?.t && res.chosen.t.id !== t.id ? res.chosen.t : null;
   const thumb = (q.photo && q.photo.md) || imgOf(t);
   const isNew = r && r.n === 1 && ses.newSp.includes(t.id);
+  const decH = dec.length ? `<div class="decode">${dec.map(d => `<span class="dchip"><span class="latin">${esc(d.w)}</span>${esc(d.m)}</span>`).join("")}</div>${note ? `<div class="dnote">${esc(note.note)}</div>` : ""}` : "";
   return `${head}
   ${res.typed && !res.ok ? `<div class="dnote">Tu as écrit « ${esc(res.typed)} »</div>` : ""}
   <button class="spcard" data-act="fiche" data-id="${t.id}">
@@ -448,10 +449,10 @@ function fbHtml(q, res, gain) {
       <span class="chips">${f ? `<span class="chip fam">${esc(famName(f))}</span>` : ""}${o ? `<span class="chip ord">${esc(ordName(o))}</span>` : ""}${isNew ? `<span class="chip warn">${ic("spark")}Nouvelle</span>` : ""}</span></span>
     ${ic("info")}
   </button>
-  ${dec.length ? `<div class="decode">${dec.map(d => `<span class="dchip"><span class="latin">${esc(d.w)}</span>${esc(d.m)}</span>`).join("")}</div>${note ? `<div class="dnote">${esc(note.note)}</div>` : ""}` : ""}
+  ${chosen ? "" : decH}
   ${r?.note ? `<div class="note-own">${ic("edit", "xs")} ${esc(r.note)}</div>` : ""}
-  ${chosen ? compareHtml(t, chosen, q) : ""}
-  ${(() => { const other = chosen && duelTip(t.sci, chosen.sci) ? chosen : q.pair ? q.pair.find(x => x.id !== t.id) : null; const h = other ? tipHtml(t, other, other === chosen ? "Pour ne plus les confondre" : "Comment les distinguer") : ""; if (h) q.tipShown = true; return h ? `<div class="lsec tipbox">${h}</div>` : ""; })()}
+  ${chosen ? compareHtml(t, chosen, q) + whyHtml(t, chosen, ses.kind !== "duel" && q.level === "species" && drillWorthy(t.id, chosen.id) > 0, q.stim === "son" || q.stim === "soncho") + decH : ""}
+  ${(() => { if (chosen) { q.tipShown = true; return ""; } const other = q.pair ? q.pair.find(x => x.id !== t.id) : null; const h = other ? sosiesHtml(t, other, "ok") || (duelTip(t.sci, other.sci) ? `<div class="lsec tipbox">${tipHtml(t, other, "Comment les distinguer")}</div>` : "") : ""; if (h) q.tipShown = true; return h; })()}
   ${q.photo?.field && (q.photo.place || q.photo.date || q.photo.age) ? `<div class="dnote">${ic("pin", "xs")} ${q.photo.age ? `<b>${AGEN[q.photo.age]}</b> · ` : ""}${esc(q.photo.place || "")}${q.photo.date ? " · " + esc(dateLong(q.photo.date)) : ""}${q.photo.uri ? ` · <a href="${esc(q.photo.uri)}" target="_blank" rel="noopener">voir l'observation</a>` : ""}</div>` : ""}
   ${q.snd ? `<div class="dnote" style="display:flex;align-items:center;gap:8px">${ic("wave", "xs")}<span style="flex:1">${esc([q.snd.place, q.snd.attr].filter(Boolean).join(" · "))}</span><button class="chip warn" data-act="badsnd">${ic("x", "xs")}Mauvais son</button></div>` : ""}
   <div class="learn" id="learn" data-id="${t.id}"><div class="lsec"><div class="lh">${ic("book", "xs")}Pour la reconnaître</div><div class="lsk"></div><div class="lsk short"></div></div></div>
@@ -472,27 +473,28 @@ async function fillLearn(t, q) {
   const txt = d ? d.text : w ? w.text : "";
   LEARNSIM = sim.filter(x => x.id !== t.id).slice(0, 3);
   const parts = [];
-  if (txt) parts.push(`<div class="lsec"><div class="lh">${ic("book", "xs")}${d ? "Pour la reconnaître" : "En bref"}</div><p>${esc(clip(txt, 280))}</p><div class="lfoot"><small>Source : Wikipédia</small><button class="lmore" data-act="fiche" data-id="${t.id}">Fiche complète${ic("arrow", "xs")}</button></div></div>`);
+  if (txt) parts.push(`<div class="lsec"><div class="lh">${ic("book", "xs")}${d ? "Pour la reconnaître" : "En bref"}</div><p class="clamp" data-act="lexp">${esc(clip(txt, 280))}</p><div class="lfoot"><button class="lmore2" data-act="lexp">Lire la suite</button><small>Wikipédia</small><button class="lmore" data-act="fiche" data-id="${t.id}">Fiche${ic("arrow", "xs")}</button></div></div>`);
   LEARNSND = snd ? [snd] : [];
   if (snd) parts.push(`<div class="lsec"><div class="lh">${ic("wave", "xs")}${/chant/.test(snd.kind || "") ? "Son chant" : "Sa voix"}</div><div class="srow" data-i="0"><button class="pl" data-act="lplay" data-i="0" aria-label="Écouter">${ic("play")}</button><div class="sbody"><div class="msono" data-act="rseek" data-sl="l" data-i="0"><span class="nosono">${ic("wave")}</span></div><span class="tx">${esc(snd.attr || "")}</span></div></div></div>`);
   const partner = !q?.tipShown && duelPartners(t.sci)[0];
-  if (partner) parts.push(`<div class="lsec">${tipHtml(t, partner, "À ne pas confondre avec " + partner.fr)}</div>`);
+  if (partner) parts.push(sosiesHtml(t, partner, "ok") || `<div class="lsec">${tipHtml(t, partner, "À ne pas confondre avec " + partner.fr)}</div>`);
   if (LEARNSIM.length) parts.push(`<div class="lsec"><div class="lh">${ic("duel", "xs")}${partner ? "Ressemble aussi à" : "À ne pas confondre avec"}</div><div class="lsim">${LEARNSIM.map(s => `<button data-act="fiche" data-id="${s.id}"><img src="${esc(s.img?.sq || "")}" alt=""><span>${esc(nameFr(s))}</span></button>`).join("")}</div></div>`);
   box.innerHTML = parts.join("");
   if (LEARNSND.length) sonoRows(box, LEARNSND);
 }
 /* ---------- Critères des sosies ---------- */
 function duelTip(sa, sb) {
+  sa = canonSci(sa); sb = canonSci(sb);
   const k1 = DUELTIPS[sa + "|" + sb], k2 = DUELTIPS[sb + "|" + sa];
   if (k1) return { rows: k1.r, note: k1.n };
   if (k2) return { rows: k2.r.map(([c, x, y]) => [c, y, x]), note: k2.n };
   return null;
 }
-const duelPartners = sci => DUELS.filter(d => d[0] === sci || d[1] === sci).map(d => d[0] === sci ? { sci: d[1], fr: d[3] } : { sci: d[0], fr: d[2] });
+const duelPartners = sci => { sci = canonSci(sci); return DUELS.filter(d => d[0] === sci || d[1] === sci).map(d => d[0] === sci ? { sci: d[1], fr: d[3] } : { sci: d[0], fr: d[2] }); };
 function tipHtml(a, b, title) {
   const tp = a && b ? duelTip(a.sci, b.sci) : null;
   if (!tp) return "";
-  return `<div class="tip"><div class="lh">${ic("duel", "xs")}${esc(title || "Comment les distinguer")}</div>
+  return `<div class="tip">${title === "" ? "" : `<div class="lh">${ic("duel", "xs")}${esc(title || "Comment les distinguer")}</div>`}
   <div class="tg3"><span class="c"></span><b>${esc(nameFr(a))}</b><b>${esc(nameFr(b))}</b>${tp.rows.map(([c, x, y]) => `<span class="c">${esc(c)}</span><span>${esc(x)}</span><span>${esc(y)}</span>`).join("")}</div>
   ${tp.note ? `<p class="tnote">${esc(tp.note)}</p>` : ""}<small class="tsrc">Critères simplifiés, d'après les guides de terrain.</small></div>`;
 }
@@ -944,6 +946,8 @@ VIEWS.result = ({ ses, n, ok, badges, msgs }) => {
   const lead = ses.kind === "hand" ? (p === 1 ? "Rien à redire : tu peux passer à la station !" : "Ouvre les fiches des espèces ratées, puis rejoue.") : p === 1 ? "Rien à redire, tu peux viser plus dur." : p >= .5 ? "Les erreurs reviendront en révision au bon moment." : "Tes erreurs reviendront vite en révision : c'est comme ça qu'on retient.";
   const L = level();
   const missed = [...new Map(ses.missed.map(t => [t.id, t])).values()].slice(0, 8);
+  const confs = ses.kind === "duel" ? [] : [...new Map((ses.confs || []).map(([a, b]) => [Math.min(a, b) + "," + Math.max(a, b), [a, b]])).values()]
+    .map(x => [x, drillWorthy(x[0], x[1])]).filter(([, w]) => w > 0).sort((x, y) => y[1] - x[1]).map(([x]) => x).slice(0, 3);
   return `<section class="view result">
   <div class="score"><svg viewBox="0 0 190 190" aria-hidden="true"><circle class="track" cx="95" cy="95" r="84"/><circle class="prog" id="scoreProg" cx="95" cy="95" r="84" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${C.toFixed(1)}" data-off="${(C * (1 - p)).toFixed(1)}"/></svg>
     <div class="val"><b>${ok}<span style="font-size:24px;color:var(--muted)">/${n}</span></b><small>${esc(ses.title || "")}</small></div></div>
@@ -953,6 +957,7 @@ VIEWS.result = ({ ses, n, ok, badges, msgs }) => {
   <button class="lvlbar" data-act="tab" data-tab="progress"><span class="badge">${L.n}</span><span class="meta"><b>${esc(L.rank)}</b><small>${fmt(L.cur)} / ${fmt(L.need)} XP</small><span class="bar"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span></span></button>
   ${badges.length ? `<div class="sec" style="justify-content:center">${ic("trophy")}Badge${badges.length > 1 ? "s" : ""} débloqué${badges.length > 1 ? "s" : ""}</div><div class="newbadges">${badges.map(b => `<span class="chip warn">${ic(b.ic)}${esc(b.n)}</span>`).join("")}</div>` : ""}
   ${ses.kind === "hand" && ses.hmiss?.length ? `<div class="sec" style="justify-content:center">${ic("replay")}Fiches à revoir</div><div class="missed">${[...new Set(ses.hmiss)].slice(0, 8).map(id => `<button class="mchip" data-act="hsp" data-sp="${id}">${featherPair(HSPI[id])}${esc(HSPI[id].fr)}</button>`).join("")}</div>` : ""}
+  ${confs.length ? `<div class="sec" style="justify-content:center">${ic("duel")}Pour ne plus confondre</div><div class="drills">${confs.map(([a, b]) => { const A = taxonById(a), B = taxonById(b); if (!A || !B) return ""; const m = sosVis(A.sci, B.sci)?.v.m; return `<button class="conf drill" data-act="duelgo" data-ids="${a},${b}"><img src="${esc(imgOf(A))}" alt=""><span class="vs">VS</span><img src="${esc(imgOf(B))}" alt=""><span class="tx">${esc(nameFr(A))}<small>${esc(nameFr(B))}</small>${m ? `<em>${esc(m)}</em>` : ""}</span><span class="go">Duel${ic("arrow", "xs")}</span></button>`; }).join("")}</div>` : ""}
   ${missed.length ? `<div class="sec" style="justify-content:center">${ic("replay")}À revoir</div><div class="missed">${missed.map(t => `<button class="mchip" data-act="fiche" data-id="${t.id}"><img src="${esc(imgOf(t))}" alt="">${esc(nameFr(t))}</button>`).join("")}</div>` : ""}
   <div class="actions">${ses.kind === "hand" ? `<button class="btn ghost" data-act="hhub">${ic("back")}Piaf en main</button>` : `<button class="btn ghost" data-act="home">${ic("back")}Accueil</button>`}<button class="btn primary" data-act="again">${ic("replay")}Rejouer</button></div>
 </section>`;
@@ -967,11 +972,18 @@ const TOUR = [
   { ic: "bird", c: "#1FD1F2", t: "Bienvenue sur Plumage", d: "Apprends à reconnaître les oiseaux avec de vraies photos et de vrais chants, en direct d'iNaturalist." },
   { ic: "spark", c: "#FFCB5C", t: "La série du jour", d: "12 questions, environ 4 minutes. Joue chaque jour : la flamme compte tes jours d'affilée." },
   { ic: "sliders", c: "#FF8B3D", t: "Plein de façons de jouer", d: "Photos, chants, latin, familles, sosies, géo, baguage… Sur mesure pour régler ton propre quiz, et des duels contre tes amis." },
-  { ic: "replay", c: "#3BE59D", t: "Tu retiens pour de bon", d: "Tes erreurs reviennent en révision au bon moment. Une espèce est maîtrisée quand tu la reconnais sur 3 photos, 3 jours différents." },
+  { ic: "replay", c: "#3BE59D", t: "Tu retiens pour de bon", d: "Après une erreur, des loupes te montrent ce qui diffère. Tes erreurs reviennent ensuite en révision, au bon moment." },
   { ic: "book", c: "#A58BFF", t: "Ton carnet", d: "Chaque oiseau rencontré rejoint ton carnet. Touche une photo pour l'agrandir, ouvre la fiche pour son chant, sa carte et ses sosies." },
   { ic: "shield", c: "#14B8A6", t: "Tout reste chez toi", d: "Pas de compte : ta progression vit sur ce téléphone. Sauvegarde-la de temps en temps (Réglages) et installe l'appli sur l'écran d'accueil." }
 ];
 const NEWS = [
+  { v: "2026-10-25.2", items: [
+    { ic: "zoom", t: "Pourquoi tu t'es trompé", d: "Après une erreur : des loupes sur ce qui diffère entre les deux oiseaux, et par quoi commencer." },
+    { ic: "bulb", t: "Moyens mnémo", d: "Une phrase pour retenir chaque paire de sosies : garde-la dans ta fiche, ou écris la tienne." },
+    { ic: "duel", t: "Duels d'entraînement", d: "En fin de série, un duel sur les oiseaux que tu viens de confondre." },
+    { ic: "replay", t: "Tes confusions reviennent", d: "Les oiseaux que tu confonds réapparaissent parmi les choix, jusqu'à ce que tu les sépares." },
+    { ic: "duel", t: "16 nouveaux sosies", d: "Moineaux, pinsons, tourterelles, pigeons, goélands, gravelots, aigrettes, grives, roitelets, hirondelles…" }
+  ] },
   { v: "2026-10-25", items: [
     { ic: "sliders", t: "Sur mesure mis en avant", d: "Ton quiz à toi en un geste, juste sous la série du jour, avec tes quiz enregistrés." },
     { ic: "ring", t: "Piaf en main", d: "Entraînement au baguage : topographie de l'aile, score de mue, âge par la mue, codes d'âge." },
@@ -1511,7 +1523,7 @@ function openFiche(t) {
     <div class="fsec"><h3>${ic("map")}Observations<span class="seg"><button class="on" data-act="mapz" data-v="fr">France</button><button data-act="mapz" data-v="eu">Europe</button><button data-act="mapz" data-v="w">Monde</button></span></h3><div id="fmap"></div><div class="mapcap" id="mapcap"></div></div>
     <div class="fsec"><h3>${ic("wave")}Chants & cris</h3><div class="sbar" id="fsbar"></div><div class="slist" id="fsnd"><div class="spin" style="margin:6px auto"></div></div></div>
     <div class="fsec" id="fwiki" hidden><h3>${ic("book")}<span id="fwikiH">Description</span></h3><p id="fwikiTx"></p></div>
-    ${duelPartners(t.sci).length ? `<div class="fsec"><h3>${ic("duel")}Ne pas confondre</h3>${duelPartners(t.sci).map(p => tipHtml(t, p, "Avec " + p.fr)).join("")}</div>` : ""}
+    ${duelPartners(t.sci).length ? `<div class="fsec"><h3>${ic("duel")}Ne pas confondre</h3>${duelPartners(t.sci).map(p => sosiesHtml(t, p, "fiche") || tipHtml(t, p, "Avec " + p.fr)).join("")}</div>` : ""}
     ${!r?.n && r?.seen ? `<div class="fsec"><h3>${ic("binoc")}Sur le terrain</h3><div class="hist"><span class="fieldok">${ic("binoc", "xs")}Observée le ${esc(dateLong(r.seen[0]))}${r.seen[1] ? " · " + esc(r.seen[1]) : ""}</span></div></div>` : ""}
     <div class="fsec"><h3>${ic("duel")}Ressemble à</h3><div class="simil" id="fsim"><div class="spin" style="margin:6px auto"></div></div></div>
     <div class="fsec"><h3>${ic("ext")}En savoir plus</h3><div class="links">
@@ -2020,6 +2032,24 @@ const ACT = {
   close: () => closeLayer(),
   phz: el => { $$("[data-act=phz]").forEach(b => b.classList.toggle("on", b === el)); renderPheno(FICHE.t, el.dataset.z === "fr" ? { id: 6753 } : S.set.zone); },
   mapz: el => { $$("[data-act=mapz]").forEach(b => b.classList.toggle("on", b === el)); renderMap(FICHE.t, el.dataset.v); },
+  memokeep: el => {
+    const t = taxonById(el.dataset.id); if (!t) return;
+    const r = rec(t), m = (el.dataset.m || "").trim(); if (!m) return;
+    r.note = !r.note ? m.slice(0, 280) : r.note.includes(m) ? r.note : (r.note + " · " + m).slice(0, 280);
+    save(); el.innerHTML = ic("check", "xs") + "Gardé !"; el.disabled = true;
+    toast("Gardé dans « Mon astuce » : il reviendra en indice.");
+  },
+  memoown: el => { const box = el.closest(".why")?.querySelector(".memoin"); if (!box) return; box.hidden = !box.hidden; if (!box.hidden) box.querySelector("textarea")?.focus(); },
+  memosave: el => {
+    const box = el.closest(".memoin"), ta = box?.querySelector("textarea"), v = (ta?.value || "").trim();
+    if (!v) { ta?.focus(); return; }
+    const t = taxonById(el.dataset.id); if (!t) return;
+    const r = rec(t);
+    r.note = !r.note ? v.slice(0, 280) : r.note.includes(v) ? r.note : (r.note + " · " + v).slice(0, 280);
+    save(); box.outerHTML = `<div class="note-own">${ic("edit", "xs")} ${esc(r.note)}</div>`;
+    toast("Ton moyen mnémo est gardé : il reviendra en indice.");
+  },
+  lexp: el => { const sec = el.closest(".lsec"); const p = sec?.querySelector("p.clamp"); if (!p) return; p.classList.remove("clamp"); sec.querySelector(".lmore2")?.remove(); },
   duelgo: el => {
     let cfg;
     if (el.dataset.ids) { const [a, b] = el.dataset.ids.split(",").map(Number); const ra = S.sp[a], rb = S.sp[b]; cfg = duelCfg([ra.sci, rb.sci, ra.fr, rb.fr]); cfg.ids = [a, b]; }
@@ -2126,6 +2156,8 @@ function onSubmit(e) {
     if (!v.trim()) return;
     $("#ans").blur();
     const r = checkTyped(v, q);
+    /* Nom d'une autre espèce : on montre ce qui les sépare, comme pour un QCM */
+    if (!r.ok && q.level === "species") { const m = lexExact(v); if (m && m.id !== q.t.id) r.chosen = { t: m }; }
     settle({ ...r, typed: v });
   }
 }

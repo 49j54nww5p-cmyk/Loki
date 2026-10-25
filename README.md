@@ -19,7 +19,7 @@ Sur iPhone : ouvre le lien dans Safari, bouton Partager, puis « Sur l'écran d'
 - **Géo** façon GeoGuessr : 5 oiseaux observés dans un rayon de 10 km, n'importe où dans le monde ; tu poses ton pin, points par paliers selon la distance. Fonds Relief (montagnes et fonds marins), Satellite, Topo, Océans, Nuit ; petites îles mises en évidence, carte plein écran
 - **Photos** : cadrage sans coupe, grande taille d'office, visionneuse HD au toucher (zoom à deux doigts, double-tap, glisser entre les photos)
 - **Maîtrise réelle** : une espèce n'est « maîtrisée » qu'après avoir été reconnue sur 3 photos différentes (dont 1 de terrain), sur 3 jours ; photos jamais vues en priorité ; mémoire à long terme mesurée à 1 semaine et 1 mois
-- **Sosies** : critères qui tranchent pour les 36 duels classiques, affichés après une confusion, en Duel et dans les fiches
+- **Sosies** : 52 paires d'oiseaux qui se ressemblent, avec leurs critères ; après une erreur, « Pourquoi tu t'es trompé » montre en loupes dessinées ce qui diffère (bec, tête, pattes, aile, queue, croupion, dessous, dos, taille), par quoi commencer, et un moyen mnémo à garder dans sa fiche ou à écrire soi-même ; en fin de série, un duel d'entraînement sur les paires confondues ; les espèces confondues reviennent parmi les choix
 - **Préparer une sortie** : espèces attendues dans un lieu (ou un point choisi sur la carte) et une période, quiz dessus avant de partir, liste à cocher sur place qui alimente le carnet (« Observées »)
 - **Chants** : spectrogramme sur chaque enregistrement quand c'est possible (Wikimedia Commons, xeno-canto), ralenti ×0,5, écoute en boucle, tri chant / cri / alarme
 - **Sauvegarde** : envoi en un geste vers Fichiers, iCloud ou un mail, avec rappel régulier

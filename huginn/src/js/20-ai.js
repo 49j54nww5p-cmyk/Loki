@@ -92,11 +92,16 @@ async function updateMask(force){if(!AI.labels||!AI.ready.geo)return;const mode=
     for(const[la,lo]of pts){const r=await wcall({t:"run",name:"geo",output:"probabilities",data:new Float32Array([la,lo,w]),dims:[1,3]});const p=r.data;for(let g=0;g<p.length;g++){const k=AI.geoMap[g];if(p[g]>gp[k])gp[k]=p[g];if(p[g]>=.03)m[k]=1}}
     for(let i=0;i<m.length;i++)m[i]&=AI.birdMask[i];AI.mask=m;AI.geoP=gp}
   let n=0;for(let i=0;i<AI.mask.length;i++)n+=AI.mask[i];AI.nHere=n;AI.maskInfo=`${n} espèces · ${label}`;setAiChip();refreshSpeciesList();renderPlumage()}
-function rarity(i){const p=AI.geoP?AI.geoP[i]:null;if(p==null)return null;if(p>=.3)return null;if(p>=.1)return["p","peu commun ici"];if(p>=.03)return["r","rare ici"];return["x","inattendu ici"]}
+function rarity(i){if(isRareOut(i))return["x","rareté ? à vérifier"];const p=AI.geoP?AI.geoP[i]:null;if(p==null)return null;if(p>=.3)return null;if(p>=.1)return["p","peu commun ici"];if(p>=.03)return["r","rare ici"];return["x","inattendu ici"]}
 
 /* BirdNET+ : sigmoïdes -> filtre oiseaux/géo, liste noire, sensibilité */
-function postBN(p){const n=AI.labels.length,o=new Float32Array(n),bias=((S.sens||1)-1)*5;
-  for(let i=0;i<n;i++){if(!AI.mask[i])continue;let v=p[i]*AI.mult[i];if(bias){v=Math.min(Math.max(v,1e-6),1-1e-6);v=1/(1+Math.exp(-(Math.log(v/(1-v))+bias)))}o[i]=v}return o}
+/* Raretés : une espèce hors de la liste attendue ici cette semaine n'est plus effacée.
+   Elle passe si BirdNET+ est très sûr (≥ RARE_T) et s'affiche « rareté ? à vérifier ». */
+const RARE_T=.5;AI.rareHit=new Set();
+function postBN(p){const n=AI.labels.length,o=new Float32Array(n),bias=((S.sens||1)-1)*5,rare=S.rare!==false;
+  for(let i=0;i<n;i++){const inM=AI.mask[i];if(!inM&&!(rare&&AI.birdMask[i]))continue;let v=p[i]*AI.mult[i];if(bias){v=Math.min(Math.max(v,1e-6),1-1e-6);v=1/(1+Math.exp(-(Math.log(v/(1-v))+bias)))}
+    if(!inM){if(v<RARE_T)continue;AI.rareHit.add(i)}o[i]=v}return o}
+const isRareOut=i=>!!(AI.mask&&!AI.mask[i]);
 /* prédictions + empreintes normalisées (1280 valeurs) par fenêtre de 3 s */
 async function runBN2(wins){const L=96000,out=[];for(let k=0;k<wins.length;k+=6){const part=wins.slice(k,k+6),d=new Float32Array(part.length*L);part.forEach((w,j)=>d.set(fit(w,L),j*L));
     const r=await wcall({t:"run2",name:"bn",outputs:["predictions","embeddings_out"],data:d,dims:[part.length,L]},[d.buffer]);const n=AI.labels.length,P=r.data[0],E=r.data[1],ed=E.length/part.length;
@@ -109,9 +114,9 @@ async function perchLabels(){if(AI.perchIdx)return;let txt=null,c=null;try{c=awa
   if(!txt){const r=await fetch(PERCH_LABELS);if(!r.ok)throw new Error("liste Perch introuvable (HTTP "+r.status+")");txt=await r.text();if(c)try{await c.put("https://huginn.local/perch-labels",new Response(txt))}catch(e){}}
   const lines=txt.split(/\r?\n/).slice(1).filter(Boolean);AI.perchIdx=Int32Array.from(lines.map(l=>{const k=AI.sciIdx.get(l.replace(/^"|"$/g,"").trim());return k==null?-1:k}))}
 async function runPerch(wins){const L=160000,res=[];for(const w of wins){const d=new Float32Array(L);d.set(fit(w,L));const r=await wcall({t:"run",name:"perch",output:"label",data:d,dims:[1,L]},[d.buffer]);
-    const lg=r.data,n=AI.labels.length,sc=new Float32Array(n);let mx=-1e9;for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&AI.mask[k]&&lg[j]>mx)mx=lg[j]}
-    let sum=0;for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&AI.mask[k])sum+=Math.exp(lg[j]-mx)}
-    for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&AI.mask[k])sc[k]=Math.max(sc[k],Math.exp(lg[j]-mx)/sum)}res.push(sc)}return res}
+    const lg=r.data,n=AI.labels.length,sc=new Float32Array(n);let mx=-1e9;for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&(AI.mask[k]||AI.rareHit.has(k))&&lg[j]>mx)mx=lg[j]}
+    let sum=0;for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&(AI.mask[k]||AI.rareHit.has(k)))sum+=Math.exp(lg[j]-mx)}
+    for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&(AI.mask[k]||AI.rareHit.has(k)))sc[k]=Math.max(sc[k],Math.exp(lg[j]-mx)/sum)}res.push(sc)}return res}
 /* téléchargement seul (gardé sur le téléphone), puis activation à part : si l'activation fait fermer l'appli
    faute de mémoire, le fichier reste là et l'appli ne réessaie pas toute seule au lancement suivant */
 let perchWake=null;

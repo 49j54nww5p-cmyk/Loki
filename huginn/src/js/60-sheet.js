@@ -13,7 +13,7 @@ async function openFocus(i){const r=LIVE.get(i);if(!r)return;const rk=rarity(i),
   openSheet(`<div class="hero">${imgPh(r.la,"m")}<div class="shade"></div><div class="hd"><div class="tags">${r.lifer?`<span class="tg new">NOUVEAU</span>`:""}${rk?`<span class="tg rare">${rk[1]}</span>`:""}</div><h2 class="fname">${esc(r.fr)}</h2><p class="latin">${esc(r.la)}</p></div></div>
     <div class="fbody">
       <div class="duo"><div><b>${r.bn?Math.round(r.bn*100)+" %":"—"}</b><span>BirdNET+</span></div><div><b>${perchTxt.endsWith("%")?perchTxt:"—"}</b><span>Perch v2${perchTxt.endsWith("%")?"":" · "+perchTxt}</span></div>${agree}</div>
-      <div id="fKind">${kindLine(r.kind)}</div>
+      <div id="fKind">${kindLine(r.kind)}</div>${isRareOut(i)?`<div class="trapbox"><b>Rareté possible</b><span>Cette espèce n'est pas attendue ici cette semaine d'après le géomodèle BirdNET+. Ramage l'affiche parce que BirdNET+ est très sûr de lui. Capture le son, vérifie la référence et documente l'observation (enregistrement, photo) avant de la valider.</span></div>`:""}
       <div class="pair"><figure><canvas class="sono" id="fMe"></canvas><figcaption>Ton meilleur passage · ×${r.n} · ${ago(Date.now()-r.last)}</figcaption></figure><figure><canvas class="sono" id="fRef"></canvas><figcaption id="fRefCap">Référence : préparation…</figcaption></figure></div>
       <div class="vchips" id="fVar"></div><p class="honest" id="fHonest" hidden></p>
       ${traps(r.la).map(t=>`<div class="trapbox"><b>${t.kind==="imit"?"Imitation possible":"Sosie : "+esc(t.alt)}</b><span>${esc(t.txt)}</span></div>`).join("")}

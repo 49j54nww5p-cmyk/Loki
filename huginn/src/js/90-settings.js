@@ -30,6 +30,7 @@ bindToggle("#beepT","beep",true);
 bindToggle("#voiceT","voice",true,on=>{if(on)speak("Annonce vocale activée")});
 bindToggle("#glovesT","gloves",false,on=>document.body.classList.toggle("gloves",on));
 bindToggle("#autoThrT","autoThr",true);
+bindToggle("#rareT","rare",true);
 bindToggle("#perchLiveT","perchLive",true,on=>{if(on)autoPerch()});
 bindToggle("#autoRefT","autoRef",true);
 bindToggle("#autoCmp","autoCmp",true);
@@ -95,6 +96,7 @@ $("#tour").addEventListener("touchend",e=>{if(TST.x==null)return;const dx=e.chan
 
 /* nouveautés */
 const NEWS=[
+  {n:"1.3",d:"28 octobre 2026",items:[["bird","Les raretés ne sont plus effacées","Avant, une espèce non attendue ici cette semaine (comme le Pouillot verdâtre à Lanton) était filtrée d'office. Maintenant elle passe si BirdNET+ est très sûr, marquée « rareté ? à vérifier »."]]},
   {n:"1.2.1",d:"28 octobre 2026",items:[["two","Perch : légère ou complète","Choisis dans Réglages › Modèles : la légère (131 Mo) ou la complète (413 Mo, pleine précision). Les deux peuvent rester sur le téléphone."]]},
   {n:"1.2",d:"28 octobre 2026",items:[["two","Perch v2 allégé","Version int8 de 131 Mo au lieu de 413 : elle tient dans la mémoire de l'iPhone. Elle est servie par l'appli elle-même, rangée par morceaux sur le téléphone, et le téléchargement reprend s'il est coupé. L'ancien fichier de 413 Mo est supprimé pour libérer la place."]]},
   {n:"1.1",d:"28 octobre 2026",items:[["wave","Spectro en carte de chaleur","Palette scientifique « chaleur » (inferno), avec viridis ou gris au choix dans Réglages, barre de couleurs en dB et grille kHz / secondes."],["spark","Plus sobre","Gris neutres, l'or seulement pour l'essentiel. Chant en vert d'eau, cri en bleu."],["bird","Gros bouton Écouter","Au centre ; il disparaît pendant l'écoute, tu arrêtes avec le bouton rouge en bas."]]},

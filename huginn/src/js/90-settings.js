@@ -43,8 +43,9 @@ bindSeg("#segSun","sun",applySun);setInterval(applySun,60000);
 
 /* modèles */
 $("#btnGetPerch").onclick=async()=>{if(IN_CLAUDE)return;const gp=$("#btnGetPerch");gp.disabled=true;gp.textContent="Démarrage…";
-  try{if(!AI.labels)await ensureAI();await perchLabels();await loadModel("perch");toast("Perch v2 prêt")}
+  try{await perchDownload();toast("Perch v2 est sur le téléphone");$("#perchBar2").hidden=true;renderModelInfo();await perchActivate();toast("Perch v2 prêt")}
   catch(e){toast("Perch v2 : "+(e.message||e));AI.err="Perch : "+(e.message||e)}finally{gp.disabled=false;gp.textContent="Télécharger Perch v2 (413 Mo)";$("#perchBar2").hidden=true;$("#perchBar").hidden=true;$("#perchAsk").hidden=true;renderModelInfo();setAiChip()}};
+$("#btnActPerch").onclick=async()=>{const b=$("#btnActPerch");b.disabled=true;b.textContent="Activation…";try{await perchActivate();toast("Perch v2 prêt")}catch(e){toast("Perch v2 : "+(e.message||e))}finally{b.disabled=false;b.textContent="Activer Perch v2";$("#perchBar2").hidden=true;renderModelInfo();setAiChip()}};
 $("#btnDropPerch").onclick=async()=>{try{await wcall({t:"drop",name:"perch",key:MODELS.perch.key});AI.ready.perch=false;toast("Perch v2 supprimé du téléphone")}catch(e){toast("Suppression impossible")}renderModelInfo();setAiChip()};
 
 /* apprentissage */

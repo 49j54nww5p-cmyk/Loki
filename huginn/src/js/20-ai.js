@@ -13,18 +13,23 @@ const WSRC=[
 'import * as ort from "'+ORTBASE+'ort.wasm.bundle.min.mjs";',
 'ort.env.wasm.wasmPaths="'+ORTBASE+'";ort.env.wasm.numThreads=1;',
 'const S={};',
-'async function getBuf(url,key,name){let c=null;try{c=await caches.open("huginn-models")}catch(e){}',
-' const hit=c?await c.match(key):null; if(hit) return new Uint8Array(await hit.arrayBuffer());',
+'/* le fichier va directement du réseau au stockage du téléphone, sans passer par la mémoire : indispensable pour les 413 Mo de Perch */',
+'async function store(url,key,name){const c=await caches.open("huginn-models");let hit=await c.match(key);if(hit)return c;',
 ' const res=await fetch(url); if(!res.ok) throw new Error("téléchargement refusé (HTTP "+res.status+")");',
-' const total=+res.headers.get("content-length")||0; const rd=res.body.getReader(); const parts=[]; let got=0,last=0;',
-' for(;;){const x=await rd.read(); if(x.done) break; parts.push(x.value); got+=x.value.length; const now=Date.now(); if(now-last>300){last=now;postMessage({t:"progress",name,got,total})}}',
-' const buf=new Uint8Array(got); let o=0; for(const p of parts){buf.set(p,o);o+=p.length}',
-' if(c){try{await c.put(key,new Response(buf,{headers:{"content-type":"application/octet-stream"}}))}catch(e){}}',
-' return buf}',
+' const total=+res.headers.get("content-length")||0,rd=res.body.getReader();let got=0,last=0;',
+' const st=new ReadableStream({async pull(ctl){const x=await rd.read();if(x.done){ctl.close();return}got+=x.value.length;const now=Date.now();if(now-last>300){last=now;postMessage({t:"progress",name,got,total})}ctl.enqueue(x.value)}});',
+' await c.put(key,new Response(st,{headers:{"content-type":"application/octet-stream","x-size":String(total||got)}}));',
+' if(total&&got!==total){await c.delete(key);throw new Error("téléchargement interrompu ("+Math.round(got/1e6)+" / "+Math.round(total/1e6)+" Mo)")}',
+' if(!(await c.match(key)))throw new Error("le téléphone n\'a pas gardé le fichier (place disponible ?)");return c}',
+'async function getBuf(url,key,name){let c=null;try{c=await store(url,key,name)}catch(e){if(String(e&&e.message||"").indexOf("HTTP")>=0||!self.caches)throw e;',
+'  const res=await fetch(url);if(!res.ok)throw new Error("HTTP "+res.status);return new Uint8Array(await res.arrayBuffer())}',
+' postMessage({t:"progress",name,phase:"read"});const hit=await c.match(key),b=new Uint8Array(await hit.arrayBuffer()),exp=+hit.headers.get("x-size")||0;',
+' if(exp&&b.length!==exp){await c.delete(key);throw new Error("fichier incomplet sur le téléphone : à retélécharger")}return b}',
 'self.onmessage=async e=>{const m=e.data;try{',
 ' if(m.t==="load"){if(!S[m.name]){const b=await getBuf(m.url,m.key,m.name);postMessage({t:"progress",name:m.name,phase:"init"});S[m.name]=await ort.InferenceSession.create(b,{executionProviders:["wasm"],graphOptimizationLevel:"all"})}postMessage({t:"ok",id:m.id})}',
 ' else if(m.t==="run"){const s=S[m.name];if(!s)throw new Error("modèle non chargé");const feeds={};feeds[s.inputNames[0]]=new ort.Tensor("float32",m.data,m.dims);const out=await s.run(feeds,[m.output]);const d=new Float32Array(out[m.output].data);postMessage({t:"ok",id:m.id,data:d},[d.buffer])}',
 ' else if(m.t==="run2"){const s=S[m.name];if(!s)throw new Error("modèle non chargé");const feeds={};feeds[s.inputNames[0]]=new ort.Tensor("float32",m.data,m.dims);const out=await s.run(feeds,m.outputs);const r=m.outputs.map(k=>new Float32Array(out[k].data));postMessage({t:"ok",id:m.id,data:r},r.map(a=>a.buffer))}',
+' else if(m.t==="dl"){await store(m.url,m.key,m.name);postMessage({t:"ok",id:m.id})}',
 ' else if(m.t==="has"){let ok=false;try{const c=await caches.open("huginn-models");ok=!!(await c.match(m.key))}catch(e){}postMessage({t:"ok",id:m.id,ok})}',
 ' else if(m.t==="drop"){try{const c=await caches.open("huginn-models");await c.delete(m.key)}catch(e){}if(S[m.name]){try{await S[m.name].release()}catch(e){}delete S[m.name]}postMessage({t:"ok",id:m.id})}',
 '}catch(err){const msg=typeof err==="number"?"erreur interne du moteur n°"+err:String(err&&err.message||err);postMessage({t:"error",id:m.id,msg})}};'
@@ -77,7 +82,16 @@ async function runPerch(wins){const L=160000,res=[];for(const w of wins){const d
     const lg=r.data,n=AI.labels.length,sc=new Float32Array(n);let mx=-1e9;for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&AI.mask[k]&&lg[j]>mx)mx=lg[j]}
     let sum=0;for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&AI.mask[k])sum+=Math.exp(lg[j]-mx)}
     for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&AI.mask[k])sc[k]=Math.max(sc[k],Math.exp(lg[j]-mx)/sum)}res.push(sc)}return res}
-async function autoPerch(){if(IN_CLAUDE||S.perchLive===false||AI.ready.perch)return;if(!(await perchCached()))return;try{await perchLabels();await loadModel("perch")}catch(e){}}
+/* téléchargement seul (gardé sur le téléphone), puis activation à part : si l'activation fait fermer l'appli
+   faute de mémoire, le fichier reste là et l'appli ne réessaie pas toute seule au lancement suivant */
+let perchWake=null;
+async function perchDownload(){if(await perchCached())return;try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){}
+  try{if(navigator.wakeLock)perchWake=await navigator.wakeLock.request("screen")}catch(e){}
+  try{await wcall({t:"dl",name:"perch",url:MODELS.perch.url,key:MODELS.perch.key})}finally{if(perchWake){perchWake.release().catch(()=>{});perchWake=null}}}
+async function perchActivate(){if(AI.ready.perch)return;if(!AI.labels)await ensureAI();await perchLabels();LS.set("huginn.perchLoading",Date.now());
+  try{await loadModel("perch")}finally{try{localStorage.removeItem("huginn.perchLoading")}catch(e){}}}
+const perchCrashed=()=>!!LS.get("huginn.perchLoading",0);
+async function autoPerch(){if(IN_CLAUDE||S.perchLive===false||AI.ready.perch||perchCrashed())return;if(!(await perchCached()))return;try{await perchActivate();return}catch(e){}}
 
 /* Ramage apprend de toi : empreintes des espèces validées et écartées */
 const LEARN=new Map();
@@ -114,8 +128,9 @@ function setAiChip(){const c=$("#chipAi"),t=c.lastElementChild;c.classList.remov
   c.title=AI.ready.bn?`BirdNET+ prêt${AI.ready.perch?" · Perch v2 prêt":""} · ${AI.maskInfo}`:AI.err||"chargement";renderModelInfo()}
 function onProgress(m){if(m.name!=="perch"){setAiChip();return}const pct=m.phase==="init"?100:m.total?m.got/m.total*100:5;
   ["#perchBar","#perchBar2"].forEach(id=>{const b=$(id);b.hidden=false;b.firstElementChild.style.width=pct+"%"});
-  const txt=m.phase==="init"?"Perch v2 : préparation (20 à 60 s)…":`Perch v2 : ${Math.round(m.got/1e6)} / ${Math.round((m.total||413e6)/1e6)} Mo`;
+  const txt=m.phase==="init"?"Perch v2 : préparation (20 à 60 s)…":m.phase==="read"?"Perch v2 : lecture depuis le téléphone…":`Perch v2 : ${Math.round(m.got/1e6)} / ${Math.round((m.total||413e6)/1e6)} Mo · garde l'appli ouverte`;
   const gp=$("#btnGetPerch");gp.disabled=true;gp.textContent=txt;const a=$("#perchAsk");a.hidden=false;a.innerHTML=`<p class="small muted">${txt}</p>`}
 async function renderModelInfo(){const el=$("#modelInfo");if(!el)return;if(IN_CLAUDE){el.textContent="Les modèles ne se chargent pas dans l'aperçu : ouvre la version GitHub Pages.";return}
-  const pc=AI.ready.perch||await perchCached(),gp=$("#btnGetPerch");gp.hidden=!!pc;
-  el.innerHTML=`<div>BirdNET+ V3.0 · ${MODELS.bn.size} Mo : <b>${AI.ready.bn?"prêt":AI.loading.bn?"chargement":"non chargé"}</b></div><div>Géomodèle · ${MODELS.geo.size} Mo : <b>${AI.ready.geo?"prêt":"non chargé"}</b>${AI.maskInfo?` · ${esc(AI.maskInfo)}`:""}</div><div>Perch v2 · ${MODELS.perch.size} Mo : <b>${AI.ready.perch?"prêt":pc?"sur le téléphone":"pas téléchargé"}</b></div>${AI.err?`<div class="muted">Dernière erreur : ${esc(AI.err)}</div>`:""}`}
+  const pc=AI.ready.perch||await perchCached(),gp=$("#btnGetPerch"),ap=$("#btnActPerch"),cr=perchCrashed();gp.hidden=!!pc;ap.hidden=!pc||!!AI.ready.perch||!!AI.loading.perch;$("#btnDropPerch").hidden=!pc;
+  const pn=$("#perchNote");pn.hidden=!(pc&&!AI.ready.perch&&cr);pn.textContent="La dernière activation de Perch a fermé l'appli : l'iPhone a manqué de mémoire. Le fichier est bien gardé sur le téléphone. Ferme les autres applis puis réessaie ; sinon BirdNET+ seul marche très bien.";
+  el.innerHTML=`<div>BirdNET+ V3.0 · ${MODELS.bn.size} Mo : <b>${AI.ready.bn?"prêt":AI.loading.bn?"chargement":"non chargé"}</b></div><div>Géomodèle · ${MODELS.geo.size} Mo : <b>${AI.ready.geo?"prêt":"non chargé"}</b>${AI.maskInfo?` · ${esc(AI.maskInfo)}`:""}</div><div>Perch v2 · ${MODELS.perch.size} Mo : <b>${AI.ready.perch?"prêt":AI.loading.perch?"activation…":pc?"sur le téléphone ✓ (pas encore activé)":"pas téléchargé"}</b></div>${AI.err?`<div class="muted">Dernière erreur : ${esc(AI.err)}</div>`:""}`}

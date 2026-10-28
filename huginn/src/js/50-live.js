@@ -27,14 +27,14 @@ function showMicNote(){const n=$("#micNote");n.hidden=false;
   $("#btnLiveDemo").onclick=startDemoLive}
 async function startDemoLive(){ctx();await ensureTap();const d=genDemo(),b=ac.createBuffer(1,d.samples.length,d.sr);b.copyToChannel(d.samples,0);
   demoNode=ac.createBufferSource();demoNode.buffer=b;demoNode.loop=true;demoNode.connect(hp);demoNode.start();allocRing();$("#micNote").hidden=true;beginLoop()}
-function beginLoop(){running=true;document.body.classList.add("listening");$("#liveIdle").hidden=true;$("#btnListen").classList.add("on");$("#btnListen").setAttribute("aria-label","Arrêter");
+function beginLoop(){running=true;document.body.classList.add("listening");$("#liveIdle").hidden=true;
   $("#btnCapture").disabled=false;$("#btnBlack").disabled=false;SPECT.drawn=AUD.total;SPECT.W=0;MARKS.length=0;
   if(!SES)SES={start:Date.now(),sp:new Map()};startAI();renderLive();cancelAnimationFrame(rafId);rafId=requestAnimationFrame(frame)}
 function stopListen(){running=false;document.body.classList.remove("listening");cancelAnimationFrame(rafId);stopAI();sessionEnd();
   if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}if(srcNode){try{srcNode.disconnect()}catch(e){}srcNode=null}
   if(demoNode){try{demoNode.stop();demoNode.disconnect()}catch(e){}demoNode=null}
-  stopGPS();$("#btnListen").classList.remove("on");$("#btnListen").setAttribute("aria-label","Écouter");$("#btnCapture").disabled=true;$("#btnBlack").disabled=true;$("#lvl i").style.width="0";renderLive()}
-$("#btnListen").onclick=()=>running?stopListen():startListen();
+  stopGPS();$("#btnCapture").disabled=true;$("#btnBlack").disabled=true;$("#lvl i").style.width="0";renderLive()}
+$("#btnListen").onclick=()=>{if(running)stopListen()};$("#btnStart").onclick=()=>{if(!running)startListen()};
 
 /* ---- spectro : une colonne par « hop » d'échantillons, calée sur le compteur ---- */
 function absToRing(a){const r=AUD.ring,L=r.length;return(((AUD.pos-(AUD.total-a))%L)+L)%L}
@@ -62,7 +62,7 @@ function frame(){if(!running)return;rafId=requestAnimationFrame(frame);
 function addMark(i,s0,s1,sc){const sr=ac.sampleRate;let m=null;for(let j=MARKS.length-1;j>=0;j--)if(MARKS[j].i===i){m=MARKS[j];break}
   if(m&&s0<=m.s1+sr*.6){m.s1=Math.max(m.s1,s1);m.sc=Math.max(m.sc,sc)}else MARKS.push({i,s0,s1,sc});
   while(MARKS.length>60)MARKS.shift()}
-function drawOverlay(){const W=liveO.width,H=liveO.height,d=dprOf();liveOX.clearRect(0,0,W,H);if(!SPECT.hop)return;
+function drawOverlay(){const W=liveO.width,H=liveO.height,d=dprOf();liveOX.clearRect(0,0,W,H);{const step=S.fmax>9000?2000:1000;liveOX.strokeStyle="rgba(255,255,255,.09)";liveOX.lineWidth=1;liveOX.beginPath();for(let f=step;f<S.fmax;f+=step){const y=Math.round((1-f/S.fmax)*H)+.5;liveOX.moveTo(36*d,y);liveOX.lineTo(W-14*d,y)}for(let t=2;t<SECS;t+=2){const x=Math.round(W*(1-t/SECS))+.5;liveOX.moveTo(x,0);liveOX.lineTo(x,H)}liveOX.stroke()}if(!SPECT.hop)return;
   const xOf=s=>W-(SPECT.drawn-s)/SPECT.hop,vis=MARKS.filter(m=>xOf(m.s1)>0),slot=new Map();
   for(let j=MARKS.length-1;j>=0;j--)if(xOf(MARKS[j].s1)<-W)MARKS.splice(j,1);
   vis.forEach(m=>{if(!slot.has(m.i))slot.set(m.i,slot.size%4)});
@@ -71,7 +71,7 @@ function drawOverlay(){const W=liveO.width,H=liveO.height,d=dprOf();liveOX.clear
     liveOX.globalAlpha=.35;liveOX.strokeStyle=col;liveOX.lineWidth=1*d;liveOX.setLineDash([3*d,4*d]);liveOX.beginPath();liveOX.moveTo(x0,y);liveOX.lineTo(x0,H);liveOX.stroke();liveOX.setLineDash([]);
     liveOX.globalAlpha=.95;liveOX.lineWidth=2*d;liveOX.beginPath();liveOX.moveTo(x0,y+6*d);liveOX.lineTo(x0,y);liveOX.lineTo(x1,y);liveOX.lineTo(x1,y+6*d);liveOX.stroke();
     const t=`${r.fr} ${Math.round(m.sc*100)} %`,tw=liveOX.measureText(t).width,lx=Math.max(4*d,Math.min(x0+4*d,W-tw-6*d)),ly=y+11*d;
-    liveOX.globalAlpha=1;liveOX.lineWidth=3*d;liveOX.strokeStyle=C.bg;liveOX.strokeText(t,lx,ly);liveOX.fillStyle=col;liveOX.fillText(t,lx,ly)});
+    liveOX.globalAlpha=1;liveOX.lineWidth=3*d;liveOX.strokeStyle="rgba(0,0,0,.85)";liveOX.strokeText(t,lx,ly);liveOX.fillStyle="#fff";liveOX.fillText(t,lx,ly)});
   liveOX.globalAlpha=1}
 new ResizeObserver(()=>{drawAxis($("#liveAxis"),0,S.fmax);if(!running){sizeCanvas(liveC);paintBg(liveX,liveC);sizeCanvas(liveO);drawOverlay()}}).observe(liveC);
 
@@ -112,7 +112,7 @@ function renderLive(){if(dragging){pendingRender=true;return}const el=$("#liveLi
   const em=el.querySelector(".empty");if(em)em.remove();const have=new Map(Array.from(el.children).map(c=>[c.dataset.i,c]));
   rows.forEach((r,idx)=>{let c=have.get(String(r.i));if(!c){c=document.createElement("div");c.className="sp enter";c.dataset.i=r.i;c.addEventListener("animationend",()=>c.classList.remove("enter"),{once:true})}
     have.delete(String(r.i));const h=rowHTML(r,now);if(c._h!==h){c.innerHTML=h;c._h=h}
-    c.classList.toggle("on",running&&now-r.last<4500);c.classList.toggle("done",!!r.validated);c.style.setProperty("--k",r.kind?kindVar(r.kind.k):"var(--accent)");
+    c.classList.toggle("on",running&&now-r.last<4500);c.classList.toggle("done",!!r.validated);c.style.setProperty("--k",r.kind?kindVar(r.kind.k):"var(--muted)");
     if(el.children[idx]!==c)el.insertBefore(c,el.children[idx]||null)});
   have.forEach(c=>c.remove())}
 setInterval(()=>{if(running)renderLive()},1000);

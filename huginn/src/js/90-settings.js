@@ -19,7 +19,8 @@ bindSeg("#segCap","capSec",()=>$("#capLbl").textContent=S.capSec+" s");
 bindSeg("#segGeo","geo",()=>updateMask(true).catch(()=>{}));
 bindRange("#gain","#gainLbl",xFmt,"gain",applyAudioSettings);
 bindRange("#pgain","#pgainLbl",xFmt,null);
-bindRange("#range","#rangeLbl",v=>v+" dB","range",()=>{if(spec){renderOff();drawClip()}});
+bindRange("#range","#rangeLbl",v=>v+" dB","range",()=>{buildLUT();if(spec){renderOff();drawClip()}});
+bindSeg("#segPal","pal",rethemed);
 bindRange("#thr","#thrLbl",v=>"+"+v+" dB","thr");
 bindRange("#sens","#sensLbl",v=>v.toFixed(2),"sens");
 bindRange("#conf","#confLbl",v=>Math.round(v*100)+" %","conf",()=>{if(aiResults.bn||aiResults.perch)renderAiRes()});
@@ -71,7 +72,7 @@ $("#restoreIn").onchange=async e=>{const f=e.target.files[0];e.target.value="";i
 /* mode d'emploi */
 const TOUR=[
   {ic:"bird",t:"Bienvenue sur Ramage",d:"Ramage reconnaît les oiseaux à leur ramage, chants et cris, directement sur ton téléphone, même sans réseau une fois les modèles chargés."},
-  {ic:"wave",t:"Écouter",d:"Touche le gros bouton en bas et tends le téléphone. Le spectro défile en haut ; chaque espèce reconnue s'inscrit dessus, au moment où elle chante."},
+  {ic:"wave",t:"Écouter",d:"Touche « Écouter » au centre et tends le téléphone ; pour arrêter, le bouton rouge en bas. Le spectro défile en haut ; chaque espèce reconnue s'inscrit dessus, au moment où elle chante."},
   {ic:"list",t:"La liste qui s'allume",d:"En dessous, les espèces entendues gardent leur place et s'allument quand elles chantent. Chaque ligne dit chant ou cri, et « 2 IA ✓ » quand BirdNET+ et Perch v2 sont d'accord. Un « ? » veut dire : pas encore sûr."},
   {ic:"two",t:"Valider, écarter",d:"Glisse une espèce vers la droite pour la valider au carnet, vers la gauche pour l'écarter : Ramage apprend de tes choix. Touche-la pour sa fiche : photo, référence, ressemblance et variance."},
   {ic:"frame",t:"Capturer, analyser",d:"Les 30 dernières secondes restent en mémoire : « Capturer » garde un son déjà passé. Dans Analyse, encadre un son au doigt : mesures, ralenti jusqu'à ⅛, nettoyage, comparaison aux références."},
@@ -89,6 +90,7 @@ $("#tour").addEventListener("touchend",e=>{if(TST.x==null)return;const dx=e.chan
 
 /* nouveautés */
 const NEWS=[
+  {n:"1.1",d:"28 octobre 2026",items:[["wave","Spectro en carte de chaleur","Palette scientifique « chaleur » (inferno), avec viridis ou gris au choix dans Réglages, barre de couleurs en dB et grille kHz / secondes."],["spark","Plus sobre","Gris neutres, l'or seulement pour l'essentiel. Chant en vert d'eau, cri en bleu."],["bird","Gros bouton Écouter","Au centre ; il disparaît pendant l'écoute, tu arrêtes avec le bouton rouge en bas."]]},
   {n:"1.0",d:"28 octobre 2026",items:[["spark","Nouvelle base, plus sobre","L'appli est réécrite proprement. Tes fiches, tes sons, ta liste de vie et ce qu'elle a appris sont gardés."],["list","Spectro + liste qui s'allume","En haut le spectro, en dessous les espèces entendues qui s'allument quand elles chantent. Gros bouton en bas."],["bird","Chant ou cri, sans tricher","Chaque espèce dit chant ou cri, d'après les références proches ou la forme du son. Un « ? » quand ce n'est pas sûr."],["two","Double avis","« 2 IA ✓ » quand BirdNET+ et Perch v2 sont d'accord."],["wave","Plus de décalage","Le spectro et les noms se calent sur le son lui-même, plus sur l'horloge : ils restent alignés même quand le téléphone rame."],["frame","Radar retiré","Sans micro directionnel il ne disait rien de vrai. Il reviendra avec la parabole."]]},
   {n:"0.8",d:"28 octobre 2026",items:[["bird","Huginn devient Ramage","Encre et or, et l'ouverture « la plume devient chant »."]]},
   {n:"0.5 à 0.7",d:"28 octobre 2026",items:[["bird","L'IA apprend de toi","Validations et rejets affinent les détections."],["spark","Pièges sonores","Sosies et imitations signalés."],["book","Données","Nettoyage du son, sauvegarde fichier, carte filtrable, Plumage."]]},

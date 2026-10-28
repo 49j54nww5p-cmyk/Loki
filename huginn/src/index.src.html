@@ -37,9 +37,11 @@
         <canvas id="liveOv" aria-hidden="true"></canvas>
         <div class="axis" id="liveAxis" aria-hidden="true"></div>
         <div class="tticks" aria-hidden="true"><span>−8 s</span><span>−6</span><span>−4</span><span>−2</span><span>0</span></div>
-        <div class="idle" id="liveIdle"><span>Touche le bouton pour écouter</span><small>double-tap sur le spectro : plein écran</small></div>
+        <div class="idle" id="liveIdle"><small>double-tap sur le spectro : plein écran</small></div>
+        <div class="cbar" id="cbar" aria-hidden="true"></div><span class="cbl" id="cblTop" style="top:6px"></span><span class="cbl" id="cblBot" style="bottom:20px"></span>
         <div class="lvl" id="lvl" aria-hidden="true"><i></i></div>
       </div>
+      <button class="bigplay" id="btnStart" aria-label="Écouter"><i></i><span>Écouter</span></button>
       <div class="gut">
         <div class="note" id="micNote" hidden></div>
         <div class="lhead"><h2>Entendus <b id="liveCount">0</b></h2><span class="mono small muted"><span id="aiState"></span> <b class="timer" id="timer"></b></span></div>
@@ -123,6 +125,7 @@
         <div class="ctl"><span class="lbl">Filtre anti-bruit</span><div class="seg" id="segHp"><button data-v="0">off</button><button data-v="300">300 Hz</button><button data-v="1000">1 kHz</button><button data-v="2000">2 kHz</button></div>
           <span class="small muted help">Coupe vent, route et ressac sous la fréquence choisie.</span></div>
         <div class="ctl"><label for="gain">Amplification <span class="mono" id="gainLbl">×1</span></label><input type="range" id="gain" min="0" max="24" step="1" value="0"></div>
+        <div class="ctl"><span class="lbl">Couleurs du spectro</span><div class="seg" id="segPal"><button data-v="0">chaleur</button><button data-v="1">viridis</button><button data-v="2">gris</button></div></div>
         <div class="grid2">
           <div class="ctl"><span class="lbl">Fréquence max</span><div class="seg" id="segFmax"><button data-v="8000">8 k</button><button data-v="11000">11 k</button><button data-v="16000">16 k</button></div></div>
           <div class="ctl"><span class="lbl">Mémoire rétro</span><div class="seg" id="segBuf"><button data-v="15">15 s</button><button data-v="30">30 s</button><button data-v="60">60 s</button></div></div>
@@ -188,7 +191,7 @@
 
   <div class="ctrlbar" id="ctrlbar"><div class="gut">
     <button class="cb" id="btnCapture" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V5h3M20 8V5h-3M4 16v3h3M20 16v3h-3"/><circle cx="12" cy="12" r="3"/></svg><span>Capturer <b id="capLbl">10 s</b></span></button>
-    <button class="rec" id="btnListen" aria-label="Écouter"><i></i></button>
+    <button class="rec on" id="btnListen" aria-label="Arrêter l'écoute"><i></i></button>
     <button class="cb" id="btnBlack" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg><span>Nuit <b id="autoCount"></b></span></button>
   </div></div>
 

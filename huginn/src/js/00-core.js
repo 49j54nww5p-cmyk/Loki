@@ -3,12 +3,12 @@
    Les clés « huginn.* » et la base « huginn » sont gardées :
    ainsi le carnet, les sons et la liste de vie d'avant restent là.
    ========================================================= */
-const VERSION="1.0.0";
+const VERSION="1.1.0";
 const IN_CLAUDE=!!(window.claude&&window.claude.use);
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const S=Object.assign({fmax:11000,bufSec:30,capSec:10,range:70,thr:12,hp:300,gain:0,deviceId:"",night:false,sun:0,sens:1,conf:0.35,geo:0,mapSeason:0,autoCmp:true,autoRef:true},LS.get("huginn.settings",{}));
+const S=Object.assign({fmax:11000,bufSec:30,capSec:10,range:70,thr:12,hp:300,gain:0,deviceId:"",night:false,sun:0,sens:1,conf:0.35,geo:0,mapSeason:0,autoCmp:true,autoRef:true,pal:0},LS.get("huginn.settings",{}));
 const saveS=()=>LS.set("huginn.settings",S);
 
 let toastT;

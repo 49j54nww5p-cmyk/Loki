@@ -9,31 +9,46 @@ const MODELS={
   geo:{url:new URL("models/geo.onnx",location.href).href,key:"https://huginn.local/geo-3.0.4-c32",label:"Géomodèle BirdNET+",size:14},
   perch:{url:"https://huggingface.co/justinchuby/Perch-onnx/resolve/main/perch_v2_no_dft.onnx",key:"https://huginn.local/perch-v2-nodft",label:"Perch v2",size:413}};
 const PERCH_LABELS="https://huggingface.co/cgeorgiaw/Perch/resolve/main/assets/labels.csv";
-const WSRC=[
-'import * as ort from "'+ORTBASE+'ort.wasm.bundle.min.mjs";',
-'ort.env.wasm.wasmPaths="'+ORTBASE+'";ort.env.wasm.numThreads=1;',
-'const S={};',
-'/* le fichier va directement du réseau au stockage du téléphone, sans passer par la mémoire : indispensable pour les 413 Mo de Perch */',
-'async function store(url,key,name){const c=await caches.open("huginn-models");let hit=await c.match(key);if(hit)return c;',
-' const res=await fetch(url); if(!res.ok) throw new Error("téléchargement refusé (HTTP "+res.status+")");',
-' const total=+res.headers.get("content-length")||0,rd=res.body.getReader();let got=0,last=0;',
-' const st=new ReadableStream({async pull(ctl){const x=await rd.read();if(x.done){ctl.close();return}got+=x.value.length;const now=Date.now();if(now-last>300){last=now;postMessage({t:"progress",name,got,total})}ctl.enqueue(x.value)}});',
-' await c.put(key,new Response(st,{headers:{"content-type":"application/octet-stream","x-size":String(total||got)}}));',
-' if(total&&got!==total){await c.delete(key);throw new Error("téléchargement interrompu ("+Math.round(got/1e6)+" / "+Math.round(total/1e6)+" Mo)")}',
-' if(!(await c.match(key)))throw new Error("le téléphone n\'a pas gardé le fichier (place disponible ?)");return c}',
-'async function getBuf(url,key,name){let c=null;try{c=await store(url,key,name)}catch(e){if(String(e&&e.message||"").indexOf("HTTP")>=0||!self.caches)throw e;',
-'  const res=await fetch(url);if(!res.ok)throw new Error("HTTP "+res.status);return new Uint8Array(await res.arrayBuffer())}',
-' postMessage({t:"progress",name,phase:"read"});const hit=await c.match(key),b=new Uint8Array(await hit.arrayBuffer()),exp=+hit.headers.get("x-size")||0;',
-' if(exp&&b.length!==exp){await c.delete(key);throw new Error("fichier incomplet sur le téléphone : à retélécharger")}return b}',
-'self.onmessage=async e=>{const m=e.data;try{',
-' if(m.t==="load"){if(!S[m.name]){const b=await getBuf(m.url,m.key,m.name);postMessage({t:"progress",name:m.name,phase:"init"});S[m.name]=await ort.InferenceSession.create(b,{executionProviders:["wasm"],graphOptimizationLevel:"all"})}postMessage({t:"ok",id:m.id})}',
-' else if(m.t==="run"){const s=S[m.name];if(!s)throw new Error("modèle non chargé");const feeds={};feeds[s.inputNames[0]]=new ort.Tensor("float32",m.data,m.dims);const out=await s.run(feeds,[m.output]);const d=new Float32Array(out[m.output].data);postMessage({t:"ok",id:m.id,data:d},[d.buffer])}',
-' else if(m.t==="run2"){const s=S[m.name];if(!s)throw new Error("modèle non chargé");const feeds={};feeds[s.inputNames[0]]=new ort.Tensor("float32",m.data,m.dims);const out=await s.run(feeds,m.outputs);const r=m.outputs.map(k=>new Float32Array(out[k].data));postMessage({t:"ok",id:m.id,data:r},r.map(a=>a.buffer))}',
-' else if(m.t==="dl"){await store(m.url,m.key,m.name);postMessage({t:"ok",id:m.id})}',
-' else if(m.t==="has"){let ok=false;try{const c=await caches.open("huginn-models");ok=!!(await c.match(m.key))}catch(e){}postMessage({t:"ok",id:m.id,ok})}',
-' else if(m.t==="drop"){try{const c=await caches.open("huginn-models");await c.delete(m.key)}catch(e){}if(S[m.name]){try{await S[m.name].release()}catch(e){}delete S[m.name]}postMessage({t:"ok",id:m.id})}',
-'}catch(err){const msg=typeof err==="number"?"erreur interne du moteur n°"+err:String(err&&err.message||err);postMessage({t:"error",id:m.id,msg})}};'
-].join("\n");
+/* Le worker : charge et fait tourner les modèles.
+   Stockage par morceaux de 16 Mo : l'iPhone n'a jamais tout le fichier en mémoire pendant le
+   téléchargement (avant, il fermait l'appli à 411/413 Mo), et un téléchargement coupé reprend où il s'était arrêté. */
+const WSRC=`import * as ort from "${ORTBASE}ort.wasm.bundle.min.mjs";
+ort.env.wasm.wasmPaths="${ORTBASE}";ort.env.wasm.numThreads=1;
+const S={},CH=16*1024*1024;
+const cache=()=>caches.open("huginn-models");
+async function meta(c,key){const r=await c.match(key+"/meta");return r?await r.json():null}
+async function stored(c,key){if(await c.match(key))return true;const m=await meta(c,key);return!!(m&&m.done)}
+async function store(url,key,name){const c=await cache();if(await stored(c,key))return;
+  let m=await meta(c,key);if(!m||m.url!==url)m={url,n:0,size:0,total:0,done:false};
+  let res=null;if(m.n>0){try{res=await fetch(url,{headers:{Range:"bytes="+m.size+"-"}});if(res.status!==206){res=null}}catch(e){res=null}}
+  if(!res){m.n=0;m.size=0;res=await fetch(url)}
+  if(!res.ok)throw new Error("téléchargement refusé (HTTP "+res.status+")");
+  if(!m.total){const cr=res.headers.get("content-range"),cl=+res.headers.get("content-length")||0;m.total=cr&&cr.indexOf("/")>0?(+cr.split("/")[1]||cl):cl}
+  const rd=res.body.getReader();let parts=[],plen=0,last=0;
+  const flush=async()=>{if(!plen)return;await c.put(key+"/p"+m.n,new Response(new Blob(parts),{headers:{"x-len":String(plen)}}));m.n++;m.size+=plen;parts=[];plen=0;
+    await c.put(key+"/meta",new Response(JSON.stringify(m),{headers:{"content-type":"application/json"}}))};
+  for(;;){const x=await rd.read();if(x.done)break;parts.push(x.value);plen+=x.value.length;if(plen>=CH)await flush();
+    const now=Date.now();if(now-last>300){last=now;postMessage({t:"progress",name,got:m.size+plen,total:m.total})}}
+  await flush();
+  if(m.total&&m.size!==m.total)throw new Error("téléchargement coupé à "+Math.round(m.size/1e6)+" / "+Math.round(m.total/1e6)+" Mo : touche à nouveau, il reprendra");
+  m.done=true;await c.put(key+"/meta",new Response(JSON.stringify(m),{headers:{"content-type":"application/json"}}))}
+async function getBuf(url,key,name){let c=null;try{c=await cache()}catch(e){}
+  if(!c){const r=await fetch(url);if(!r.ok)throw new Error("HTTP "+r.status);return new Uint8Array(await r.arrayBuffer())}
+  const old=await c.match(key);if(old)return new Uint8Array(await old.arrayBuffer());
+  await store(url,key,name);const m=await meta(c,key);postMessage({t:"progress",name,phase:"read"});
+  const b=new Uint8Array(m.size);let o=0;for(let i=0;i<m.n;i++){const r=await c.match(key+"/p"+i);if(!r){await drop(c,key);throw new Error("morceau manquant sur le téléphone : à retélécharger")}const u=new Uint8Array(await r.arrayBuffer());b.set(u,o);o+=u.length}
+  if(o!==m.size){await drop(c,key);throw new Error("fichier incomplet sur le téléphone : à retélécharger")}return b}
+async function drop(c,key){await c.delete(key);const m=await meta(c,key);if(m)for(let i=0;i<m.n+2;i++)await c.delete(key+"/p"+i);await c.delete(key+"/meta")}
+self.onmessage=async e=>{const m=e.data;try{
+ if(m.t==="load"){if(!S[m.name]){let b=await getBuf(m.url,m.key,m.name);postMessage({t:"progress",name:m.name,phase:"init"});
+   const big=b.length>150e6,opt=big?{executionProviders:["wasm"],graphOptimizationLevel:"basic",enableCpuMemArena:false,enableMemPattern:false}:{executionProviders:["wasm"],graphOptimizationLevel:"all"};
+   S[m.name]=await ort.InferenceSession.create(b,opt);b=null}postMessage({t:"ok",id:m.id})}
+ else if(m.t==="run"){const s=S[m.name];if(!s)throw new Error("modèle non chargé");const feeds={};feeds[s.inputNames[0]]=new ort.Tensor("float32",m.data,m.dims);const out=await s.run(feeds,[m.output]);const d=new Float32Array(out[m.output].data);postMessage({t:"ok",id:m.id,data:d},[d.buffer])}
+ else if(m.t==="run2"){const s=S[m.name];if(!s)throw new Error("modèle non chargé");const feeds={};feeds[s.inputNames[0]]=new ort.Tensor("float32",m.data,m.dims);const out=await s.run(feeds,m.outputs);const r=m.outputs.map(k=>new Float32Array(out[k].data));postMessage({t:"ok",id:m.id,data:r},r.map(a=>a.buffer))}
+ else if(m.t==="dl"){await store(m.url,m.key,m.name);postMessage({t:"ok",id:m.id})}
+ else if(m.t==="has"){let ok=false;try{ok=await stored(await cache(),m.key)}catch(e){}postMessage({t:"ok",id:m.id,ok})}
+ else if(m.t==="drop"){try{await drop(await cache(),m.key)}catch(e){}if(S[m.name]){try{await S[m.name].release()}catch(e){}delete S[m.name]}postMessage({t:"ok",id:m.id})}
+}catch(err){const msg=typeof err==="number"?"erreur interne du moteur n°"+err:String(err&&err.message||err);postMessage({t:"error",id:m.id,msg})}};`;
 
 const AI={labels:null,mask:null,birdMask:null,mult:null,geoP:null,ready:{},loading:{},progress:{},maskKey:"",maskInfo:"",nHere:0,err:"",rejected:new Set()};
 let Wk=null,wid=0;const wp=new Map();
@@ -74,7 +89,7 @@ async function runBN2(wins){const L=96000,out=[];for(let k=0;k<wins.length;k+=6)
 function topK(sc,k,min){const idx=[];for(let i=0;i<sc.length;i++)if(sc[i]>=min)idx.push(i);idx.sort((a,b)=>sc[b]-sc[a]);return idx.slice(0,k)}
 
 /* Perch v2 : 2e avis, fenêtres de 5 s */
-async function perchCached(){try{const c=await caches.open("huginn-models");return!!(await c.match(MODELS.perch.key))}catch(e){return false}}
+async function perchCached(){try{const c=await caches.open("huginn-models"),k=MODELS.perch.key;if(await c.match(k))return true;const r=await c.match(k+"/meta");return!!(r&&(await r.json()).done)}catch(e){return false}}
 async function perchLabels(){if(AI.perchIdx)return;let txt=null,c=null;try{c=await caches.open("huginn-models");const h=await c.match("https://huginn.local/perch-labels");if(h)txt=await h.text()}catch(e){}
   if(!txt){const r=await fetch(PERCH_LABELS);if(!r.ok)throw new Error("liste Perch introuvable (HTTP "+r.status+")");txt=await r.text();if(c)try{await c.put("https://huginn.local/perch-labels",new Response(txt))}catch(e){}}
   const lines=txt.split(/\r?\n/).slice(1).filter(Boolean);AI.perchIdx=Int32Array.from(lines.map(l=>{const k=AI.sciIdx.get(l.replace(/^"|"$/g,"").trim());return k==null?-1:k}))}

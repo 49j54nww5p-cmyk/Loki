@@ -3,7 +3,7 @@
    Les clés « huginn.* » et la base « huginn » sont gardées :
    ainsi le carnet, les sons et la liste de vie d'avant restent là.
    ========================================================= */
-const VERSION="1.3.0";
+const VERSION="1.4.0";
 const IN_CLAUDE=!!(window.claude&&window.claude.use);
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 
@@ -27,11 +27,12 @@ function vcmp(a,b){const x=String(a).split(".").map(Number),y=String(b).split(".
 async function saveFile(name,blob){
   if(IN_CLAUDE){try{const d=await window.claude.use("downloads");if(d){await d.save({filename:name,data:blob});toast("Fichier enregistré");return}}
     catch(e){if(e&&e.code==="declined"){toast("Enregistrement annulé");return}}toast("Téléchargement indisponible dans cet aperçu");return}
+  try{const f=new File([blob],name,{type:blob.type||"application/octet-stream"});if(navigator.canShare&&navigator.canShare({files:[f]})&&/iP(hone|ad)|Mac/.test(navigator.userAgent)&&"ontouchend" in document){await navigator.share({files:[f],title:name});return}}catch(e){if(e&&e.name==="AbortError")return}
   const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000)}
 
 /* ---- IndexedDB : sons des fiches, références, apprentissage ---- */
 let idb=null;const memClips=new Map();
-function openDB(){return new Promise(res=>{try{const r=indexedDB.open("huginn",3);r.onupgradeneeded=()=>{const d=r.result;["clips","refs","learn"].forEach(n=>{if(!d.objectStoreNames.contains(n))d.createObjectStore(n)})};r.onsuccess=()=>{idb=r.result;res()};r.onerror=()=>res()}catch(e){res()}})}
+function openDB(){return new Promise(res=>{try{const r=indexedDB.open("huginn",4);r.onupgradeneeded=()=>{const d=r.result;["clips","refs","learn","night"].forEach(n=>{if(!d.objectStoreNames.contains(n))d.createObjectStore(n)})};r.onsuccess=()=>{idb=r.result;res()};r.onerror=()=>res()}catch(e){res()}})}
 function dbGet(store,key){if(!idb)return Promise.resolve(null);return new Promise(res=>{try{const r=idb.transaction(store).objectStore(store).get(key);r.onsuccess=()=>res(r.result||null);r.onerror=()=>res(null)}catch(e){res(null)}})}
 function dbPut(store,key,val){if(!idb)return Promise.resolve();return new Promise(res=>{try{const t=idb.transaction(store,"readwrite");t.objectStore(store).put(val,key);t.oncomplete=res;t.onerror=res}catch(e){res()}})}
 function dbDel(store,key){if(!idb)return;try{idb.transaction(store,"readwrite").objectStore(store).delete(key)}catch(e){}}

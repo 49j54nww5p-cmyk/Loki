@@ -82,7 +82,7 @@ const TOUR=[
   {ic:"list",t:"La liste qui s'allume",d:"En dessous, les espèces entendues gardent leur place et s'allument quand elles chantent. Chaque ligne dit chant ou cri, et « 2 IA ✓ » quand BirdNET+ et Perch v2 sont d'accord. Un « ? » veut dire : pas encore sûr."},
   {ic:"two",t:"Valider, écarter",d:"Glisse une espèce vers la droite pour la valider au carnet, vers la gauche pour l'écarter : Ramage apprend de tes choix. Touche-la pour sa fiche : photo, référence, ressemblance et variance."},
   {ic:"frame",t:"Capturer, analyser",d:"Les 30 dernières secondes restent en mémoire : « Capturer » garde un son déjà passé. Dans Analyse, encadre un son au doigt : mesures, ralenti jusqu'à ⅛, nettoyage, comparaison aux références."},
-  {ic:"moon",t:"La nuit",d:"Bouton « Nuit » : écran noir, téléphone sur batterie. Ramage garde 4 s autour de chaque son et te donne le rapport au réveil."},
+  {ic:"moon",t:"La nuit complète",d:"Bouton « Nuit » : écran noir, téléphone sur batterie, parabole branchée. Ramage enregistre toute la nuit et garde les 5 meilleurs extraits de chaque espèce. Au réveil : un dossier trié par espèce, prêt à m'envoyer pour Faune-France."},
   {ic:"shield",t:"Tout reste chez toi",d:"Pas de compte. Le son est analysé sur le téléphone et n'est jamais envoyé. Sauvegarde de temps en temps (Réglages) et ajoute Ramage à l'écran d'accueil depuis Safari."}];
 const TST={i:0};
 function renderTour(){const s=TOUR[TST.i],last=TST.i===TOUR.length-1;
@@ -96,6 +96,7 @@ $("#tour").addEventListener("touchend",e=>{if(TST.x==null)return;const dx=e.chan
 
 /* nouveautés */
 const NEWS=[
+  {n:"1.4",d:"28 octobre 2026",items:[["moon","La nuit complète","Toute la nuit enregistrée (AAC, une pièce par heure) et, pour chaque espèce, les 5 meilleurs extraits de 10 s. Au réveil : un dossier ZIP trié nuit › espèce › extraits, avec le tableau des espèces à 80 % et plus."]]},
   {n:"1.3",d:"28 octobre 2026",items:[["bird","Les raretés ne sont plus effacées","Avant, une espèce non attendue ici cette semaine (comme le Pouillot verdâtre à Lanton) était filtrée d'office. Maintenant elle passe si BirdNET+ est très sûr, marquée « rareté ? à vérifier »."]]},
   {n:"1.2.1",d:"28 octobre 2026",items:[["two","Perch : légère ou complète","Choisis dans Réglages › Modèles : la légère (131 Mo) ou la complète (413 Mo, pleine précision). Les deux peuvent rester sur le téléphone."]]},
   {n:"1.2",d:"28 octobre 2026",items:[["two","Perch v2 allégé","Version int8 de 131 Mo au lieu de 413 : elle tient dans la mémoire de l'iPhone. Elle est servie par l'appli elle-même, rangée par morceaux sur le téléphone, et le téléchargement reprend s'il est coupé. L'ancien fichier de 413 Mo est supprimé pour libérer la place."]]},

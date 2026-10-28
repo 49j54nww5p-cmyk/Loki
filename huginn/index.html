@@ -512,7 +512,7 @@ th{color:var(--muted);font-weight:500}
    Les clés « huginn.* » et la base « huginn » sont gardées :
    ainsi le carnet, les sons et la liste de vie d'avant restent là.
    ========================================================= */
-const VERSION="1.3.0";
+const VERSION="1.4.0";
 const IN_CLAUDE=!!(window.claude&&window.claude.use);
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 
@@ -536,11 +536,12 @@ function vcmp(a,b){const x=String(a).split(".").map(Number),y=String(b).split(".
 async function saveFile(name,blob){
   if(IN_CLAUDE){try{const d=await window.claude.use("downloads");if(d){await d.save({filename:name,data:blob});toast("Fichier enregistré");return}}
     catch(e){if(e&&e.code==="declined"){toast("Enregistrement annulé");return}}toast("Téléchargement indisponible dans cet aperçu");return}
+  try{const f=new File([blob],name,{type:blob.type||"application/octet-stream"});if(navigator.canShare&&navigator.canShare({files:[f]})&&/iP(hone|ad)|Mac/.test(navigator.userAgent)&&"ontouchend" in document){await navigator.share({files:[f],title:name});return}}catch(e){if(e&&e.name==="AbortError")return}
   const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000)}
 
 /* ---- IndexedDB : sons des fiches, références, apprentissage ---- */
 let idb=null;const memClips=new Map();
-function openDB(){return new Promise(res=>{try{const r=indexedDB.open("huginn",3);r.onupgradeneeded=()=>{const d=r.result;["clips","refs","learn"].forEach(n=>{if(!d.objectStoreNames.contains(n))d.createObjectStore(n)})};r.onsuccess=()=>{idb=r.result;res()};r.onerror=()=>res()}catch(e){res()}})}
+function openDB(){return new Promise(res=>{try{const r=indexedDB.open("huginn",4);r.onupgradeneeded=()=>{const d=r.result;["clips","refs","learn","night"].forEach(n=>{if(!d.objectStoreNames.contains(n))d.createObjectStore(n)})};r.onsuccess=()=>{idb=r.result;res()};r.onerror=()=>res()}catch(e){res()}})}
 function dbGet(store,key){if(!idb)return Promise.resolve(null);return new Promise(res=>{try{const r=idb.transaction(store).objectStore(store).get(key);r.onsuccess=()=>res(r.result||null);r.onerror=()=>res(null)}catch(e){res(null)}})}
 function dbPut(store,key,val){if(!idb)return Promise.resolve();return new Promise(res=>{try{const t=idb.transaction(store,"readwrite");t.objectStore(store).put(val,key);t.oncomplete=res;t.onerror=res}catch(e){res()}})}
 function dbDel(store,key){if(!idb)return;try{idb.transaction(store,"readwrite").objectStore(store).delete(key)}catch(e){}}
@@ -1063,7 +1064,7 @@ async function liveTick(){if(!running||aiBusy||!AI.ready.bn||!AI.labels||!ac)ret
     const hits=cand.filter(i=>sc[i]>=thr&&!AI.rejected.has(i)).sort((a,b)=>sc[b]-sc[a]).slice(0,4);let alert=null;
     for(const i of hits){const r=liveRec(i,now);if(r.isNew){r.isNew=false;if(!alert||r.lifer)alert=r}
       r.n++;r.last=now;r.cur=sc[i];r.bn=Math.max(r.bn,sc[i]);if(sc[i]>r.max){r.max=sc[i];r.emb=o.emb;r.seg=fit(x,96000).slice();updateKind(r)}
-      addMark(i,s.end-s.length,s.end,sc[i]);
+      addMark(i,s.end-s.length,s.end,sc[i]);if(autoState.on)nightHit(i,sc[i],s.end);
       if(SES){const sp=SES.sp.get(i)||{fr:r.fr,la:r.la,n:0,max:0,lifer:r.lifer};sp.n++;sp.max=Math.max(sp.max,sc[i]);sp.kind=r.kind?r.kind.k:sp.kind;SES.sp.set(i,sp)}}
     if(alert&&!autoState.on)alertNew(alert.lifer,alert.fr);
     $("#aiState").textContent=`${AI.nHere?AI.nHere+" esp. possibles · ":""}seuil ${Math.round(thr*100)} %`;renderLive()}
@@ -1129,13 +1130,111 @@ $("#capLbl").textContent=S.capSec+" s";
 let wakeLock=null;
 async function lockScreen(){try{if(navigator.wakeLock)wakeLock=await navigator.wakeLock.request("screen")}catch(e){wakeLock=null}}
 function updateBlack(){$("#blackTxt").textContent=`écoute nocturne · ${autoState.count} événement${autoState.count>1?"s":""} · touche 2 fois pour sortir`;$("#autoCount").textContent=autoState.count?String(autoState.count):""}
-$("#btnBlack").onclick=()=>{autoState.on=true;autoState.since=Date.now();$("#black").hidden=false;updateBlack();lockScreen()};
-let tapT=0;$("#black").addEventListener("pointerup",()=>{const n=Date.now();if(n-tapT<450){autoState.on=false;$("#black").hidden=true;if(wakeLock){wakeLock.release().catch(()=>{});wakeLock=null}paintBg(liveX,liveC);renderLog();nocmigReport(autoState.since||0)}tapT=n});
+$("#btnBlack").onclick=()=>{autoState.on=true;autoState.since=Date.now();nightStart();$("#black").hidden=false;updateBlack();lockScreen()};
+let tapT=0;$("#black").addEventListener("pointerup",async()=>{const n=Date.now();if(n-tapT<450){tapT=0;autoState.on=false;$("#blackTxt").textContent="fin de la nuit : préparation…";if(wakeLock){wakeLock.release().catch(()=>{});wakeLock=null}
+  const night=await nightStop();$("#black").hidden=true;paintBg(liveX,liveC);renderLog();if(night)openNight(night);else nocmigReport(autoState.since||0);return}tapT=n});
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&autoState.on)lockScreen()});
 async function autoCapture(){const s=grab(4);if(!s)return;const id=uid(),m=measure(stftOf(s,ac.sampleRate),null);
   const e={id,ts:Date.now(),lat:lastFix?lastFix.lat:null,lon:lastFix?lastFix.lon:null,acc:lastFix?lastFix.acc:null,sp:"",la:"",type:"",notes:"",source:"auto",dur:s.length/ac.sampleRate,m};
   if(AI.ready.bn&&AI.labels){try{const[o]=await runBN2([await to32k(s.subarray(Math.max(0,s.length-ac.sampleRate*3)),ac.sampleRate)]),sc=postBN(o.raw),t=topK(sc,1,.1)[0];if(t!=null){const n=nameOf(t);e.ai={m:"BirdNET+",fr:n.fr,la:n.la,sc:sc[t]}}}catch(err){}}
   await putClip(id,{sr:ac.sampleRate,pcm:toI16(s)});entries.unshift(e);saveEntries();autoState.count++;updateBlack()}
+
+/* ===== 55-night.js ===== */
+/* =========================================================
+   La nuit complète.
+   - Toute la nuit est enregistrée en AAC (≈ 40 Mo par heure), une pièce par heure.
+   - Chaque espèce reconnue garde ses 5 meilleurs extraits de 10 s (WAV 32 kHz).
+   - Au réveil : export d'un dossier trié (ZIP) : nuit > espèce > extraits, plus un
+     tableau des observations ≥ 80 % prêt à être mis en forme pour Faune-France.
+   ========================================================= */
+const NIGHT_MIN=.8,NIGHT_KEEP=5,NIGHT_SEC=10;
+let NIGHT=null,nRec=null,nHourT=0;
+const getNights=()=>LS.get("huginn.nights",[]);
+function saveNight(n){const a=getNights().filter(x=>x.id!==n.id);a.unshift(n);LS.set("huginn.nights",a.slice(0,30))}
+
+/* --- enregistrement complet, une pièce par heure --- */
+function recMime(){if(!window.MediaRecorder)return null;for(const m of["audio/mp4;codecs=mp4a.40.2","audio/mp4","audio/aac","audio/webm;codecs=opus","audio/webm"])try{if(MediaRecorder.isTypeSupported(m))return m}catch(e){}return""}
+function nightRecStart(){if(!stream||!NIGHT)return;const mime=recMime();if(mime==null)return;
+  const part={k:NIGHT.id+"/h"+NIGHT.audio.length,start:Date.now(),n:0,bytes:0,mime:mime||"audio/mp4"};NIGHT.audio.push(part);
+  try{nRec=new MediaRecorder(stream,mime?{mimeType:mime,audioBitsPerSecond:96000}:{audioBitsPerSecond:96000})}catch(e){NIGHT.audio.pop();NIGHT.recErr=String(e.message||e);return}
+  part.mime=(nRec.mimeType||part.mime).split(";")[0];
+  nRec.ondataavailable=ev=>{if(!ev.data||!ev.data.size)return;const i=part.n++;part.bytes+=ev.data.size;dbPut("night",part.k+"/"+i,ev.data);part.end=Date.now();saveNight(NIGHT)};
+  nRec.start(30000);clearTimeout(nHourT);
+  /* nouvelle pièce à chaque heure ronde (ou après 60 min) */
+  const d=new Date(),ms=Math.min(3600e3,(60-d.getMinutes())*60e3-d.getSeconds()*1e3)||3600e3;
+  nHourT=setTimeout(()=>{if(!NIGHT)return;const r=nRec;r.onstop=()=>nightRecStart();try{r.stop()}catch(e){nightRecStart()}},ms)}
+function nightRecStop(){clearTimeout(nHourT);return new Promise(res=>{if(!nRec||nRec.state==="inactive"){res();return}const r=nRec;nRec=null;r.onstop=()=>setTimeout(res,300);try{r.stop()}catch(e){res()}})}
+
+/* --- détections : on garde les meilleurs passages de chaque espèce --- */
+function nightStart(){NIGHT={id:"n"+uid(),start:Date.now(),end:null,lat:lastFix?lastFix.lat:null,lon:lastFix?lastFix.lon:null,acc:lastFix?lastFix.acc:null,sp:{},audio:[],mic:S.deviceId?"externe":"téléphone"};
+  saveNight(NIGHT);nightRecStart()}
+function nightHit(i,sc,end){if(!NIGHT||sc<.1)return;const n=nameOf(i),r=LIVE.get(i),now=Date.now(),h=new Date(now).getHours();
+  const o=NIGHT.sp[n.la]||(NIGHT.sp[n.la]={fr:n.fr,la:n.la,n:0,max:0,first:now,last:now,hours:{},clips:[],kind:""});
+  o.n++;o.last=now;o.max=Math.max(o.max,sc);o.hours[h]=(o.hours[h]||0)+1;if(r&&r.kind)o.kind=r.kind.k;if(r&&r.perch)o.perch=Math.max(o.perch||0,r.perch);
+  /* un passage proche d'un extrait déjà gardé : on ne garde que le meilleur des deux */
+  const near=o.clips.find(c=>Math.abs(c.ts-now)<NIGHT_SEC*1e3);
+  if(near){if(sc<=near.sc)return}else if(o.clips.length>=NIGHT_KEEP&&sc<=Math.min(...o.clips.map(c=>c.sc)))return;
+  const slot={id:NIGHT.id+"_"+uid(),ts:now,sc,pending:true};o.clips.push(slot);
+  if(near){o.clips.splice(o.clips.indexOf(near),1);delClip(near.id)}
+  if(o.clips.length>NIGHT_KEEP){o.clips.sort((a,b)=>a.sc-b.sc);const out=o.clips.shift();delClip(out.id)}
+  /* l'extrait est centré sur le cri : on attend 4 s pour avoir aussi l'après */
+  setTimeout(async()=>{const s=grab(NIGHT_SEC);if(!s){o.clips.splice(o.clips.indexOf(slot),1);return}if(!o.clips.includes(slot))return;const x=await to32k(s,ac.sampleRate);
+    await putClip(slot.id,{sr:32000,pcm:toI16(x)});slot.pending=false;if(NIGHT)saveNight(NIGHT)},4000);
+  saveNight(NIGHT)}
+async function nightStop(){if(!NIGHT)return null;await nightRecStop();await new Promise(r=>setTimeout(r,4500));NIGHT.end=Date.now();const n=NIGHT;NIGHT=null;
+  Object.values(n.sp).forEach(o=>{o.clips=o.clips.filter(c=>!c.pending)});saveNight(n);return n}
+
+/* --- rapport et exports --- */
+const pad2=v=>String(v).padStart(2,"0");
+const stamp=ts=>{const d=new Date(ts);return`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}_${pad2(d.getHours())}h${pad2(d.getMinutes())}m${pad2(d.getSeconds())}`};
+const safe=s=>String(s||"").replace(/[\/\\:*?"<>|]+/g,"-").trim();
+function nightList(n){return Object.values(n.sp).sort((a,b)=>b.max-a.max)}
+function openNight(n){if(!n)return;const L=nightList(n),ok=L.filter(o=>o.max>=NIGHT_MIN),dur=(n.end||Date.now())-n.start,mb=n.audio.reduce((s,a)=>s+a.bytes,0)/1e6;
+  openSheet(`<div class="sumhead"><span class="eyebrow">Nuit complète</span><h2>${fmtD(n.start)} · ${fmtT(n.start)} → ${n.end?fmtT(n.end):"…"}</h2>
+    <div class="kpis"><div><b>${dureeTxt(dur)}</b><span>durée</span></div><div><b>${ok.length}</b><span>espèces ≥ 80 %</span></div><div><b>${L.length-ok.length}</b><span>sous 80 %</span></div></div></div>
+    <div class="sumlist">${L.map(o=>`<div class="srow">${imgPh(o.la,"s")}<span class="sn"><b>${esc(o.fr)}${o.max<NIGHT_MIN?` <span class="tg">sous 80 %</span>`:""}</b><small>${o.n} contact${o.n>1?"s":""} · ${fmtT(o.first)}–${fmtT(o.last)}${o.kind?" · "+esc(o.kind):""} · ${o.clips.length} extrait${o.clips.length>1?"s":""}</small></span><span class="sp2">${Math.round(o.max*100)} %${o.clips.length?` <button class="bplay" data-nplay="${o.clips.slice().sort((a,b)=>b.sc-a.sc)[0].id}" aria-label="Écouter">${PLAY}</button>`:""}</span></div>`).join("")||`<p class="empty">Aucune espèce reconnue cette nuit.</p>`}</div>
+    <div class="row" style="margin-top:12px"><button class="btn primary" id="nZip">Dossier trié (ZIP)</button><button class="btn" id="nCsv">Tableau ≥ 80 %</button></div>
+    ${n.audio.length?`<div class="sumhead"><h3>Enregistrement complet · ${n.audio.length} pièce${n.audio.length>1?"s":""} · ${mb.toFixed(0)} Mo</h3></div><div class="row">${n.audio.map((a,k)=>`<button class="btn sm" data-nh="${k}">${fmtT(a.start)}–${a.end?fmtT(a.end):"…"}</button>`).join("")}</div>
+      <div class="row" style="margin-top:8px"><button class="btn ghost sm danger" id="nDropAudio">Supprimer l'enregistrement complet (garde les extraits)</button></div>`:`<p class="small muted" style="padding:0 16px">${n.recErr?"Enregistrement complet impossible : "+esc(n.recErr):"Pas d'enregistrement complet pour cette nuit."}</p>`}
+    <p class="small muted" style="padding:12px 16px 0">Envoie-moi le dossier ZIP dans la conversation : je te prépare les données pour Faune-France. Seules les espèces à 80 % et plus sont dans le tableau ; les autres restent ici pour que tu les écoutes.</p>`,"summary");
+  $("#sheetBody").querySelectorAll("[data-nplay]").forEach(b=>b.onclick=()=>playEntry(b.dataset.nplay));
+  $("#nZip").onclick=()=>exportNightZip(n);$("#nCsv").onclick=()=>saveFile(`ramage_nuit_${stamp(n.start).slice(0,10)}.csv`,new Blob(["﻿"+nightCSV(n)],{type:"text/csv"}));
+  $("#sheetBody").querySelectorAll("[data-nh]").forEach(b=>b.onclick=()=>exportNightAudio(n,+b.dataset.nh));
+  const dr=$("#nDropAudio");if(dr)dr.onclick=async()=>{if(dr.dataset.c!=="1"){dr.dataset.c="1";dr.textContent="Toucher encore pour supprimer";return}
+    for(const a of n.audio)for(let i=0;i<a.n;i++)dbDel("night",a.k+"/"+i);n.audio=[];saveNight(n);toast("Enregistrement complet supprimé");openNight(n)}}
+
+/* une ligne par espèce et par heure : c'est la forme habituelle des comptages nocturnes */
+function nightCSV(n){const h=["date","heure_debut","heure_fin","espece","nom_latin","nombre_contacts","type_contact","score_birdnet","score_perch","latitude","longitude","precision_m","micro","fichier_son","remarque"],rows=[];
+  nightList(n).filter(o=>o.max>=NIGHT_MIN).forEach(o=>{const best=o.clips.slice().sort((a,b)=>b.sc-a.sc)[0];
+    Object.keys(o.hours).map(Number).sort((a,b)=>((a+12)%24)-((b+12)%24)).forEach(hr=>{const d=new Date(n.start);if(hr<d.getHours())d.setDate(d.getDate()+1);
+      rows.push([`${pad2(d.getDate())}/${pad2(d.getMonth()+1)}/${d.getFullYear()}`,`${pad2(hr)}:00`,`${pad2((hr+1)%24)}:00`,o.fr,o.la,o.hours[hr],o.kind||"cri nocturne",o.max.toFixed(2),o.perch?o.perch.toFixed(2):"",n.lat!=null?n.lat.toFixed(5):"",n.lon!=null?n.lon.toFixed(5):"",n.acc!=null?Math.round(n.acc):"",n.mic,
+        best?`${safe(o.fr)} - ${safe(o.la)}/${stamp(best.ts)}_${Math.round(best.sc*100)}pc.wav`:"","Contact sonore nocturne, identifié par Ramage (BirdNET+ V3.0), score ≥ 80 %, nombre d'individus inconnu"].map(csvCell).join(","))})});
+  return h.join(",")+"\n"+rows.join("\n")}
+
+/* ZIP sans compression (les WAV ne se compressent pas) : nuit/espèce/extraits */
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xedb88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function crc32(u){let c=0xffffffff;for(let i=0;i<u.length;i++)c=CRC[(c^u[i])&255]^(c>>>8);return(c^0xffffffff)>>>0}
+function zipBlob(files){const enc=new TextEncoder(),parts=[],cen=[];let off=0;const d=new Date(),dt=((d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1)),dd=(((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate());
+  for(const f of files){const name=enc.encode(f.name),data=f.data,crc=crc32(data),h=new DataView(new ArrayBuffer(30));
+    h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x800,true);h.setUint16(8,0,true);h.setUint16(10,dt,true);h.setUint16(12,dd,true);h.setUint32(14,crc,true);h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);h.setUint16(26,name.length,true);h.setUint16(28,0,true);
+    parts.push(h.buffer,name,data);const c=new DataView(new ArrayBuffer(46));c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x800,true);c.setUint16(10,0,true);c.setUint16(12,dt,true);c.setUint16(14,dd,true);c.setUint32(16,crc,true);c.setUint32(20,data.length,true);c.setUint32(24,data.length,true);c.setUint16(28,name.length,true);c.setUint32(42,off,true);
+    cen.push(c.buffer,name);off+=30+name.length+data.length}
+  const csz=cen.reduce((s,p)=>s+(p.byteLength!=null?p.byteLength:p.length),0),e=new DataView(new ArrayBuffer(22));e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,csz,true);e.setUint32(16,off,true);
+  return new Blob([...parts,...cen,e.buffer],{type:"application/zip"})}
+async function wavBytes(id){const c=await getClip(id);if(!c)return null;return new Uint8Array(await encodeWav(toF32(c.pcm),c.sr).arrayBuffer())}
+async function exportNightZip(n){const b=$("#nZip");b.disabled=true;b.textContent="Préparation…";try{const enc=new TextEncoder(),root=`Ramage_nuit_${stamp(n.start).slice(0,10)}`,files=[],L=nightList(n),ok=L.filter(o=>o.max>=NIGHT_MIN);
+    for(const o of ok){const dir=`${root}/${safe(o.fr)} - ${safe(o.la)}`;for(const c of o.clips.slice().sort((a,b)=>b.sc-a.sc)){const w=await wavBytes(c.id);if(w)files.push({name:`${dir}/${stamp(c.ts)}_${Math.round(c.sc*100)}pc.wav`,data:w})}}
+    files.push({name:`${root}/observations_80pc.csv`,data:enc.encode("﻿"+nightCSV(n))});
+    const rep=[`Ramage · nuit du ${new Date(n.start).toLocaleString("fr-FR")} au ${new Date(n.end||Date.now()).toLocaleString("fr-FR")}`,`Lieu : ${n.lat!=null?n.lat.toFixed(5)+", "+n.lon.toFixed(5)+(n.acc!=null?" ±"+Math.round(n.acc)+" m":""):"sans GPS"} · micro ${n.mic}`,
+      `Méthode : BirdNET+ V3.0 en continu (fenêtres de 3 s), ${AI.ready.perch?"Perch v2 en 2e avis, ":""}filtre géographique ${["autour de moi","France","aucun"][S.geo|0]}. Extraits de ${NIGHT_SEC} s centrés sur le contact, ${NIGHT_KEEP} meilleurs par espèce.`,"",
+      `Espèces à 80 % et plus (${ok.length}) :`,...ok.map(o=>`- ${o.fr} (${o.la}) · ${o.n} contacts · max ${Math.round(o.max*100)} % · ${fmtT(o.first)}–${fmtT(o.last)}${o.kind?" · "+o.kind:""}`),"",
+      `Sous 80 %, non exportées, à écouter dans l'appli (${L.length-ok.length}) :`,...L.filter(o=>o.max<NIGHT_MIN).map(o=>`- ${o.fr} (${o.la}) · max ${Math.round(o.max*100)} %`),"",
+      "Rappel : une identification par IA reste à confirmer à l'écoute avant toute saisie dans une base de données."].join("\n");
+    files.push({name:`${root}/LISEZ-MOI.txt`,data:enc.encode(rep)});
+    await saveFile(root+".zip",zipBlob(files))}catch(e){toast("Export impossible : "+(e.message||e))}finally{b.disabled=false;b.textContent="Dossier trié (ZIP)"}}
+async function exportNightAudio(n,k){const a=n.audio[k];if(!a)return;const parts=[];for(let i=0;i<a.n;i++){const p=await dbGet("night",a.k+"/"+i);if(p)parts.push(p)}
+  if(!parts.length){toast("Cette pièce n'est plus sur le téléphone");return}const ext=/webm/.test(a.mime)?"webm":"m4a";
+  await saveFile(`ramage_nuit_${stamp(a.start)}.${ext}`,new Blob(parts,{type:a.mime}))}
 
 /* ===== 60-sheet.js ===== */
 /* =========================================================
@@ -1359,9 +1458,10 @@ function renderLog(){if($("#tab-log").hidden)return;const ses=getSessions();
   if(logPane==="ses")renderSessions(ses);else if(logPane==="ent")renderEntries();else if(logPane==="plu")renderPlumage();else renderMap()}
 
 /* sorties et nuits */
-function renderSessions(ses){const el=$("#logSes");
-  el.innerHTML=ses.length?`<div class="sumlist">${ses.slice(0,40).map((s,k)=>`<button class="srow" data-ses="${k}"><span class="tart" style="width:40px;height:40px;border-radius:10px">${svgIc(s.kind==="nocmig"?"moon":"bird",20)}</span><span class="sn"><b>${s.kind==="nocmig"?"Nuit":"Sortie"} · ${fmtD(s.start)} ${fmtT(s.start)}</b><small>${dureeTxt(s.end-s.start)} · ${s.list.length} espèce${s.list.length>1?"s":""} · ${esc(s.list.slice(0,3).map(x=>x.fr).join(", "))}${s.list.length>3?"…":""}</small></span><span class="sp2">›</span></button>`).join("")}</div>`
-   :`<p class="empty">Tes sorties apparaissent ici quand tu arrêtes une écoute de plus de 15 secondes avec au moins une espèce.</p>`;
+function renderSessions(ses){const el=$("#logSes"),nights=getNights();
+  el.innerHTML=(nights.length?`<h3>Nuits complètes</h3><div class="sumlist">${nights.map((n,k)=>{const L=Object.values(n.sp),ok=L.filter(o=>o.max>=NIGHT_MIN).length;return`<button class="srow" data-night="${k}"><span class="tart" style="width:40px;height:40px;border-radius:10px">${svgIc("moon",20)}</span><span class="sn"><b>Nuit · ${fmtD(n.start)} ${fmtT(n.start)}</b><small>${n.end?dureeTxt(n.end-n.start):"en cours"} · ${ok} espèce${ok>1?"s":""} ≥ 80 % · ${L.length} au total</small></span><span class="sp2">›</span></button>`}).join("")}</div><h3>Sorties</h3>`:"")+(ses.length?`<div class="sumlist">${ses.slice(0,40).map((s,k)=>`<button class="srow" data-ses="${k}"><span class="tart" style="width:40px;height:40px;border-radius:10px">${svgIc(s.kind==="nocmig"?"moon":"bird",20)}</span><span class="sn"><b>${s.kind==="nocmig"?"Nuit":"Sortie"} · ${fmtD(s.start)} ${fmtT(s.start)}</b><small>${dureeTxt(s.end-s.start)} · ${s.list.length} espèce${s.list.length>1?"s":""} · ${esc(s.list.slice(0,3).map(x=>x.fr).join(", "))}${s.list.length>3?"…":""}</small></span><span class="sp2">›</span></button>`).join("")}</div>`
+   :(nights.length?"":`<p class="empty">Tes sorties apparaissent ici quand tu arrêtes une écoute de plus de 15 secondes avec au moins une espèce.</p>`));
+  el.querySelectorAll("[data-night]").forEach(b=>b.onclick=()=>openNight(getNights()[+b.dataset.night]));
   el.querySelectorAll("[data-ses]").forEach(b=>b.onclick=()=>openSummary(getSessions()[+b.dataset.ses]))}
 
 /* fiches */
@@ -1513,7 +1613,7 @@ const TOUR=[
   {ic:"list",t:"La liste qui s'allume",d:"En dessous, les espèces entendues gardent leur place et s'allument quand elles chantent. Chaque ligne dit chant ou cri, et « 2 IA ✓ » quand BirdNET+ et Perch v2 sont d'accord. Un « ? » veut dire : pas encore sûr."},
   {ic:"two",t:"Valider, écarter",d:"Glisse une espèce vers la droite pour la valider au carnet, vers la gauche pour l'écarter : Ramage apprend de tes choix. Touche-la pour sa fiche : photo, référence, ressemblance et variance."},
   {ic:"frame",t:"Capturer, analyser",d:"Les 30 dernières secondes restent en mémoire : « Capturer » garde un son déjà passé. Dans Analyse, encadre un son au doigt : mesures, ralenti jusqu'à ⅛, nettoyage, comparaison aux références."},
-  {ic:"moon",t:"La nuit",d:"Bouton « Nuit » : écran noir, téléphone sur batterie. Ramage garde 4 s autour de chaque son et te donne le rapport au réveil."},
+  {ic:"moon",t:"La nuit complète",d:"Bouton « Nuit » : écran noir, téléphone sur batterie, parabole branchée. Ramage enregistre toute la nuit et garde les 5 meilleurs extraits de chaque espèce. Au réveil : un dossier trié par espèce, prêt à m'envoyer pour Faune-France."},
   {ic:"shield",t:"Tout reste chez toi",d:"Pas de compte. Le son est analysé sur le téléphone et n'est jamais envoyé. Sauvegarde de temps en temps (Réglages) et ajoute Ramage à l'écran d'accueil depuis Safari."}];
 const TST={i:0};
 function renderTour(){const s=TOUR[TST.i],last=TST.i===TOUR.length-1;
@@ -1527,6 +1627,7 @@ $("#tour").addEventListener("touchend",e=>{if(TST.x==null)return;const dx=e.chan
 
 /* nouveautés */
 const NEWS=[
+  {n:"1.4",d:"28 octobre 2026",items:[["moon","La nuit complète","Toute la nuit enregistrée (AAC, une pièce par heure) et, pour chaque espèce, les 5 meilleurs extraits de 10 s. Au réveil : un dossier ZIP trié nuit › espèce › extraits, avec le tableau des espèces à 80 % et plus."]]},
   {n:"1.3",d:"28 octobre 2026",items:[["bird","Les raretés ne sont plus effacées","Avant, une espèce non attendue ici cette semaine (comme le Pouillot verdâtre à Lanton) était filtrée d'office. Maintenant elle passe si BirdNET+ est très sûr, marquée « rareté ? à vérifier »."]]},
   {n:"1.2.1",d:"28 octobre 2026",items:[["two","Perch : légère ou complète","Choisis dans Réglages › Modèles : la légère (131 Mo) ou la complète (413 Mo, pleine précision). Les deux peuvent rester sur le téléphone."]]},
   {n:"1.2",d:"28 octobre 2026",items:[["two","Perch v2 allégé","Version int8 de 131 Mo au lieu de 413 : elle tient dans la mémoire de l'iPhone. Elle est servie par l'appli elle-même, rangée par morceaux sur le téléphone, et le téléchargement reprend s'il est coupé. L'ancien fichier de 413 Mo est supprimé pour libérer la place."]]},
@@ -1625,7 +1726,7 @@ refreshSpeciesList();loadClip(genDemo());renderLive();setAiChip();startSplash();
 openDB().then(()=>{learnLoad();renderLog()});
 if(!IN_CLAUDE)ensureAI().then(autoPerch);
 window.addEventListener("online",refPump);
-if(location.hostname==="localhost")window.__r={AI,LIVE,MARKS,AUD,SPECT,renderLive,openFocus,addMark,drawOverlay,REF,S,get running(){return running}};
+if(location.hostname==="localhost")window.__r={AI,LIVE,MARKS,AUD,SPECT,renderLive,openFocus,addMark,drawOverlay,REF,S,nightHit,openNight,exportNightZip,getNights,get running(){return running}};
 /* mise à jour : GitHub Pages garde la page 10 min en cache, on compare avec la version en ligne */
 async function checkUpdate(){if(IN_CLAUDE||!/^https?:/.test(location.protocol))return;try{const r=await fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"});if(!r.ok)return;const m=(await r.text()).match(/const VERSION="([\d.]+)"/);
   if(m&&m[1]!==VERSION&&vcmp(m[1],VERSION)>0){$("#updTxt").textContent=`Nouvelle version v${m[1]}`;$("#upd").hidden=false;$("#updGo").onclick=()=>location.replace(location.pathname+"?v="+m[1])}}catch(e){}}

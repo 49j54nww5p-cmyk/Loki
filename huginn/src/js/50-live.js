@@ -88,7 +88,7 @@ async function liveTick(){if(!running||aiBusy||!AI.ready.bn||!AI.labels||!ac)ret
     const hits=cand.filter(i=>sc[i]>=thr&&!AI.rejected.has(i)).sort((a,b)=>sc[b]-sc[a]).slice(0,4);let alert=null;
     for(const i of hits){const r=liveRec(i,now);if(r.isNew){r.isNew=false;if(!alert||r.lifer)alert=r}
       r.n++;r.last=now;r.cur=sc[i];r.bn=Math.max(r.bn,sc[i]);if(sc[i]>r.max){r.max=sc[i];r.emb=o.emb;r.seg=fit(x,96000).slice();updateKind(r)}
-      addMark(i,s.end-s.length,s.end,sc[i]);
+      addMark(i,s.end-s.length,s.end,sc[i]);if(autoState.on)nightHit(i,sc[i],s.end);
       if(SES){const sp=SES.sp.get(i)||{fr:r.fr,la:r.la,n:0,max:0,lifer:r.lifer};sp.n++;sp.max=Math.max(sp.max,sc[i]);sp.kind=r.kind?r.kind.k:sp.kind;SES.sp.set(i,sp)}}
     if(alert&&!autoState.on)alertNew(alert.lifer,alert.fr);
     $("#aiState").textContent=`${AI.nHere?AI.nHere+" esp. possibles · ":""}seuil ${Math.round(thr*100)} %`;renderLive()}
@@ -154,8 +154,9 @@ $("#capLbl").textContent=S.capSec+" s";
 let wakeLock=null;
 async function lockScreen(){try{if(navigator.wakeLock)wakeLock=await navigator.wakeLock.request("screen")}catch(e){wakeLock=null}}
 function updateBlack(){$("#blackTxt").textContent=`écoute nocturne · ${autoState.count} événement${autoState.count>1?"s":""} · touche 2 fois pour sortir`;$("#autoCount").textContent=autoState.count?String(autoState.count):""}
-$("#btnBlack").onclick=()=>{autoState.on=true;autoState.since=Date.now();$("#black").hidden=false;updateBlack();lockScreen()};
-let tapT=0;$("#black").addEventListener("pointerup",()=>{const n=Date.now();if(n-tapT<450){autoState.on=false;$("#black").hidden=true;if(wakeLock){wakeLock.release().catch(()=>{});wakeLock=null}paintBg(liveX,liveC);renderLog();nocmigReport(autoState.since||0)}tapT=n});
+$("#btnBlack").onclick=()=>{autoState.on=true;autoState.since=Date.now();nightStart();$("#black").hidden=false;updateBlack();lockScreen()};
+let tapT=0;$("#black").addEventListener("pointerup",async()=>{const n=Date.now();if(n-tapT<450){tapT=0;autoState.on=false;$("#blackTxt").textContent="fin de la nuit : préparation…";if(wakeLock){wakeLock.release().catch(()=>{});wakeLock=null}
+  const night=await nightStop();$("#black").hidden=true;paintBg(liveX,liveC);renderLog();if(night)openNight(night);else nocmigReport(autoState.since||0);return}tapT=n});
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&autoState.on)lockScreen()});
 async function autoCapture(){const s=grab(4);if(!s)return;const id=uid(),m=measure(stftOf(s,ac.sampleRate),null);
   const e={id,ts:Date.now(),lat:lastFix?lastFix.lat:null,lon:lastFix?lastFix.lon:null,acc:lastFix?lastFix.acc:null,sp:"",la:"",type:"",notes:"",source:"auto",dur:s.length/ac.sampleRate,m};

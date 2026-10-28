@@ -11,9 +11,10 @@ function renderLog(){if($("#tab-log").hidden)return;const ses=getSessions();
   if(logPane==="ses")renderSessions(ses);else if(logPane==="ent")renderEntries();else if(logPane==="plu")renderPlumage();else renderMap()}
 
 /* sorties et nuits */
-function renderSessions(ses){const el=$("#logSes");
-  el.innerHTML=ses.length?`<div class="sumlist">${ses.slice(0,40).map((s,k)=>`<button class="srow" data-ses="${k}"><span class="tart" style="width:40px;height:40px;border-radius:10px">${svgIc(s.kind==="nocmig"?"moon":"bird",20)}</span><span class="sn"><b>${s.kind==="nocmig"?"Nuit":"Sortie"} · ${fmtD(s.start)} ${fmtT(s.start)}</b><small>${dureeTxt(s.end-s.start)} · ${s.list.length} espèce${s.list.length>1?"s":""} · ${esc(s.list.slice(0,3).map(x=>x.fr).join(", "))}${s.list.length>3?"…":""}</small></span><span class="sp2">›</span></button>`).join("")}</div>`
-   :`<p class="empty">Tes sorties apparaissent ici quand tu arrêtes une écoute de plus de 15 secondes avec au moins une espèce.</p>`;
+function renderSessions(ses){const el=$("#logSes"),nights=getNights();
+  el.innerHTML=(nights.length?`<h3>Nuits complètes</h3><div class="sumlist">${nights.map((n,k)=>{const L=Object.values(n.sp),ok=L.filter(o=>o.max>=NIGHT_MIN).length;return`<button class="srow" data-night="${k}"><span class="tart" style="width:40px;height:40px;border-radius:10px">${svgIc("moon",20)}</span><span class="sn"><b>Nuit · ${fmtD(n.start)} ${fmtT(n.start)}</b><small>${n.end?dureeTxt(n.end-n.start):"en cours"} · ${ok} espèce${ok>1?"s":""} ≥ 80 % · ${L.length} au total</small></span><span class="sp2">›</span></button>`}).join("")}</div><h3>Sorties</h3>`:"")+(ses.length?`<div class="sumlist">${ses.slice(0,40).map((s,k)=>`<button class="srow" data-ses="${k}"><span class="tart" style="width:40px;height:40px;border-radius:10px">${svgIc(s.kind==="nocmig"?"moon":"bird",20)}</span><span class="sn"><b>${s.kind==="nocmig"?"Nuit":"Sortie"} · ${fmtD(s.start)} ${fmtT(s.start)}</b><small>${dureeTxt(s.end-s.start)} · ${s.list.length} espèce${s.list.length>1?"s":""} · ${esc(s.list.slice(0,3).map(x=>x.fr).join(", "))}${s.list.length>3?"…":""}</small></span><span class="sp2">›</span></button>`).join("")}</div>`
+   :(nights.length?"":`<p class="empty">Tes sorties apparaissent ici quand tu arrêtes une écoute de plus de 15 secondes avec au moins une espèce.</p>`));
+  el.querySelectorAll("[data-night]").forEach(b=>b.onclick=()=>openNight(getNights()[+b.dataset.night]));
   el.querySelectorAll("[data-ses]").forEach(b=>b.onclick=()=>openSummary(getSessions()[+b.dataset.ses]))}
 
 /* fiches */

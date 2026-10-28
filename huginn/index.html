@@ -334,6 +334,24 @@ body.gloves .ctrlrow{grid-template-columns:1fr auto}body.gloves #btnCapture{grid
 .chartwrap{margin:4px max(16px,env(safe-area-inset-left,0px)) 8px}
 .nchart{width:100%;height:auto;display:block}.nchart .bar{fill:var(--spec2)}.nchart .bar.top{fill:var(--accent)}.nchart .ax{stroke:var(--line)}.nchart .tl{fill:var(--muted);font-family:var(--f-mono);font-size:10px}
 #mapCtl select{background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:42px;max-width:100%;color:var(--fg)}
+#tour{position:fixed;inset:0;z-index:210;background:radial-gradient(120% 70% at 50% 30%,#141b1d 0%,#07090a 75%);color:#e9e6df;display:flex;align-items:center;justify-content:center;padding:max(24px,env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) max(24px,env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px))}
+#tourIn{width:min(420px,100%);display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;animation:spl .35s both}
+.tart{width:110px;height:110px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--c);background:color-mix(in srgb,var(--c) 14%,transparent);border:1px solid color-mix(in srgb,var(--c) 45%,transparent);margin-bottom:6px}
+#tourIn h2{font-size:30px;color:#e9e6df}
+#tourIn p{color:#b9c2c5;font-size:16px;line-height:1.55;max-width:34ch}
+.tdots{display:flex;gap:6px;margin:6px 0}.tdots i{width:7px;height:7px;border-radius:50%;background:#3a4246}.tdots i.on{background:#f2a93b;width:20px;border-radius:4px}
+.tact{display:flex;gap:10px;width:100%;justify-content:center}.tact .btn{flex:1;max-width:200px;min-height:52px}
+#tour .btn.ghost{color:#e9e6df;border-color:#2a3135}#tour .btn.primary{background:#f2a93b;color:#0b0d0e;border-color:#f2a93b}
+.newslist{display:flex;flex-direction:column;gap:2px;margin:0 max(16px,env(safe-area-inset-left,0px))}
+.nv{display:flex;justify-content:space-between;align-items:baseline;padding:12px 0 4px;border-bottom:1px solid var(--line);font-family:var(--f-mono);font-size:12px;color:var(--muted)}.nv b{color:var(--accent);font-size:14px}
+.nit{display:grid;grid-template-columns:36px 1fr;gap:10px;padding:9px 0;align-items:start}
+.nic{width:36px;height:36px;border-radius:10px;background:var(--surface);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--accent)}
+.nit b{display:block}.nit small{color:var(--muted);font-size:13px}
+.prose{margin:0 max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:8px;font-size:15px}
+.prose h3{margin-top:8px;color:var(--fg)}.prose ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}.prose .lead2{font-size:16px;font-weight:600}
+.srcs{display:flex;flex-direction:column;gap:8px;margin:0 max(16px,env(safe-area-inset-left,0px))}
+.src{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:10px 12px;display:flex;flex-direction:column;gap:4px;font-size:14px}
+.src .sh{display:flex;justify-content:space-between;gap:10px;align-items:baseline}.src a{font-size:12px;white-space:nowrap}.src small{color:var(--muted);font-size:12px}
 #hapL{position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;left:-10px;top:-10px}
 </style>
 
@@ -540,7 +558,12 @@ body.gloves .ctrlrow{grid-template-columns:1fr auto}body.gloves #btnCapture{grid
       </div>
       <div class="card">
         <h3>Feuille de route</h3>
-        <p class="small"><b>V0</b> terrain sans IA · <b>V1</b> BirdNET+ en direct et en analyse, Perch v2, filtre géo · <b>V2</b> bibliothèque de référence France (Commons), type de vocalise probable, spectros côte à côte, variance · <b>V0.4</b> nouvelle interface, cartes oiseaux, sorties, nocmig, liste de vie · <b>V0.5 (ici)</b> IA qui apprend, Perch en direct, pièges sonores, annonce vocale, sauvegarde · <b>ensuite</b> xeno-canto avec clé, espèces confusables · <b>V3</b> alertes raretés / lifers / liste rouge, lien avec Loki.</p>
+        <p class="small"><b>V0</b> terrain sans IA · <b>V1</b> BirdNET+ en direct et en analyse, Perch v2, filtre géo · <b>V2</b> bibliothèque de référence France (Commons), type de vocalise probable, spectros côte à côte, variance · <b>V0.4</b> nouvelle interface, cartes oiseaux, sorties, nocmig, liste de vie · <b>V0.5</b> IA qui apprend, Perch en direct, pièges sonores, annonce vocale, sauvegarde · <b>ensuite</b> xeno-canto avec clé, espèces confusables · <b>V3</b> alertes raretés / lifers / liste rouge, lien avec Loki.</p>
+      </div>
+      <div class="card">
+        <h3>À propos · <span class="mono" id="aboutVer"></span></h3>
+        <div class="row"><button class="btn" id="btnTour">Revoir le mode d'emploi</button><button class="btn" id="btnNews">Quoi de neuf ?</button></div>
+        <div class="row"><button class="btn" id="btnAbout">Confidentialité et sources</button><button class="btn ghost" id="btnWipe">Tout effacer</button></div>
       </div>
       <button class="btn ghost" id="btnDemo">Charger l'extrait de démonstration</button>
     </section>
@@ -560,6 +583,7 @@ body.gloves .ctrlrow{grid-template-columns:1fr auto}body.gloves #btnCapture{grid
   <div class="sptitle">HUGINN</div><div class="spsub">Le corbeau qui écoute pour toi</div>
   <div class="spstat"><div><span>BirdNET+ V3.0</span><b id="spBn">…</b></div><div><span>Espèces probables</span><b id="spSp">…</b></div><div><span>Liste de vie</span><b id="spLife">0</b></div><div><span>GPS</span><b id="spGps">…</b></div></div>
   <button id="spGo">ÉCOUTER</button><button id="spSkip">Entrer sans écouter</button></div>
+<div id="tour" hidden role="dialog" aria-modal="true" aria-label="Mode d'emploi"><div id="tourIn"></div></div>
 <label id="hapL" aria-hidden="true"><input type="checkbox" switch tabindex="-1"></label>
 <div id="upd" hidden><span id="updTxt"></span><button class="btn primary" id="updGo">Recharger</button></div>
 
@@ -567,7 +591,7 @@ body.gloves .ctrlrow{grid-template-columns:1fr auto}body.gloves #btnCapture{grid
 <script>
 (function(){
 "use strict";
-const VERSION="0.5.0";
+const VERSION="0.6.0";
 const IN_CLAUDE=!!(window.claude&&window.claude.use);
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 $("#ver").textContent="v"+VERSION;
@@ -1475,6 +1499,100 @@ $("#btnLearnReset").onclick=()=>{const b=$("#btnLearnReset");if(b.dataset.c!=="1
   el.onchange=()=>{S[k]=el.checked;saveS();if(k==="gloves")document.body.classList.toggle("gloves",el.checked);if(k==="voice"&&el.checked)speak("Annonce vocale activée");if(k==="perchLive"&&el.checked)autoPerch()}});
 document.body.classList.toggle("gloves",!!S.gloves);
 bindSeg("#segSun","sun",applySun);applySun();
+
+/* =========================================================
+   v0.6 : mode d'emploi d'entrée, quoi de neuf, confidentialité et sources
+   ========================================================= */
+const IC={
+  bird:'<path d="M3 15.5c1.8.2 3.3-.3 4.6-1.4 1.5-1.3 2.6-3.7 5.6-4.4 2.4-.6 4.3.2 5.4 1.4l2.9-.3-2.3 1.9c0 3.7-3 6.8-7.3 6.8-2.7 0-4.9-1-6.5-2.6z"/>',
+  wave:'<path d="M3 12h2M7 8v8M11 5v14M15 9v6M19 7v10"/>',
+  cards:'<rect x="4" y="4" width="16" height="6" rx="2"/><rect x="4" y="14" width="16" height="6" rx="2"/><path d="M15 7h2M15 17h2"/>',
+  frame:'<rect x="3" y="5" width="18" height="14" rx="2"/><rect x="8" y="9" width="6" height="5" stroke-dasharray="2 2"/>',
+  book:'<path d="M6 3h10l3 3v15H6z"/><path d="M9 9h7M9 13h7M9 17h4"/>',
+  moon:'<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
+  shield:'<path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+  spark:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"/>'};
+const svgIc=(k,s)=>`<svg viewBox="0 0 24 24" width="${s||24}" height="${s||24}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[k]||IC.spark}</svg>`;
+const TOUR=[
+  {ic:"bird",c:"#f2a93b",t:"Bienvenue sur Huginn",d:"Le corbeau qui écoute pour toi : il reconnaît les oiseaux à leurs chants et à leurs cris, directement sur ton téléphone, même sans réseau une fois les modèles chargés."},
+  {ic:"wave",c:"#9ed3bb",t:"Écouter",d:"Touche ÉCOUTER et tends le téléphone. Le spectro défile, les 30 dernières secondes restent en mémoire : « Capturer » garde un son même s'il est déjà passé. Double-tap sur le spectro pour le passer en plein écran."},
+  {ic:"cards",c:"#7fc8d8",t:"Les cartes oiseaux",d:"Chaque espèce entendue arrive en carte : photo, chant ou cri, rareté ici, ▶ pour la référence. Glisse à droite pour valider au carnet, à gauche pour écarter : Huginn apprend de tes choix. Touche une carte pour la vue détaillée."},
+  {ic:"frame",c:"#f2a93b",t:"Analyser un son",d:"Dans Analyse, encadre un son au doigt : fréquences, durée, notes, ralenti jusqu'à ⅛ pour les sons aigus, nettoyage du bruit. « Identifier » compare ton son aux enregistrements de référence et te montre la variance."},
+  {ic:"book",c:"#e9e6df",t:"Ton carnet",d:"Tes fiches, ta liste de vie, tes sorties avec leur résumé, la galerie de tes sons et la carte de tes contacts. Exports CSV et GeoJSON pour QGIS."},
+  {ic:"moon",c:"#a58bff",t:"La nuit",d:"Écran noir, téléphone sur batterie externe : Huginn garde chaque cri de la nuit et te donne le rapport au réveil, avec la courbe heure par heure."},
+  {ic:"shield",c:"#7fb48c",t:"Tout reste chez toi",d:"Pas de compte. Le son est analysé sur le téléphone et n'est jamais envoyé. Sauvegarde de temps en temps (Réglages) et ajoute Huginn à l'écran d'accueil depuis Safari."}];
+const NEWS=[
+  {n:"0.6",d:"28 octobre 2026",items:[["spark","Mode d'emploi","Une présentation au premier lancement, à revoir dans Réglages."],["shield","Confidentialité et sources","Ce qui reste sur ton téléphone, ce qui en sort, et d'où vient chaque donnée."],["book","Quoi de neuf ?","Les nouveautés s'affichent après chaque mise à jour."]]},
+  {n:"0.5",d:"28 octobre 2026",items:[["bird","Huginn apprend de toi","Tes validations et rejets affinent les détections suivantes."],["wave","Perch v2 en direct","Un 2e avis toutes les 5 s, badge P ✓ quand il est d'accord."],["spark","Pièges sonores","Sosies et imitations signalés, avec le critère qui les sépare."],["cards","Terrain","Annonce vocale, mode gants, plein écran, plein soleil, seuil auto."],["book","Données","Nettoyage du son, galerie, sauvegarde fichier, carte filtrable."]]},
+  {n:"0.4",d:"28 octobre 2026",items:[["cards","Nouvelle interface","Cartes oiseaux avec photo, glisser pour valider ou écarter, vue détaillée."],["moon","Sorties et nuits","Résumé à l'arrêt, rapport de nuit, liste de vie."]]},
+  {n:"0.3",d:"28 octobre 2026",items:[["frame","Bibliothèque de référence","Comparaison aux enregistrements libres, type probable et variance."]]},
+  {n:"0.2",d:"28 octobre 2026",items:[["bird","Identification","BirdNET+ en direct, Perch v2 en analyse, filtre géographique."]]},
+  {n:"0.1",d:"28 octobre 2026",items:[["wave","Première version","Spectro, capture rétro, analyse, carnet GPS."]]}];
+const TST={i:0,after:null};
+function renderTour(){const s=TOUR[TST.i],last=TST.i===TOUR.length-1;
+  $("#tourIn").innerHTML=`<div class="tart" style="--c:${s.c}">${svgIc(s.ic,44)}</div><span class="eyebrow">${TST.i+1} / ${TOUR.length}</span><h2>${esc(s.t)}</h2><p>${esc(s.d)}</p>
+   <div class="tdots">${TOUR.map((_,k)=>`<i class="${k===TST.i?"on":""}"></i>`).join("")}</div>
+   <div class="tact">${last?"":`<button class="btn ghost" id="tSkip">Passer</button>`}<button class="btn primary" id="tNext">${last?(TST.after==="listen"?"C'est parti : écouter":"C'est parti !"):"Suivant"}</button></div>`;
+  $("#tNext").onclick=()=>{if(last)endTour();else{TST.i++;renderTour()}};if(!last)$("#tSkip").onclick=endTour}
+function openTour(after){TST.i=0;TST.after=after||null;$("#tour").hidden=false;renderTour()}
+function endTour(){$("#tour").hidden=true;S.toured=Date.now();S.newsSeen=VERSION;saveS();if(TST.after==="listen"&&!running)startListen();TST.after=null}
+$("#tour").addEventListener("touchstart",e=>{TST.x=e.touches[0].clientX},{passive:true});
+$("#tour").addEventListener("touchend",e=>{if(TST.x==null)return;const dx=e.changedTouches[0].clientX-TST.x;TST.x=null;if(dx<-60&&TST.i<TOUR.length-1){TST.i++;renderTour()}else if(dx>60&&TST.i>0){TST.i--;renderTour()}});
+
+function openNews(all){const list=all?NEWS:NEWS.filter(n=>!S.newsSeen||vcmp(n.n,S.newsSeen)>0);if(!list.length)return;
+  openSheet(`<div class="sumhead"><span class="eyebrow">Mise à jour · version ${esc(VERSION)}</span><h2>${all?"Toutes les versions":"Quoi de neuf ?"}</h2></div>
+   <div class="newslist">${list.map(n=>`${list.length>1?`<div class="nv"><b>v${esc(n.n)}</b><span>${esc(n.d)}</span></div>`:""}${n.items.map(([ic,t,d])=>`<div class="nit"><span class="nic">${svgIc(ic,20)}</span><span><b>${esc(t)}</b><small>${esc(d)}</small></span></div>`).join("")}`).join("")}</div>
+   <div class="row" style="margin:6px max(16px,env(safe-area-inset-left,0px)) 0"><button class="btn primary" id="newsOk">Super !</button></div>`,"news");
+  $("#newsOk").onclick=closeSheet;S.newsSeen=VERSION;saveS()}
+function vcmp(a,b){const x=String(a).split(".").map(Number),y=String(b).split(".").map(Number);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d}return 0}
+
+const SOURCES=[
+  ["BirdNET+ V3.0 et son géomodèle","https://github.com/birdnet-team/birdnet-live-app","L'identification des chants et des cris, et la liste des espèces probables selon le lieu et la semaine. Le modèle tourne sur ton téléphone.","BirdNET Team (K. Lisa Yang Center, Cornell Lab of Ornithology, et Université technique de Chemnitz). Licence Apache 2.0. Modèle adapté pour calculer dans le navigateur, résultats vérifiés identiques."],
+  ["Taxonomie BirdNET","https://github.com/birdnet-team/birdnet-live-app","Les noms français et latins des 9 789 espèces.","Fournie avec les modèles BirdNET+."],
+  ["Perch v2","https://huggingface.co/justinchuby/Perch-onnx","Le 2e avis en analyse fine et en direct, téléchargé seulement si tu le demandes.","Google DeepMind, licence Apache 2.0. Version ONNX de justinchuby, liste des classes de cgeorgiaw/Perch (Hugging Face)."],
+  ["onnxruntime-web","https://onnxruntime.ai","Le moteur qui fait tourner les modèles dans le navigateur, chargé depuis jsDelivr.","Microsoft, licence MIT."],
+  ["Wikimedia Commons","https://commons.wikimedia.org","Les enregistrements de référence : comparaison, type de vocalise, variance et sons à réécouter.","Licence libre propre à chaque fichier, affichée avec l'auteur."],
+  ["iNaturalist","https://www.inaturalist.org","Les photos des espèces sur les cartes et dans la vue détaillée.","Chaque photo garde sa licence et son auteur, affichés dans la vue détaillée."],
+  ["OpenStreetMap","https://www.openstreetmap.org/copyright","Le fond de la carte du carnet.","© contributeurs OpenStreetMap, licence ODbL."],
+  ["Leaflet","https://leafletjs.com","L'affichage de la carte interactive, chargé depuis cdnjs.","Licence BSD-2-Clause."],
+  ["IBM Plex Sans, IBM Plex Mono, Big Shoulders Display","https://fonts.google.com","La typographie de l'appli, chargée depuis Google Fonts.","SIL Open Font License 1.1."],
+  ["Critères des sosies sonores","","Les textes des pièges sonores, résumé simplifié des critères classiques des guides, rédigé pour l'appli.","En cas de doute, ton guide et ton oreille font foi."],
+  ["GitHub Pages","https://pages.github.com","L'hébergement de l'appli et des modèles BirdNET+.","Voir la confidentialité ci-dessus."]];
+function openAbout(){openSheet(`<div class="sumhead"><span class="eyebrow">Huginn · v${esc(VERSION)}</span><h2>Confidentialité et sources</h2></div>
+  <div class="prose">
+   <p class="lead2">Pas de compte, pas de publicité, pas de traceur, pas de mesure d'audience. Le son du micro est analysé sur ton téléphone et n'est jamais envoyé.</p>
+   <h3>Ce qui reste sur ton téléphone</h3>
+   <ul><li>Ton carnet, tes sons, ta liste de vie, tes sorties et nuits, tes réglages.</li>
+   <li>Ce que Huginn a appris de tes validations, la bibliothèque de références, les modèles d'IA et les photos en mémoire, pour aller vite et marcher sans réseau.</li>
+   <li>Ta position GPS : elle sert au géomodèle (calculé sur le téléphone) et à tes fiches. Elle n'est envoyée à personne.</li>
+   <li>Tout est dans le stockage du navigateur. Réglages, « Tout effacer », supprime tout.</li></ul>
+   <h3>Ce qui sort de ton téléphone</h3>
+   <ul><li>Huginn télécharge ses fichiers et ses modèles chez les services de la liste ci-dessous. Comme pour toute page web, ils voient l'adresse IP de ton appareil et ce qui est demandé.</li>
+   <li><b>Wikimedia Commons et iNaturalist</b> reçoivent seulement le nom latin de l'espèce dont il faut les sons ou la photo.</li>
+   <li><b>La carte</b> demande à OpenStreetMap les tuiles de la zone affichée.</li>
+   <li><b>Perch v2</b> n'est téléchargé chez Hugging Face que si tu le demandes.</li>
+   <li><b>Tes sauvegardes et exports</b> ne partent que là où tu les ranges (Fichiers, iCloud, mail…).</li>
+   <li><b>Le partage d'une sortie</b> envoie seulement le texte que tu vois, à qui tu choisis.</li></ul>
+   <h3>Hébergement</h3>
+   <ul><li>Huginn est hébergé par GitHub Pages, qui enregistre l'adresse IP des visiteurs pour des raisons de sécurité.</li>
+   <li>Les polices viennent de Google Fonts, le moteur d'IA de jsDelivr et la bibliothèque de carte de cdnjs.</li></ul>
+   <h3>Tes données, tes choix</h3>
+   <ul><li>Tu peux tout exporter (sauvegarde complète, CSV, GeoJSON, WAV) et tout effacer à tout moment, sans rien demander à personne.</li></ul>
+   <small class="muted">Mise à jour : 28 octobre 2026.</small>
+  </div>
+  <div class="sumhead" style="padding-top:8px"><h3>Sources et leur utilité</h3></div>
+  <div class="srcs">${SOURCES.map(([n,u,d,l])=>`<div class="src"><div class="sh"><b>${esc(n)}</b>${u?`<a href="${esc(u)}" target="_blank" rel="noopener">ouvrir ↗</a>`:""}</div><p>${esc(d)}</p><small>${esc(l)}</small></div>`).join("")}</div>`,"about")}
+
+$("#btnTour").onclick=()=>openTour();$("#btnNews").onclick=()=>openNews(true);$("#btnAbout").onclick=openAbout;
+$("#btnWipe").onclick=async()=>{const b=$("#btnWipe");if(b.dataset.c!=="1"){b.dataset.c="1";b.textContent="Toucher encore pour tout effacer";setTimeout(()=>{b.dataset.c="";b.textContent="Tout effacer"},5000);return}
+  try{Object.keys(localStorage).filter(k=>k.startsWith("huginn.")).forEach(k=>localStorage.removeItem(k))}catch(e){}
+  try{if(idb)idb.close();indexedDB.deleteDatabase("huginn")}catch(e){}try{await caches.delete("huginn-models")}catch(e){}
+  location.replace(location.pathname)};
+$("#aboutVer").textContent="v"+VERSION;
+
+/* premier lancement : mode d'emploi ; ensuite : nouveautés */
+$("#spGo").onclick=()=>{hideSplash();if(!S.toured){openTour("listen");return}if(!running)startListen();if(S.newsSeen&&vcmp(VERSION,S.newsSeen)>0)setTimeout(()=>openNews(false),400)};
+$("#spSkip").onclick=()=>{hideSplash();if(!S.toured){openTour();return}if(!S.newsSeen||vcmp(VERSION,S.newsSeen)>0)setTimeout(()=>openNews(false),400)};
 
 /* ---------- démarrage ---------- */
 if(S.night)document.documentElement.classList.add("night");$("#nightToggle").checked=!!S.night;

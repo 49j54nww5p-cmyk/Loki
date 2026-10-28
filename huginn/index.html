@@ -172,6 +172,7 @@ nav.tabs button[aria-selected="true"]{color:var(--accent)}
 #black{position:fixed;inset:0;background:#000;z-index:100;display:flex;align-items:flex-end;justify-content:center;padding-bottom:calc(30px + env(safe-area-inset-bottom,0px));color:#3a3a3a;font-family:var(--f-mono);font-size:12px;text-align:center}
 #toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;z-index:90;max-width:calc(100% - 32px);text-align:center;opacity:0;pointer-events:none;transition:opacity .2s}
 #toast.show{opacity:1}
+#upd{position:fixed;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:95;background:var(--surface);border:1px solid var(--accent);border-radius:var(--r);padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px}
 
 /* Leaflet minimal (feuille de style de la lib non chargeable ici) */
 .leaflet-pane,.leaflet-tile,.leaflet-marker-icon,.leaflet-tile-container,.leaflet-pane>svg,.leaflet-pane>canvas,.leaflet-layer{position:absolute;left:0;top:0}
@@ -377,12 +378,13 @@ nav.tabs button[aria-selected="true"]{color:var(--accent)}
 </div>
 <div id="black" hidden><div id="blackTxt"></div></div>
 <div id="toast" role="status" aria-live="polite"></div>
+<div id="upd" hidden><span id="updTxt"></span><button class="btn primary" id="updGo">Recharger</button></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 (function(){
 "use strict";
-const VERSION="0.2.2";
+const VERSION="0.2.3";
 const IN_CLAUDE=!!(window.claude&&window.claude.use);
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 $("#ver").textContent="v"+VERSION;
@@ -902,6 +904,10 @@ requestAnimationFrame(()=>{sizeCanvas(liveC);paintBg(liveX,liveC)});
 loadClip(genDemo());
 openDB().then(renderLog);renderLog();
 setAiChip();if(!IN_CLAUDE)ensureAI();
+/* mise à jour : GitHub Pages garde la page 10 min en cache, on vérifie la version en ligne */
+async function checkUpdate(){if(IN_CLAUDE||!/^https?:/.test(location.protocol))return;try{const r=await fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"});if(!r.ok)return;const t=await r.text();const m=t.match(/const VERSION="([\d.]+)"/);
+  if(m&&m[1]!==VERSION){$("#updTxt").textContent=`Nouvelle version v${m[1]} disponible`;$("#upd").hidden=false;$("#updGo").onclick=()=>{location.replace(location.pathname+"?v="+m[1])}}}catch(e){}}
+checkUpdate();document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")checkUpdate()});
 })();
 </script>
 </body></html>

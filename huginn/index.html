@@ -521,7 +521,7 @@ body.gloves .ctrlrow{grid-template-columns:1fr auto}body.gloves #btnCapture{grid
       </div>
       <div class="card">
         <h3>Affichage</h3>
-        <div class="ctl"><span class="lbl">Mode plein soleil</span><div class="seg" id="segSun"><button data-v="0">off</button><button data-v="1">auto 9h–18h</button><button data-v="2">on</button></div></div>
+        <div class="ctl"><span class="lbl">Mode plein soleil</span><div class="seg" id="segSun"><button data-v="0">off</button><button data-v="1">auto 9h–18h</button><button data-v="2">toujours</button></div></div>
       </div>
       <div class="card">
         <h3>Huginn apprend de toi</h3>
@@ -591,7 +591,7 @@ body.gloves .ctrlrow{grid-template-columns:1fr auto}body.gloves #btnCapture{grid
 <script>
 (function(){
 "use strict";
-const VERSION="0.6.0";
+const VERSION="0.6.1";
 const IN_CLAUDE=!!(window.claude&&window.claude.use);
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 $("#ver").textContent="v"+VERSION;
@@ -605,7 +605,7 @@ function putClip(id,obj){memClips.set(id,obj);if(!idb)return Promise.resolve();r
 function getClip(id){if(memClips.has(id))return Promise.resolve(memClips.get(id));if(!idb)return Promise.resolve(null);return new Promise(res=>{try{const r=idb.transaction("clips").objectStore("clips").get(id);r.onsuccess=()=>res(r.result||null);r.onerror=()=>res(null)}catch(e){res(null)}})}
 function delClip(id){memClips.delete(id);if(!idb)return;try{idb.transaction("clips","readwrite").objectStore("clips").delete(id)}catch(e){}}
 
-const S=Object.assign({sun:1,mapSeason:0,autoCmp:true,fmax:11000,bufSec:30,capSec:10,range:70,thr:12,hp:300,gain:0,deviceId:"",night:false,sens:1,conf:0.35,geo:0},LS.get("huginn.settings",{}));
+const S=Object.assign({sun:0,mapSeason:0,autoCmp:true,fmax:11000,bufSec:30,capSec:10,range:70,thr:12,hp:300,gain:0,deviceId:"",night:false,sens:1,conf:0.35,geo:0},LS.get("huginn.settings",{}));
 const saveS=()=>LS.set("huginn.settings",S);
 let entries=LS.get("huginn.entries",[]);
 const saveEntries=()=>LS.set("huginn.entries",entries);
@@ -1498,7 +1498,8 @@ $("#btnLearnReset").onclick=()=>{const b=$("#btnLearnReset");if(b.dataset.c!=="1
 [["#voiceT","voice"],["#glovesT","gloves"],["#autoThrT","autoThr"],["#perchLiveT","perchLive"]].forEach(([id,k])=>{const el=$(id);if(!el)return;el.checked=k==="gloves"?!!S.gloves:S[k]!==false;
   el.onchange=()=>{S[k]=el.checked;saveS();if(k==="gloves")document.body.classList.toggle("gloves",el.checked);if(k==="voice"&&el.checked)speak("Annonce vocale activée");if(k==="perchLive"&&el.checked)autoPerch()}});
 document.body.classList.toggle("gloves",!!S.gloves);
-bindSeg("#segSun","sun",applySun);applySun();
+if(!S.sunChosen){S.sun=0;saveS()}
+bindSeg("#segSun","sun",()=>{S.sunChosen=true;saveS();applySun()});applySun();
 
 /* =========================================================
    v0.6 : mode d'emploi d'entrée, quoi de neuf, confidentialité et sources
@@ -1522,6 +1523,7 @@ const TOUR=[
   {ic:"moon",c:"#a58bff",t:"La nuit",d:"Écran noir, téléphone sur batterie externe : Huginn garde chaque cri de la nuit et te donne le rapport au réveil, avec la courbe heure par heure."},
   {ic:"shield",c:"#7fb48c",t:"Tout reste chez toi",d:"Pas de compte. Le son est analysé sur le téléphone et n'est jamais envoyé. Sauvegarde de temps en temps (Réglages) et ajoute Huginn à l'écran d'accueil depuis Safari."}];
 const NEWS=[
+  {n:"0.6.1",d:"28 octobre 2026",items:[["moon","Toujours sombre","Le mode plein soleil ne s'active plus tout seul : à choisir dans Réglages si besoin."]]},
   {n:"0.6",d:"28 octobre 2026",items:[["spark","Mode d'emploi","Une présentation au premier lancement, à revoir dans Réglages."],["shield","Confidentialité et sources","Ce qui reste sur ton téléphone, ce qui en sort, et d'où vient chaque donnée."],["book","Quoi de neuf ?","Les nouveautés s'affichent après chaque mise à jour."]]},
   {n:"0.5",d:"28 octobre 2026",items:[["bird","Huginn apprend de toi","Tes validations et rejets affinent les détections suivantes."],["wave","Perch v2 en direct","Un 2e avis toutes les 5 s, badge P ✓ quand il est d'accord."],["spark","Pièges sonores","Sosies et imitations signalés, avec le critère qui les sépare."],["cards","Terrain","Annonce vocale, mode gants, plein écran, plein soleil, seuil auto."],["book","Données","Nettoyage du son, galerie, sauvegarde fichier, carte filtrable."]]},
   {n:"0.4",d:"28 octobre 2026",items:[["cards","Nouvelle interface","Cartes oiseaux avec photo, glisser pour valider ou écarter, vue détaillée."],["moon","Sorties et nuits","Résumé à l'arrêt, rapport de nuit, liste de vie."]]},

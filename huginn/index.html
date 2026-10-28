@@ -67,7 +67,8 @@ header.top .gut{display:flex;align-items:center;gap:10px;padding-block:10px}
 .chip .dot{width:7px;height:7px;border-radius:50%;background:var(--muted)}
 .chip.on{color:var(--fg);border-color:var(--live)}
 .chip.on .dot{background:var(--live);animation:pulse 1.2s infinite}
-.chip.gps-ok .dot{background:var(--ok)}
+.chip.gps-ok .dot,.chip.ai-ok .dot{background:var(--ok)}
+.chip.ai-load .dot{background:var(--accent);animation:pulse 1.2s infinite}
 @keyframes pulse{50%{opacity:.35}}
 @media (prefers-reduced-motion:reduce){.chip.on .dot{animation:none}}
 
@@ -147,6 +148,19 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 #map{height:230px;border-radius:var(--r);border:1px solid var(--line);background:var(--raised)}
 .confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px}
 
+/* Résultats IA */
+.hits{display:flex;flex-direction:column;gap:2px}
+.hit{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);background:none;border-left:0;border-right:0;border-top:0;text-align:left;width:100%}
+.hit:last-child{border-bottom:0}
+.hit .nm{font-weight:700;min-width:0}
+.hit .pc{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:600}
+.hit .sub{grid-column:1/-1;font-size:12px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
+.hit .bar{grid-column:1/-1;height:3px;background:var(--raised);border-radius:2px;overflow:hidden}
+.hit .bar i{display:block;height:100%;background:var(--accent)}
+.hit.weak .nm,.hit.weak .pc{color:var(--muted)}
+.hit.fresh .nm::after{content:" ●";color:var(--live);font-size:11px}
+.agree{font-size:12px;color:var(--ok);font-weight:700}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
 /* Barre d'onglets */
 nav.tabs{flex:none;border-top:1px solid var(--line);background:var(--bg)}
 nav.tabs .gut{display:grid;grid-template-columns:repeat(4,1fr)}
@@ -188,6 +202,7 @@ nav.tabs button[aria-selected="true"]{color:var(--accent)}
     <div class="chips">
       <span class="chip" id="chipMic"><span class="dot"></span><span>micro off</span></span>
       <span class="chip" id="chipGps"><span class="dot"></span><span>GPS —</span></span>
+      <span class="chip" id="chipAi"><span class="dot"></span><span>IA —</span></span>
     </div>
   </div></header>
 
@@ -203,6 +218,10 @@ nav.tabs button[aria-selected="true"]{color:var(--accent)}
       </div>
       <div class="meter" id="meter"><i></i></div>
       <div class="readout"><span id="lvl">niveau — dBFS</span><span id="peakf">pic — kHz</span></div>
+      <div class="card" id="liveCard">
+        <div class="row" style="justify-content:space-between"><h3>En direct · BirdNET+</h3><span class="small muted mono" id="aiState"></span></div>
+        <div id="liveList"><p class="small muted">Les espèces entendues s'affichent ici, les plus récentes en haut. Touche une espèce pour capturer les 10 dernières secondes avec son nom déjà rempli.</p></div>
+      </div>
       <div class="note" id="micNote" hidden></div>
       <div class="row">
         <button class="btn primary big" id="btnListen">Écouter</button>
@@ -263,8 +282,16 @@ nav.tabs button[aria-selected="true"]{color:var(--accent)}
       <div class="measures" id="measures"></div>
 
       <div class="card">
-        <h3>Identification</h3>
-        <p class="small muted">V1 : BirdNET proposera ici un top 3 avec % de confiance et des cadres sur le spectro. V2 : type de vocalise et spectros de référence xeno-canto côte à côte. Pour l'instant c'est ton ID qui compte.</p>
+        <h3>Identification IA</h3>
+        <p class="small muted">Sur le cadre s'il y en a un, sinon sur la vue affichée. BirdNET+ découpe en fenêtres de 3 s, Perch v2 en fenêtres de 5 s.</p>
+        <div class="row"><button class="btn primary" id="btnBn">Identifier · BirdNET+</button><button class="btn" id="btnPerch">Analyse fine · Perch v2</button></div>
+        <div id="perchAsk" hidden></div>
+        <div class="meter" id="perchBar" hidden><i></i></div>
+        <div id="aiRes"></div>
+      </div>
+      <div class="card">
+        <h3>Ta fiche</h3>
+        <p class="small muted">Le type de vocalise (chant, cri…) et les spectros de référence xeno-canto arrivent en V2. L'ID finale reste la tienne.</p>
         <div class="field"><label class="lbl" for="spIn">Espèce</label>
           <input id="spIn" list="spList" placeholder="ex. Pinson des arbres" autocomplete="off">
           <datalist id="spList"></datalist>
@@ -316,9 +343,25 @@ nav.tabs button[aria-selected="true"]{color:var(--accent)}
           <input type="range" id="thr" min="6" max="24" step="1" value="12">
           <span class="small muted">Plus bas = plus d'événements, plus de faux positifs.</span></div>
       </div>
+      <div class="grid2">
+        <div class="ctl"><label for="sens">Sensibilité IA <span class="mono" id="sensLbl"></span></label>
+          <input type="range" id="sens" min="0.5" max="1.5" step="0.05" value="1">
+          <span class="small muted">Plus haut = plus de détections, plus d'erreurs.</span></div>
+        <div class="ctl"><label for="conf">Seuil de confiance <span class="mono" id="confLbl"></span></label>
+          <input type="range" id="conf" min="0.1" max="0.9" step="0.05" value="0.35"></div>
+        <div class="ctl"><span class="lbl">Filtre géographique</span>
+          <div class="seg" id="segGeo"><button data-v="0">auto</button><button data-v="1">France</button><button data-v="2">aucun</button></div>
+          <span class="small muted">Auto : espèces probables autour de ta position cette semaine (France entière sans GPS). Aucun : utile pour les raretés.</span></div>
+      </div>
+      <div class="card">
+        <h3>Modèles IA</h3>
+        <div id="modelInfo" class="small"></div>
+        <div class="row"><button class="btn ghost" id="btnDropPerch">Supprimer Perch du téléphone</button></div>
+        <p class="small muted">BirdNET+ V3.0 (preview 3.1) et son géomodèle, Apache 2.0, BirdNET Team (Cornell Lab / TU Chemnitz). Perch v2, Apache 2.0, Google DeepMind, version ONNX de justinchuby sur Hugging Face.</p>
+      </div>
       <div class="card">
         <h3>Feuille de route</h3>
-        <p class="small"><b>V0 (ici)</b> terrain sans IA · <b>V1</b> BirdNET dans le téléphone, top 3 + cadres · <b>V2</b> serveur Perch v2 + bibliothèque xeno-canto : type de vocalise, références côte à côte, espèces confusables · <b>V3</b> alertes raretés / lifers / liste rouge, lien avec Loki.</p>
+        <p class="small"><b>V0</b> terrain sans IA · <b>V1 (ici)</b> BirdNET+ en direct et en analyse, Perch v2 en analyse fine, filtre géo · <b>V2</b> serveur Perch v2 + bibliothèque xeno-canto : type de vocalise, références côte à côte, espèces confusables · <b>V3</b> alertes raretés / lifers / liste rouge, lien avec Loki.</p>
       </div>
       <button class="btn ghost" id="btnDemo">Charger l'extrait de démonstration</button>
     </section>
@@ -338,7 +381,7 @@ nav.tabs button[aria-selected="true"]{color:var(--accent)}
 <script>
 (function(){
 "use strict";
-const VERSION="0.1.0";
+const VERSION="0.2.0";
 const IN_CLAUDE=!!(window.claude&&window.claude.use);
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 $("#ver").textContent="v"+VERSION;
@@ -352,7 +395,7 @@ function putClip(id,obj){memClips.set(id,obj);if(!idb)return Promise.resolve();r
 function getClip(id){if(memClips.has(id))return Promise.resolve(memClips.get(id));if(!idb)return Promise.resolve(null);return new Promise(res=>{try{const r=idb.transaction("clips").objectStore("clips").get(id);r.onsuccess=()=>res(r.result||null);r.onerror=()=>res(null)}catch(e){res(null)}})}
 function delClip(id){memClips.delete(id);if(!idb)return;try{idb.transaction("clips","readwrite").objectStore("clips").delete(id)}catch(e){}}
 
-const S=Object.assign({fmax:11000,bufSec:30,capSec:10,range:70,thr:12,hp:300,gain:0,deviceId:"",night:false},LS.get("huginn.settings",{}));
+const S=Object.assign({fmax:11000,bufSec:30,capSec:10,range:70,thr:12,hp:300,gain:0,deviceId:"",night:false,sens:1,conf:0.35,geo:0},LS.get("huginn.settings",{}));
 const saveS=()=>LS.set("huginn.settings",S);
 let entries=LS.get("huginn.entries",[]);
 const saveEntries=()=>LS.set("huginn.entries",entries);
@@ -448,8 +491,8 @@ function showMicNote(){const n=$("#micNote");n.hidden=false;
   $("#btnLiveDemo").onclick=startDemoLive}
 function startDemoLive(){ensureCtx();const d=genDemo();const b=ac.createBuffer(1,d.samples.length,d.sr);b.copyToChannel(d.samples,0);
   demoNode=ac.createBufferSource();demoNode.buffer=b;demoNode.loop=true;demoNode.connect(hp);demoNode.start();allocRing();setMicChip("demo");$("#micNote").hidden=true;beginLoop()}
-function beginLoop(){running=true;$("#liveIdle").hidden=true;$("#btnListen").textContent="Arrêter";$("#btnListen").classList.replace("primary","live");$("#btnCapture").disabled=false;$("#btnBlack").disabled=false;lastT=performance.now();cancelAnimationFrame(rafId);rafId=requestAnimationFrame(frame)}
-function stopListen(){running=false;cancelAnimationFrame(rafId);
+function beginLoop(){running=true;$("#liveIdle").hidden=true;$("#btnListen").textContent="Arrêter";$("#btnListen").classList.replace("primary","live");$("#btnCapture").disabled=false;$("#btnBlack").disabled=false;lastT=performance.now();startAI();cancelAnimationFrame(rafId);rafId=requestAnimationFrame(frame)}
+function stopListen(){running=false;cancelAnimationFrame(rafId);stopAI();
   if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}if(srcNode){try{srcNode.disconnect()}catch(e){}srcNode=null}
   if(demoNode){try{demoNode.stop();demoNode.disconnect()}catch(e){}demoNode=null}
   stopGPS();setMicChip("off");$("#btnListen").textContent="Écouter";$("#btnListen").classList.replace("live","primary");$("#btnCapture").disabled=true;$("#btnBlack").disabled=true;
@@ -486,18 +529,19 @@ function frame(now){if(!running)return;rafId=requestAnimationFrame(frame);
 new ResizeObserver(()=>{drawAxis($("#liveAxis"),0,S.fmax);if(liveC.width&&!running){sizeCanvas(liveC);paintBg(liveX,liveC)}}).observe(liveC);
 
 function grab(sec){if(!ring||!ringFill)return null;const sr=ac.sampleRate,n=Math.min(ringFill,Math.round(sec*sr)),out=new Float32Array(n),L=ring.length;let start=(ringPos-n+L)%L;for(let i=0;i<n;i++)out[i]=ring[(start+i)%L];return out}
-function capture(){const s=grab(S.capSec);if(!s){toast("Rien en mémoire pour l'instant");return}
-  loadClip({sr:ac.sampleRate,samples:s,title:"Capture "+fmtT(Date.now()),info:`${(s.length/ac.sampleRate).toFixed(1)} s captées${lastFix?` · ${lastFix.lat.toFixed(5)}, ${lastFix.lon.toFixed(5)} ±${Math.round(lastFix.acc)} m`:""}`,source:demoNode?"demo":"micro",ts:Date.now(),fix:lastFix});
+function capture(sug){const s=grab(S.capSec);if(!s){toast("Rien en mémoire pour l'instant");return}
+  loadClip({sr:ac.sampleRate,samples:s,title:"Capture "+fmtT(Date.now()),info:`${(s.length/ac.sampleRate).toFixed(1)} s captées${lastFix?` · ${lastFix.lat.toFixed(5)}, ${lastFix.lon.toFixed(5)} ±${Math.round(lastFix.acc)} m`:""}`,source:demoNode?"demo":"micro",ts:Date.now(),fix:lastFix,suggest:sug||null});
   showTab("analyse")}
-$("#btnCapture").onclick=capture;
+$("#btnCapture").onclick=()=>capture();
 
 async function autoCapture(){const s=grab(4);if(!s)return;const id=uid(),m=measure(stftOf(s,ac.sampleRate),null);
   const e={id,ts:Date.now(),lat:lastFix?lastFix.lat:null,lon:lastFix?lastFix.lon:null,acc:lastFix?lastFix.acc:null,sp:"",la:"",type:"",notes:"",source:"auto",dur:s.length/ac.sampleRate,m};
+  if(AI.ready.bn&&AI.labels){try{const[sc]=await runBN([await to32k(s.subarray(Math.max(0,s.length-ac.sampleRate*3)),ac.sampleRate)]);const t=topK(sc,1,.1)[0];if(t!=null){const n=nameOf(t);e.ai={m:"BirdNET+",fr:n.fr,la:n.la,sc:sc[t]}}}catch(err){}}
   await putClip(id,{sr:ac.sampleRate,pcm:toI16(s)});entries.unshift(e);saveEntries();autoState.count++;updateBlack();renderLog()}
 
 /* GPS */
 function setGps(t,ok){const c=$("#chipGps");c.classList.toggle("gps-ok",!!ok);c.lastElementChild.textContent=t}
-function startGPS(){if(!navigator.geolocation){setGps("GPS indispo");return}try{watchId=navigator.geolocation.watchPosition(p=>{lastFix={lat:p.coords.latitude,lon:p.coords.longitude,acc:p.coords.accuracy};setGps(`±${Math.round(p.coords.accuracy)} m`,true)},()=>setGps("GPS off"),{enableHighAccuracy:true,maximumAge:15000,timeout:20000})}catch(e){setGps("GPS off")}}
+function startGPS(){if(!navigator.geolocation){setGps("GPS indispo");return}try{watchId=navigator.geolocation.watchPosition(p=>{lastFix={lat:p.coords.latitude,lon:p.coords.longitude,acc:p.coords.accuracy};setGps(`±${Math.round(p.coords.accuracy)} m`,true);updateMask().catch(()=>{})},()=>setGps("GPS off"),{enableHighAccuracy:true,maximumAge:15000,timeout:20000})}catch(e){setGps("GPS off")}}
 function stopGPS(){if(watchId!=null){try{navigator.geolocation.clearWatch(watchId)}catch(e){}watchId=null}}
 
 /* écran noir */
@@ -537,11 +581,14 @@ function drawClip(){sizeCanvas(clipC);const W=clipC.width,H=clipC.height;paintBg
   const span=view.t1-view.t0,st=span>6?1:span>2?.5:span>.8?.2:.1;for(let t=Math.ceil(view.t0/st)*st;t<view.t1;t+=st){const x=tx(t);clipX.fillRect(x,H-5*d,1,5*d);clipX.fillText(t.toFixed(st<.5?1:st<1?1:0)+"s",x+3*d,H-7*d)}
   clipX.globalAlpha=1;
   if(sel){const x0=tx(sel.ta),x1=tx(sel.tb),y0=fy(sel.fb),y1=fy(sel.fa);clipX.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue("--sel").trim();clipX.lineWidth=2*d;clipX.setLineDash([6*d,4*d]);clipX.strokeRect(x0,y0,x1-x0,y1-y0);clipX.setLineDash([])}
+  drawHits();
   if(player&&player.pos!=null){const x=tx(player.pos);clipX.fillStyle=getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();clipX.fillRect(x-d,0,2*d,H)}}
 function loadClip(c){stopPlay();clip=c;spec=stftOf(c.samples,c.sr);renderOff();view={t0:0,t1:spec.dur,f0:0,f1:off.fTop};sel=null;editing=c.entryId||null;
   $("#clipTitle").textContent=c.title||"Analyse";$("#clipInfo").textContent=c.info||"";
   const e=editing&&entries.find(x=>x.id===editing);$("#spIn").value=e?e.sp:"";$("#spLatin").textContent=e?e.la:"";$("#typeIn").value=e?e.type:"";$("#notesIn").value=e?e.notes:"";
   $("#btnSave").textContent=editing?"Mettre à jour la fiche":"Enregistrer au carnet";
+  if(c.suggest){$("#spIn").value=c.suggest.fr;$("#spLatin").textContent=c.suggest.la;c.ai=c.suggest}
+  AI.hits=[];aiResults={bn:null,perch:null};$("#aiRes").innerHTML="";$("#perchAsk").hidden=true;$("#perchBar").hidden=true;
   updateMeasures();requestAnimationFrame(drawClip)}
 new ResizeObserver(()=>drawClip()).observe(clipC);
 
@@ -601,9 +648,9 @@ $("#fileIn").onchange=async e=>{const f=e.target.files[0];if(!f)return;ensureCtx
 
 /* enregistrement au carnet */
 $("#btnSave").onclick=async()=>{if(!clip){toast("Aucun extrait chargé");return}const spTxt=$("#spIn").value.trim(),s=spByFr.get(spTxt.toLowerCase());const m=measure(spec,sel);
-  if(editing){const e=entries.find(x=>x.id===editing);if(e){e.sp=s?s.fr:spTxt;e.la=s?s.la:"";e.type=$("#typeIn").value;e.notes=$("#notesIn").value.trim();if(m&&!m.empty)e.m=m;saveEntries();renderLog();toast("Fiche mise à jour")}return}
+  if(editing){const e=entries.find(x=>x.id===editing);if(e){e.sp=s?s.fr:spTxt;e.la=s?s.la:"";e.type=$("#typeIn").value;e.notes=$("#notesIn").value.trim();if(m&&!m.empty)e.m=m;if(clip.ai)e.ai=clip.ai;saveEntries();renderLog();toast("Fiche mise à jour")}return}
   const id=uid(),fx=clip.fix||(clip.source!=="import"&&clip.source!=="demo"?lastFix:null);
-  const e={id,ts:clip.ts||Date.now(),lat:fx?fx.lat:null,lon:fx?fx.lon:null,acc:fx?fx.acc:null,sp:s?s.fr:spTxt,la:s?s.la:"",type:$("#typeIn").value,notes:$("#notesIn").value.trim(),source:clip.source||"micro",dur:spec.dur,m:m&&!m.empty?m:null};
+  const e={id,ts:clip.ts||Date.now(),lat:fx?fx.lat:null,lon:fx?fx.lon:null,acc:fx?fx.acc:null,sp:s?s.fr:spTxt,la:s?s.la:"",type:$("#typeIn").value,notes:$("#notesIn").value.trim(),source:clip.source||"micro",dur:spec.dur,m:m&&!m.empty?m:null,ai:clip.ai||null};
   await putClip(id,{sr:clip.sr,pcm:toI16(clip.samples)});entries.unshift(e);saveEntries();editing=id;clip.entryId=id;$("#btnSave").textContent="Mettre à jour la fiche";renderLog();toast("Ajouté au carnet")};
 $("#btnWav").onclick=()=>{if(!clip)return;const a=sel?Math.floor(sel.ta*clip.sr):0,b=sel?Math.floor(sel.tb*clip.sr):clip.samples.length;
   const name=`huginn_${new Date(clip.ts||Date.now()).toISOString().slice(0,16).replace(/[-:T]/g,"")}${$("#spIn").value?"_"+$("#spIn").value.trim().replace(/\s+/g,"-"):""}.wav`;saveFile(name,encodeWav(clip.samples.subarray(a,b),clip.sr))};
@@ -619,7 +666,7 @@ function entryHTML(e){const t=e.type?`<span class="tag ${e.type==="Chant"?"t-cha
   const g=e.lat!=null?`<a href="https://maps.apple.com/?ll=${e.lat},${e.lon}&q=Huginn" target="_blank" rel="noopener" class="mono">${e.lat.toFixed(5)}, ${e.lon.toFixed(5)}</a>`:`<span>sans GPS</span>`;
   return`<div class="entry" data-id="${e.id}"><div class="time">${fmtT(e.ts)}<br><span class="small">${fmtD(e.ts)}</span></div>
   <div class="sp">${e.ex?`<span class="ex">exemple · </span>`:""}${e.sp?esc(e.sp)+(e.la?` <span class="latin small">${esc(e.la)}</span>`:""):`<span class="muted">À identifier</span>`}</div>
-  <div class="meta">${t}${src}${m}${g}</div>${e.notes?`<div class="meta">${esc(e.notes)}</div>`:""}
+  <div class="meta">${t}${src}${m}${g}</div>${e.ai?`<div class="meta"><span>IA ${esc(e.ai.m)} : ${esc(e.ai.fr)}${e.ai.sc!=null?` ${Math.round(e.ai.sc*100)} %`:""}</span></div>`:""}${e.notes?`<div class="meta">${esc(e.notes)}</div>`:""}
   ${e.ex?"":`<div class="acts"><button class="btn" data-act="open">Ouvrir</button><button class="btn ghost" data-act="del">Supprimer</button></div>`}</div>`}
 function renderLog(){const list=$("#entries");const show=entries.length?entries:EXAMPLES;
   list.innerHTML=(entries.length?`<h3>${entries.length} fiche${entries.length>1?"s":""}</h3>`:`<h3>Fiches</h3><p class="small muted">Ton carnet est vide. Les deux fiches ci-dessous sont des exemples et disparaissent dès ta première capture.</p>`)+show.map(entryHTML).join(`<hr style="border:0;border-top:1px solid var(--line);margin:4px 0">`);
@@ -641,8 +688,8 @@ function renderMap(){const pts=entries.filter(e=>e.lat!=null);const el=$("#map")
   setTimeout(()=>{map.invalidateSize();map.fitBounds(L.latLngBounds(pts.map(e=>[e.lat,e.lon])).pad(.3),{maxZoom:17})},50)}
 
 function csvCell(v){v=v==null?"":String(v);return/[",;\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v}
-$("#btnCsv").onclick=()=>{if(!entries.length){toast("Carnet vide");return}const h=["id","date","heure","latitude","longitude","precision_m","espece","nom_latin","type_vocalise","notes","source","duree_s","freq_pic_hz","freq_min_hz","freq_max_hz","duree_son_s","nb_notes"];
-  const rows=entries.map(e=>{const d=new Date(e.ts);return[e.id,d.toISOString().slice(0,10),d.toTimeString().slice(0,8),e.lat,e.lon,e.acc!=null?Math.round(e.acc):"",e.sp,e.la,e.type,e.notes,e.source,e.dur!=null?e.dur.toFixed(2):"",e.m?Math.round(e.m.fpk):"",e.m?Math.round(e.m.fmin):"",e.m?Math.round(e.m.fmax):"",e.m?e.m.dur.toFixed(3):"",e.m?e.m.notes:""].map(csvCell).join(",")});
+$("#btnCsv").onclick=()=>{if(!entries.length){toast("Carnet vide");return}const h=["id","date","heure","latitude","longitude","precision_m","espece","nom_latin","type_vocalise","notes","source","duree_s","freq_pic_hz","freq_min_hz","freq_max_hz","duree_son_s","nb_notes","ia_modele","ia_espece","ia_score"];
+  const rows=entries.map(e=>{const d=new Date(e.ts);return[e.id,d.toISOString().slice(0,10),d.toTimeString().slice(0,8),e.lat,e.lon,e.acc!=null?Math.round(e.acc):"",e.sp,e.la,e.type,e.notes,e.source,e.dur!=null?e.dur.toFixed(2):"",e.m?Math.round(e.m.fpk):"",e.m?Math.round(e.m.fmin):"",e.m?Math.round(e.m.fmax):"",e.m?e.m.dur.toFixed(3):"",e.m?e.m.notes:"",e.ai?e.ai.m:"",e.ai?e.ai.fr:"",e.ai&&e.ai.sc!=null?e.ai.sc.toFixed(2):""].map(csvCell).join(",")});
   saveFile(`huginn_carnet_${new Date().toISOString().slice(0,10)}.csv`,new Blob(["﻿"+h.join(",")+"\n"+rows.join("\n")],{type:"text/csv"}))};
 $("#btnGeo").onclick=()=>{const pts=entries.filter(e=>e.lat!=null);if(!pts.length){toast("Aucune fiche géolocalisée");return}
   const gj={type:"FeatureCollection",features:pts.map(e=>({type:"Feature",geometry:{type:"Point",coordinates:[e.lon,e.lat]},properties:{id:e.id,date:new Date(e.ts).toISOString(),espece:e.sp,nom_latin:e.la,type_vocalise:e.type,notes:e.notes,source:e.source,precision_m:e.acc!=null?Math.round(e.acc):null,freq_pic_hz:e.m?Math.round(e.m.fpk):null}}))};
@@ -664,6 +711,9 @@ bindRange("#gain","#gainLbl",v=>"×"+Math.pow(10,v/20).toFixed(v>12?0:1),"gain",
 bindRange("#pgain","#pgainLbl",v=>"×"+Math.pow(10,v/20).toFixed(v>12?0:1),null,()=>{});
 bindRange("#range","#rangeLbl",v=>v+" dB","range",()=>{if(spec){renderOff();drawClip()}});
 bindRange("#thr","#thrLbl",v=>"+"+v+" dB","thr");
+bindRange("#sens","#sensLbl",v=>v.toFixed(2),"sens");
+bindRange("#conf","#confLbl",v=>Math.round(v*100)+" %","conf",()=>{if(aiResults.bn||aiResults.perch)renderAiRes()});
+bindSeg("#segGeo","geo",()=>updateMask(true).catch(()=>{}));
 $("#monitor").onchange=applyAudioSettings;
 function setNight(on){document.documentElement.classList.toggle("night",on);S.night=on;saveS();$("#nightToggle").checked=on;buildLUT();if(liveC.width){paintBg(liveX,liveC)}if(spec){renderOff();drawClip()}if(map)renderMap()}
 $("#nightToggle").onchange=e=>setNight(e.target.checked);
@@ -672,9 +722,173 @@ new MutationObserver(()=>{buildLUT();if(spec){renderOff();drawClip()}}).observe(
 
 function showTab(name){$$("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===name)));
   $$("main section").forEach(s=>s.hidden=s.id!=="tab-"+name);$("#main").scrollTop=0;
-  if(name==="analyse")requestAnimationFrame(drawClip);if(name==="log")renderMap();if(name==="listen")drawAxis($("#liveAxis"),0,S.fmax)}
+  if(name==="analyse")requestAnimationFrame(drawClip);if(name==="settings")renderModelInfo();if(name==="log")renderMap();if(name==="listen")drawAxis($("#liveAxis"),0,S.fmax)}
 $$("nav.tabs button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
 $("#btnDemo").onclick=()=>{loadClip(genDemo());showTab("analyse")};
+
+/* =========================================================
+   IA : BirdNET+ (direct + analyse) et Perch v2 (analyse fine)
+   Les modèles tournent dans un worker (onnxruntime-web, WASM)
+   et restent en cache sur le téléphone après le 1er téléchargement.
+   ========================================================= */
+const ORTBASE="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.3/dist/";
+const MODELS={
+  bn:{url:new URL("models/birdnet.onnx",location.href).href,key:"https://huginn.local/bn-3.0p3.1-c32",label:"BirdNET+ V3.0",size:67},
+  geo:{url:new URL("models/geo.onnx",location.href).href,key:"https://huginn.local/geo-3.0.4-c32",label:"Géomodèle BirdNET+",size:14},
+  perch:{url:"https://huggingface.co/justinchuby/Perch-onnx/resolve/main/perch_v2_no_dft.onnx",key:"https://huginn.local/perch-v2-nodft",label:"Perch v2",size:413}};
+const PERCH_LABELS="https://huggingface.co/cgeorgiaw/Perch/resolve/main/assets/labels.csv";
+const WSRC=[
+'importScripts("'+ORTBASE+'ort.wasm.min.js");',
+'ort.env.wasm.wasmPaths="'+ORTBASE+'";ort.env.wasm.numThreads=1;',
+'const S={};',
+'async function getBuf(url,key,name){let c=null;try{c=await caches.open("huginn-models")}catch(e){}',
+' const hit=c?await c.match(key):null; if(hit) return new Uint8Array(await hit.arrayBuffer());',
+' const res=await fetch(url); if(!res.ok) throw new Error("téléchargement refusé (HTTP "+res.status+")");',
+' const total=+res.headers.get("content-length")||0; const rd=res.body.getReader(); const parts=[]; let got=0,last=0;',
+' for(;;){const x=await rd.read(); if(x.done) break; parts.push(x.value); got+=x.value.length; const now=Date.now(); if(now-last>300){last=now;postMessage({t:"progress",name,got,total})}}',
+' const buf=new Uint8Array(got); let o=0; for(const p of parts){buf.set(p,o);o+=p.length}',
+' if(c){try{await c.put(key,new Response(buf,{headers:{"content-type":"application/octet-stream"}}))}catch(e){}}',
+' return buf}',
+'onmessage=async e=>{const m=e.data;try{',
+' if(m.t==="load"){if(!S[m.name]){const b=await getBuf(m.url,m.key,m.name);postMessage({t:"progress",name:m.name,phase:"init"});S[m.name]=await ort.InferenceSession.create(b,{executionProviders:["wasm"],graphOptimizationLevel:"all"})}postMessage({t:"ok",id:m.id})}',
+' else if(m.t==="run"){const s=S[m.name];if(!s)throw new Error("modèle non chargé");const feeds={};feeds[s.inputNames[0]]=new ort.Tensor("float32",m.data,m.dims);const out=await s.run(feeds,[m.output]);const d=new Float32Array(out[m.output].data);postMessage({t:"ok",id:m.id,data:d},[d.buffer])}',
+' else if(m.t==="has"){let ok=false;try{const c=await caches.open("huginn-models");ok=!!(await c.match(m.key))}catch(e){}postMessage({t:"ok",id:m.id,ok})}',
+' else if(m.t==="drop"){try{const c=await caches.open("huginn-models");await c.delete(m.key)}catch(e){}if(S[m.name]){try{await S[m.name].release()}catch(e){}delete S[m.name]}postMessage({t:"ok",id:m.id})}',
+'}catch(err){postMessage({t:"error",id:m.id,msg:String(err&&err.message||err)})}};'
+].join("\n");
+
+const AI={labels:null,mask:null,birdMask:null,mult:null,ready:{},loading:{},busy:false,timer:0,live:new Map(),hits:[],maskKey:"",maskInfo:"",err:"",progress:{}};
+let Wk=null,wid=0;const wp=new Map();
+function wk(){if(Wk)return Wk;Wk=new Worker(URL.createObjectURL(new Blob([WSRC],{type:"text/javascript"})));
+  Wk.onmessage=e=>{const m=e.data;if(m.t==="progress"){AI.progress[m.name]=m;onProgress(m);return}const p=wp.get(m.id);if(!p)return;wp.delete(m.id);m.t==="error"?p.rej(new Error(m.msg)):p.res(m)};
+  Wk.onerror=e=>{const msg=(e&&e.message)||"le moteur IA n'a pas démarré";wp.forEach(p=>p.rej(new Error(msg)));wp.clear();AI.err=msg;setAiChip()};return Wk}
+function wcall(msg,transfer){return new Promise((res,rej)=>{const id=++wid;wp.set(id,{res,rej});wk().postMessage(Object.assign({id},msg),transfer||[])})}
+
+function setAiChip(){const c=$("#chipAi"),t=c.lastElementChild;c.classList.remove("ai-ok","ai-load");
+  if(IN_CLAUDE){t.textContent="IA off";return}
+  if(AI.err&&!AI.ready.bn){t.textContent="IA erreur";return}
+  if(AI.ready.bn){c.classList.add("ai-ok");t.textContent="IA prête"}else if(AI.loading.bn){c.classList.add("ai-load");const p=AI.progress.bn;t.textContent=p&&p.total?`IA ${Math.round(p.got/p.total*100)} %`:"IA …"}else t.textContent="IA —";
+  $("#aiState").textContent=AI.ready.bn?(AI.maskInfo||""):AI.err?"":(AI.loading.bn?"chargement du modèle…":"");renderModelInfo()}
+function onProgress(m){if(m.name==="perch"){const b=$("#perchBar");b.hidden=false;b.firstElementChild.style.width=(m.phase==="init"?100:m.total?m.got/m.total*100:5)+"%";
+    $("#perchAsk").hidden=false;$("#perchAsk").innerHTML=`<p class="small muted">${m.phase==="init"?"Perch v2 : préparation du modèle (peut prendre 20 à 60 s)…":`Perch v2 : ${Math.round(m.got/1e6)} / ${Math.round((m.total||413e6)/1e6)} Mo`}</p>`}else setAiChip()}
+
+function loadModel(name){if(AI.ready[name])return Promise.resolve();if(AI.loading[name])return AI.loading[name];const M=MODELS[name];
+  const p=wcall({t:"load",name,url:M.url,key:M.key}).then(()=>{AI.ready[name]=true;delete AI.loading[name];setAiChip()},e=>{delete AI.loading[name];throw e});AI.loading[name]=p;setAiChip();return p}
+
+async function loadLabels(){if(AI.labels)return;const r=await fetch("labels.json");if(!r.ok)throw new Error("liste des espèces introuvable");const j=await r.json();
+  AI.labels=j.audio;AI.geoMap=j.geo;const n=j.audio.length;AI.mult=new Float32Array(n).fill(1);for(const k in j.mult)AI.mult[+k]=j.mult[k];
+  AI.birdMask=new Uint8Array(n);j.audio.forEach((a,i)=>AI.birdMask[i]=a[3]);AI.mask=AI.birdMask.slice();AI.sciIdx=new Map(j.audio.map((a,i)=>[a[0],i]))}
+const nameOf=i=>{const a=AI.labels[i];return{fr:a[1]||a[2],la:a[0]}};
+
+async function ensureAI(){if(IN_CLAUDE)return;try{await loadLabels();await loadModel("bn");await loadModel("geo");await updateMask(true)}
+  catch(e){AI.err=String(e.message||e);setAiChip();toast("IA indisponible : "+AI.err)}}
+
+/* filtre géographique */
+const FR_PTS=[[48.85,2.35],[47.22,-1.55],[44.84,-0.58],[43.6,1.44],[43.3,5.37],[45.76,4.84],[48.58,7.75],[50.63,3.06],[48.39,-4.49],[42.69,2.89],[45.9,6.12],[46.58,0.34],[47.32,5.04],[42.15,9.1]];
+const weekNow=(d=new Date())=>d.getMonth()*4+Math.min(4,Math.floor((d.getDate()-1)/7.75)+1);
+async function updateMask(force){if(!AI.labels||!AI.ready.geo)return;const mode=S.geo|0,w=weekNow();let pts,key,label;
+  if(mode===2){key="none";label="toutes les espèces d'oiseaux"}
+  else if(mode===0&&lastFix){pts=[[lastFix.lat,lastFix.lon]];key=`gps:${lastFix.lat.toFixed(1)},${lastFix.lon.toFixed(1)}:${w}`;label="autour de toi"}
+  else{pts=FR_PTS;key="fr:"+w;label="France"}
+  if(!force&&key===AI.maskKey)return;AI.maskKey=key;
+  if(mode===2){AI.mask=AI.birdMask.slice()}else{const m=new Uint8Array(AI.labels.length);
+    for(const[la,lo]of pts){const r=await wcall({t:"run",name:"geo",output:"probabilities",data:new Float32Array([la,lo,w]),dims:[1,3]});const p=r.data;for(let g=0;g<p.length;g++)if(p[g]>=0.03)m[AI.geoMap[g]]=1}
+    for(let i=0;i<m.length;i++)m[i]&=AI.birdMask[i];AI.mask=m}
+  let n=0;for(let i=0;i<AI.mask.length;i++)n+=AI.mask[i];AI.maskInfo=`${n} espèces · ${label}`;setAiChip();refreshSpeciesList()}
+function refreshSpeciesList(){const seen=new Set(SPECIES.map(s=>s.fr));const extra=[];
+  for(let i=0;i<AI.mask.length;i++)if(AI.mask[i]){const n=nameOf(i);if(!seen.has(n.fr)){seen.add(n.fr);extra.push(n)}}
+  extra.forEach(n=>spByFr.set(n.fr.toLowerCase(),n));
+  $("#spList").innerHTML=SPECIES.concat(extra).map(s=>`<option value="${esc(s.fr)}">${esc(s.la)}</option>`).join("")}
+
+/* audio → 32 kHz */
+async function to32k(x,sr){if(sr===32000)return x;const len=Math.max(1,Math.round(x.length*32000/sr));
+  try{const oc=new OfflineAudioContext(1,len,32000);const b=oc.createBuffer(1,x.length,sr);b.copyToChannel(x,0);const s=oc.createBufferSource();s.buffer=b;s.connect(oc.destination);s.start();const r=await oc.startRendering();return r.getChannelData(0)}
+  catch(e){const o=new Float32Array(len),k=sr/32000;let p0=0;for(let i=0;i<len;i++){const t=i*k,j=Math.floor(t),f=t-j;const a=(x[j-1]||0)*.25+(x[j]||0)*.5+(x[j+1]||0)*.25,b=(x[j]||0)*.25+(x[j+1]||0)*.5+(x[j+2]||0)*.25;o[i]=a+(b-a)*f}return o}}
+function fit(x,n){if(x.length===n)return x;const o=new Float32Array(n);o.set(x.subarray(0,Math.min(n,x.length)));return o}
+
+/* BirdNET+ : probabilités sigmoïdes -> filtre oiseaux/géo, liste noire, sensibilité */
+function postBN(p){const n=AI.labels.length,o=new Float32Array(n),bias=((S.sens||1)-1)*5;
+  for(let i=0;i<n;i++){if(!AI.mask[i])continue;let v=p[i]*AI.mult[i];if(bias){v=Math.min(Math.max(v,1e-6),1-1e-6);v=1/(1+Math.exp(-(Math.log(v/(1-v))+bias)))}o[i]=v}return o}
+async function runBN(wins){const L=96000,out=[];for(let k=0;k<wins.length;k+=6){const part=wins.slice(k,k+6),d=new Float32Array(part.length*L);part.forEach((w,j)=>d.set(fit(w,L),j*L));
+    const r=await wcall({t:"run",name:"bn",output:"predictions",data:d,dims:[part.length,L]},[d.buffer]);const n=AI.labels.length;for(let j=0;j<part.length;j++)out.push(postBN(r.data.subarray(j*n,(j+1)*n)))}return out}
+function topK(sc,k,min){const idx=[];for(let i=0;i<sc.length;i++)if(sc[i]>=min)idx.push(i);idx.sort((a,b)=>sc[b]-sc[a]);return idx.slice(0,k)}
+
+/* ---------- direct ---------- */
+function startAI(){clearInterval(AI.timer);AI.timer=setInterval(liveTick,1500);if(!AI.ready.bn&&!IN_CLAUDE)ensureAI()}
+function stopAI(){clearInterval(AI.timer);AI.timer=0}
+async function liveTick(){if(!running||AI.busy||!AI.ready.bn||!AI.labels||!ac)return;const s=grab(3);if(!s||s.length<ac.sampleRate*2)return;AI.busy=true;
+  try{const x=await to32k(s,ac.sampleRate);const[sc]=await runBN([x]);const now=Date.now(),thr=S.conf||.35,hits=topK(sc,4,thr);
+    hits.forEach(i=>{const e=AI.live.get(i)||{i,max:0,n:0,first:now};e.n++;e.max=Math.max(e.max,sc[i]);e.last=now;e.cur=sc[i];AI.live.set(i,e)});
+    if(hits.length&&!autoState.on)liveMark(hits,sc);renderLive()}
+  catch(e){AI.err=String(e.message||e)}finally{AI.busy=false}}
+const ago=ms=>ms<4000?"à l'instant":ms<60000?`il y a ${Math.round(ms/1000)} s`:ms<3600000?`il y a ${Math.round(ms/60000)} min`:fmtT(Date.now()-ms);
+function renderLive(){const el=$("#liveList");if(!AI.live.size)return;const now=Date.now();
+  const rows=Array.from(AI.live.values()).sort((a,b)=>b.last-a.last).slice(0,14);
+  el.innerHTML=`<div class="hits">${rows.map(r=>{const n=nameOf(r.i),fresh=now-r.last<3500;return`<button class="hit${fresh?" fresh":""}" data-i="${r.i}"><span class="nm">${esc(n.fr)} <span class="latin small">${esc(n.la)}</span></span><span class="pc">${Math.round(r.max*100)} %</span>
+    <span class="sub"><span>${ago(now-r.last)}</span><span>${r.n} détection${r.n>1?"s":""}</span>${r.n<2&&r.max<.6?"<span>à confirmer</span>":""}</span><span class="bar"><i style="width:${Math.round(r.max*100)}%"></i></span></button>`}).join("")}</div>
+    <div class="row" style="margin-top:6px"><button class="btn ghost" id="btnClearLive">Vider la liste</button></div>`;
+  $("#btnClearLive").onclick=()=>{AI.live.clear();el.innerHTML=`<p class="small muted">Liste vidée.</p>`}}
+$("#liveList").addEventListener("click",e=>{const b=e.target.closest(".hit");if(!b)return;const n=nameOf(+b.dataset.i),r=AI.live.get(+b.dataset.i);capture({fr:n.fr,la:n.la,sc:r?r.max:null,m:"BirdNET+"})});
+let lastMarkAt=new Map();
+function liveMark(hits,sc){const W=liveC.width,d=Math.min(window.devicePixelRatio||1,3),pps=W/8,x0=Math.max(0,W-3*pps),cs=getComputedStyle(document.documentElement);
+  liveX.save();hits.slice(0,3).forEach((i,k)=>{const y=(5+k*17)*d;liveX.globalAlpha=.9;liveX.fillStyle=cs.getPropertyValue("--accent").trim();liveX.fillRect(x0,y,W-x0,2*d);
+    const now=Date.now();if(!lastMarkAt.has(i)||now-lastMarkAt.get(i)>2900){lastMarkAt.set(i,now);const t=`${nameOf(i).fr} ${Math.round(sc[i]*100)}%`;liveX.font=`700 ${11*d}px "Atkinson Hyperlegible",system-ui,sans-serif`;
+      liveX.lineWidth=3*d;liveX.strokeStyle=cs.getPropertyValue("--spec0").trim();liveX.strokeText(t,x0+3*d,y+13*d);liveX.fillStyle=cs.getPropertyValue("--fg").trim();liveX.fillText(t,x0+3*d,y+13*d)}});liveX.restore()}
+
+/* ---------- analyse d'extrait ---------- */
+function analysisWindows(win,hop){const a=sel?sel.ta:view.t0,b=sel?sel.tb:view.t1,dur=spec.dur;
+  if(b-a<=win){let s0=Math.max(0,(a+b)/2-win/2);s0=Math.max(0,Math.min(s0,dur-win));return[s0]}
+  const t=[];for(let x=a;x<b-hop*.5;x+=hop)t.push(Math.max(0,Math.min(x,b-win)));return Array.from(new Set(t.map(v=>+v.toFixed(3)))).slice(0,120)}
+async function clip32(){if(!clip.x32)clip.x32=await to32k(clip.samples,clip.sr);return clip.x32}
+function aggregate(scores,starts,win,thr){const best=new Map();scores.forEach((sc,w)=>{for(let i=0;i<sc.length;i++){const v=sc[i];if(v<.05)continue;const b=best.get(i)||{i,max:0,wins:[]};if(v>b.max)b.max=v;if(v>=thr)b.wins.push(starts[w]);best.set(i,b)}});
+  return Array.from(best.values()).sort((a,b)=>b.max-a.max)}
+function hitsHTML(list,thr,model){if(!list.length)return`<p class="small muted">Aucune espèce au-dessus de 5 %. Essaie un cadre plus serré sur le son, ou baisse le filtre géographique.</p>`;
+  return`<div class="hits">${list.map(r=>{const n=nameOf(r.i),weak=r.max<thr;return`<div class="hit${weak?" weak":""}"><span class="nm">${esc(n.fr)} <span class="latin small">${esc(n.la)}</span></span><span class="pc">${Math.round(r.max*100)} %</span>
+    <span class="sub"><span>${model}</span>${r.wins&&r.wins.length?`<span>${r.wins.length} fenêtre${r.wins.length>1?"s":""} ≥ seuil</span>`:"<span>sous le seuil</span>"}<button class="btn ghost" style="min-height:32px;padding:2px 10px" data-use="${r.i}" data-sc="${r.max}" data-m="${model}">Utiliser</button></span>
+    <span class="bar"><i style="width:${Math.round(r.max*100)}%"></i></span></div>`}).join("")}</div>`}
+let aiResults={bn:null,perch:null};
+function renderAiRes(){const thr=S.conf||.35,b=aiResults.bn,p=aiResults.perch;let agree="";
+  if(b&&p&&b[0]&&p[0])agree=b[0].i===p[0].i?`<p class="agree">Les deux modèles sont d'accord : ${esc(nameOf(b[0].i).fr)}</p>`:`<p class="small muted">Les deux modèles divergent, regarde les deux listes et les mesures.</p>`;
+  $("#aiRes").innerHTML=agree+`<div class="cols">${b?`<div><h3>BirdNET+</h3>${hitsHTML(b.slice(0,5),thr,"BirdNET+")}</div>`:""}${p?`<div><h3>Perch v2</h3>${hitsHTML(p.slice(0,5),thr,"Perch v2")}</div>`:""}</div>`}
+$("#aiRes").addEventListener("click",e=>{const b=e.target.closest("[data-use]");if(!b)return;const n=nameOf(+b.dataset.use);$("#spIn").value=n.fr;$("#spLatin").textContent=n.la;clip.ai={m:b.dataset.m,fr:n.fr,la:n.la,sc:+b.dataset.sc};toast(n.fr+" placé dans ta fiche")});
+
+$("#btnBn").onclick=async()=>{if(!clip)return;if(IN_CLAUDE){toast("L'IA tourne seulement dans la version GitHub Pages");return}
+  const btn=$("#btnBn");btn.disabled=true;btn.textContent="Analyse…";
+  try{if(!AI.ready.bn){toast("Chargement du modèle BirdNET+…");await ensureAI()}const x=await clip32(),starts=analysisWindows(3,1.5);
+    const sc=await runBN(starts.map(t=>x.subarray(Math.round(t*32000),Math.round(t*32000)+96000)));const thr=S.conf||.35,list=aggregate(sc,starts,3,thr);
+    aiResults.bn=list;AI.hits=[];list.slice(0,3).forEach((r,k)=>{mergeWins(r.wins,3).forEach(([a,b])=>AI.hits.push({a,b,k,name:nameOf(r.i).fr,sc:r.max}))});renderAiRes();drawClip();
+    if(list[0]&&!$("#spIn").value){const n=nameOf(list[0].i);if(list[0].max>=thr)clip.ai={m:"BirdNET+",fr:n.fr,la:n.la,sc:list[0].max}}}
+  catch(e){toast("Analyse impossible : "+(e.message||e))}finally{btn.disabled=false;btn.textContent="Identifier · BirdNET+"}};
+function mergeWins(st,win){const s=st.slice().sort((a,b)=>a-b),o=[];s.forEach(t=>{const l=o[o.length-1];if(l&&t<=l[1])l[1]=Math.max(l[1],t+win);else o.push([t,t+win])});return o}
+function drawHits(){if(!AI.hits.length||!spec)return;const W=clipC.width,d=Math.min(window.devicePixelRatio||1,3),cs=getComputedStyle(document.documentElement),acc=cs.getPropertyValue("--accent").trim();
+  clipX.save();clipX.font=`700 ${11*d}px "Atkinson Hyperlegible",system-ui,sans-serif`;
+  AI.hits.forEach(h=>{const x0=(h.a-view.t0)/(view.t1-view.t0)*W,x1=(h.b-view.t0)/(view.t1-view.t0)*W;if(x1<0||x0>W)return;const y=(4+h.k*17)*d;
+    clipX.globalAlpha=1-h.k*.25;clipX.fillStyle=acc;clipX.fillRect(Math.max(0,x0),y,Math.min(W,x1)-Math.max(0,x0),3*d);
+    const t=`${h.name} ${Math.round(h.sc*100)}%`,tx=Math.max(2*d,x0+2*d);clipX.lineWidth=3*d;clipX.strokeStyle=cs.getPropertyValue("--spec0").trim();clipX.strokeText(t,tx,y+14*d);clipX.fillStyle=cs.getPropertyValue("--fg").trim();clipX.fillText(t,tx,y+14*d)});clipX.restore()}
+
+/* Perch v2 */
+async function perchLabels(){if(AI.perchIdx)return;let txt=null,c=null;try{c=await caches.open("huginn-models");const h=await c.match("https://huginn.local/perch-labels");if(h)txt=await h.text()}catch(e){}
+  if(!txt){const r=await fetch(PERCH_LABELS);if(!r.ok)throw new Error("liste Perch introuvable (HTTP "+r.status+")");txt=await r.text();if(c)try{await c.put("https://huginn.local/perch-labels",new Response(txt))}catch(e){}}
+  const lines=txt.split(/\r?\n/).slice(1).filter(Boolean);AI.perchIdx=Int32Array.from(lines.map(l=>{const k=AI.sciIdx.get(l.replace(/^"|"$/g,"").trim());return k==null?-1:k}))}
+async function runPerch(wins){const L=160000,res=[];for(const w of wins){const d=new Float32Array(L);d.set(fit(w,L));const r=await wcall({t:"run",name:"perch",output:"label",data:d,dims:[1,L]},[d.buffer]);
+    const lg=r.data,n=AI.labels.length,sc=new Float32Array(n);let mx=-1e9;for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&AI.mask[k]&&lg[j]>mx)mx=lg[j]}
+    let sum=0;for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&AI.mask[k])sum+=Math.exp(lg[j]-mx)}
+    for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&AI.mask[k])sc[k]=Math.max(sc[k],Math.exp(lg[j]-mx)/sum)}res.push(sc)}return res}
+async function doPerch(){const btn=$("#btnPerch");btn.disabled=true;btn.textContent="Perch…";$("#perchAsk").hidden=true;
+  try{if(!AI.labels)await ensureAI();await perchLabels();if(!AI.ready.perch){await loadModel("perch");$("#perchBar").hidden=true;$("#perchAsk").hidden=true}
+    const x=await clip32(),starts=analysisWindows(5,2.5);const sc=await runPerch(starts.map(t=>x.subarray(Math.round(t*32000),Math.round(t*32000)+160000)));
+    aiResults.perch=aggregate(sc,starts,5,S.conf||.35);renderAiRes()}
+  catch(e){$("#perchBar").hidden=true;$("#perchAsk").hidden=false;$("#perchAsk").innerHTML=`<p class="small">Perch v2 n'a pas pu tourner : ${esc(e.message||e)}. Le modèle fait 413 Mo, il faut du réseau et de la place sur le téléphone.</p>`}
+  finally{btn.disabled=false;btn.textContent="Analyse fine · Perch v2";renderModelInfo()}}
+$("#btnPerch").onclick=async()=>{if(!clip)return;if(IN_CLAUDE){toast("L'IA tourne seulement dans la version GitHub Pages");return}
+  if(AI.ready.perch)return doPerch();let cached=false;try{cached=(await wcall({t:"has",key:MODELS.perch.key})).ok}catch(e){}
+  if(cached)return doPerch();const a=$("#perchAsk");a.hidden=false;
+  a.innerHTML=`<p class="small">Perch v2 pèse <b>413 Mo</b>, téléchargés une seule fois puis gardés sur le téléphone. À faire en wifi.</p><div class="row"><button class="btn primary" id="perchGo">Télécharger Perch v2</button><button class="btn ghost" id="perchNo">Plus tard</button></div>`;
+  $("#perchGo").onclick=doPerch;$("#perchNo").onclick=()=>{a.hidden=true}};
+async function renderModelInfo(){const el=$("#modelInfo");if(!el)return;if(IN_CLAUDE){el.textContent="Les modèles ne se chargent pas dans l'aperçu Claude : ouvre la version GitHub Pages.";return}
+  let pc=false;try{pc=AI.ready.perch||(await wcall({t:"has",key:MODELS.perch.key})).ok}catch(e){}
+  el.innerHTML=`<div>BirdNET+ V3.0 (${MODELS.bn.size} Mo) : <b>${AI.ready.bn?"prêt":AI.loading.bn?"chargement":"non chargé"}</b></div><div>Géomodèle (${MODELS.geo.size} Mo) : <b>${AI.ready.geo?"prêt":"non chargé"}</b>${AI.maskInfo?` · ${esc(AI.maskInfo)}`:""}</div><div>Perch v2 (${MODELS.perch.size} Mo) : <b>${AI.ready.perch?"prêt":pc?"sur le téléphone":"pas téléchargé"}</b></div>${AI.err?`<div class="muted">Dernière erreur : ${esc(AI.err)}</div>`:""}`}
+$("#btnDropPerch").onclick=async()=>{try{await wcall({t:"drop",name:"perch",key:MODELS.perch.key});AI.ready.perch=false;toast("Perch v2 supprimé du téléphone")}catch(e){toast("Suppression impossible")}renderModelInfo()};
 
 /* ---------- démarrage ---------- */
 if(S.night)document.documentElement.classList.add("night");$("#nightToggle").checked=!!S.night;
@@ -682,6 +896,7 @@ buildLUT();drawAxis($("#liveAxis"),0,S.fmax);
 requestAnimationFrame(()=>{sizeCanvas(liveC);paintBg(liveX,liveC)});
 loadClip(genDemo());
 openDB().then(renderLog);renderLog();
+setAiChip();if(!IN_CLAUDE)ensureAI();
 })();
 </script>
 </body></html>

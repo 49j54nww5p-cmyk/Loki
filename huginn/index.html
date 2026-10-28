@@ -356,7 +356,8 @@ nav.tabs button[aria-selected="true"]{color:var(--accent)}
       <div class="card">
         <h3>Modèles IA</h3>
         <div id="modelInfo" class="small"></div>
-        <div class="row"><button class="btn ghost" id="btnDropPerch">Supprimer Perch du téléphone</button></div>
+        <div class="meter" id="perchBar2" hidden><i></i></div>
+        <div class="row"><button class="btn primary" id="btnGetPerch">Télécharger Perch v2 (413 Mo)</button><button class="btn ghost" id="btnDropPerch">Supprimer Perch du téléphone</button></div>
         <p class="small muted">BirdNET+ V3.0 (preview 3.1) et son géomodèle, Apache 2.0, BirdNET Team (Cornell Lab / TU Chemnitz). Perch v2, Apache 2.0, Google DeepMind, version ONNX de justinchuby sur Hugging Face.</p>
       </div>
       <div class="card">
@@ -381,7 +382,7 @@ nav.tabs button[aria-selected="true"]{color:var(--accent)}
 <script>
 (function(){
 "use strict";
-const VERSION="0.2.1";
+const VERSION="0.2.2";
 const IN_CLAUDE=!!(window.claude&&window.claude.use);
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 $("#ver").textContent="v"+VERSION;
@@ -736,6 +737,7 @@ const MODELS={
   bn:{url:new URL("models/birdnet.onnx",location.href).href,key:"https://huginn.local/bn-3.0p3.1-c32",label:"BirdNET+ V3.0",size:67},
   geo:{url:new URL("models/geo.onnx",location.href).href,key:"https://huginn.local/geo-3.0.4-c32",label:"Géomodèle BirdNET+",size:14},
   perch:{url:"https://huggingface.co/justinchuby/Perch-onnx/resolve/main/perch_v2_no_dft.onnx",key:"https://huginn.local/perch-v2-nodft",label:"Perch v2",size:413}};
+async function perchCached(){try{const c=await caches.open("huginn-models");return!!(await c.match(MODELS.perch.key))}catch(e){return false}}
 const PERCH_LABELS="https://huggingface.co/cgeorgiaw/Perch/resolve/main/assets/labels.csv";
 const WSRC=[
 'import * as ort from "'+ORTBASE+'ort.wasm.bundle.min.mjs";',
@@ -769,7 +771,7 @@ function setAiChip(){const c=$("#chipAi"),t=c.lastElementChild;c.classList.remov
   if(AI.err&&!AI.ready.bn){t.textContent="IA erreur";return}
   if(AI.ready.bn){c.classList.add("ai-ok");t.textContent="IA prête"}else if(AI.loading.bn){c.classList.add("ai-load");const p=AI.progress.bn;t.textContent=p&&p.total?`IA ${Math.round(p.got/p.total*100)} %`:"IA …"}else t.textContent="IA —";
   $("#aiState").textContent=AI.ready.bn?(AI.maskInfo||""):AI.err?"":(AI.loading.bn?"chargement du modèle…":"");renderModelInfo()}
-function onProgress(m){if(m.name==="perch"){const b=$("#perchBar");b.hidden=false;b.firstElementChild.style.width=(m.phase==="init"?100:m.total?m.got/m.total*100:5)+"%";
+function onProgress(m){if(m.name==="perch"){const b2=$("#perchBar2");b2.hidden=false;b2.firstElementChild.style.width=(m.phase==="init"?100:m.total?m.got/m.total*100:5)+"%";const gp=$("#btnGetPerch");gp.disabled=true;gp.textContent=m.phase==="init"?"Préparation de Perch…":`Perch : ${Math.round(m.got/1e6)} / ${Math.round((m.total||413e6)/1e6)} Mo`;const b=$("#perchBar");b.hidden=false;b.firstElementChild.style.width=(m.phase==="init"?100:m.total?m.got/m.total*100:5)+"%";
     $("#perchAsk").hidden=false;$("#perchAsk").innerHTML=`<p class="small muted">${m.phase==="init"?"Perch v2 : préparation du modèle (peut prendre 20 à 60 s)…":`Perch v2 : ${Math.round(m.got/1e6)} / ${Math.round((m.total||413e6)/1e6)} Mo`}</p>`}else setAiChip()}
 
 function loadModel(name){if(AI.ready[name])return Promise.resolve();if(AI.loading[name])return AI.loading[name];const M=MODELS[name];
@@ -881,13 +883,16 @@ async function doPerch(){const btn=$("#btnPerch");btn.disabled=true;btn.textCont
   catch(e){$("#perchBar").hidden=true;$("#perchAsk").hidden=false;$("#perchAsk").innerHTML=`<p class="small">Perch v2 n'a pas pu tourner : ${esc(e.message||e)}. Le modèle fait 413 Mo, il faut du réseau et de la place sur le téléphone.</p>`}
   finally{btn.disabled=false;btn.textContent="Analyse fine · Perch v2";renderModelInfo()}}
 $("#btnPerch").onclick=async()=>{if(!clip)return;if(IN_CLAUDE){toast("L'IA tourne seulement dans la version GitHub Pages");return}
-  if(AI.ready.perch)return doPerch();let cached=false;try{cached=(await wcall({t:"has",key:MODELS.perch.key})).ok}catch(e){}
+  if(AI.ready.perch)return doPerch();const cached=await perchCached();
   if(cached)return doPerch();const a=$("#perchAsk");a.hidden=false;
   a.innerHTML=`<p class="small">Perch v2 pèse <b>413 Mo</b>, téléchargés une seule fois puis gardés sur le téléphone. À faire en wifi.</p><div class="row"><button class="btn primary" id="perchGo">Télécharger Perch v2</button><button class="btn ghost" id="perchNo">Plus tard</button></div>`;
   $("#perchGo").onclick=doPerch;$("#perchNo").onclick=()=>{a.hidden=true}};
 async function renderModelInfo(){const el=$("#modelInfo");if(!el)return;if(IN_CLAUDE){el.textContent="Les modèles ne se chargent pas dans l'aperçu Claude : ouvre la version GitHub Pages.";return}
-  let pc=false;try{pc=AI.ready.perch||(await wcall({t:"has",key:MODELS.perch.key})).ok}catch(e){}
+  const pc=AI.ready.perch||await perchCached();const gp=$("#btnGetPerch");if(gp){gp.hidden=!!(AI.ready.perch||pc);gp.disabled=!!AI.loading.perch}
   el.innerHTML=`<div>BirdNET+ V3.0 (${MODELS.bn.size} Mo) : <b>${AI.ready.bn?"prêt":AI.loading.bn?"chargement":"non chargé"}</b></div><div>Géomodèle (${MODELS.geo.size} Mo) : <b>${AI.ready.geo?"prêt":"non chargé"}</b>${AI.maskInfo?` · ${esc(AI.maskInfo)}`:""}</div><div>Perch v2 (${MODELS.perch.size} Mo) : <b>${AI.ready.perch?"prêt":pc?"sur le téléphone":"pas téléchargé"}</b></div>${AI.err?`<div class="muted">Dernière erreur : ${esc(AI.err)}</div>`:""}`}
+$("#btnGetPerch").onclick=async()=>{if(IN_CLAUDE)return;const gp=$("#btnGetPerch");gp.disabled=true;gp.textContent="Démarrage…";
+  try{if(!AI.labels)await ensureAI();await perchLabels();await loadModel("perch");toast("Perch v2 prêt");$("#perchBar2").hidden=true}
+  catch(e){toast("Perch v2 : "+(e.message||e));AI.err="Perch : "+(e.message||e)}finally{gp.disabled=false;gp.textContent="Télécharger Perch v2 (413 Mo)";$("#perchBar").hidden=true;$("#perchAsk").hidden=true;renderModelInfo()}};
 $("#btnDropPerch").onclick=async()=>{try{await wcall({t:"drop",name:"perch",key:MODELS.perch.key});AI.ready.perch=false;toast("Perch v2 supprimé du téléphone")}catch(e){toast("Suppression impossible")}renderModelInfo()};
 
 /* ---------- démarrage ---------- */

@@ -1,5 +1,5 @@
-# Modèles d'IA utilisés par Huginn
+# Modèles d'IA utilisés par Ramage
 
 - **BirdNET+ V3.0-preview3.1 Global 10K (pruned)** et **Géomodèle BirdNET+ V3.0.4** — BirdNET Team (K. Lisa Yang Center for Conservation Bioacoustics, Cornell Lab of Ornithology / Chemnitz University of Technology). Licence Apache 2.0. Source : https://github.com/birdnet-team/birdnet-live-app (assets/models). Poids FP16 d'origine ; graphe modifié pour calculer en FP32 (casts insérés après les poids) afin de tourner dans onnxruntime-web. Résultats vérifiés identiques au modèle d'origine (écart max 0,004).
-- **Perch v2** — Google DeepMind. Licence Apache 2.0. Non stocké ici : téléchargé à la demande depuis https://huggingface.co/justinchuby/Perch-onnx (export ONNX) avec la liste des classes de https://huggingface.co/cgeorgiaw/Perch.
+- **Perch v2 (int8)** — Google DeepMind, licence Apache 2.0. Version ONNX quantifiée en int8 (131 Mo) publiée par James Hollyer pour l'appli Fluttr : https://github.com/JamesHollyer/fluttr-assets/releases/tag/model-perch-v2-int8-1 (SHA-256 e8226502187acdd0…). Stockée ici en deux morceaux (`perch/perch-int8.part0.bin` + `part1.bin`, à concaténer). Liste des classes : https://huggingface.co/cgeorgiaw/Perch.
 - Noms français : taxonomie BirdNET (taxonomy.csv du même dépôt).

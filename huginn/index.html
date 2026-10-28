@@ -438,7 +438,7 @@ th{color:var(--muted);font-weight:500}
         <div id="modelInfo" class="small"></div>
         <div class="bar" id="perchBar2" hidden><i></i></div>
         <p class="note small" id="perchNote" hidden></p>
-        <div class="row"><button class="btn primary" id="btnGetPerch">Télécharger Perch v2 (413 Mo)</button><button class="btn primary" id="btnActPerch" hidden>Activer Perch v2</button><button class="btn ghost" id="btnDropPerch" hidden>Supprimer Perch</button></div>
+        <div class="row"><button class="btn primary" id="btnGetPerch">Télécharger Perch v2 (131 Mo)</button><button class="btn primary" id="btnActPerch" hidden>Activer Perch v2</button><button class="btn ghost" id="btnDropPerch" hidden>Supprimer Perch</button></div>
         <p class="small muted help">Perch est gardé sur le téléphone après un seul téléchargement (en wifi, appli ouverte). L'activer demande beaucoup de mémoire : ferme les autres applis avant.</p>
       </div>
       <div class="card">
@@ -510,7 +510,7 @@ th{color:var(--muted);font-weight:500}
    Les clés « huginn.* » et la base « huginn » sont gardées :
    ainsi le carnet, les sons et la liste de vie d'avant restent là.
    ========================================================= */
-const VERSION="1.1.3";
+const VERSION="1.2.0";
 const IN_CLAUDE=!!(window.claude&&window.claude.use);
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 
@@ -677,45 +677,54 @@ const ORTBASE="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/";
 const MODELS={
   bn:{url:new URL("models/birdnet.onnx",location.href).href,key:"https://huginn.local/bn-3.0p3.1-c32",label:"BirdNET+ V3.0",size:67},
   geo:{url:new URL("models/geo.onnx",location.href).href,key:"https://huginn.local/geo-3.0.4-c32",label:"Géomodèle BirdNET+",size:14},
-  perch:{url:"https://huggingface.co/justinchuby/Perch-onnx/resolve/main/perch_v2_no_dft.onnx",key:"https://huginn.local/perch-v2-nodft",label:"Perch v2",size:413}};
+  /* Perch v2 allégé (int8, 131 Mo au lieu de 413) : servi par l'appli elle-même, en 2 morceaux */
+  perch:{url:["models/perch/perch-int8.part0.bin","models/perch/perch-int8.part1.bin"].map(u=>new URL(u,location.href).href),sizes:[65377492,65377492],key:"https://huginn.local/perch-v2-int8-1",old:"https://huginn.local/perch-v2-nodft",label:"Perch v2 (int8)",size:131}};
 const PERCH_LABELS="https://huggingface.co/cgeorgiaw/Perch/resolve/main/assets/labels.csv";
 /* Le worker : charge et fait tourner les modèles.
    Stockage par morceaux de 16 Mo : l'iPhone n'a jamais tout le fichier en mémoire pendant le
-   téléchargement (avant, il fermait l'appli à 411/413 Mo), et un téléchargement coupé reprend où il s'était arrêté. */
+   téléchargement (avant, il fermait l'appli à 411/131 Mo), et un téléchargement coupé reprend où il s'était arrêté. */
 const WSRC=`import * as ort from "${ORTBASE}ort.wasm.bundle.min.mjs";
 ort.env.wasm.wasmPaths="${ORTBASE}";ort.env.wasm.numThreads=1;
 const S={},CH=16*1024*1024;
 const cache=()=>caches.open("huginn-models");
 async function meta(c,key){const r=await c.match(key+"/meta");return r?await r.json():null}
 async function stored(c,key){if(await c.match(key))return true;const m=await meta(c,key);return!!(m&&m.done)}
-async function store(url,key,name){const c=await cache();if(await stored(c,key))return;
-  let m=await meta(c,key);if(!m||m.url!==url)m={url,n:0,size:0,total:0,done:false};
-  let res=null;if(m.n>0){try{res=await fetch(url,{headers:{Range:"bytes="+m.size+"-"}});if(res.status!==206){res=null}}catch(e){res=null}}
-  if(!res){m.n=0;m.size=0;res=await fetch(url)}
-  if(!res.ok)throw new Error("téléchargement refusé (HTTP "+res.status+")");
-  if(!m.total){const cr=res.headers.get("content-range"),cl=+res.headers.get("content-length")||0;m.total=cr&&cr.indexOf("/")>0?(+cr.split("/")[1]||cl):cl}
-  const rd=res.body.getReader();let parts=[],plen=0,last=0;
-  const flush=async()=>{if(!plen)return;await c.put(key+"/p"+m.n,new Response(new Blob(parts),{headers:{"x-len":String(plen)}}));m.n++;m.size+=plen;parts=[];plen=0;
-    await c.put(key+"/meta",new Response(JSON.stringify(m),{headers:{"content-type":"application/json"}}))};
-  for(;;){const x=await rd.read();if(x.done)break;parts.push(x.value);plen+=x.value.length;if(plen>=CH)await flush();
-    const now=Date.now();if(now-last>300){last=now;postMessage({t:"progress",name,got:m.size+plen,total:m.total})}}
+async function store(url,key,name,sizes){const c=await cache();if(await stored(c,key))return;
+  const urls=Array.isArray(url)?url:[url],id=urls.join("|"),tot0=sizes?sizes.reduce((a,b)=>a+b,0):0;
+  let m=await meta(c,key);if(!m||m.url!==id)m={url:id,n:0,size:0,total:tot0,done:false};
+  let parts=[],plen=0,last=0;
+  const putMeta=()=>c.put(key+"/meta",new Response(JSON.stringify(m),{headers:{"content-type":"application/json"}}));
+  const flush=async()=>{if(!plen)return;await c.put(key+"/p"+m.n,new Response(new Blob(parts),{headers:{"x-len":String(plen)}}));m.n++;m.size+=plen;parts=[];plen=0;await putMeta()};
+  for(let restart=0;restart<2;restart++){let cum=0,ok=true;
+    for(let p=0;p<urls.length;p++){const psz=sizes?sizes[p]:0;if(psz&&m.size>=cum+psz){cum+=psz;continue}
+      const off=m.size-cum;let res=null;
+      if(off>0){try{res=await fetch(urls[p],{headers:{Range:"bytes="+off+"-"}});if(res.status!==206)res=null}catch(e){res=null}
+        if(!res){m.n=0;m.size=0;await putMeta();ok=false;break}}
+      else res=await fetch(urls[p]);
+      if(!res.ok)throw new Error("téléchargement refusé (HTTP "+res.status+")");
+      if(!m.total){const cl=+res.headers.get("content-length")||0;m.total=cl}
+      const rd=res.body.getReader();
+      for(;;){const x=await rd.read();if(x.done)break;parts.push(x.value);plen+=x.value.length;if(plen>=CH)await flush();
+        const now=Date.now();if(now-last>300){last=now;postMessage({t:"progress",name,got:m.size+plen,total:m.total})}}
+      cum+=psz||0}
+    if(ok)break}
   await flush();
   if(m.total&&m.size!==m.total)throw new Error("téléchargement coupé à "+Math.round(m.size/1e6)+" / "+Math.round(m.total/1e6)+" Mo : touche à nouveau, il reprendra");
-  m.done=true;await c.put(key+"/meta",new Response(JSON.stringify(m),{headers:{"content-type":"application/json"}}))}
-async function getBuf(url,key,name){let c=null;try{c=await cache()}catch(e){}
-  if(!c){const r=await fetch(url);if(!r.ok)throw new Error("HTTP "+r.status);return new Uint8Array(await r.arrayBuffer())}
+  m.done=true;await putMeta()}
+async function getBuf(url,key,name,sizes){let c=null;try{c=await cache()}catch(e){}
+  if(!c){const r=await fetch(Array.isArray(url)?url[0]:url);if(!r.ok)throw new Error("HTTP "+r.status);return new Uint8Array(await r.arrayBuffer())}
   const old=await c.match(key);if(old)return new Uint8Array(await old.arrayBuffer());
-  await store(url,key,name);const m=await meta(c,key);postMessage({t:"progress",name,phase:"read"});
+  await store(url,key,name,sizes);const m=await meta(c,key);postMessage({t:"progress",name,phase:"read"});
   const b=new Uint8Array(m.size);let o=0;for(let i=0;i<m.n;i++){const r=await c.match(key+"/p"+i);if(!r){await drop(c,key);throw new Error("morceau manquant sur le téléphone : à retélécharger")}const u=new Uint8Array(await r.arrayBuffer());b.set(u,o);o+=u.length}
   if(o!==m.size){await drop(c,key);throw new Error("fichier incomplet sur le téléphone : à retélécharger")}return b}
 async function drop(c,key){await c.delete(key);const m=await meta(c,key);if(m)for(let i=0;i<m.n+2;i++)await c.delete(key+"/p"+i);await c.delete(key+"/meta")}
 self.onmessage=async e=>{const m=e.data;try{
- if(m.t==="load"){if(!S[m.name]){let b=await getBuf(m.url,m.key,m.name);postMessage({t:"progress",name:m.name,phase:"init"});
+ if(m.t==="load"){if(!S[m.name]){let b=await getBuf(m.url,m.key,m.name,m.sizes);postMessage({t:"progress",name:m.name,phase:"init"});
    const big=b.length>150e6,opt=big?{executionProviders:["wasm"],graphOptimizationLevel:"basic",enableCpuMemArena:false,enableMemPattern:false}:{executionProviders:["wasm"],graphOptimizationLevel:"all"};
    S[m.name]=await ort.InferenceSession.create(b,opt);b=null}postMessage({t:"ok",id:m.id})}
  else if(m.t==="run"){const s=S[m.name];if(!s)throw new Error("modèle non chargé");const feeds={};feeds[s.inputNames[0]]=new ort.Tensor("float32",m.data,m.dims);const out=await s.run(feeds,[m.output]);const d=new Float32Array(out[m.output].data);postMessage({t:"ok",id:m.id,data:d},[d.buffer])}
  else if(m.t==="run2"){const s=S[m.name];if(!s)throw new Error("modèle non chargé");const feeds={};feeds[s.inputNames[0]]=new ort.Tensor("float32",m.data,m.dims);const out=await s.run(feeds,m.outputs);const r=m.outputs.map(k=>new Float32Array(out[k].data));postMessage({t:"ok",id:m.id,data:r},r.map(a=>a.buffer))}
- else if(m.t==="dl"){await store(m.url,m.key,m.name);postMessage({t:"ok",id:m.id})}
+ else if(m.t==="dl"){if(m.old)try{await drop(await cache(),m.old)}catch(e){}await store(m.url,m.key,m.name,m.sizes);postMessage({t:"ok",id:m.id})}
  else if(m.t==="has"){let ok=false;try{ok=await stored(await cache(),m.key)}catch(e){}postMessage({t:"ok",id:m.id,ok})}
  else if(m.t==="drop"){try{await drop(await cache(),m.key)}catch(e){}if(S[m.name]){try{await S[m.name].release()}catch(e){}delete S[m.name]}postMessage({t:"ok",id:m.id})}
 }catch(err){const msg=typeof err==="number"?"erreur interne du moteur n°"+err:String(err&&err.message||err);postMessage({t:"error",id:m.id,msg})}};`;
@@ -728,7 +737,7 @@ function wk(){if(Wk)return Wk;Wk=new Worker(URL.createObjectURL(new Blob([WSRC],
 function wcall(msg,transfer){return new Promise((res,rej)=>{const id=++wid;wp.set(id,{res,rej});wk().postMessage(Object.assign({id},msg),transfer||[])})}
 
 function loadModel(name){if(AI.ready[name])return Promise.resolve();if(AI.loading[name])return AI.loading[name];const M=MODELS[name];
-  const p=wcall({t:"load",name,url:M.url,key:M.key}).then(()=>{AI.ready[name]=true;delete AI.loading[name];setAiChip()},e=>{delete AI.loading[name];throw e});AI.loading[name]=p;setAiChip();return p}
+  const p=wcall({t:"load",name,url:M.url,key:M.key,sizes:M.sizes}).then(()=>{AI.ready[name]=true;delete AI.loading[name];setAiChip()},e=>{delete AI.loading[name];throw e});AI.loading[name]=p;setAiChip();return p}
 async function loadLabels(){if(AI.labels)return;const r=await fetch("labels.json?v=2");if(!r.ok)throw new Error("liste des espèces introuvable");const j=await r.json();
   AI.labels=j.audio;AI.geoMap=j.geo;const n=j.audio.length;AI.mult=new Float32Array(n).fill(1);for(const k in j.mult)AI.mult[+k]=j.mult[k];
   AI.birdMask=new Uint8Array(n);j.audio.forEach((a,i)=>AI.birdMask[i]=a[3]);AI.mask=AI.birdMask.slice();AI.sciIdx=new Map(j.audio.map((a,i)=>[a[0],i]))}
@@ -772,7 +781,7 @@ async function runPerch(wins){const L=160000,res=[];for(const w of wins){const d
 let perchWake=null;
 async function perchDownload(){if(await perchCached())return;try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){}
   try{if(navigator.wakeLock)perchWake=await navigator.wakeLock.request("screen")}catch(e){}
-  try{await wcall({t:"dl",name:"perch",url:MODELS.perch.url,key:MODELS.perch.key})}finally{if(perchWake){perchWake.release().catch(()=>{});perchWake=null}}}
+  try{await wcall({t:"dl",name:"perch",url:MODELS.perch.url,key:MODELS.perch.key,sizes:MODELS.perch.sizes,old:MODELS.perch.old})}finally{if(perchWake){perchWake.release().catch(()=>{});perchWake=null}}}
 async function perchActivate(){if(AI.ready.perch)return;if(!AI.labels)await ensureAI();await perchLabels();LS.set("huginn.perchLoading",Date.now());
   try{await loadModel("perch")}finally{try{localStorage.removeItem("huginn.perchLoading")}catch(e){}}}
 const perchCrashed=()=>!!LS.get("huginn.perchLoading",0);
@@ -813,7 +822,7 @@ function setAiChip(){const c=$("#chipAi"),t=c.lastElementChild;c.classList.remov
   c.title=AI.ready.bn?`BirdNET+ prêt${AI.ready.perch?" · Perch v2 prêt":""} · ${AI.maskInfo}`:AI.err||"chargement";renderModelInfo()}
 function onProgress(m){if(m.name!=="perch"){setAiChip();return}const pct=m.phase==="init"?100:m.total?m.got/m.total*100:5;
   ["#perchBar","#perchBar2"].forEach(id=>{const b=$(id);b.hidden=false;b.firstElementChild.style.width=pct+"%"});
-  const txt=m.phase==="init"?"Perch v2 : préparation (20 à 60 s)…":m.phase==="read"?"Perch v2 : lecture depuis le téléphone…":`Perch v2 : ${Math.round(m.got/1e6)} / ${Math.round((m.total||413e6)/1e6)} Mo · garde l'appli ouverte`;
+  const txt=m.phase==="init"?"Perch v2 : préparation (20 à 60 s)…":m.phase==="read"?"Perch v2 : lecture depuis le téléphone…":`Perch v2 : ${Math.round(m.got/1e6)} / ${Math.round((m.total||131e6)/1e6)} Mo · garde l'appli ouverte`;
   const gp=$("#btnGetPerch");gp.disabled=true;gp.textContent=txt;const a=$("#perchAsk");a.hidden=false;a.innerHTML=`<p class="small muted">${txt}</p>`}
 async function renderModelInfo(){const el=$("#modelInfo");if(!el)return;if(IN_CLAUDE){el.textContent="Les modèles ne se chargent pas dans l'aperçu : ouvre la version GitHub Pages.";return}
   const pc=AI.ready.perch||await perchCached(),gp=$("#btnGetPerch"),ap=$("#btnActPerch"),cr=perchCrashed();gp.hidden=!!pc;ap.hidden=!pc||!!AI.ready.perch||!!AI.loading.perch;$("#btnDropPerch").hidden=!pc;
@@ -1294,11 +1303,11 @@ $("#btnBn").onclick=async()=>{if(!clip)return;if(IN_CLAUDE){toast("L'IA tourne s
 async function doPerch(){const btn=$("#btnPerch");btn.disabled=true;btn.textContent="Perch…";$("#perchAsk").hidden=true;
   try{if(!AI.labels)await ensureAI();await perchLabels();if(!AI.ready.perch){await perchDownload();await perchActivate();$("#perchBar").hidden=true;$("#perchAsk").hidden=true}
     const x=await clip32(),starts=analysisWindows(5,2.5),sc=await runPerch(starts.map(t=>x.subarray(Math.round(t*32000),Math.round(t*32000)+160000)));aiResults.perch=aggregate(sc,starts,S.conf||.35);renderAiRes()}
-  catch(e){$("#perchBar").hidden=true;$("#perchAsk").hidden=false;$("#perchAsk").innerHTML=`<p class="small">Perch v2 n'a pas pu tourner : ${esc(e.message||e)}. Le modèle fait 413 Mo : il faut du réseau et de la place.</p>`}
+  catch(e){$("#perchBar").hidden=true;$("#perchAsk").hidden=false;$("#perchAsk").innerHTML=`<p class="small">Perch v2 n'a pas pu tourner : ${esc(e.message||e)}. Le modèle fait 131 Mo : il faut du réseau et de la place.</p>`}
   finally{btn.disabled=false;btn.textContent="2e avis · Perch v2";renderModelInfo()}}
 $("#btnPerch").onclick=async()=>{if(!clip)return;if(IN_CLAUDE){toast("L'IA tourne seulement dans la version GitHub Pages");return}
   if(AI.ready.perch||await perchCached())return doPerch();const a=$("#perchAsk");a.hidden=false;
-  a.innerHTML=`<p class="small">Perch v2 pèse <b>413 Mo</b>, téléchargés une fois puis gardés sur le téléphone. À faire en wifi.</p><div class="row"><button class="btn primary sm" id="perchGo">Télécharger</button><button class="btn ghost sm" id="perchNo">Plus tard</button></div>`;
+  a.innerHTML=`<p class="small">Perch v2 pèse <b>131 Mo</b>, téléchargés une fois puis gardés sur le téléphone. À faire en wifi.</p><div class="row"><button class="btn primary sm" id="perchGo">Télécharger</button><button class="btn ghost sm" id="perchNo">Plus tard</button></div>`;
   $("#perchGo").onclick=doPerch;$("#perchNo").onclick=()=>{a.hidden=true}};
 
 /* comparaison aux références */
@@ -1452,8 +1461,8 @@ bindSeg("#segSun","sun",applySun);setInterval(applySun,60000);
 
 /* modèles */
 $("#btnGetPerch").onclick=async()=>{if(IN_CLAUDE)return;const gp=$("#btnGetPerch");gp.disabled=true;gp.textContent="Démarrage…";
-  try{await perchDownload();toast("Perch v2 est sur le téléphone");$("#perchBar2").hidden=true;renderModelInfo();await perchActivate();toast("Perch v2 prêt")}
-  catch(e){toast("Perch v2 : "+(e.message||e));AI.err="Perch : "+(e.message||e)}finally{gp.disabled=false;gp.textContent="Télécharger Perch v2 (413 Mo)";$("#perchBar2").hidden=true;$("#perchBar").hidden=true;$("#perchAsk").hidden=true;renderModelInfo();setAiChip()}};
+  try{await perchDownload();try{localStorage.removeItem("huginn.perchLoading")}catch(e){}toast("Perch v2 est sur le téléphone");$("#perchBar2").hidden=true;renderModelInfo();await perchActivate();toast("Perch v2 prêt")}
+  catch(e){toast("Perch v2 : "+(e.message||e));AI.err="Perch : "+(e.message||e)}finally{gp.disabled=false;gp.textContent="Télécharger Perch v2 (131 Mo)";$("#perchBar2").hidden=true;$("#perchBar").hidden=true;$("#perchAsk").hidden=true;renderModelInfo();setAiChip()}};
 $("#btnActPerch").onclick=async()=>{const b=$("#btnActPerch");b.disabled=true;b.textContent="Activation…";try{await perchActivate();toast("Perch v2 prêt")}catch(e){toast("Perch v2 : "+(e.message||e))}finally{b.disabled=false;b.textContent="Activer Perch v2";$("#perchBar2").hidden=true;renderModelInfo();setAiChip()}};
 $("#btnDropPerch").onclick=async()=>{try{await wcall({t:"drop",name:"perch",key:MODELS.perch.key});AI.ready.perch=false;toast("Perch v2 supprimé du téléphone")}catch(e){toast("Suppression impossible")}renderModelInfo();setAiChip()};
 
@@ -1500,6 +1509,7 @@ $("#tour").addEventListener("touchend",e=>{if(TST.x==null)return;const dx=e.chan
 
 /* nouveautés */
 const NEWS=[
+  {n:"1.2",d:"28 octobre 2026",items:[["two","Perch v2 allégé","Version int8 de 131 Mo au lieu de 413 : elle tient dans la mémoire de l'iPhone. Elle est servie par l'appli elle-même, rangée par morceaux sur le téléphone, et le téléchargement reprend s'il est coupé. L'ancien fichier de 413 Mo est supprimé pour libérer la place."]]},
   {n:"1.1",d:"28 octobre 2026",items:[["wave","Spectro en carte de chaleur","Palette scientifique « chaleur » (inferno), avec viridis ou gris au choix dans Réglages, barre de couleurs en dB et grille kHz / secondes."],["spark","Plus sobre","Gris neutres, l'or seulement pour l'essentiel. Chant en vert d'eau, cri en bleu."],["bird","Gros bouton Écouter","Au centre ; il disparaît pendant l'écoute, tu arrêtes avec le bouton rouge en bas."]]},
   {n:"1.0",d:"28 octobre 2026",items:[["spark","Nouvelle base, plus sobre","L'appli est réécrite proprement. Tes fiches, tes sons, ta liste de vie et ce qu'elle a appris sont gardés."],["list","Spectro + liste qui s'allume","En haut le spectro, en dessous les espèces entendues qui s'allument quand elles chantent. Gros bouton en bas."],["bird","Chant ou cri, sans tricher","Chaque espèce dit chant ou cri, d'après les références proches ou la forme du son. Un « ? » quand ce n'est pas sûr."],["two","Double avis","« 2 IA ✓ » quand BirdNET+ et Perch v2 sont d'accord."],["wave","Plus de décalage","Le spectro et les noms se calent sur le son lui-même, plus sur l'horloge : ils restent alignés même quand le téléphone rame."],["frame","Radar retiré","Sans micro directionnel il ne disait rien de vrai. Il reviendra avec la parabole."]]},
   {n:"0.8",d:"28 octobre 2026",items:[["bird","Huginn devient Ramage","Encre et or, et l'ouverture « la plume devient chant »."]]},
@@ -1514,7 +1524,7 @@ function openNews(all){const list=all?NEWS:NEWS.filter(n=>!S.newsSeen||vcmp(n.n.
 /* confidentialité et sources */
 const SOURCES=[
   ["BirdNET+ V3.0 et son géomodèle","https://github.com/birdnet-team/birdnet-live-app","L'identification des chants et des cris, et la liste des espèces probables selon le lieu et la semaine. Le modèle tourne sur ton téléphone.","BirdNET Team (K. Lisa Yang Center, Cornell Lab of Ornithology, et Université technique de Chemnitz). Licence Apache 2.0. Modèle adapté pour calculer dans le navigateur, résultats vérifiés identiques. C'est une préversion : sa précision n'est pas encore publiée."],
-  ["Perch v2","https://huggingface.co/justinchuby/Perch-onnx","Le 2e avis, téléchargé seulement si tu le demandes.","Google DeepMind, licence Apache 2.0. Version ONNX de justinchuby, liste des classes de cgeorgiaw/Perch (Hugging Face)."],
+  ["Perch v2 (int8)","https://github.com/JamesHollyer/fluttr-assets/releases/tag/model-perch-v2-int8-1","Le 2e avis, téléchargé seulement si tu le demandes.","Google DeepMind, licence Apache 2.0. Version ONNX quantifiée en int8 publiée par James Hollyer (Fluttr), hébergée avec l'appli ; liste des classes de cgeorgiaw/Perch (Hugging Face)."],
   ["onnxruntime-web","https://onnxruntime.ai","Le moteur qui fait tourner les modèles dans le navigateur, chargé depuis jsDelivr.","Microsoft, licence MIT."],
   ["Wikimedia Commons","https://commons.wikimedia.org","Les enregistrements de référence : comparaison, chant ou cri, variance, sons à réécouter. Le type vient de ce que l'auteur a écrit : il peut être faux.","Licence libre propre à chaque fichier, affichée avec l'auteur."],
   ["iNaturalist","https://www.inaturalist.org","Les photos des espèces.","Chaque photo garde sa licence et son auteur, affichés dans la fiche."],

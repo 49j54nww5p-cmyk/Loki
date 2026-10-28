@@ -7,45 +7,54 @@ const ORTBASE="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/";
 const MODELS={
   bn:{url:new URL("models/birdnet.onnx",location.href).href,key:"https://huginn.local/bn-3.0p3.1-c32",label:"BirdNET+ V3.0",size:67},
   geo:{url:new URL("models/geo.onnx",location.href).href,key:"https://huginn.local/geo-3.0.4-c32",label:"Géomodèle BirdNET+",size:14},
-  perch:{url:"https://huggingface.co/justinchuby/Perch-onnx/resolve/main/perch_v2_no_dft.onnx",key:"https://huginn.local/perch-v2-nodft",label:"Perch v2",size:413}};
+  /* Perch v2 allégé (int8, 131 Mo au lieu de 413) : servi par l'appli elle-même, en 2 morceaux */
+  perch:{url:["models/perch/perch-int8.part0.bin","models/perch/perch-int8.part1.bin"].map(u=>new URL(u,location.href).href),sizes:[65377492,65377492],key:"https://huginn.local/perch-v2-int8-1",old:"https://huginn.local/perch-v2-nodft",label:"Perch v2 (int8)",size:131}};
 const PERCH_LABELS="https://huggingface.co/cgeorgiaw/Perch/resolve/main/assets/labels.csv";
 /* Le worker : charge et fait tourner les modèles.
    Stockage par morceaux de 16 Mo : l'iPhone n'a jamais tout le fichier en mémoire pendant le
-   téléchargement (avant, il fermait l'appli à 411/413 Mo), et un téléchargement coupé reprend où il s'était arrêté. */
+   téléchargement (avant, il fermait l'appli à 411/131 Mo), et un téléchargement coupé reprend où il s'était arrêté. */
 const WSRC=`import * as ort from "${ORTBASE}ort.wasm.bundle.min.mjs";
 ort.env.wasm.wasmPaths="${ORTBASE}";ort.env.wasm.numThreads=1;
 const S={},CH=16*1024*1024;
 const cache=()=>caches.open("huginn-models");
 async function meta(c,key){const r=await c.match(key+"/meta");return r?await r.json():null}
 async function stored(c,key){if(await c.match(key))return true;const m=await meta(c,key);return!!(m&&m.done)}
-async function store(url,key,name){const c=await cache();if(await stored(c,key))return;
-  let m=await meta(c,key);if(!m||m.url!==url)m={url,n:0,size:0,total:0,done:false};
-  let res=null;if(m.n>0){try{res=await fetch(url,{headers:{Range:"bytes="+m.size+"-"}});if(res.status!==206){res=null}}catch(e){res=null}}
-  if(!res){m.n=0;m.size=0;res=await fetch(url)}
-  if(!res.ok)throw new Error("téléchargement refusé (HTTP "+res.status+")");
-  if(!m.total){const cr=res.headers.get("content-range"),cl=+res.headers.get("content-length")||0;m.total=cr&&cr.indexOf("/")>0?(+cr.split("/")[1]||cl):cl}
-  const rd=res.body.getReader();let parts=[],plen=0,last=0;
-  const flush=async()=>{if(!plen)return;await c.put(key+"/p"+m.n,new Response(new Blob(parts),{headers:{"x-len":String(plen)}}));m.n++;m.size+=plen;parts=[];plen=0;
-    await c.put(key+"/meta",new Response(JSON.stringify(m),{headers:{"content-type":"application/json"}}))};
-  for(;;){const x=await rd.read();if(x.done)break;parts.push(x.value);plen+=x.value.length;if(plen>=CH)await flush();
-    const now=Date.now();if(now-last>300){last=now;postMessage({t:"progress",name,got:m.size+plen,total:m.total})}}
+async function store(url,key,name,sizes){const c=await cache();if(await stored(c,key))return;
+  const urls=Array.isArray(url)?url:[url],id=urls.join("|"),tot0=sizes?sizes.reduce((a,b)=>a+b,0):0;
+  let m=await meta(c,key);if(!m||m.url!==id)m={url:id,n:0,size:0,total:tot0,done:false};
+  let parts=[],plen=0,last=0;
+  const putMeta=()=>c.put(key+"/meta",new Response(JSON.stringify(m),{headers:{"content-type":"application/json"}}));
+  const flush=async()=>{if(!plen)return;await c.put(key+"/p"+m.n,new Response(new Blob(parts),{headers:{"x-len":String(plen)}}));m.n++;m.size+=plen;parts=[];plen=0;await putMeta()};
+  for(let restart=0;restart<2;restart++){let cum=0,ok=true;
+    for(let p=0;p<urls.length;p++){const psz=sizes?sizes[p]:0;if(psz&&m.size>=cum+psz){cum+=psz;continue}
+      const off=m.size-cum;let res=null;
+      if(off>0){try{res=await fetch(urls[p],{headers:{Range:"bytes="+off+"-"}});if(res.status!==206)res=null}catch(e){res=null}
+        if(!res){m.n=0;m.size=0;await putMeta();ok=false;break}}
+      else res=await fetch(urls[p]);
+      if(!res.ok)throw new Error("téléchargement refusé (HTTP "+res.status+")");
+      if(!m.total){const cl=+res.headers.get("content-length")||0;m.total=cl}
+      const rd=res.body.getReader();
+      for(;;){const x=await rd.read();if(x.done)break;parts.push(x.value);plen+=x.value.length;if(plen>=CH)await flush();
+        const now=Date.now();if(now-last>300){last=now;postMessage({t:"progress",name,got:m.size+plen,total:m.total})}}
+      cum+=psz||0}
+    if(ok)break}
   await flush();
   if(m.total&&m.size!==m.total)throw new Error("téléchargement coupé à "+Math.round(m.size/1e6)+" / "+Math.round(m.total/1e6)+" Mo : touche à nouveau, il reprendra");
-  m.done=true;await c.put(key+"/meta",new Response(JSON.stringify(m),{headers:{"content-type":"application/json"}}))}
-async function getBuf(url,key,name){let c=null;try{c=await cache()}catch(e){}
-  if(!c){const r=await fetch(url);if(!r.ok)throw new Error("HTTP "+r.status);return new Uint8Array(await r.arrayBuffer())}
+  m.done=true;await putMeta()}
+async function getBuf(url,key,name,sizes){let c=null;try{c=await cache()}catch(e){}
+  if(!c){const r=await fetch(Array.isArray(url)?url[0]:url);if(!r.ok)throw new Error("HTTP "+r.status);return new Uint8Array(await r.arrayBuffer())}
   const old=await c.match(key);if(old)return new Uint8Array(await old.arrayBuffer());
-  await store(url,key,name);const m=await meta(c,key);postMessage({t:"progress",name,phase:"read"});
+  await store(url,key,name,sizes);const m=await meta(c,key);postMessage({t:"progress",name,phase:"read"});
   const b=new Uint8Array(m.size);let o=0;for(let i=0;i<m.n;i++){const r=await c.match(key+"/p"+i);if(!r){await drop(c,key);throw new Error("morceau manquant sur le téléphone : à retélécharger")}const u=new Uint8Array(await r.arrayBuffer());b.set(u,o);o+=u.length}
   if(o!==m.size){await drop(c,key);throw new Error("fichier incomplet sur le téléphone : à retélécharger")}return b}
 async function drop(c,key){await c.delete(key);const m=await meta(c,key);if(m)for(let i=0;i<m.n+2;i++)await c.delete(key+"/p"+i);await c.delete(key+"/meta")}
 self.onmessage=async e=>{const m=e.data;try{
- if(m.t==="load"){if(!S[m.name]){let b=await getBuf(m.url,m.key,m.name);postMessage({t:"progress",name:m.name,phase:"init"});
+ if(m.t==="load"){if(!S[m.name]){let b=await getBuf(m.url,m.key,m.name,m.sizes);postMessage({t:"progress",name:m.name,phase:"init"});
    const big=b.length>150e6,opt=big?{executionProviders:["wasm"],graphOptimizationLevel:"basic",enableCpuMemArena:false,enableMemPattern:false}:{executionProviders:["wasm"],graphOptimizationLevel:"all"};
    S[m.name]=await ort.InferenceSession.create(b,opt);b=null}postMessage({t:"ok",id:m.id})}
  else if(m.t==="run"){const s=S[m.name];if(!s)throw new Error("modèle non chargé");const feeds={};feeds[s.inputNames[0]]=new ort.Tensor("float32",m.data,m.dims);const out=await s.run(feeds,[m.output]);const d=new Float32Array(out[m.output].data);postMessage({t:"ok",id:m.id,data:d},[d.buffer])}
  else if(m.t==="run2"){const s=S[m.name];if(!s)throw new Error("modèle non chargé");const feeds={};feeds[s.inputNames[0]]=new ort.Tensor("float32",m.data,m.dims);const out=await s.run(feeds,m.outputs);const r=m.outputs.map(k=>new Float32Array(out[k].data));postMessage({t:"ok",id:m.id,data:r},r.map(a=>a.buffer))}
- else if(m.t==="dl"){await store(m.url,m.key,m.name);postMessage({t:"ok",id:m.id})}
+ else if(m.t==="dl"){if(m.old)try{await drop(await cache(),m.old)}catch(e){}await store(m.url,m.key,m.name,m.sizes);postMessage({t:"ok",id:m.id})}
  else if(m.t==="has"){let ok=false;try{ok=await stored(await cache(),m.key)}catch(e){}postMessage({t:"ok",id:m.id,ok})}
  else if(m.t==="drop"){try{await drop(await cache(),m.key)}catch(e){}if(S[m.name]){try{await S[m.name].release()}catch(e){}delete S[m.name]}postMessage({t:"ok",id:m.id})}
 }catch(err){const msg=typeof err==="number"?"erreur interne du moteur n°"+err:String(err&&err.message||err);postMessage({t:"error",id:m.id,msg})}};`;
@@ -58,7 +67,7 @@ function wk(){if(Wk)return Wk;Wk=new Worker(URL.createObjectURL(new Blob([WSRC],
 function wcall(msg,transfer){return new Promise((res,rej)=>{const id=++wid;wp.set(id,{res,rej});wk().postMessage(Object.assign({id},msg),transfer||[])})}
 
 function loadModel(name){if(AI.ready[name])return Promise.resolve();if(AI.loading[name])return AI.loading[name];const M=MODELS[name];
-  const p=wcall({t:"load",name,url:M.url,key:M.key}).then(()=>{AI.ready[name]=true;delete AI.loading[name];setAiChip()},e=>{delete AI.loading[name];throw e});AI.loading[name]=p;setAiChip();return p}
+  const p=wcall({t:"load",name,url:M.url,key:M.key,sizes:M.sizes}).then(()=>{AI.ready[name]=true;delete AI.loading[name];setAiChip()},e=>{delete AI.loading[name];throw e});AI.loading[name]=p;setAiChip();return p}
 async function loadLabels(){if(AI.labels)return;const r=await fetch("labels.json?v=2");if(!r.ok)throw new Error("liste des espèces introuvable");const j=await r.json();
   AI.labels=j.audio;AI.geoMap=j.geo;const n=j.audio.length;AI.mult=new Float32Array(n).fill(1);for(const k in j.mult)AI.mult[+k]=j.mult[k];
   AI.birdMask=new Uint8Array(n);j.audio.forEach((a,i)=>AI.birdMask[i]=a[3]);AI.mask=AI.birdMask.slice();AI.sciIdx=new Map(j.audio.map((a,i)=>[a[0],i]))}
@@ -102,7 +111,7 @@ async function runPerch(wins){const L=160000,res=[];for(const w of wins){const d
 let perchWake=null;
 async function perchDownload(){if(await perchCached())return;try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){}
   try{if(navigator.wakeLock)perchWake=await navigator.wakeLock.request("screen")}catch(e){}
-  try{await wcall({t:"dl",name:"perch",url:MODELS.perch.url,key:MODELS.perch.key})}finally{if(perchWake){perchWake.release().catch(()=>{});perchWake=null}}}
+  try{await wcall({t:"dl",name:"perch",url:MODELS.perch.url,key:MODELS.perch.key,sizes:MODELS.perch.sizes,old:MODELS.perch.old})}finally{if(perchWake){perchWake.release().catch(()=>{});perchWake=null}}}
 async function perchActivate(){if(AI.ready.perch)return;if(!AI.labels)await ensureAI();await perchLabels();LS.set("huginn.perchLoading",Date.now());
   try{await loadModel("perch")}finally{try{localStorage.removeItem("huginn.perchLoading")}catch(e){}}}
 const perchCrashed=()=>!!LS.get("huginn.perchLoading",0);
@@ -143,7 +152,7 @@ function setAiChip(){const c=$("#chipAi"),t=c.lastElementChild;c.classList.remov
   c.title=AI.ready.bn?`BirdNET+ prêt${AI.ready.perch?" · Perch v2 prêt":""} · ${AI.maskInfo}`:AI.err||"chargement";renderModelInfo()}
 function onProgress(m){if(m.name!=="perch"){setAiChip();return}const pct=m.phase==="init"?100:m.total?m.got/m.total*100:5;
   ["#perchBar","#perchBar2"].forEach(id=>{const b=$(id);b.hidden=false;b.firstElementChild.style.width=pct+"%"});
-  const txt=m.phase==="init"?"Perch v2 : préparation (20 à 60 s)…":m.phase==="read"?"Perch v2 : lecture depuis le téléphone…":`Perch v2 : ${Math.round(m.got/1e6)} / ${Math.round((m.total||413e6)/1e6)} Mo · garde l'appli ouverte`;
+  const txt=m.phase==="init"?"Perch v2 : préparation (20 à 60 s)…":m.phase==="read"?"Perch v2 : lecture depuis le téléphone…":`Perch v2 : ${Math.round(m.got/1e6)} / ${Math.round((m.total||131e6)/1e6)} Mo · garde l'appli ouverte`;
   const gp=$("#btnGetPerch");gp.disabled=true;gp.textContent=txt;const a=$("#perchAsk");a.hidden=false;a.innerHTML=`<p class="small muted">${txt}</p>`}
 async function renderModelInfo(){const el=$("#modelInfo");if(!el)return;if(IN_CLAUDE){el.textContent="Les modèles ne se chargent pas dans l'aperçu : ouvre la version GitHub Pages.";return}
   const pc=AI.ready.perch||await perchCached(),gp=$("#btnGetPerch"),ap=$("#btnActPerch"),cr=perchCrashed();gp.hidden=!!pc;ap.hidden=!pc||!!AI.ready.perch||!!AI.loading.perch;$("#btnDropPerch").hidden=!pc;

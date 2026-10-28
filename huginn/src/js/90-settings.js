@@ -43,8 +43,8 @@ bindSeg("#segSun","sun",applySun);setInterval(applySun,60000);
 
 /* modèles */
 $("#btnGetPerch").onclick=async()=>{if(IN_CLAUDE)return;const gp=$("#btnGetPerch");gp.disabled=true;gp.textContent="Démarrage…";
-  try{await perchDownload();toast("Perch v2 est sur le téléphone");$("#perchBar2").hidden=true;renderModelInfo();await perchActivate();toast("Perch v2 prêt")}
-  catch(e){toast("Perch v2 : "+(e.message||e));AI.err="Perch : "+(e.message||e)}finally{gp.disabled=false;gp.textContent="Télécharger Perch v2 (413 Mo)";$("#perchBar2").hidden=true;$("#perchBar").hidden=true;$("#perchAsk").hidden=true;renderModelInfo();setAiChip()}};
+  try{await perchDownload();try{localStorage.removeItem("huginn.perchLoading")}catch(e){}toast("Perch v2 est sur le téléphone");$("#perchBar2").hidden=true;renderModelInfo();await perchActivate();toast("Perch v2 prêt")}
+  catch(e){toast("Perch v2 : "+(e.message||e));AI.err="Perch : "+(e.message||e)}finally{gp.disabled=false;gp.textContent="Télécharger Perch v2 (131 Mo)";$("#perchBar2").hidden=true;$("#perchBar").hidden=true;$("#perchAsk").hidden=true;renderModelInfo();setAiChip()}};
 $("#btnActPerch").onclick=async()=>{const b=$("#btnActPerch");b.disabled=true;b.textContent="Activation…";try{await perchActivate();toast("Perch v2 prêt")}catch(e){toast("Perch v2 : "+(e.message||e))}finally{b.disabled=false;b.textContent="Activer Perch v2";$("#perchBar2").hidden=true;renderModelInfo();setAiChip()}};
 $("#btnDropPerch").onclick=async()=>{try{await wcall({t:"drop",name:"perch",key:MODELS.perch.key});AI.ready.perch=false;toast("Perch v2 supprimé du téléphone")}catch(e){toast("Suppression impossible")}renderModelInfo();setAiChip()};
 
@@ -91,6 +91,7 @@ $("#tour").addEventListener("touchend",e=>{if(TST.x==null)return;const dx=e.chan
 
 /* nouveautés */
 const NEWS=[
+  {n:"1.2",d:"28 octobre 2026",items:[["two","Perch v2 allégé","Version int8 de 131 Mo au lieu de 413 : elle tient dans la mémoire de l'iPhone. Elle est servie par l'appli elle-même, rangée par morceaux sur le téléphone, et le téléchargement reprend s'il est coupé. L'ancien fichier de 413 Mo est supprimé pour libérer la place."]]},
   {n:"1.1",d:"28 octobre 2026",items:[["wave","Spectro en carte de chaleur","Palette scientifique « chaleur » (inferno), avec viridis ou gris au choix dans Réglages, barre de couleurs en dB et grille kHz / secondes."],["spark","Plus sobre","Gris neutres, l'or seulement pour l'essentiel. Chant en vert d'eau, cri en bleu."],["bird","Gros bouton Écouter","Au centre ; il disparaît pendant l'écoute, tu arrêtes avec le bouton rouge en bas."]]},
   {n:"1.0",d:"28 octobre 2026",items:[["spark","Nouvelle base, plus sobre","L'appli est réécrite proprement. Tes fiches, tes sons, ta liste de vie et ce qu'elle a appris sont gardés."],["list","Spectro + liste qui s'allume","En haut le spectro, en dessous les espèces entendues qui s'allument quand elles chantent. Gros bouton en bas."],["bird","Chant ou cri, sans tricher","Chaque espèce dit chant ou cri, d'après les références proches ou la forme du son. Un « ? » quand ce n'est pas sûr."],["two","Double avis","« 2 IA ✓ » quand BirdNET+ et Perch v2 sont d'accord."],["wave","Plus de décalage","Le spectro et les noms se calent sur le son lui-même, plus sur l'horloge : ils restent alignés même quand le téléphone rame."],["frame","Radar retiré","Sans micro directionnel il ne disait rien de vrai. Il reviendra avec la parabole."]]},
   {n:"0.8",d:"28 octobre 2026",items:[["bird","Huginn devient Ramage","Encre et or, et l'ouverture « la plume devient chant »."]]},
@@ -105,7 +106,7 @@ function openNews(all){const list=all?NEWS:NEWS.filter(n=>!S.newsSeen||vcmp(n.n.
 /* confidentialité et sources */
 const SOURCES=[
   ["BirdNET+ V3.0 et son géomodèle","https://github.com/birdnet-team/birdnet-live-app","L'identification des chants et des cris, et la liste des espèces probables selon le lieu et la semaine. Le modèle tourne sur ton téléphone.","BirdNET Team (K. Lisa Yang Center, Cornell Lab of Ornithology, et Université technique de Chemnitz). Licence Apache 2.0. Modèle adapté pour calculer dans le navigateur, résultats vérifiés identiques. C'est une préversion : sa précision n'est pas encore publiée."],
-  ["Perch v2","https://huggingface.co/justinchuby/Perch-onnx","Le 2e avis, téléchargé seulement si tu le demandes.","Google DeepMind, licence Apache 2.0. Version ONNX de justinchuby, liste des classes de cgeorgiaw/Perch (Hugging Face)."],
+  ["Perch v2 (int8)","https://github.com/JamesHollyer/fluttr-assets/releases/tag/model-perch-v2-int8-1","Le 2e avis, téléchargé seulement si tu le demandes.","Google DeepMind, licence Apache 2.0. Version ONNX quantifiée en int8 publiée par James Hollyer (Fluttr), hébergée avec l'appli ; liste des classes de cgeorgiaw/Perch (Hugging Face)."],
   ["onnxruntime-web","https://onnxruntime.ai","Le moteur qui fait tourner les modèles dans le navigateur, chargé depuis jsDelivr.","Microsoft, licence MIT."],
   ["Wikimedia Commons","https://commons.wikimedia.org","Les enregistrements de référence : comparaison, chant ou cri, variance, sons à réécouter. Le type vient de ce que l'auteur a écrit : il peut être faux.","Licence libre propre à chaque fichier, affichée avec l'auteur."],
   ["iNaturalist","https://www.inaturalist.org","Les photos des espèces.","Chaque photo garde sa licence et son auteur, affichés dans la fiche."],

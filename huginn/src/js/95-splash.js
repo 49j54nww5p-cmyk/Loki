@@ -20,27 +20,27 @@ function featherSVG(){let seed=13;const rnd=()=>{seed=(seed*9301+49297)%233280;r
   const rA="M-150 "+f(bend(-150))+" Q0 -28 150 "+f(bend(150)),rB="M-162 0 Q0 0 162 0";
   const bars=m=>{let s="";for(let c=0;c<M;c++){const cx=X0+(c+.5)*P,h=Math.max(1,Math.min(40,H[c]*m[c])-3);s+="M"+f(cx)+" "+f(-h)+" V"+f(h)+" "}return s.trim()};
   const one=[],m1=[],m2=[],m3=[];for(let i=0;i<M;i++){one.push(1);m1.push(.5+rnd()*.9);m2.push(.4+rnd()*1.1);m3.push(.6+rnd()*.7)}
-  const b0=bars(one),sp=n=>Array(n).fill(".45 0 .55 1").join(";"),A=`dur="9s" repeatCount="1" fill="freeze"`;
-  return `<defs><mask id="rgStr" maskUnits="userSpaceOnUse" x="-220" y="-120" width="440" height="240"><path fill="#fff" d="${sw}"><animate attributeName="d" ${A} keyTimes="0;.6;.667;1" values="${sw};${sw};${sn};${sn}" calcMode="spline" keySplines="${sp(3)}"/></path></mask><clipPath id="rgVane"><path d="${clip}"/></clipPath></defs>
+  const b0=bars(one),sp=n=>Array(n).fill(".45 0 .55 1").join(";"),A=`dur="6.5s" repeatCount="1" fill="freeze"`;
+  return `<defs><mask id="rgStr" maskUnits="userSpaceOnUse" x="-220" y="-120" width="440" height="240"><path fill="#fff" d="${sw}"><animate attributeName="d" ${A} keyTimes="0;.508;.554;1" values="${sw};${sw};${sn};${sn}" calcMode="spline" keySplines="${sp(3)}"/></path></mask><clipPath id="rgVane"><path d="${clip}"/></clipPath></defs>
   <g class="spwind">
     <path d="M-240 -120 C -130 -145, -10 -85, 240 -130" stroke-dasharray="80 640" style="animation-duration:1.9s"/>
     <path d="M-240 -50 C -110 -70, 20 -20, 240 -70" stroke-dasharray="60 660" style="animation-duration:2.3s;animation-delay:.6s;opacity:.7"/>
     <path d="M-240 50 C -90 25, 30 75, 240 35" stroke-dasharray="90 630" style="animation-duration:2.1s;animation-delay:1.1s"/>
     <path d="M-240 100 C -120 80, 60 120, 240 85" stroke-dasharray="50 670" style="animation-duration:2.6s;animation-delay:.3s;opacity:.6"/></g>
-  <g transform="scale(1.12)"><g><animateTransform attributeName="transform" type="rotate" ${A} keyTimes="0;.09;.18;.27;.356;.489;1" values="-32;-25;-37;-27;-33;0;0" calcMode="spline" keySplines="${sp(6)}"/>
-   <g><animateTransform attributeName="transform" type="translate" ${A} keyTimes="0;.09;.18;.27;.356;.489;1" values="0 0;5 -7;-4 5;4 -4;0 0;0 0;0 0" calcMode="spline" keySplines="${sp(6)}"/>
-    <g mask="url(#rgStr)"><animate attributeName="opacity" ${A} keyTimes="0;.66;.685;1" values="1;1;0;0"/>
-     <path d="${tA}" fill="#f1e6c8" stroke="#3a2c14" stroke-width="1.1" stroke-linejoin="round"><animate attributeName="d" ${A} keyTimes="0;.489;.6;1" values="${tA};${tA};${tB};${tB}" calcMode="spline" keySplines="${sp(3)}"/><animate attributeName="fill" ${A} keyTimes="0;.489;.6;1" values="#f1e6c8;#f1e6c8;#e8cf8f;#e8cf8f"/></path>
-     <path d="${bA}" fill="#d4b77a" stroke="#3a2c14" stroke-width="1.1" stroke-linejoin="round"><animate attributeName="d" ${A} keyTimes="0;.489;.6;1" values="${bA};${bA};${bB};${bB}" calcMode="spline" keySplines="${sp(3)}"/><animate attributeName="fill" ${A} keyTimes="0;.489;.6;1" values="#d4b77a;#d4b77a;#d6b25e;#d6b25e"/></path></g>
-    <g clip-path="url(#rgVane)"><animate attributeName="opacity" ${A} keyTimes="0;.44;.49;1" values="1;1;0;0"/><path d="${barbs}" fill="none" stroke="#a9843f" stroke-width=".8" stroke-linecap="round" opacity=".55"/><path d="M-90 ${f(bend(-90)-6)} Q 0 ${f(bend(0)-12)} 90 ${f(bend(90)-8)}" fill="none" stroke="#fffaf0" stroke-width="3" stroke-linecap="round" opacity=".5"/></g>
-    <path d="${fluff}" fill="none" stroke="#efe2c0" stroke-width="1.3" stroke-linecap="round" opacity=".7"><animate attributeName="opacity" ${A} keyTimes="0;.44;.49;1" values=".7;.7;0;0"/></path>
-    <path d="${rA}" fill="none" stroke="#b8964f" stroke-width="2.4" stroke-linecap="round"><animate attributeName="d" ${A} keyTimes="0;.489;.6;1" values="${rA};${rA};${rB};${rB}" calcMode="spline" keySplines="${sp(3)}"/><animate attributeName="stroke-width" ${A} keyTimes="0;.489;.6;1" values="2.4;2.4;1.4;1.4"/><animate attributeName="stroke" ${A} keyTimes="0;.489;.6;1" values="#b8964f;#b8964f;#8c7a55;#8c7a55"/></path>
-    <path class="spbars" d="${b0}" fill="none" stroke="#e8cf8f" stroke-width="6" stroke-linecap="round" opacity="0"><animate attributeName="opacity" ${A} keyTimes="0;.66;.685;1" values="0;0;1;1"/><animate attributeName="d" ${A} keyTimes="0;.69;.745;.8;.855;.911;1" values="${b0};${b0};${bars(m1)};${bars(m2)};${bars(m3)};${b0};${b0}" calcMode="spline" keySplines="${sp(6)}"/></path>
+  <g transform="scale(1.12)"><g><animateTransform attributeName="transform" type="rotate" ${A} keyTimes="0;.092;.185;.277;.369;.446;1" values="-32;-25;-37;-27;-33;0;0" calcMode="spline" keySplines="${sp(6)}"/>
+   <g><animateTransform attributeName="transform" type="translate" ${A} keyTimes="0;.092;.185;.277;.369;.446;1" values="0 0;5 -7;-4 5;4 -4;0 0;0 0;0 0" calcMode="spline" keySplines="${sp(6)}"/>
+    <g mask="url(#rgStr)"><animate attributeName="opacity" ${A} keyTimes="0;.546;.569;1" values="1;1;0;0"/>
+     <path d="${tA}" fill="#f1e6c8" stroke="#3a2c14" stroke-width="1.1" stroke-linejoin="round"><animate attributeName="d" ${A} keyTimes="0;.446;.508;1" values="${tA};${tA};${tB};${tB}" calcMode="spline" keySplines="${sp(3)}"/><animate attributeName="fill" ${A} keyTimes="0;.446;.508;1" values="#f1e6c8;#f1e6c8;#e8cf8f;#e8cf8f"/></path>
+     <path d="${bA}" fill="#d4b77a" stroke="#3a2c14" stroke-width="1.1" stroke-linejoin="round"><animate attributeName="d" ${A} keyTimes="0;.446;.508;1" values="${bA};${bA};${bB};${bB}" calcMode="spline" keySplines="${sp(3)}"/><animate attributeName="fill" ${A} keyTimes="0;.446;.508;1" values="#d4b77a;#d4b77a;#d6b25e;#d6b25e"/></path></g>
+    <g clip-path="url(#rgVane)"><animate attributeName="opacity" ${A} keyTimes="0;.423;.462;1" values="1;1;0;0"/><path d="${barbs}" fill="none" stroke="#a9843f" stroke-width=".8" stroke-linecap="round" opacity=".55"/><path d="M-90 ${f(bend(-90)-6)} Q 0 ${f(bend(0)-12)} 90 ${f(bend(90)-8)}" fill="none" stroke="#fffaf0" stroke-width="3" stroke-linecap="round" opacity=".5"/></g>
+    <path d="${fluff}" fill="none" stroke="#efe2c0" stroke-width="1.3" stroke-linecap="round" opacity=".7"><animate attributeName="opacity" ${A} keyTimes="0;.423;.462;1" values=".7;.7;0;0"/></path>
+    <path d="${rA}" fill="none" stroke="#b8964f" stroke-width="2.4" stroke-linecap="round"><animate attributeName="d" ${A} keyTimes="0;.446;.508;1" values="${rA};${rA};${rB};${rB}" calcMode="spline" keySplines="${sp(3)}"/><animate attributeName="stroke-width" ${A} keyTimes="0;.446;.508;1" values="2.4;2.4;1.4;1.4"/><animate attributeName="stroke" ${A} keyTimes="0;.446;.508;1" values="#b8964f;#b8964f;#8c7a55;#8c7a55"/></path>
+    <path class="spbars" d="${b0}" fill="none" stroke="#e8cf8f" stroke-width="6" stroke-linecap="round" opacity="0"><animate attributeName="opacity" ${A} keyTimes="0;.546;.569;1" values="0;0;1;1"/><animate attributeName="d" ${A} keyTimes="0;.575;.65;.72;.79;.86;1" values="${b0};${b0};${bars(m1)};${bars(m2)};${bars(m3)};${b0};${b0}" calcMode="spline" keySplines="${sp(6)}"/></path>
    </g></g></g>`}
 const SPF={done:false,t:0};
 function endSplash(){if(SPF.done)return;SPF.done=true;clearTimeout(SPF.t);const s=$("#splash");s.classList.add("gone");setTimeout(()=>{s.hidden=true;$("#spFeather").innerHTML=""},700);
   if(!S.toured)openTour();else if(S.newsSeen&&vcmp(VERSION,S.newsSeen)>0)setTimeout(()=>openNews(false),300);else if(!S.newsSeen){S.newsSeen=VERSION;saveS()}}
 function startSplash(){const sv=$("#spFeather"),sp=$("#splash");
   if(matchMedia("(prefers-reduced-motion: reduce)").matches){sp.classList.add("still");SPF.t=setTimeout(endSplash,1200)}
-  else{sv.innerHTML=featherSVG();try{sv.setCurrentTime(0);sv.unpauseAnimations()}catch(e){}SPF.t=setTimeout(endSplash,8000)}
+  else{sv.innerHTML=featherSVG();try{sv.setCurrentTime(0);sv.unpauseAnimations()}catch(e){}SPF.t=setTimeout(endSplash,5600)}
   sp.addEventListener("pointerup",endSplash)}

@@ -44,8 +44,12 @@ bindSeg("#segSun","sun",applySun);setInterval(applySun,60000);
 /* modèles */
 $("#btnGetPerch").onclick=async()=>{if(IN_CLAUDE)return;const gp=$("#btnGetPerch");gp.disabled=true;gp.textContent="Démarrage…";
   try{await perchDownload();try{localStorage.removeItem("huginn.perchLoading")}catch(e){}toast("Perch v2 est sur le téléphone");$("#perchBar2").hidden=true;renderModelInfo();await perchActivate();toast("Perch v2 prêt")}
-  catch(e){toast("Perch v2 : "+(e.message||e));AI.err="Perch : "+(e.message||e)}finally{gp.disabled=false;gp.textContent="Télécharger Perch v2 (131 Mo)";$("#perchBar2").hidden=true;$("#perchBar").hidden=true;$("#perchAsk").hidden=true;renderModelInfo();setAiChip()}};
+  catch(e){toast("Perch v2 : "+(e.message||e));AI.err="Perch : "+(e.message||e)}finally{gp.disabled=false;gp.textContent="Télécharger "+MODELS.perch.label+" ("+MODELS.perch.size+" Mo)";$("#perchBar2").hidden=true;$("#perchBar").hidden=true;$("#perchAsk").hidden=true;renderModelInfo();setAiChip()}};
 $("#btnActPerch").onclick=async()=>{const b=$("#btnActPerch");b.disabled=true;b.textContent="Activation…";try{await perchActivate();toast("Perch v2 prêt")}catch(e){toast("Perch v2 : "+(e.message||e))}finally{b.disabled=false;b.textContent="Activer Perch v2";$("#perchBar2").hidden=true;renderModelInfo();setAiChip()}};
+{const g=$("#segPerchV"),set=()=>g.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===(S.perchV==="full"?"full":"lite"))));set();
+  g.addEventListener("click",async e=>{const b=e.target.closest("button");if(!b||b.dataset.v===(S.perchV==="full"?"full":"lite"))return;S.perchV=b.dataset.v;saveS();set();
+    if(AI.ready.perch){try{await wcall({t:"unload",name:"perch"})}catch(err){}AI.ready.perch=false}try{localStorage.removeItem("huginn.perchLoading")}catch(err){}
+    $("#btnGetPerch").textContent="Télécharger "+MODELS.perch.label+" ("+MODELS.perch.size+" Mo)";renderModelInfo();setAiChip()})}
 $("#btnDropPerch").onclick=async()=>{try{await wcall({t:"drop",name:"perch",key:MODELS.perch.key});AI.ready.perch=false;toast("Perch v2 supprimé du téléphone")}catch(e){toast("Suppression impossible")}renderModelInfo();setAiChip()};
 
 /* apprentissage */
@@ -91,6 +95,7 @@ $("#tour").addEventListener("touchend",e=>{if(TST.x==null)return;const dx=e.chan
 
 /* nouveautés */
 const NEWS=[
+  {n:"1.2.1",d:"28 octobre 2026",items:[["two","Perch : légère ou complète","Choisis dans Réglages › Modèles : la légère (131 Mo) ou la complète (413 Mo, pleine précision). Les deux peuvent rester sur le téléphone."]]},
   {n:"1.2",d:"28 octobre 2026",items:[["two","Perch v2 allégé","Version int8 de 131 Mo au lieu de 413 : elle tient dans la mémoire de l'iPhone. Elle est servie par l'appli elle-même, rangée par morceaux sur le téléphone, et le téléchargement reprend s'il est coupé. L'ancien fichier de 413 Mo est supprimé pour libérer la place."]]},
   {n:"1.1",d:"28 octobre 2026",items:[["wave","Spectro en carte de chaleur","Palette scientifique « chaleur » (inferno), avec viridis ou gris au choix dans Réglages, barre de couleurs en dB et grille kHz / secondes."],["spark","Plus sobre","Gris neutres, l'or seulement pour l'essentiel. Chant en vert d'eau, cri en bleu."],["bird","Gros bouton Écouter","Au centre ; il disparaît pendant l'écoute, tu arrêtes avec le bouton rouge en bas."]]},
   {n:"1.0",d:"28 octobre 2026",items:[["spark","Nouvelle base, plus sobre","L'appli est réécrite proprement. Tes fiches, tes sons, ta liste de vie et ce qu'elle a appris sont gardés."],["list","Spectro + liste qui s'allume","En haut le spectro, en dessous les espèces entendues qui s'allument quand elles chantent. Gros bouton en bas."],["bird","Chant ou cri, sans tricher","Chaque espèce dit chant ou cri, d'après les références proches ou la forme du son. Un « ? » quand ce n'est pas sûr."],["two","Double avis","« 2 IA ✓ » quand BirdNET+ et Perch v2 sont d'accord."],["wave","Plus de décalage","Le spectro et les noms se calent sur le son lui-même, plus sur l'horloge : ils restent alignés même quand le téléphone rame."],["frame","Radar retiré","Sans micro directionnel il ne disait rien de vrai. Il reviendra avec la parabole."]]},

@@ -7,12 +7,17 @@ const ORTBASE="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/";
 const MODELS={
   bn:{url:new URL("models/birdnet.onnx",location.href).href,key:"https://huginn.local/bn-3.0p3.1-c32",label:"BirdNET+ V3.0",size:67},
   geo:{url:new URL("models/geo.onnx",location.href).href,key:"https://huginn.local/geo-3.0.4-c32",label:"Géomodèle BirdNET+",size:14},
-  /* Perch v2 allégé (int8, 131 Mo au lieu de 413) : servi par l'appli elle-même, en 2 morceaux */
-  perch:{url:["models/perch/perch-int8.part0.bin","models/perch/perch-int8.part1.bin"].map(u=>new URL(u,location.href).href),sizes:[65377492,65377492],key:"https://huginn.local/perch-v2-int8-1",old:"https://huginn.local/perch-v2-nodft",label:"Perch v2 (int8)",size:131}};
+};
+/* Perch v2 : deux versions au choix (Réglages › Modèles)
+   - légère : int8, 131 Mo, servie par l'appli en 2 morceaux ; tient dans la mémoire de l'iPhone
+   - complète : 413 Mo depuis Hugging Face, pleine précision ; peut dépasser la mémoire à l'activation */
+const PERCHV={lite:{url:["models/perch/perch-int8.part0.bin","models/perch/perch-int8.part1.bin"].map(u=>new URL(u,location.href).href),sizes:[65377492,65377492],key:"https://huginn.local/perch-v2-int8-1",label:"Perch v2 légère (int8)",size:131},
+  full:{url:"https://huggingface.co/justinchuby/Perch-onnx/resolve/main/perch_v2_no_dft.onnx",sizes:null,key:"https://huginn.local/perch-v2-nodft",label:"Perch v2 complète",size:413}};
+Object.defineProperty(MODELS,"perch",{get:()=>PERCHV[S.perchV==="full"?"full":"lite"],enumerable:true});
 const PERCH_LABELS="https://huggingface.co/cgeorgiaw/Perch/resolve/main/assets/labels.csv";
 /* Le worker : charge et fait tourner les modèles.
    Stockage par morceaux de 16 Mo : l'iPhone n'a jamais tout le fichier en mémoire pendant le
-   téléchargement (avant, il fermait l'appli à 411/131 Mo), et un téléchargement coupé reprend où il s'était arrêté. */
+   téléchargement (avant, il fermait l'appli à 411/413 Mo), et un téléchargement coupé reprend où il s'était arrêté. */
 const WSRC=`import * as ort from "${ORTBASE}ort.wasm.bundle.min.mjs";
 ort.env.wasm.wasmPaths="${ORTBASE}";ort.env.wasm.numThreads=1;
 const S={},CH=16*1024*1024;
@@ -56,6 +61,7 @@ self.onmessage=async e=>{const m=e.data;try{
  else if(m.t==="run2"){const s=S[m.name];if(!s)throw new Error("modèle non chargé");const feeds={};feeds[s.inputNames[0]]=new ort.Tensor("float32",m.data,m.dims);const out=await s.run(feeds,m.outputs);const r=m.outputs.map(k=>new Float32Array(out[k].data));postMessage({t:"ok",id:m.id,data:r},r.map(a=>a.buffer))}
  else if(m.t==="dl"){if(m.old)try{await drop(await cache(),m.old)}catch(e){}await store(m.url,m.key,m.name,m.sizes);postMessage({t:"ok",id:m.id})}
  else if(m.t==="has"){let ok=false;try{ok=await stored(await cache(),m.key)}catch(e){}postMessage({t:"ok",id:m.id,ok})}
+ else if(m.t==="unload"){if(S[m.name]){try{await S[m.name].release()}catch(e){}delete S[m.name]}postMessage({t:"ok",id:m.id})}
  else if(m.t==="drop"){try{await drop(await cache(),m.key)}catch(e){}if(S[m.name]){try{await S[m.name].release()}catch(e){}delete S[m.name]}postMessage({t:"ok",id:m.id})}
 }catch(err){const msg=typeof err==="number"?"erreur interne du moteur n°"+err:String(err&&err.message||err);postMessage({t:"error",id:m.id,msg})}};`;
 
@@ -111,7 +117,7 @@ async function runPerch(wins){const L=160000,res=[];for(const w of wins){const d
 let perchWake=null;
 async function perchDownload(){if(await perchCached())return;try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){}
   try{if(navigator.wakeLock)perchWake=await navigator.wakeLock.request("screen")}catch(e){}
-  try{await wcall({t:"dl",name:"perch",url:MODELS.perch.url,key:MODELS.perch.key,sizes:MODELS.perch.sizes,old:MODELS.perch.old})}finally{if(perchWake){perchWake.release().catch(()=>{});perchWake=null}}}
+  try{await wcall({t:"dl",name:"perch",url:MODELS.perch.url,key:MODELS.perch.key,sizes:MODELS.perch.sizes})}finally{if(perchWake){perchWake.release().catch(()=>{});perchWake=null}}}
 async function perchActivate(){if(AI.ready.perch)return;if(!AI.labels)await ensureAI();await perchLabels();LS.set("huginn.perchLoading",Date.now());
   try{await loadModel("perch")}finally{try{localStorage.removeItem("huginn.perchLoading")}catch(e){}}}
 const perchCrashed=()=>!!LS.get("huginn.perchLoading",0);
@@ -152,9 +158,9 @@ function setAiChip(){const c=$("#chipAi"),t=c.lastElementChild;c.classList.remov
   c.title=AI.ready.bn?`BirdNET+ prêt${AI.ready.perch?" · Perch v2 prêt":""} · ${AI.maskInfo}`:AI.err||"chargement";renderModelInfo()}
 function onProgress(m){if(m.name!=="perch"){setAiChip();return}const pct=m.phase==="init"?100:m.total?m.got/m.total*100:5;
   ["#perchBar","#perchBar2"].forEach(id=>{const b=$(id);b.hidden=false;b.firstElementChild.style.width=pct+"%"});
-  const txt=m.phase==="init"?"Perch v2 : préparation (20 à 60 s)…":m.phase==="read"?"Perch v2 : lecture depuis le téléphone…":`Perch v2 : ${Math.round(m.got/1e6)} / ${Math.round((m.total||131e6)/1e6)} Mo · garde l'appli ouverte`;
+  const txt=m.phase==="init"?"Perch v2 : préparation (20 à 60 s)…":m.phase==="read"?"Perch v2 : lecture depuis le téléphone…":`Perch v2 : ${Math.round(m.got/1e6)} / ${Math.round((m.total||MODELS.perch.size*1e6)/1e6)} Mo · garde l'appli ouverte`;
   const gp=$("#btnGetPerch");gp.disabled=true;gp.textContent=txt;const a=$("#perchAsk");a.hidden=false;a.innerHTML=`<p class="small muted">${txt}</p>`}
 async function renderModelInfo(){const el=$("#modelInfo");if(!el)return;if(IN_CLAUDE){el.textContent="Les modèles ne se chargent pas dans l'aperçu : ouvre la version GitHub Pages.";return}
-  const pc=AI.ready.perch||await perchCached(),gp=$("#btnGetPerch"),ap=$("#btnActPerch"),cr=perchCrashed();gp.hidden=!!pc;ap.hidden=!pc||!!AI.ready.perch||!!AI.loading.perch;$("#btnDropPerch").hidden=!pc;
+  const pc=AI.ready.perch||await perchCached(),gp=$("#btnGetPerch"),ap=$("#btnActPerch"),cr=perchCrashed();gp.hidden=!!pc;if(!gp.disabled)gp.textContent="Télécharger "+MODELS.perch.label+" ("+MODELS.perch.size+" Mo)";ap.hidden=!pc||!!AI.ready.perch||!!AI.loading.perch;$("#btnDropPerch").hidden=!pc;
   const pn=$("#perchNote");pn.hidden=!(pc&&!AI.ready.perch&&cr);pn.textContent="La dernière activation de Perch a fermé l'appli : l'iPhone a manqué de mémoire. Le fichier est bien gardé sur le téléphone. Ferme les autres applis puis réessaie ; sinon BirdNET+ seul marche très bien.";
-  el.innerHTML=`<div>BirdNET+ V3.0 · ${MODELS.bn.size} Mo : <b>${AI.ready.bn?"prêt":AI.loading.bn?"chargement":"non chargé"}</b></div><div>Géomodèle · ${MODELS.geo.size} Mo : <b>${AI.ready.geo?"prêt":"non chargé"}</b>${AI.maskInfo?` · ${esc(AI.maskInfo)}`:""}</div><div>Perch v2 · ${MODELS.perch.size} Mo : <b>${AI.ready.perch?"prêt":AI.loading.perch?"activation…":pc?"sur le téléphone ✓ (pas encore activé)":"pas téléchargé"}</b></div>${AI.err?`<div class="muted">Dernière erreur : ${esc(AI.err)}</div>`:""}`}
+  el.innerHTML=`<div>BirdNET+ V3.0 · ${MODELS.bn.size} Mo : <b>${AI.ready.bn?"prêt":AI.loading.bn?"chargement":"non chargé"}</b></div><div>Géomodèle · ${MODELS.geo.size} Mo : <b>${AI.ready.geo?"prêt":"non chargé"}</b>${AI.maskInfo?` · ${esc(AI.maskInfo)}`:""}</div><div>${esc(MODELS.perch.label)} · ${MODELS.perch.size} Mo : <b>${AI.ready.perch?"prêt":AI.loading.perch?"activation…":pc?"sur le téléphone ✓ (pas encore activé)":"pas téléchargé"}</b></div>${AI.err?`<div class="muted">Dernière erreur : ${esc(AI.err)}</div>`:""}`}

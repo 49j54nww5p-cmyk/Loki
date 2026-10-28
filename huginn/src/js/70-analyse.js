@@ -110,11 +110,11 @@ $("#btnBn").onclick=async()=>{if(!clip)return;if(IN_CLAUDE){toast("L'IA tourne s
 async function doPerch(){const btn=$("#btnPerch");btn.disabled=true;btn.textContent="Perch…";$("#perchAsk").hidden=true;
   try{if(!AI.labels)await ensureAI();await perchLabels();if(!AI.ready.perch){await perchDownload();await perchActivate();$("#perchBar").hidden=true;$("#perchAsk").hidden=true}
     const x=await clip32(),starts=analysisWindows(5,2.5),sc=await runPerch(starts.map(t=>x.subarray(Math.round(t*32000),Math.round(t*32000)+160000)));aiResults.perch=aggregate(sc,starts,S.conf||.35);renderAiRes()}
-  catch(e){$("#perchBar").hidden=true;$("#perchAsk").hidden=false;$("#perchAsk").innerHTML=`<p class="small">Perch v2 n'a pas pu tourner : ${esc(e.message||e)}. Le modèle fait 131 Mo : il faut du réseau et de la place.</p>`}
+  catch(e){$("#perchBar").hidden=true;$("#perchAsk").hidden=false;$("#perchAsk").innerHTML=`<p class="small">Perch v2 n'a pas pu tourner : ${esc(e.message||e)}. Le modèle fait ${MODELS.perch.size} Mo : il faut du réseau et de la place.</p>`}
   finally{btn.disabled=false;btn.textContent="2e avis · Perch v2";renderModelInfo()}}
 $("#btnPerch").onclick=async()=>{if(!clip)return;if(IN_CLAUDE){toast("L'IA tourne seulement dans la version GitHub Pages");return}
   if(AI.ready.perch||await perchCached())return doPerch();const a=$("#perchAsk");a.hidden=false;
-  a.innerHTML=`<p class="small">Perch v2 pèse <b>131 Mo</b>, téléchargés une fois puis gardés sur le téléphone. À faire en wifi.</p><div class="row"><button class="btn primary sm" id="perchGo">Télécharger</button><button class="btn ghost sm" id="perchNo">Plus tard</button></div>`;
+  a.innerHTML=`<p class="small">${esc(MODELS.perch.label)} pèse <b>${MODELS.perch.size} Mo</b>, téléchargés une fois puis gardés sur le téléphone. À faire en wifi.</p><div class="row"><button class="btn primary sm" id="perchGo">Télécharger</button><button class="btn ghost sm" id="perchNo">Plus tard</button></div>`;
   $("#perchGo").onclick=doPerch;$("#perchNo").onclick=()=>{a.hidden=true}};
 
 /* comparaison aux références */

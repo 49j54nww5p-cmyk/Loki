@@ -4,6 +4,8 @@ Quiz d'oiseaux personnalisé, en direct d'iNaturalist : photos, chants, noms lat
 
 **Jouer : https://49j54nww5p-cmyk.github.io/Loki/**
 
+**Huginn** (appli de terrain pour les chants, dossier `huginn/`) : https://49j54nww5p-cmyk.github.io/Loki/huginn/
+
 Sur iPhone : ouvre le lien dans Safari, bouton Partager, puis « Sur l'écran d'accueil ». Plumage s'ouvre alors comme une vraie appli.
 
 ## Contenu

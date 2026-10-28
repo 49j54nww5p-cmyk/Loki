@@ -1,0 +1,687 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0e1215"><link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAADcUlEQVR4Xu3cMU4cQRCG0cFyTIDEGUiQCJ1wII7kAzkhRHLi2zgwwmiZGal2u7e7at7LsIUsrX5909PYvrm9u19gzTcfC1uMA+MgTjlQDuKUA+UgTjlQDuKUA+UgTjlQDuKUA+UgTjlQDuKUA+UgTjlQDuKUA+UgTjlQDuK+x7+Fd79//vj4LB5fXut9Lh4rZ/q8jGU5/bIG4zjHyTL+Wf3F1IwjbGcExfZhHHhbIU45UA7iKt9zlL+H6K3sY+UI9xC91RzHQe4heis4juPcQ/RWcBy0Yhx4lSVOOdhU+Z4j6s/br49veXh6jn57Pcrx7vMyluX0y2Myjs0pnMzlgIxjbwQH34czx/WkO9Mox5VkPNMYxzWsPp7mf2YZR3c7I5h8H8ZBiUuwdAe67NKUI+OBLrsc40h6oMsuwTjyHuiySzAORjEONhkHxkGcclDiEuxohl/6KcekZrj0M44ZTXLpZxzTmefSb+TfBBv+TGXfsHLM8ExlxnFM8kxlunHM80xlunGQxbAzB/Mb+bZCW83f/pSjiB5vf8ZRQae3P+NIr9/bn3GwqeWBtPmBiLGalaPHgYix2oyj04GIsRqMo9+BiLEajIOqjINNxoFxEKccKAdxyoFyEKccKAdxyoFyEKccKAdxyoFyEKccKAdxyoFyEKccKAdxyoFyENegHA9Pz1t/7s5vMb8G41iW9RFYRnZtxvF1H5ZRQMv/gsEgimlWDuoxjvT6vRAYRwWr+7j8KW8cRZxM4fJlLEvTAyljNRnEZ8rBJuNgpnH0O13T1phydDpd09aYcbhuT6Hl9XlU89M1bQ0rB1vmOZMZx4wmOZMZx6R63HhGjTxzsG/4mUw52GQcGAdxyoFyEJegHPNcCh1NgnH4dzGj5BiHH9QNkekSbPil0NGkKQfXZxzd5T1QG8c1TPJT1ijjuJIZfsoalelAml26A7VyJD4T9GYcLtk2Gce7jGeC3pw5/kt3JuhNOfBYIU45UA7iCpbj8eV163PY+S2+KjiOZVkfgWVE1RzH131Yxhkq33MYxIXKloPLGQdeZYlTDpSjnePcoyjHOVb3Ue/lyDjOdDKFestYluXm9u7+zI+H6pQDB1LilAPlIE45UA7ilAPlIE45UA7ilAPlIE45UA7ilAPlIE45UA7ilAPlIE45UA7ilAPlIO4v8X3ETlrTFE4AAAAASUVORK5CYII="><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,sans-serif}img{max-width:100%}[hidden]{display:none!important}*,*::before,*::after{box-sizing:border-box}</style></head><body><title>Huginn</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Huginn">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Big+Shoulders+Display:wght@600;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout : appli de terrain plein écran — en-tête d'état, écran courant qui défile, barre d'onglets en bas.
+   Sombre d'abord (aube, nuit), clair pour le plein soleil, rouge pour garder la vision nocturne. */
+:root{
+  --bg:#0e1215; --surface:#161c20; --raised:#1e262b; --line:#2b353b;
+  --fg:#e7e3d9; --muted:#8f9b9f; --accent:#e2aa4c; --on-accent:#16110a;
+  --live:#e8604c; --ok:#7fb48c;
+  --spec0:#0e1215; --spec1:#1d4a55; --spec2:#6aa38a; --spec3:#f3ecd4;
+  --sel:#e2aa4c;
+  --f-display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+  --f-body:"Atkinson Hyperlegible",-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:10px;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#edf0ef; --surface:#ffffff; --raised:#f4f6f5; --line:#cdd5d4;
+    --fg:#141a1d; --muted:#56646a; --accent:#94600f; --on-accent:#ffffff;
+    --live:#c23b27; --ok:#2f7a45;
+    --spec0:#ffffff; --spec1:#a9bcc1; --spec2:#3d5c66; --spec3:#0b1114;
+    --sel:#b4720c;
+    color-scheme:light;
+  }
+}
+:root[data-theme="light"]{
+  --bg:#edf0ef; --surface:#ffffff; --raised:#f4f6f5; --line:#cdd5d4;
+  --fg:#141a1d; --muted:#56646a; --accent:#94600f; --on-accent:#ffffff;
+  --live:#c23b27; --ok:#2f7a45;
+  --spec0:#ffffff; --spec1:#a9bcc1; --spec2:#3d5c66; --spec3:#0b1114;
+  --sel:#b4720c;
+  color-scheme:light;
+}
+:root.night{
+  --bg:#000000; --surface:#0a0000; --raised:#140202; --line:#3a0805;
+  --fg:#ff4a36; --muted:#a3271b; --accent:#ff3b28; --on-accent:#000000;
+  --live:#ff3b28; --ok:#ff3b28;
+  --spec0:#000000; --spec1:#3d0000; --spec2:#a3150a; --spec3:#ff5a40;
+  --sel:#ff6a50;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.45;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.app{display:flex;flex-direction:column;height:100%}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* En-tête */
+header.top{flex:none;border-bottom:1px solid var(--line);background:var(--bg)}
+header.top .gut{display:flex;align-items:center;gap:10px;padding-block:10px}
+.brand{font-family:var(--f-display);font-weight:800;font-size:26px;letter-spacing:.04em;text-transform:uppercase;line-height:1}
+.ver{font-family:var(--f-mono);font-size:11px;color:var(--muted);align-self:flex-end;padding-bottom:2px}
+.chips{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.chip{font-family:var(--f-mono);font-size:11px;padding:3px 8px;border:1px solid var(--line);border-radius:999px;color:var(--muted);white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+.chip .dot{width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.chip.on{color:var(--fg);border-color:var(--live)}
+.chip.on .dot{background:var(--live);animation:pulse 1.2s infinite}
+.chip.gps-ok .dot{background:var(--ok)}
+@keyframes pulse{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.chip.on .dot{animation:none}}
+
+main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+main section{padding-block:14px 28px;display:flex;flex-direction:column;gap:14px}
+h2{font-family:var(--f-display);font-weight:800;font-size:22px;letter-spacing:.05em;text-transform:uppercase;margin:0;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:600;font-size:17px;letter-spacing:.06em;text-transform:uppercase;margin:0;color:var(--muted)}
+p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+/* Spectrogrammes */
+.specwrap{position:relative;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--spec0)}
+.specwrap canvas{display:block;width:100%;touch-action:none}
+#live{height:min(44vh,360px)}
+#clipc{height:min(40vh,320px)}
+.axis{position:absolute;left:0;top:0;bottom:0;pointer-events:none}
+.axis span{position:absolute;left:4px;transform:translateY(-50%);font-family:var(--f-mono);font-size:10px;color:var(--fg);opacity:.75;text-shadow:0 0 3px var(--spec0)}
+.axis span::before{content:"";position:absolute;left:-4px;top:50%;width:3px;border-top:1px solid currentColor}
+.overlay-msg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:16px;background:color-mix(in srgb,var(--spec0) 78%,transparent)}
+.overlay-msg p{max-width:30ch}
+.meter{height:6px;border-radius:3px;background:var(--raised);overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:var(--ok);transition:width .08s linear}
+.meter.hot i{background:var(--live)}
+.readout{display:flex;justify-content:space-between;gap:8px;font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+
+/* Boutons */
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--line);background:var(--raised);border-radius:var(--r);padding:10px 14px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:700}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.btn.live{background:var(--live);border-color:var(--live);color:#fff}
+.btn.ghost{background:transparent}
+.btn[disabled]{opacity:.45;cursor:default}
+.big{flex:1 1 140px;min-height:58px;font-size:18px;font-family:var(--f-display);letter-spacing:.06em;text-transform:uppercase}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.seg button{border:0;background:transparent;padding:8px 11px;min-height:40px;font-family:var(--f-mono);font-size:13px;color:var(--muted)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.ctl{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ctl label,.lbl{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
+.toggle{display:flex;align-items:center;gap:10px;min-height:44px}
+.toggle input{width:22px;height:22px;accent-color:var(--accent)}
+.card{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.note{border-left:3px solid var(--accent);padding:8px 12px;background:var(--surface);border-radius:0 var(--r) var(--r) 0;font-size:14px}
+
+/* Mesures */
+.measures{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.measures div{background:var(--surface);padding:9px 10px;display:flex;flex-direction:column;gap:2px}
+.measures b{font-family:var(--f-mono);font-size:17px;font-variant-numeric:tabular-nums;font-weight:600}
+.measures span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+
+/* Formulaire */
+.field{display:flex;flex-direction:column;gap:6px}
+.field input,.field select,.field textarea{background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-height:44px;width:100%;box-sizing:border-box}
+.field textarea{min-height:76px;resize:vertical}
+.latin{font-style:italic;color:var(--muted)}
+
+/* Carnet */
+.entry{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:start}
+.entry .time{font-family:var(--f-mono);font-size:13px;color:var(--muted);padding-top:2px}
+.entry .sp{font-weight:700;min-width:0}
+.entry .meta{grid-column:2;font-size:13px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 10px;min-width:0}
+.entry .acts{grid-column:2;display:flex;gap:8px;flex-wrap:wrap}
+.entry .acts .btn{min-height:38px;padding:6px 12px;font-size:14px}
+.tag{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--fg);white-space:nowrap}
+.tag.t-chant{border-color:var(--accent);color:var(--accent)}
+.tag.t-auto{border-style:dashed}
+.ex{font-size:11px;font-family:var(--f-mono);color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.daylist{width:100%;border-collapse:collapse;font-size:14px}
+.daylist td{padding:7px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+.daylist td.n{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;width:3ch}
+.tablewrap{overflow-x:auto}
+#map{height:230px;border-radius:var(--r);border:1px solid var(--line);background:var(--raised)}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px}
+
+/* Barre d'onglets */
+nav.tabs{flex:none;border-top:1px solid var(--line);background:var(--bg)}
+nav.tabs .gut{display:grid;grid-template-columns:repeat(4,1fr)}
+nav.tabs button{border:0;background:transparent;padding:9px 2px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);font-family:var(--f-display);font-weight:600;letter-spacing:.07em;text-transform:uppercase;font-size:13px;min-height:52px}
+nav.tabs svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+nav.tabs button[aria-selected="true"]{color:var(--accent)}
+
+/* Écran noir (nocmig) */
+#black{position:fixed;inset:0;background:#000;z-index:100;display:flex;align-items:flex-end;justify-content:center;padding-bottom:calc(30px + env(safe-area-inset-bottom,0px));color:#3a3a3a;font-family:var(--f-mono);font-size:12px;text-align:center}
+#toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;z-index:90;max-width:calc(100% - 32px);text-align:center;opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.show{opacity:1}
+
+/* Leaflet minimal (feuille de style de la lib non chargeable ici) */
+.leaflet-pane,.leaflet-tile,.leaflet-marker-icon,.leaflet-tile-container,.leaflet-pane>svg,.leaflet-pane>canvas,.leaflet-layer{position:absolute;left:0;top:0}
+.leaflet-container{overflow:hidden;position:relative;font-family:var(--f-body);touch-action:none}
+.leaflet-tile{user-select:none;visibility:hidden}
+.leaflet-tile-loaded{visibility:inherit}
+.leaflet-container img.leaflet-tile{max-width:none!important;max-height:none!important;width:256px;height:256px}
+.leaflet-pane{z-index:400}.leaflet-tile-pane{z-index:200}.leaflet-overlay-pane{z-index:400}.leaflet-marker-pane{z-index:600}.leaflet-popup-pane{z-index:700}
+.leaflet-zoom-animated{transform-origin:0 0}
+.leaflet-zoom-anim .leaflet-zoom-animated{transition:transform .25s cubic-bezier(0,0,.25,1)}
+.leaflet-interactive{cursor:pointer}
+.leaflet-control-container .leaflet-top,.leaflet-control-container .leaflet-bottom{position:absolute;z-index:800;pointer-events:none}
+.leaflet-top{top:0}.leaflet-bottom{bottom:0}.leaflet-left{left:0}.leaflet-right{right:0}
+.leaflet-control{pointer-events:auto;float:left;clear:both;margin:8px}
+.leaflet-right .leaflet-control{float:right}
+.leaflet-control-zoom a{display:block;width:32px;height:32px;line-height:32px;text-align:center;text-decoration:none;font-weight:700;background:var(--surface);color:var(--fg);border:1px solid var(--line)}
+.leaflet-control-attribution{font-size:10px;background:color-mix(in srgb,var(--surface) 80%,transparent);padding:1px 5px;margin:0;color:var(--muted)}
+.leaflet-control-attribution a{color:var(--muted)}
+.leaflet-popup{position:absolute;margin-bottom:12px}
+.leaflet-popup-content-wrapper{background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px}
+.leaflet-popup-content{margin:0}
+.leaflet-popup-tip-container,.leaflet-popup-close-button{display:none}
+</style>
+
+<div class="app">
+  <header class="top"><div class="gut">
+    <span class="brand">Huginn</span><span class="ver mono" id="ver"></span>
+    <div class="chips">
+      <span class="chip" id="chipMic"><span class="dot"></span><span>micro off</span></span>
+      <span class="chip" id="chipGps"><span class="dot"></span><span>GPS —</span></span>
+    </div>
+  </div></header>
+
+  <main id="main">
+    <!-- ÉCOUTE -->
+    <section id="tab-listen" class="gut" aria-label="Écoute">
+      <div class="specwrap">
+        <canvas id="live" aria-label="Spectrogramme en direct"></canvas>
+        <div class="axis" id="liveAxis"></div>
+        <div class="overlay-msg" id="liveIdle">
+          <p><b>Spectrogramme en direct.</b> Lance l'écoute : les 30 dernières secondes restent en mémoire, tu peux capturer après coup.</p>
+        </div>
+      </div>
+      <div class="meter" id="meter"><i></i></div>
+      <div class="readout"><span id="lvl">niveau — dBFS</span><span id="peakf">pic — kHz</span></div>
+      <div class="note" id="micNote" hidden></div>
+      <div class="row">
+        <button class="btn primary big" id="btnListen">Écouter</button>
+        <button class="btn big" id="btnCapture" disabled>Capturer <span class="mono" id="capLbl">10 s</span></button>
+      </div>
+      <div class="grid2">
+        <div class="ctl"><span class="lbl">Filtre anti-bruit</span>
+          <div class="seg" id="segHp" role="group" aria-label="Filtre passe-haut">
+            <button data-v="0">off</button><button data-v="300">300 Hz</button><button data-v="1000">1 kHz</button><button data-v="2000">2 kHz</button>
+          </div>
+          <span class="small muted">Coupe vent, route et ressac sous la fréquence choisie.</span>
+        </div>
+        <div class="ctl"><label for="gain">Amplification <span class="mono" id="gainLbl">×1</span></label>
+          <input type="range" id="gain" min="0" max="24" step="1" value="0">
+          <span class="small muted">Booste l'affichage et l'écoute casque.</span>
+        </div>
+      </div>
+      <div class="grid2">
+        <label class="toggle"><input type="checkbox" id="monitor"> Écoute casque en direct</label>
+        <label class="toggle"><input type="checkbox" id="nightToggle"> Mode nuit rouge</label>
+      </div>
+      <div class="card">
+        <h3>Écran noir · nocmig</h3>
+        <p class="small muted">L'écran reste allumé mais noir, l'appli écoute et garde automatiquement 4 s autour de chaque son entre 1,5 et 10 kHz. Branche une batterie externe. Touche l'écran deux fois pour sortir.</p>
+        <div class="row"><button class="btn" id="btnBlack" disabled>Passer en écran noir</button><span class="small muted" id="autoCount"></span></div>
+      </div>
+    </section>
+
+    <!-- ANALYSE -->
+    <section id="tab-analyse" class="gut" aria-label="Analyse" hidden>
+      <div class="row" style="justify-content:space-between">
+        <h2 id="clipTitle">Analyse</h2>
+        <label class="btn ghost" for="fileIn">Importer un son</label>
+        <input type="file" id="fileIn" accept="audio/*,.wav,.mp3,.m4a,.flac" hidden>
+      </div>
+      <p class="small muted" id="clipInfo"></p>
+      <div class="specwrap">
+        <canvas id="clipc" aria-label="Spectrogramme de l'extrait. Glisse pour encadrer un son."></canvas>
+        <div class="axis" id="clipAxis"></div>
+      </div>
+      <p class="small muted">Glisse le doigt pour encadrer un son : temps et fréquences. Touche sans glisser pour effacer.</p>
+      <div class="row">
+        <button class="btn primary" id="btnPlay">Lire</button>
+        <div class="seg" id="segSpeed" role="group" aria-label="Vitesse de lecture">
+          <button data-v="1">1×</button><button data-v="0.5">½</button><button data-v="0.25">¼</button><button data-v="0.125">⅛</button>
+        </div>
+        <label class="toggle"><input type="checkbox" id="loop"> Boucle</label>
+        <label class="toggle"><input type="checkbox" id="bandOnly"> Bande encadrée seule</label>
+      </div>
+      <div class="grid2">
+        <div class="ctl"><label for="pgain">Amplification lecture <span class="mono" id="pgainLbl">×1</span></label>
+          <input type="range" id="pgain" min="0" max="24" step="1" value="0"></div>
+        <div class="row"><button class="btn" id="btnZoom" disabled>Zoomer sur le cadre</button><button class="btn ghost" id="btnFull">Vue complète</button></div>
+      </div>
+      <p class="small muted">À ½, ¼ et ⅛ le son descend d'une, deux ou trois octaves : les roitelets et grimpereaux deviennent audibles.</p>
+
+      <h3>Mesures <span class="small" id="measScope">(extrait entier)</span></h3>
+      <div class="measures" id="measures"></div>
+
+      <div class="card">
+        <h3>Identification</h3>
+        <p class="small muted">V1 : BirdNET proposera ici un top 3 avec % de confiance et des cadres sur le spectro. V2 : type de vocalise et spectros de référence xeno-canto côte à côte. Pour l'instant c'est ton ID qui compte.</p>
+        <div class="field"><label class="lbl" for="spIn">Espèce</label>
+          <input id="spIn" list="spList" placeholder="ex. Pinson des arbres" autocomplete="off">
+          <datalist id="spList"></datalist>
+          <span class="latin small" id="spLatin"></span>
+        </div>
+        <div class="field"><label class="lbl" for="typeIn">Type de vocalise</label>
+          <select id="typeIn"></select>
+        </div>
+        <div class="field"><label class="lbl" for="notesIn">Notes</label>
+          <textarea id="notesIn" placeholder="Comportement, effectif, posé ou en vol, nicheur probable…"></textarea>
+        </div>
+        <div class="row">
+          <button class="btn primary" id="btnSave">Enregistrer au carnet</button>
+          <button class="btn ghost" id="btnWav">Exporter le WAV</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- CARNET -->
+    <section id="tab-log" class="gut" aria-label="Carnet" hidden>
+      <div class="row" style="justify-content:space-between"><h2>Carnet</h2>
+        <div class="row"><button class="btn ghost" id="btnCsv">CSV</button><button class="btn ghost" id="btnGeo">GeoJSON</button></div>
+      </div>
+      <div class="card">
+        <h3>Liste du jour</h3>
+        <div class="tablewrap"><table class="daylist" id="dayList"></table></div>
+      </div>
+      <div id="map" hidden></div>
+      <div id="entries" class="card"></div>
+    </section>
+
+    <!-- RÉGLAGES -->
+    <section id="tab-settings" class="gut" aria-label="Réglages" hidden>
+      <h2>Réglages</h2>
+      <div class="field"><label class="lbl" for="devSel">Micro</label>
+        <select id="devSel"><option value="">Micro par défaut (iPhone ou micro branché)</option></select>
+        <span class="small muted">Un micro USB-C ou la parabole branchée apparaît ici après la première écoute.</span>
+      </div>
+      <div class="grid2">
+        <div class="ctl"><span class="lbl">Fréquence max affichée</span>
+          <div class="seg" id="segFmax"><button data-v="8000">8 k</button><button data-v="11000">11 k</button><button data-v="16000">16 k</button></div></div>
+        <div class="ctl"><span class="lbl">Mémoire rétro</span>
+          <div class="seg" id="segBuf"><button data-v="15">15 s</button><button data-v="30">30 s</button><button data-v="60">60 s</button></div></div>
+        <div class="ctl"><span class="lbl">Durée de capture</span>
+          <div class="seg" id="segCap"><button data-v="5">5 s</button><button data-v="10">10 s</button><button data-v="15">15 s</button></div></div>
+        <div class="ctl"><label for="range">Contraste spectro <span class="mono" id="rangeLbl">70 dB</span></label>
+          <input type="range" id="range" min="40" max="100" step="5" value="70"></div>
+        <div class="ctl"><label for="thr">Sensibilité nocmig <span class="mono" id="thrLbl">+12 dB</span></label>
+          <input type="range" id="thr" min="6" max="24" step="1" value="12">
+          <span class="small muted">Plus bas = plus d'événements, plus de faux positifs.</span></div>
+      </div>
+      <div class="card">
+        <h3>Feuille de route</h3>
+        <p class="small"><b>V0 (ici)</b> terrain sans IA · <b>V1</b> BirdNET dans le téléphone, top 3 + cadres · <b>V2</b> serveur Perch v2 + bibliothèque xeno-canto : type de vocalise, références côte à côte, espèces confusables · <b>V3</b> alertes raretés / lifers / liste rouge, lien avec Loki.</p>
+      </div>
+      <button class="btn ghost" id="btnDemo">Charger l'extrait de démonstration</button>
+    </section>
+  </main>
+
+  <nav class="tabs" aria-label="Écrans"><div class="gut" role="tablist">
+    <button role="tab" data-tab="listen" aria-selected="true"><svg viewBox="0 0 24 24"><path d="M3 12h2M7 8v8M11 5v14M15 9v6M19 7v10"/></svg>Écoute</button>
+    <button role="tab" data-tab="analyse" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><rect x="8" y="9" width="6" height="5" stroke-dasharray="2 2"/></svg>Analyse</button>
+    <button role="tab" data-tab="log" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M6 3h10l3 3v15H6z"/><path d="M9 9h7M9 13h7M9 17h4"/></svg>Carnet</button>
+    <button role="tab" data-tab="settings" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>Réglages</button>
+  </div></nav>
+</div>
+<div id="black" hidden><div id="blackTxt"></div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+(function(){
+"use strict";
+const VERSION="0.1.0";
+const IN_CLAUDE=!!(window.claude&&window.claude.use);
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+$("#ver").textContent="v"+VERSION;
+
+/* ---------- stockage ---------- */
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const memClips=new Map();
+let idb=null;
+function openDB(){return new Promise(res=>{try{const r=indexedDB.open("huginn",1);r.onupgradeneeded=()=>r.result.createObjectStore("clips");r.onsuccess=()=>{idb=r.result;res()};r.onerror=()=>res()}catch(e){res()}})}
+function putClip(id,obj){memClips.set(id,obj);if(!idb)return Promise.resolve();return new Promise(res=>{try{const t=idb.transaction("clips","readwrite");t.objectStore("clips").put(obj,id);t.oncomplete=res;t.onerror=res}catch(e){res()}})}
+function getClip(id){if(memClips.has(id))return Promise.resolve(memClips.get(id));if(!idb)return Promise.resolve(null);return new Promise(res=>{try{const r=idb.transaction("clips").objectStore("clips").get(id);r.onsuccess=()=>res(r.result||null);r.onerror=()=>res(null)}catch(e){res(null)}})}
+function delClip(id){memClips.delete(id);if(!idb)return;try{idb.transaction("clips","readwrite").objectStore("clips").delete(id)}catch(e){}}
+
+const S=Object.assign({fmax:11000,bufSec:30,capSec:10,range:70,thr:12,hp:300,gain:0,deviceId:"",night:false},LS.get("huginn.settings",{}));
+const saveS=()=>LS.set("huginn.settings",S);
+let entries=LS.get("huginn.entries",[]);
+const saveEntries=()=>LS.set("huginn.entries",entries);
+
+/* ---------- espèces (France) ---------- */
+const SPECIES=`Pinson des arbres|Fringilla coelebs;Pinson du Nord|Fringilla montifringilla;Rougegorge familier|Erithacus rubecula;Merle noir|Turdus merula;Grive musicienne|Turdus philomelos;Grive draine|Turdus viscivorus;Grive mauvis|Turdus iliacus;Grive litorne|Turdus pilaris;Mésange charbonnière|Parus major;Mésange bleue|Cyanistes caeruleus;Mésange huppée|Lophophanes cristatus;Mésange noire|Periparus ater;Mésange nonnette|Poecile palustris;Mésange à longue queue|Aegithalos caudatus;Panure à moustaches|Panurus biarmicus;Rémiz penduline|Remiz pendulinus;Troglodyte mignon|Troglodytes troglodytes;Accenteur mouchet|Prunella modularis;Roitelet huppé|Regulus regulus;Roitelet à triple bandeau|Regulus ignicapilla;Pouillot véloce|Phylloscopus collybita;Pouillot fitis|Phylloscopus trochilus;Pouillot de Bonelli|Phylloscopus bonelli;Pouillot siffleur|Phylloscopus sibilatrix;Pouillot à grands sourcils|Phylloscopus inornatus;Fauvette à tête noire|Sylvia atricapilla;Fauvette des jardins|Sylvia borin;Fauvette grisette|Curruca communis;Fauvette pitchou|Curruca undata;Fauvette mélanocéphale|Curruca melanocephala;Hypolaïs polyglotte|Hippolais polyglotta;Rousserolle effarvatte|Acrocephalus scirpaceus;Rousserolle turdoïde|Acrocephalus arundinaceus;Phragmite des joncs|Acrocephalus schoenobaenus;Bouscarle de Cetti|Cettia cetti;Cisticole des joncs|Cisticola juncidis;Locustelle tachetée|Locustella naevia;Gorgebleue à miroir|Luscinia svecica;Rossignol philomèle|Luscinia megarhynchos;Rougequeue noir|Phoenicurus ochruros;Rougequeue à front blanc|Phoenicurus phoenicurus;Tarier pâtre|Saxicola rubicola;Traquet motteux|Oenanthe oenanthe;Gobemouche gris|Muscicapa striata;Gobemouche noir|Ficedula hypoleuca;Sittelle torchepot|Sitta europaea;Grimpereau des jardins|Certhia brachydactyla;Loriot d'Europe|Oriolus oriolus;Étourneau sansonnet|Sturnus vulgaris;Moineau domestique|Passer domesticus;Moineau friquet|Passer montanus;Verdier d'Europe|Chloris chloris;Chardonneret élégant|Carduelis carduelis;Serin cini|Serinus serinus;Linotte mélodieuse|Linaria cannabina;Tarin des aulnes|Spinus spinus;Bouvreuil pivoine|Pyrrhula pyrrhula;Grosbec casse-noyaux|Coccothraustes coccothraustes;Bec-croisé des sapins|Loxia curvirostra;Bruant zizi|Emberiza cirlus;Bruant jaune|Emberiza citrinella;Bruant des roseaux|Emberiza schoeniclus;Bruant proyer|Emberiza calandra;Alouette des champs|Alauda arvensis;Alouette lulu|Lullula arborea;Pipit des arbres|Anthus trivialis;Pipit farlouse|Anthus pratensis;Pipit maritime|Anthus petrosus;Bergeronnette grise|Motacilla alba;Bergeronnette printanière|Motacilla flava;Bergeronnette des ruisseaux|Motacilla cinerea;Hirondelle rustique|Hirundo rustica;Hirondelle de fenêtre|Delichon urbicum;Martinet noir|Apus apus;Geai des chênes|Garrulus glandarius;Pie bavarde|Pica pica;Corneille noire|Corvus corone;Choucas des tours|Coloeus monedula;Grand Corbeau|Corvus corax;Pic épeiche|Dendrocopos major;Pic épeichette|Dryobates minor;Pic mar|Dendrocoptes medius;Pic vert|Picus viridis;Pic noir|Dryocopus martius;Torcol fourmilier|Jynx torquilla;Coucou gris|Cuculus canorus;Pigeon ramier|Columba palumbus;Tourterelle turque|Streptopelia decaocto;Tourterelle des bois|Streptopelia turtur;Huppe fasciée|Upupa epops;Martin-pêcheur d'Europe|Alcedo atthis;Engoulevent d'Europe|Caprimulgus europaeus;Chouette hulotte|Strix aluco;Chevêche d'Athéna|Athene noctua;Effraie des clochers|Tyto alba;Hibou moyen-duc|Asio otus;Petit-duc scops|Otus scops;Buse variable|Buteo buteo;Épervier d'Europe|Accipiter nisus;Faucon crécerelle|Falco tinnunculus;Faucon hobereau|Falco subbuteo;Milan noir|Milvus migrans;Busard des roseaux|Circus aeruginosus;Bondrée apivore|Pernis apivorus;Faisan de Colchide|Phasianus colchicus;Perdrix rouge|Alectoris rufa;Caille des blés|Coturnix coturnix;Râle d'eau|Rallus aquaticus;Gallinule poule-d'eau|Gallinula chloropus;Foulque macroule|Fulica atra;Grèbe castagneux|Tachybaptus ruficollis;Grèbe huppé|Podiceps cristatus;Héron cendré|Ardea cinerea;Aigrette garzette|Egretta garzetta;Bihoreau gris|Nycticorax nycticorax;Butor étoilé|Botaurus stellaris;Spatule blanche|Platalea leucorodia;Canard colvert|Anas platyrhynchos;Sarcelle d'hiver|Anas crecca;Tadorne de Belon|Tadorna tadorna;Bernache cravant|Branta bernicla;Cygne tuberculé|Cygnus olor;Courlis cendré|Numenius arquata;Courlis corlieu|Numenius phaeopus;Barge rousse|Limosa lapponica;Barge à queue noire|Limosa limosa;Chevalier gambette|Tringa totanus;Chevalier aboyeur|Tringa nebularia;Chevalier guignette|Actitis hypoleucos;Chevalier culblanc|Tringa ochropus;Bécasseau variable|Calidris alpina;Bécasseau sanderling|Calidris alba;Grand Gravelot|Charadrius hiaticula;Gravelot à collier interrompu|Charadrius alexandrinus;Pluvier argenté|Pluvialis squatarola;Huîtrier pie|Haematopus ostralegus;Vanneau huppé|Vanellus vanellus;Bécassine des marais|Gallinago gallinago;Bécasse des bois|Scolopax rusticola;Échasse blanche|Himantopus himantopus;Avocette élégante|Recurvirostra avosetta;Goéland argenté|Larus argentatus;Goéland leucophée|Larus michahellis;Goéland brun|Larus fuscus;Mouette rieuse|Chroicocephalus ridibundus;Sterne caugek|Thalasseus sandvicensis;Sterne pierregarin|Sterna hirundo;Grand Cormoran|Phalacrocorax carbo;Grue cendrée|Grus grus`.split(";").map(s=>{const[a,b]=s.split("|");return{fr:a,la:b}});
+const spByFr=new Map(SPECIES.map(s=>[s.fr.toLowerCase(),s]));
+$("#spList").innerHTML=SPECIES.map(s=>`<option value="${s.fr}">${s.la}</option>`).join("");
+const TYPES=["Chant","Cri de contact","Cri d'alarme","Cri de vol","Cri de quémande (jeune)","Tambourinage","Chant de parade / en vol","Incertain"];
+$("#typeIn").innerHTML=`<option value="">— choisir —</option>`+TYPES.map(t=>`<option>${t}</option>`).join("");
+$("#spIn").addEventListener("input",()=>{const s=spByFr.get($("#spIn").value.trim().toLowerCase());$("#spLatin").textContent=s?s.la:""});
+
+/* ---------- utilitaires ---------- */
+let toastT;
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2600)}
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmtT=ts=>new Date(ts).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+const fmtD=ts=>new Date(ts).toLocaleDateString("fr-FR",{day:"numeric",month:"short"});
+const kHz=v=>(v/1000).toFixed(v<10000?2:1);
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function hex2rgb(h){h=h.trim().replace("#","");if(h.length===3)h=h.split("").map(c=>c+c).join("");const n=parseInt(h,16);return[(n>>16)&255,(n>>8)&255,n&255]}
+let LUT=new Uint8Array(256*3);
+function buildLUT(){const cs=getComputedStyle(document.documentElement);const st=["--spec0","--spec1","--spec2","--spec3"].map(v=>hex2rgb(cs.getPropertyValue(v)||"#000"));const pos=[0,.35,.68,1];
+  for(let i=0;i<256;i++){const x=i/255;let k=0;while(k<2&&x>pos[k+1])k++;const f=(x-pos[k])/(pos[k+1]-pos[k]);for(let c=0;c<3;c++)LUT[i*3+c]=Math.round(st[k][c]+(st[k+1][c]-st[k][c])*f)}}
+async function saveFile(name,blob){
+  if(IN_CLAUDE){try{const d=await window.claude.use("downloads");if(d){await d.save({filename:name,data:blob});toast("Fichier enregistré");return}}
+    catch(e){if(e&&e.code==="declined"){toast("Enregistrement annulé");return}if(e&&e.code==="rejected_extension"){toast("Ce format n'est disponible que dans la version GitHub Pages");return}}
+    toast("Téléchargement indisponible dans cet aperçu");return}
+  const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);
+}
+
+/* ---------- FFT ---------- */
+function makeFFT(N){const lev=Math.log2(N)|0;const rev=new Uint32Array(N);for(let i=0;i<N;i++){let r=0,x=i;for(let j=0;j<lev;j++){r=(r<<1)|(x&1);x>>=1}rev[i]=r}
+  const cos=new Float32Array(N/2),sin=new Float32Array(N/2);for(let i=0;i<N/2;i++){cos[i]=Math.cos(2*Math.PI*i/N);sin[i]=Math.sin(2*Math.PI*i/N)}
+  const win=new Float32Array(N);for(let i=0;i<N;i++)win[i]=0.5-0.5*Math.cos(2*Math.PI*i/(N-1));
+  const re=new Float32Array(N),im=new Float32Array(N);
+  return function(src,off,outPow){for(let i=0;i<N;i++){const v=src[off+i]||0;re[rev[i]]=v*win[i];im[rev[i]]=0}
+    for(let size=2;size<=N;size<<=1){const h=size>>1,step=N/size;for(let i=0;i<N;i+=size){for(let j=0,k=0;j<h;j++,k+=step){const tr=re[i+j+h]*cos[k]+im[i+j+h]*sin[k],ti=im[i+j+h]*cos[k]-re[i+j+h]*sin[k];re[i+j+h]=re[i+j]-tr;im[i+j+h]=im[i+j]-ti;re[i+j]+=tr;im[i+j]+=ti}}}
+    for(let b=0;b<N/2;b++)outPow[b]=re[b]*re[b]+im[b]*im[b]}}
+
+/* ---------- WAV ---------- */
+function encodeWav(samples,sr){const n=samples.length,buf=new ArrayBuffer(44+n*2),v=new DataView(buf);const w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))};
+  w(0,"RIFF");v.setUint32(4,36+n*2,true);w(8,"WAVE");w(12,"fmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,n*2,true);
+  for(let i=0;i<n;i++){const s=Math.max(-1,Math.min(1,samples[i]));v.setInt16(44+i*2,s<0?s*32768:s*32767,true)}return new Blob([buf],{type:"audio/wav"})}
+const toI16=f=>{const o=new Int16Array(f.length);for(let i=0;i<f.length;i++){const s=Math.max(-1,Math.min(1,f[i]));o[i]=s<0?s*32768:s*32767}return o};
+const toF32=a=>{const o=new Float32Array(a.length);for(let i=0;i<a.length;i++)o[i]=a[i]/32768;return o};
+
+/* ---------- démo synthétique ---------- */
+function genDemo(){const sr=32000,dur=9,n=sr*dur,x=new Float32Array(n);let lp=0;
+  for(let i=0;i<n;i++){const w=Math.random()*2-1;lp=lp*0.97+w*0.03;x[i]=lp*0.03+Math.sin(2*Math.PI*90*i/sr)*0.004}
+  function tone(t0,d,f0,f1,amp,harm){const s=Math.floor(t0*sr),m=Math.floor(d*sr);let ph=0;for(let i=0;i<m&&s+i<n;i++){const u=i/m,f=f0+(f1-f0)*u;ph+=2*Math.PI*f/sr;const env=Math.sin(Math.PI*u)**1.5;let v=Math.sin(ph);if(harm)v+=0.35*Math.sin(2*ph);x[s+i]+=v*amp*env}}
+  function phrase(t){let tt=t;for(let k=0;k<7;k++){tone(tt,0.075,6200-180*k,4300-150*k,0.22);tt+=0.115}for(let k=0;k<4;k++){tone(tt,0.05,5200,3200,0.25);tt+=0.075}
+    tone(tt,0.11,2900,6100,0.25,true);tone(tt+0.11,0.17,6100,2400,0.28,true);}
+  phrase(0.7);phrase(4.6);
+  [3.15,3.55,3.9,7.55].forEach(t=>tone(t,0.028,9200,7100,0.18));
+  [8.15,8.45].forEach(t=>tone(t,0.045,2950,2750,0.2,true));
+  return{sr,samples:x,title:"Extrait de démonstration",info:"Signal synthétique (pas un vrai oiseau) : une phrase descendante façon pinson ×2, des « tsip » aigus et deux cris bas.",source:"demo"}}
+
+/* =========================================================
+   ÉCOUTE EN DIRECT
+   ========================================================= */
+let ac=null,stream=null,srcNode=null,hp,gainN,analyser,monitorN,proc,ring=null,ringPos=0,ringFill=0,running=false,demoNode=null,watchId=null,lastFix=null,rafId=0;
+const liveC=$("#live"),liveX=liveC.getContext("2d");
+let fbuf,tbuf,colImg=null,acc=0,lastT=0;
+function gainValue(){return Math.pow(10,S.gain/20)}
+function ensureCtx(){
+  if(!ac){const AC=window.AudioContext||window.webkitAudioContext;ac=new AC({latencyHint:"interactive"});
+    hp=ac.createBiquadFilter();hp.type="highpass";hp.Q.value=0.707;
+    gainN=ac.createGain();analyser=ac.createAnalyser();analyser.fftSize=2048;analyser.smoothingTimeConstant=0;analyser.minDecibels=-140;analyser.maxDecibels=0;
+    monitorN=ac.createGain();monitorN.gain.value=0;
+    proc=ac.createScriptProcessor(4096,1,1);const mute=ac.createGain();mute.gain.value=0;
+    hp.connect(proc);proc.connect(mute);mute.connect(ac.destination);
+    hp.connect(gainN);gainN.connect(analyser);gainN.connect(monitorN);monitorN.connect(ac.destination);
+    proc.onaudioprocess=e=>{if(!ring)return;const d=e.inputBuffer.getChannelData(0),L=ring.length;for(let i=0;i<d.length;i++){ring[ringPos]=d[i];ringPos=(ringPos+1)%L}ringFill=Math.min(L,ringFill+d.length)};
+    fbuf=new Float32Array(analyser.frequencyBinCount);tbuf=new Float32Array(analyser.fftSize);
+    applyAudioSettings();}
+  if(ac.state!=="running")ac.resume();
+}
+function applyAudioSettings(){if(!ac)return;hp.frequency.value=S.hp>0?S.hp:10;gainN.gain.value=gainValue();monitorN.gain.value=$("#monitor").checked?gainValue():0}
+function allocRing(){ring=new Float32Array(Math.round(ac.sampleRate*S.bufSec));ringPos=0;ringFill=0}
+function setMicChip(state){const c=$("#chipMic");c.classList.toggle("on",state==="on"||state==="demo");c.lastElementChild.textContent={on:"micro actif",demo:"démo",off:"micro off",denied:"micro bloqué"}[state]}
+async function startListen(){
+  ensureCtx();
+  try{const c={echoCancellation:false,noiseSuppression:false,autoGainControl:false};if(S.deviceId)c.deviceId={exact:S.deviceId};
+    stream=await navigator.mediaDevices.getUserMedia({audio:c});}
+  catch(e){setMicChip("denied");showMicNote();return}
+  srcNode=ac.createMediaStreamSource(stream);srcNode.connect(hp);allocRing();
+  setMicChip("on");listDevices();startGPS();beginLoop();
+}
+function showMicNote(){const n=$("#micNote");n.hidden=false;
+  n.innerHTML=IN_CLAUDE?`<b>Micro indisponible dans l'aperçu Claude.</b> Le micro et le GPS marchent dans la version GitHub Pages. Ici tu peux tester avec la démo ou importer un son.<div class="row" style="margin-top:8px"><button class="btn" id="btnLiveDemo">Lancer la démo</button></div>`
+  :`<b>Micro refusé.</b> Autorise le micro pour ce site dans Réglages iOS › Safari › Micro, puis recharge la page.<div class="row" style="margin-top:8px"><button class="btn" id="btnLiveDemo">Lancer la démo</button></div>`;
+  $("#btnLiveDemo").onclick=startDemoLive}
+function startDemoLive(){ensureCtx();const d=genDemo();const b=ac.createBuffer(1,d.samples.length,d.sr);b.copyToChannel(d.samples,0);
+  demoNode=ac.createBufferSource();demoNode.buffer=b;demoNode.loop=true;demoNode.connect(hp);demoNode.start();allocRing();setMicChip("demo");$("#micNote").hidden=true;beginLoop()}
+function beginLoop(){running=true;$("#liveIdle").hidden=true;$("#btnListen").textContent="Arrêter";$("#btnListen").classList.replace("primary","live");$("#btnCapture").disabled=false;$("#btnBlack").disabled=false;lastT=performance.now();cancelAnimationFrame(rafId);rafId=requestAnimationFrame(frame)}
+function stopListen(){running=false;cancelAnimationFrame(rafId);
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}if(srcNode){try{srcNode.disconnect()}catch(e){}srcNode=null}
+  if(demoNode){try{demoNode.stop();demoNode.disconnect()}catch(e){}demoNode=null}
+  stopGPS();setMicChip("off");$("#btnListen").textContent="Écouter";$("#btnListen").classList.replace("live","primary");$("#btnCapture").disabled=true;$("#btnBlack").disabled=true;
+  $("#meter i").style.width="0";$("#lvl").textContent="niveau — dBFS";$("#peakf").textContent="pic — kHz"}
+$("#btnListen").onclick=()=>running?stopListen():startListen();
+
+function sizeCanvas(c){const r=c.getBoundingClientRect(),d=Math.min(window.devicePixelRatio||1,3);const w=Math.max(1,Math.round(r.width*d)),h=Math.max(1,Math.round(r.height*d));if(c.width!==w||c.height!==h){c.width=w;c.height=h;return true}return false}
+function paintBg(ctx,c){ctx.fillStyle=`rgb(${LUT[0]},${LUT[1]},${LUT[2]})`;ctx.fillRect(0,0,c.width,c.height)}
+function drawAxis(el,fmin,fmax){const step=fmax-fmin>9000?2000:fmax-fmin>3000?1000:500;let h="";for(let f=Math.ceil(fmin/step)*step;f<fmax;f+=step){if(f<=fmin)continue;const y=(1-(f-fmin)/(fmax-fmin))*100;h+=`<span style="top:${y}%">${(f/1000).toFixed(step<1000?1:0)} k</span>`}el.innerHTML=h}
+
+let floorDb=-90,lastTrig=0;const autoState={on:false,count:0};
+function frame(now){if(!running)return;rafId=requestAnimationFrame(frame);
+  if(sizeCanvas(liveC)){paintBg(liveX,liveC);colImg=null}
+  const W=liveC.width,H=liveC.height,dt=Math.min(0.1,(now-lastT)/1000);lastT=now;
+  analyser.getFloatFrequencyData(fbuf);
+  const pps=W/8;acc+=dt*pps;let step=Math.floor(acc);acc-=step;
+  const nyq=ac.sampleRate/2,bc=fbuf.length,top=-25,lo=top-S.range;
+  if(step>0&&!autoState.on){step=Math.min(step,W);
+    liveX.drawImage(liveC,step,0,W-step,H,0,0,W-step,H);
+    if(!colImg||colImg.width!==step)colImg=liveX.createImageData(step,H);const d=colImg.data;
+    for(let y=0;y<H;y++){const f=(1-y/H)*S.fmax,b=Math.min(bc-1,Math.round(f/nyq*bc));let v=(fbuf[b]-lo)/S.range;v=v<0?0:v>1?1:v;const li=Math.round(v*255)*3;
+      for(let x=0;x<step;x++){const o=(y*step+x)*4;d[o]=LUT[li];d[o+1]=LUT[li+1];d[o+2]=LUT[li+2];d[o+3]=255}}
+    liveX.putImageData(colImg,W-step,0)}
+  // niveau + pic
+  analyser.getFloatTimeDomainData(tbuf);let s=0;for(let i=0;i<tbuf.length;i++)s+=tbuf[i]*tbuf[i];const rms=20*Math.log10(Math.sqrt(s/tbuf.length)+1e-9);
+  const b1=Math.round(1000/nyq*bc),b2=Math.min(bc-1,Math.round(Math.min(S.fmax,12000)/nyq*bc));let pk=-200,pb=0,band=0;for(let b=b1;b<=b2;b++){if(fbuf[b]>pk){pk=fbuf[b];pb=b}band+=fbuf[b]}band/=(b2-b1+1);
+  if(!autoState.on){const m=$("#meter");m.firstElementChild.style.width=Math.max(0,Math.min(100,(rms+70)/70*100))+"%";m.classList.toggle("hot",rms>-6);
+    $("#lvl").textContent=`niveau ${rms.toFixed(0)} dBFS`;$("#peakf").textContent=pk>lo+12?`pic ${kHz(pb/bc*nyq)} kHz`:"pic — kHz"}
+  // détecteur nocmig
+  const db1=Math.round(1500/nyq*bc),db2=Math.min(bc-1,Math.round(10000/nyq*bc));let bm=0;for(let b=db1;b<=db2;b++)bm=Math.max(bm,fbuf[b]);
+  if(autoState.on){if(bm>floorDb+S.thr&&now-lastTrig>4000){lastTrig=now;setTimeout(()=>autoCapture(),1500)}else if(bm<floorDb+S.thr)floorDb=floorDb*0.995+bm*0.005}
+  else floorDb=floorDb*0.99+bm*0.01;
+}
+new ResizeObserver(()=>{drawAxis($("#liveAxis"),0,S.fmax);if(liveC.width&&!running){sizeCanvas(liveC);paintBg(liveX,liveC)}}).observe(liveC);
+
+function grab(sec){if(!ring||!ringFill)return null;const sr=ac.sampleRate,n=Math.min(ringFill,Math.round(sec*sr)),out=new Float32Array(n),L=ring.length;let start=(ringPos-n+L)%L;for(let i=0;i<n;i++)out[i]=ring[(start+i)%L];return out}
+function capture(){const s=grab(S.capSec);if(!s){toast("Rien en mémoire pour l'instant");return}
+  loadClip({sr:ac.sampleRate,samples:s,title:"Capture "+fmtT(Date.now()),info:`${(s.length/ac.sampleRate).toFixed(1)} s captées${lastFix?` · ${lastFix.lat.toFixed(5)}, ${lastFix.lon.toFixed(5)} ±${Math.round(lastFix.acc)} m`:""}`,source:demoNode?"demo":"micro",ts:Date.now(),fix:lastFix});
+  showTab("analyse")}
+$("#btnCapture").onclick=capture;
+
+async function autoCapture(){const s=grab(4);if(!s)return;const id=uid(),m=measure(stftOf(s,ac.sampleRate),null);
+  const e={id,ts:Date.now(),lat:lastFix?lastFix.lat:null,lon:lastFix?lastFix.lon:null,acc:lastFix?lastFix.acc:null,sp:"",la:"",type:"",notes:"",source:"auto",dur:s.length/ac.sampleRate,m};
+  await putClip(id,{sr:ac.sampleRate,pcm:toI16(s)});entries.unshift(e);saveEntries();autoState.count++;updateBlack();renderLog()}
+
+/* GPS */
+function setGps(t,ok){const c=$("#chipGps");c.classList.toggle("gps-ok",!!ok);c.lastElementChild.textContent=t}
+function startGPS(){if(!navigator.geolocation){setGps("GPS indispo");return}try{watchId=navigator.geolocation.watchPosition(p=>{lastFix={lat:p.coords.latitude,lon:p.coords.longitude,acc:p.coords.accuracy};setGps(`±${Math.round(p.coords.accuracy)} m`,true)},()=>setGps("GPS off"),{enableHighAccuracy:true,maximumAge:15000,timeout:20000})}catch(e){setGps("GPS off")}}
+function stopGPS(){if(watchId!=null){try{navigator.geolocation.clearWatch(watchId)}catch(e){}watchId=null}}
+
+/* écran noir */
+let wakeLock=null;
+async function lockScreen(){try{if(navigator.wakeLock)wakeLock=await navigator.wakeLock.request("screen")}catch(e){wakeLock=null}}
+function updateBlack(){$("#blackTxt").textContent=`écoute nocturne · ${autoState.count} événement${autoState.count>1?"s":""} · touche 2 fois pour sortir`;$("#autoCount").textContent=autoState.count?`${autoState.count} événement${autoState.count>1?"s":""} cette session`:""}
+$("#btnBlack").onclick=()=>{autoState.on=true;$("#black").hidden=false;updateBlack();lockScreen()};
+let tapT=0;$("#black").addEventListener("pointerup",()=>{const n=Date.now();if(n-tapT<450){autoState.on=false;$("#black").hidden=true;if(wakeLock){wakeLock.release().catch(()=>{});wakeLock=null}renderLog()}tapT=n});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&autoState.on)lockScreen()});
+
+async function listDevices(){try{const ds=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==="audioinput");const sel=$("#devSel");
+  sel.innerHTML=`<option value="">Micro par défaut (iPhone ou micro branché)</option>`+ds.map(d=>`<option value="${esc(d.deviceId)}">${esc(d.label||"Micro")}</option>`).join("");sel.value=S.deviceId||""}catch(e){}}
+$("#devSel").onchange=e=>{S.deviceId=e.target.value;saveS();if(running&&!demoNode){stopListen();startListen()}};
+
+/* =========================================================
+   ANALYSE D'EXTRAIT
+   ========================================================= */
+const clipC=$("#clipc"),clipX=clipC.getContext("2d");
+let clip=null,spec=null,off=null,view=null,sel=null,drag=null,player=null,playStart=0,editing=null;
+const NFFT=1024;const fft=makeFFT(NFFT);
+function stftOf(samples,sr){const bins=NFFT/2;const maxFrames=6000;let hop=256;let frames=Math.max(1,Math.floor((samples.length-NFFT)/hop)+1);
+  if(frames>maxFrames){hop=Math.ceil((samples.length-NFFT)/(maxFrames-1));frames=Math.floor((samples.length-NFFT)/hop)+1}
+  const db=new Float32Array(frames*bins),pw=new Float32Array(bins);let mx=-300;
+  for(let f=0;f<frames;f++){fft(samples,f*hop,pw);for(let b=0;b<bins;b++){const v=10*Math.log10(pw[b]+1e-12);db[f*bins+b]=v;if(b>2&&v>mx)mx=v}}
+  return{db,frames,bins,hop,sr,max:mx,dur:samples.length/sr,binHz:sr/NFFT,frameDt:hop/sr}}
+function renderOff(){if(!spec)return;const fTop=Math.min(S.fmax,spec.sr/2),bMax=Math.max(2,Math.round(fTop/spec.binHz));off=document.createElement("canvas");off.width=spec.frames;off.height=bMax;
+  const ox=off.getContext("2d"),img=ox.createImageData(spec.frames,bMax),d=img.data,lo=spec.max-S.range;
+  for(let f=0;f<spec.frames;f++)for(let y=0;y<bMax;y++){const b=bMax-1-y;let v=(spec.db[f*spec.bins+b]-lo)/S.range;v=v<0?0:v>1?1:v;const li=Math.round(v*255)*3,o=(y*spec.frames+f)*4;d[o]=LUT[li];d[o+1]=LUT[li+1];d[o+2]=LUT[li+2];d[o+3]=255}
+  ox.putImageData(img,0,0);off.fTop=bMax*spec.binHz}
+function drawClip(){sizeCanvas(clipC);const W=clipC.width,H=clipC.height;paintBg(clipX,clipC);if(!spec||!off)return;
+  const sx=view.t0/spec.frameDt,sw=(view.t1-view.t0)/spec.frameDt,fT=off.fTop,sy=(1-view.f1/fT)*off.height,sh=(view.f1-view.f0)/fT*off.height;
+  clipX.imageSmoothingEnabled=sw<W;clipX.drawImage(off,sx,sy,Math.max(1,sw),Math.max(1,sh),0,0,W,H);
+  drawAxis($("#clipAxis"),view.f0,view.f1);
+  const tx=t=>(t-view.t0)/(view.t1-view.t0)*W,fy=f=>(1-(f-view.f0)/(view.f1-view.f0))*H,d=Math.min(window.devicePixelRatio||1,3);
+  // graduations temps
+  clipX.fillStyle=getComputedStyle(document.documentElement).getPropertyValue("--fg").trim();clipX.globalAlpha=.7;clipX.font=`${10*d}px ui-monospace,Menlo,monospace`;
+  const span=view.t1-view.t0,st=span>6?1:span>2?.5:span>.8?.2:.1;for(let t=Math.ceil(view.t0/st)*st;t<view.t1;t+=st){const x=tx(t);clipX.fillRect(x,H-5*d,1,5*d);clipX.fillText(t.toFixed(st<.5?1:st<1?1:0)+"s",x+3*d,H-7*d)}
+  clipX.globalAlpha=1;
+  if(sel){const x0=tx(sel.ta),x1=tx(sel.tb),y0=fy(sel.fb),y1=fy(sel.fa);clipX.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue("--sel").trim();clipX.lineWidth=2*d;clipX.setLineDash([6*d,4*d]);clipX.strokeRect(x0,y0,x1-x0,y1-y0);clipX.setLineDash([])}
+  if(player&&player.pos!=null){const x=tx(player.pos);clipX.fillStyle=getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();clipX.fillRect(x-d,0,2*d,H)}}
+function loadClip(c){stopPlay();clip=c;spec=stftOf(c.samples,c.sr);renderOff();view={t0:0,t1:spec.dur,f0:0,f1:off.fTop};sel=null;editing=c.entryId||null;
+  $("#clipTitle").textContent=c.title||"Analyse";$("#clipInfo").textContent=c.info||"";
+  const e=editing&&entries.find(x=>x.id===editing);$("#spIn").value=e?e.sp:"";$("#spLatin").textContent=e?e.la:"";$("#typeIn").value=e?e.type:"";$("#notesIn").value=e?e.notes:"";
+  $("#btnSave").textContent=editing?"Mettre à jour la fiche":"Enregistrer au carnet";
+  updateMeasures();requestAnimationFrame(drawClip)}
+new ResizeObserver(()=>drawClip()).observe(clipC);
+
+function ptToData(ev){const r=clipC.getBoundingClientRect();const x=(ev.clientX-r.left)/r.width,y=(ev.clientY-r.top)/r.height;return{t:view.t0+x*(view.t1-view.t0),f:view.f0+(1-y)*(view.f1-view.f0),px:ev.clientX,py:ev.clientY}}
+clipC.addEventListener("pointerdown",e=>{if(!spec)return;clipC.setPointerCapture(e.pointerId);drag=ptToData(e)});
+clipC.addEventListener("pointermove",e=>{if(!drag)return;const p=ptToData(e);if(Math.abs(p.px-drag.px)+Math.abs(p.py-drag.py)<8)return;
+  sel={ta:Math.max(0,Math.min(drag.t,p.t)),tb:Math.min(spec.dur,Math.max(drag.t,p.t)),fa:Math.max(0,Math.min(drag.f,p.f)),fb:Math.min(off.fTop,Math.max(drag.f,p.f))};drawClip()});
+clipC.addEventListener("pointerup",e=>{if(!drag)return;const p=ptToData(e);if(Math.abs(p.px-drag.px)+Math.abs(p.py-drag.py)<8)sel=null;drag=null;if(sel&&(sel.tb-sel.ta<0.01||sel.fb-sel.fa<50))sel=null;updateMeasures();drawClip()});
+clipC.addEventListener("pointercancel",()=>{drag=null});
+
+function measure(sp,box){const b0=Math.max(3,Math.floor((box?box.fa:1000)/sp.binHz)),b1=Math.min(sp.bins-1,Math.ceil((box?box.fb:Math.min(12000,sp.sr/2-1))/sp.binHz));
+  const f0=box?Math.max(0,Math.floor(box.ta/sp.frameDt)):0,f1=box?Math.min(sp.frames-1,Math.ceil(box.tb/sp.frameDt)):sp.frames-1;
+  if(f1<=f0||b1<=b0)return null;let mx=-300;for(let f=f0;f<=f1;f++)for(let b=b0;b<=b1;b++){const v=sp.db[f*sp.bins+b];if(v>mx)mx=v}
+  // fond : médiane des maxima par trame
+  const fm=[];for(let f=f0;f<=f1;f++){let m=-300;for(let b=b0;b<=b1;b++)m=Math.max(m,sp.db[f*sp.bins+b]);fm.push(m)}const sorted=fm.slice().sort((a,b)=>a-b),noise=sorted[Math.floor(sorted.length*.2)];
+  const thr=Math.max(mx-20,noise+6);let fmin=Infinity,fmax=-Infinity,first=-1,last=-1;const sum=new Float64Array(b1+1),pkT=[],pkF=[];const act=[];
+  for(let f=f0;f<=f1;f++){let pm=-300,pb=0,on=false;for(let b=b0;b<=b1;b++){const v=sp.db[f*sp.bins+b];if(v>thr){on=true;const fr=b*sp.binHz;if(fr<fmin)fmin=fr;if(fr>fmax)fmax=fr;sum[b]+=Math.pow(10,v/10)}if(v>pm){pm=v;pb=b}}
+    act.push(on);if(on){if(first<0)first=f;last=f;pkT.push(f*sp.frameDt);pkF.push(pb*sp.binHz)}}
+  if(first<0)return{empty:true,snr:mx-noise};
+  let pbin=b0;for(let b=b0;b<=b1;b++)if(sum[b]>sum[pbin])pbin=b;
+  // notes : segments actifs séparés d'au moins 15 ms
+  const gapF=Math.max(1,Math.round(0.015/sp.frameDt)),minF=Math.max(1,Math.round(0.005/sp.frameDt));let notes=0,run=0,gap=gapF+1;
+  for(let i=0;i<act.length;i++){if(act[i]){run++;gap=0}else{gap++;if(gap>gapF&&run>0){if(run>=minF)notes++;run=0}}}if(run>=minF)notes++;
+  let slope=0;if(pkT.length>3){const n=pkT.length,mt=pkT.reduce((a,b)=>a+b)/n,mf=pkF.reduce((a,b)=>a+b)/n;let num=0,den=0;for(let i=0;i<n;i++){num+=(pkT[i]-mt)*(pkF[i]-mf);den+=(pkT[i]-mt)**2}slope=den?num/den:0}
+  const dur=(last-first+1)*sp.frameDt;
+  return{fpk:pbin*sp.binHz,fmin,fmax,bw:fmax-fmin,dur,notes,rate:dur>0?notes/dur:0,slope,snr:mx-noise}}
+function updateMeasures(){const el=$("#measures");$("#btnZoom").disabled=!sel;$("#measScope").textContent=sel?`(cadre ${sel.ta.toFixed(2)}–${sel.tb.toFixed(2)} s)`:"(extrait entier, 1–12 kHz)";
+  if(!spec){el.innerHTML="";return}const m=measure(spec,sel);
+  if(!m||m.empty){el.innerHTML=`<div style="grid-column:1/-1"><b>—</b><span>aucun son net au-dessus du bruit${m?` · S/B ${m.snr.toFixed(0)} dB`:""}</span></div>`;return}
+  const sl=Math.abs(m.slope)<800?"plate":m.slope>0?"montante":"descendante";
+  const cells=[["fréq. pic",kHz(m.fpk)+" k"],["fréq. min",kHz(m.fmin)+" k"],["fréq. max",kHz(m.fmax)+" k"],["largeur",kHz(m.bw)+" k"],["durée",m.dur<1?Math.round(m.dur*1000)+" ms":m.dur.toFixed(2)+" s"],["notes",m.notes],["rythme",m.rate.toFixed(1)+" /s"],["pente",`${sl} ${(m.slope/1000).toFixed(1)} k/s`],["signal/bruit",m.snr.toFixed(0)+" dB"]];
+  el.innerHTML=cells.map(c=>`<div><b>${c[1]}</b><span>${c[0]}</span></div>`).join("")}
+$("#btnZoom").onclick=()=>{if(!sel)return;const pt=(sel.tb-sel.ta)*.15,pf=(sel.fb-sel.fa)*.15;view={t0:Math.max(0,sel.ta-pt),t1:Math.min(spec.dur,sel.tb+pt),f0:Math.max(0,sel.fa-pf),f1:Math.min(off.fTop,sel.fb+pf)};drawClip()};
+$("#btnFull").onclick=()=>{if(!spec)return;view={t0:0,t1:spec.dur,f0:0,f1:off.fTop};drawClip()};
+
+/* lecture */
+let speed=1;
+function stopPlay(){if(player){try{player.node.stop()}catch(e){}player=null}cancelAnimationFrame(playRaf);$("#btnPlay").textContent="Lire";drawClip&&spec&&drawClip()}
+let playRaf=0;
+function play(){if(player){stopPlay();return}if(!clip)return;ensureCtx();
+  const a=sel?sel.ta:view.t0,b=sel?sel.tb:view.t1,s0=Math.floor(a*clip.sr),s1=Math.max(s0+1,Math.floor(b*clip.sr));
+  const buf=ac.createBuffer(1,s1-s0,clip.sr);buf.copyToChannel(clip.samples.subarray(s0,s1),0);
+  const node=ac.createBufferSource();node.buffer=buf;node.playbackRate.value=speed;node.loop=$("#loop").checked;
+  let last=node;if($("#bandOnly").checked&&sel){const h=ac.createBiquadFilter();h.type="highpass";h.frequency.value=Math.max(20,sel.fa);const l=ac.createBiquadFilter();l.type="lowpass";l.frequency.value=Math.min(clip.sr/2-10,sel.fb);last.connect(h);h.connect(l);last=l}
+  const g=ac.createGain();g.gain.value=Math.pow(10,(+$("#pgain").value)/20);const comp=ac.createDynamicsCompressor();comp.threshold.value=-6;comp.ratio.value=20;
+  last.connect(g);g.connect(comp);comp.connect(ac.destination);
+  player={node,a,b,t:ac.currentTime,pos:a};node.onended=()=>{if(player&&player.node===node)stopPlay()};node.start();$("#btnPlay").textContent="Stop";
+  const tick=()=>{if(!player)return;const el=(ac.currentTime-player.t)*speed,len=player.b-player.a;player.pos=player.a+(node.loop?el%len:Math.min(el,len));drawClip();playRaf=requestAnimationFrame(tick)};tick()}
+$("#btnPlay").onclick=play;
+$("#loop").onchange=()=>{if(player)player.node.loop=$("#loop").checked};
+
+/* import */
+$("#fileIn").onchange=async e=>{const f=e.target.files[0];if(!f)return;ensureCtx();try{const ab=await f.arrayBuffer();const buf=await new Promise((res,rej)=>ac.decodeAudioData(ab,res,rej));
+  let s=buf.getChannelData(0),note="";const cap=buf.sampleRate*180;if(s.length>cap){s=s.slice(0,cap);note=" · 3 premières minutes affichées"}else s=new Float32Array(s);
+  loadClip({sr:buf.sampleRate,samples:s,title:f.name.replace(/\.[^.]+$/,""),info:`${(buf.duration).toFixed(1)} s · ${buf.sampleRate} Hz${note}`,source:"import",ts:f.lastModified||Date.now()})}
+  catch(err){toast("Format non lu. Essaie un WAV, MP3 ou M4A.")}e.target.value=""};
+
+/* enregistrement au carnet */
+$("#btnSave").onclick=async()=>{if(!clip){toast("Aucun extrait chargé");return}const spTxt=$("#spIn").value.trim(),s=spByFr.get(spTxt.toLowerCase());const m=measure(spec,sel);
+  if(editing){const e=entries.find(x=>x.id===editing);if(e){e.sp=s?s.fr:spTxt;e.la=s?s.la:"";e.type=$("#typeIn").value;e.notes=$("#notesIn").value.trim();if(m&&!m.empty)e.m=m;saveEntries();renderLog();toast("Fiche mise à jour")}return}
+  const id=uid(),fx=clip.fix||(clip.source!=="import"&&clip.source!=="demo"?lastFix:null);
+  const e={id,ts:clip.ts||Date.now(),lat:fx?fx.lat:null,lon:fx?fx.lon:null,acc:fx?fx.acc:null,sp:s?s.fr:spTxt,la:s?s.la:"",type:$("#typeIn").value,notes:$("#notesIn").value.trim(),source:clip.source||"micro",dur:spec.dur,m:m&&!m.empty?m:null};
+  await putClip(id,{sr:clip.sr,pcm:toI16(clip.samples)});entries.unshift(e);saveEntries();editing=id;clip.entryId=id;$("#btnSave").textContent="Mettre à jour la fiche";renderLog();toast("Ajouté au carnet")};
+$("#btnWav").onclick=()=>{if(!clip)return;const a=sel?Math.floor(sel.ta*clip.sr):0,b=sel?Math.floor(sel.tb*clip.sr):clip.samples.length;
+  const name=`huginn_${new Date(clip.ts||Date.now()).toISOString().slice(0,16).replace(/[-:T]/g,"")}${$("#spIn").value?"_"+$("#spIn").value.trim().replace(/\s+/g,"-"):""}.wav`;saveFile(name,encodeWav(clip.samples.subarray(a,b),clip.sr))};
+
+/* =========================================================
+   CARNET
+   ========================================================= */
+const EXAMPLES=[{id:"ex1",ts:Date.now()-3600e3,sp:"Pinson des arbres",la:"Fringilla coelebs",type:"Chant",notes:"Chanteur posé en lisière",source:"micro",dur:10,m:{fpk:4100,fmin:2400,fmax:6200,dur:2.1,notes:13},ex:true},
+  {id:"ex2",ts:Date.now()-3500e3,sp:"",la:"",type:"",notes:"",source:"auto",dur:4,m:{fpk:7600,fmin:7000,fmax:9100,dur:0.03,notes:1},ex:true}];
+function entryHTML(e){const t=e.type?`<span class="tag ${e.type==="Chant"?"t-chant":""}">${esc(e.type)}</span>`:"";
+  const src=e.source==="auto"?`<span class="tag t-auto">auto nocmig</span>`:e.source==="import"?`<span class="tag">importé</span>`:e.source==="demo"?`<span class="tag">démo</span>`:"";
+  const m=e.m?`<span class="mono">${kHz(e.m.fpk)} kHz · ${e.m.dur<1?Math.round(e.m.dur*1000)+" ms":e.m.dur.toFixed(1)+" s"} · ${e.m.notes} note${e.m.notes>1?"s":""}</span>`:"";
+  const g=e.lat!=null?`<a href="https://maps.apple.com/?ll=${e.lat},${e.lon}&q=Huginn" target="_blank" rel="noopener" class="mono">${e.lat.toFixed(5)}, ${e.lon.toFixed(5)}</a>`:`<span>sans GPS</span>`;
+  return`<div class="entry" data-id="${e.id}"><div class="time">${fmtT(e.ts)}<br><span class="small">${fmtD(e.ts)}</span></div>
+  <div class="sp">${e.ex?`<span class="ex">exemple · </span>`:""}${e.sp?esc(e.sp)+(e.la?` <span class="latin small">${esc(e.la)}</span>`:""):`<span class="muted">À identifier</span>`}</div>
+  <div class="meta">${t}${src}${m}${g}</div>${e.notes?`<div class="meta">${esc(e.notes)}</div>`:""}
+  ${e.ex?"":`<div class="acts"><button class="btn" data-act="open">Ouvrir</button><button class="btn ghost" data-act="del">Supprimer</button></div>`}</div>`}
+function renderLog(){const list=$("#entries");const show=entries.length?entries:EXAMPLES;
+  list.innerHTML=(entries.length?`<h3>${entries.length} fiche${entries.length>1?"s":""}</h3>`:`<h3>Fiches</h3><p class="small muted">Ton carnet est vide. Les deux fiches ci-dessous sont des exemples et disparaissent dès ta première capture.</p>`)+show.map(entryHTML).join(`<hr style="border:0;border-top:1px solid var(--line);margin:4px 0">`);
+  // liste du jour
+  const today=new Date().toDateString(),rows=new Map();entries.filter(e=>new Date(e.ts).toDateString()===today).forEach(e=>{const k=e.sp||"À identifier";if(!rows.has(k))rows.set(k,{la:e.la,n:0,types:new Set()});const r=rows.get(k);r.n++;if(e.type)r.types.add(e.type)});
+  $("#dayList").innerHTML=rows.size?Array.from(rows).sort((a,b)=>b[1].n-a[1].n).map(([k,r])=>`<tr><td><b>${esc(k)}</b>${r.la?` <span class="latin small">${esc(r.la)}</span>`:""}<div class="small muted">${Array.from(r.types).map(esc).join(" · ")||"—"}</div></td><td class="n">${r.n}</td></tr>`).join(""):`<tr><td class="muted small">Rien aujourd'hui. Chaque fiche du jour s'ajoute ici, regroupée par espèce avec ses types de vocalise.</td></tr>`;
+  renderMap()}
+$("#entries").addEventListener("click",async ev=>{const b=ev.target.closest("button");if(!b)return;const row=b.closest(".entry"),id=row.dataset.id,e=entries.find(x=>x.id===id);if(!e)return;
+  if(b.dataset.act==="open"){const c=await getClip(id);if(!c){toast("Son introuvable sur cet appareil");return}loadClip({sr:c.sr,samples:toF32(c.pcm),title:e.sp||"À identifier",info:`${fmtD(e.ts)} ${fmtT(e.ts)} · ${e.dur.toFixed(1)} s`,source:e.source,ts:e.ts,entryId:id});showTab("analyse")}
+  if(b.dataset.act==="del"){const a=row.querySelector(".acts");a.innerHTML=`<span class="confirm">Supprimer cette fiche et son son ? <button class="btn live" data-act="yes">Supprimer</button><button class="btn ghost" data-act="no">Garder</button></span>`}
+  if(b.dataset.act==="yes"){entries=entries.filter(x=>x.id!==id);saveEntries();delClip(id);if(editing===id){editing=null;$("#btnSave").textContent="Enregistrer au carnet"}renderLog();toast("Fiche supprimée")}
+  if(b.dataset.act==="no")renderLog()});
+
+let map=null,layer=null;
+function renderMap(){const pts=entries.filter(e=>e.lat!=null);const el=$("#map");el.hidden=!pts.length||!window.L;if(el.hidden||$("#tab-log").hidden)return;
+  el.hidden=false;if(!map){map=L.map(el,{zoomControl:true,attributionControl:true});L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(map);layer=L.layerGroup().addTo(map)}
+  layer.clearLayers();const ac2=getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
+  pts.forEach(e=>L.circleMarker([e.lat,e.lon],{radius:7,color:ac2,weight:2,fillColor:ac2,fillOpacity:.45}).bindPopup(`<b>${esc(e.sp||"À identifier")}</b><br>${esc(e.type||"")} · ${fmtT(e.ts)}`).addTo(layer));
+  setTimeout(()=>{map.invalidateSize();map.fitBounds(L.latLngBounds(pts.map(e=>[e.lat,e.lon])).pad(.3),{maxZoom:17})},50)}
+
+function csvCell(v){v=v==null?"":String(v);return/[",;\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v}
+$("#btnCsv").onclick=()=>{if(!entries.length){toast("Carnet vide");return}const h=["id","date","heure","latitude","longitude","precision_m","espece","nom_latin","type_vocalise","notes","source","duree_s","freq_pic_hz","freq_min_hz","freq_max_hz","duree_son_s","nb_notes"];
+  const rows=entries.map(e=>{const d=new Date(e.ts);return[e.id,d.toISOString().slice(0,10),d.toTimeString().slice(0,8),e.lat,e.lon,e.acc!=null?Math.round(e.acc):"",e.sp,e.la,e.type,e.notes,e.source,e.dur!=null?e.dur.toFixed(2):"",e.m?Math.round(e.m.fpk):"",e.m?Math.round(e.m.fmin):"",e.m?Math.round(e.m.fmax):"",e.m?e.m.dur.toFixed(3):"",e.m?e.m.notes:""].map(csvCell).join(",")});
+  saveFile(`huginn_carnet_${new Date().toISOString().slice(0,10)}.csv`,new Blob(["﻿"+h.join(",")+"\n"+rows.join("\n")],{type:"text/csv"}))};
+$("#btnGeo").onclick=()=>{const pts=entries.filter(e=>e.lat!=null);if(!pts.length){toast("Aucune fiche géolocalisée");return}
+  const gj={type:"FeatureCollection",features:pts.map(e=>({type:"Feature",geometry:{type:"Point",coordinates:[e.lon,e.lat]},properties:{id:e.id,date:new Date(e.ts).toISOString(),espece:e.sp,nom_latin:e.la,type_vocalise:e.type,notes:e.notes,source:e.source,precision_m:e.acc!=null?Math.round(e.acc):null,freq_pic_hz:e.m?Math.round(e.m.fpk):null}}))};
+  saveFile(`huginn_carnet_${new Date().toISOString().slice(0,10)}.${IN_CLAUDE?"json":"geojson"}`,new Blob([JSON.stringify(gj,null,1)],{type:"application/geo+json"}))};
+
+/* =========================================================
+   RÉGLAGES & NAVIGATION
+   ========================================================= */
+function bindSeg(id,key,cb){const g=$(id);const set=()=>g.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(+b.dataset.v===+S[key])));set();
+  g.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S[key]=+b.dataset.v;saveS();set();cb&&cb()})}
+bindSeg("#segHp","hp",applyAudioSettings);
+bindSeg("#segFmax","fmax",()=>{drawAxis($("#liveAxis"),0,S.fmax);if(spec){renderOff();view.f1=Math.min(view.f1,off.fTop);if(view.f1<=view.f0)view={t0:view.t0,t1:view.t1,f0:0,f1:off.fTop};drawClip()}});
+bindSeg("#segBuf","bufSec",()=>{if(ac&&running)allocRing()});
+bindSeg("#segCap","capSec",()=>$("#capLbl").textContent=S.capSec+" s");$("#capLbl").textContent=S.capSec+" s";
+const segSp=$("#segSpeed");const setSp=()=>segSp.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(+b.dataset.v===speed)));setSp();
+segSp.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;speed=+b.dataset.v;setSp();if(player)player.node.playbackRate.value=speed});
+function bindRange(id,lbl,fmt,key,cb){const r=$(id);if(key)r.value=S[key];const up=()=>$(lbl).textContent=fmt(+r.value);up();r.addEventListener("input",()=>{if(key){S[key]=+r.value;saveS()}up();cb&&cb()})}
+bindRange("#gain","#gainLbl",v=>"×"+Math.pow(10,v/20).toFixed(v>12?0:1),"gain",applyAudioSettings);
+bindRange("#pgain","#pgainLbl",v=>"×"+Math.pow(10,v/20).toFixed(v>12?0:1),null,()=>{});
+bindRange("#range","#rangeLbl",v=>v+" dB","range",()=>{if(spec){renderOff();drawClip()}});
+bindRange("#thr","#thrLbl",v=>"+"+v+" dB","thr");
+$("#monitor").onchange=applyAudioSettings;
+function setNight(on){document.documentElement.classList.toggle("night",on);S.night=on;saveS();$("#nightToggle").checked=on;buildLUT();if(liveC.width){paintBg(liveX,liveC)}if(spec){renderOff();drawClip()}if(map)renderMap()}
+$("#nightToggle").onchange=e=>setNight(e.target.checked);
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{buildLUT();if(spec){renderOff();drawClip()}if(!running&&liveC.width)paintBg(liveX,liveC)});
+new MutationObserver(()=>{buildLUT();if(spec){renderOff();drawClip()}}).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+
+function showTab(name){$$("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===name)));
+  $$("main section").forEach(s=>s.hidden=s.id!=="tab-"+name);$("#main").scrollTop=0;
+  if(name==="analyse")requestAnimationFrame(drawClip);if(name==="log")renderMap();if(name==="listen")drawAxis($("#liveAxis"),0,S.fmax)}
+$$("nav.tabs button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+$("#btnDemo").onclick=()=>{loadClip(genDemo());showTab("analyse")};
+
+/* ---------- démarrage ---------- */
+if(S.night)document.documentElement.classList.add("night");$("#nightToggle").checked=!!S.night;
+buildLUT();drawAxis($("#liveAxis"),0,S.fmax);
+requestAnimationFrame(()=>{sizeCanvas(liveC);paintBg(liveX,liveC)});
+loadClip(genDemo());
+openDB().then(renderLog);renderLog();
+})();
+</script>
+</body></html>

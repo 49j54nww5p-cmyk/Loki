@@ -9,6 +9,8 @@ self.addEventListener("fetch", e => {
   const r = e.request;
   if (r.method !== "GET") return;
   const u = new URL(r.url);
+  /* Huginn (dossier huginn/) : appli à part, jamais servie ni mise en cache par Plumage */
+  if (u.origin === self.location.origin && u.pathname.includes("/huginn/")) return;
   if (u.origin === self.location.origin) {
     /* la page : le réseau d'abord (mises à jour), le cache si pas de réseau ou réseau trop lent */
     if (r.mode === "navigate" || u.pathname.endsWith("/index.html")) {

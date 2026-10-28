@@ -161,6 +161,19 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .hit.fresh .nm::after{content:" ●";color:var(--live);font-size:11px}
 .agree{font-size:12px;color:var(--ok);font-weight:700}
 .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.cmp{display:flex;flex-direction:column;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+.cmp:last-child{border-bottom:0}
+.cmp h4{margin:0;font-size:16px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pair figure{margin:0;display:flex;flex-direction:column;gap:4px;min-width:0}
+.pair figcaption{font-size:11px;color:var(--muted)}
+canvas.sono{width:100%;aspect-ratio:150/128;max-width:100%;border:1px solid var(--line);border-radius:6px;background:var(--spec0);display:block}
+.vtab{width:100%;border-collapse:collapse;font-size:13px}
+.vtab th{text-align:left;font-weight:700;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:4px}
+.vtab td{padding:5px 4px;border-top:1px solid var(--line)}
+.st{font-size:12px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}
+.st-ok{border-color:var(--ok);color:var(--ok)}.st-mid{border-color:var(--accent);color:var(--accent)}.st-out{border-color:var(--live);color:var(--live)}
+details summary{cursor:pointer;padding:4px 0}
 /* Barre d'onglets */
 nav.tabs{flex:none;border-top:1px solid var(--line);background:var(--bg)}
 nav.tabs .gut{display:grid;grid-template-columns:repeat(4,1fr)}
@@ -291,6 +304,11 @@ nav.tabs button[aria-selected="true"]{color:var(--accent)}
         <div id="aiRes"></div>
       </div>
       <div class="card">
+        <h3>Comparaison aux références</h3>
+        <p class="small muted">Ton son face aux enregistrements libres de Wikimedia Commons des espèces candidates : ressemblance, type de vocalise probable, spectros côte à côte et variance de tes mesures. La 1<sup>re</sup> fois pour une espèce, il faut du réseau (environ 20 à 60 s).</p>
+        <div id="cmpRes"><p class="small muted">Lance « Identifier » : la comparaison suit automatiquement.</p></div>
+      </div>
+      <div class="card">
         <h3>Ta fiche</h3>
         <p class="small muted">Le type de vocalise (chant, cri…) et les spectros de référence xeno-canto arrivent en V2. L'ID finale reste la tienne.</p>
         <div class="field"><label class="lbl" for="spIn">Espèce</label>
@@ -355,6 +373,14 @@ nav.tabs button[aria-selected="true"]{color:var(--accent)}
           <span class="small muted">Auto : espèces probables autour de ta position cette semaine (France entière sans GPS). Aucun : utile pour les raretés.</span></div>
       </div>
       <div class="card">
+        <h3>Bibliothèque de référence</h3>
+        <p class="small" id="refInfo"></p>
+        <label class="toggle"><input type="checkbox" id="autoCmp"> Identifier et comparer automatiquement après chaque capture</label>
+        <p class="small muted">Sans rien faire, les références se construisent au fil de tes captures. Tu peux aussi précharger toutes les espèces de la liste actuelle (France ou autour de toi) : compte environ 30 s et 3 à 8 Mo de téléchargement par espèce, en wifi, appli ouverte.</p>
+        <div class="row"><button class="btn primary" id="btnRefBuild">Précharger les espèces de France</button><button class="btn" id="btnRefStop" hidden>Arrêter</button><button class="btn ghost" id="btnRefClear">Vider la bibliothèque</button></div>
+        <p class="small mono muted" id="refProg"></p>
+      </div>
+      <div class="card">
         <h3>Modèles IA</h3>
         <div id="modelInfo" class="small"></div>
         <div class="meter" id="perchBar2" hidden><i></i></div>
@@ -363,7 +389,7 @@ nav.tabs button[aria-selected="true"]{color:var(--accent)}
       </div>
       <div class="card">
         <h3>Feuille de route</h3>
-        <p class="small"><b>V0</b> terrain sans IA · <b>V1 (ici)</b> BirdNET+ en direct et en analyse, Perch v2 en analyse fine, filtre géo · <b>V2</b> serveur Perch v2 + bibliothèque xeno-canto : type de vocalise, références côte à côte, espèces confusables · <b>V3</b> alertes raretés / lifers / liste rouge, lien avec Loki.</p>
+        <p class="small"><b>V0</b> terrain sans IA · <b>V1</b> BirdNET+ en direct et en analyse, Perch v2, filtre géo · <b>V2 (ici)</b> bibliothèque de référence France (Commons), type de vocalise probable, spectros côte à côte, variance · <b>V2.1</b> xeno-canto avec clé, espèces confusables · <b>V3</b> alertes raretés / lifers / liste rouge, lien avec Loki.</p>
       </div>
       <button class="btn ghost" id="btnDemo">Charger l'extrait de démonstration</button>
     </section>
@@ -384,7 +410,7 @@ nav.tabs button[aria-selected="true"]{color:var(--accent)}
 <script>
 (function(){
 "use strict";
-const VERSION="0.2.3";
+const VERSION="0.3.0";
 const IN_CLAUDE=!!(window.claude&&window.claude.use);
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 $("#ver").textContent="v"+VERSION;
@@ -393,12 +419,12 @@ $("#ver").textContent="v"+VERSION;
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const memClips=new Map();
 let idb=null;
-function openDB(){return new Promise(res=>{try{const r=indexedDB.open("huginn",1);r.onupgradeneeded=()=>r.result.createObjectStore("clips");r.onsuccess=()=>{idb=r.result;res()};r.onerror=()=>res()}catch(e){res()}})}
+function openDB(){return new Promise(res=>{try{const r=indexedDB.open("huginn",2);r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains("clips"))d.createObjectStore("clips");if(!d.objectStoreNames.contains("refs"))d.createObjectStore("refs")};r.onsuccess=()=>{idb=r.result;res()};r.onerror=()=>res()}catch(e){res()}})}
 function putClip(id,obj){memClips.set(id,obj);if(!idb)return Promise.resolve();return new Promise(res=>{try{const t=idb.transaction("clips","readwrite");t.objectStore("clips").put(obj,id);t.oncomplete=res;t.onerror=res}catch(e){res()}})}
 function getClip(id){if(memClips.has(id))return Promise.resolve(memClips.get(id));if(!idb)return Promise.resolve(null);return new Promise(res=>{try{const r=idb.transaction("clips").objectStore("clips").get(id);r.onsuccess=()=>res(r.result||null);r.onerror=()=>res(null)}catch(e){res(null)}})}
 function delClip(id){memClips.delete(id);if(!idb)return;try{idb.transaction("clips","readwrite").objectStore("clips").delete(id)}catch(e){}}
 
-const S=Object.assign({fmax:11000,bufSec:30,capSec:10,range:70,thr:12,hp:300,gain:0,deviceId:"",night:false,sens:1,conf:0.35,geo:0},LS.get("huginn.settings",{}));
+const S=Object.assign({autoCmp:true,fmax:11000,bufSec:30,capSec:10,range:70,thr:12,hp:300,gain:0,deviceId:"",night:false,sens:1,conf:0.35,geo:0},LS.get("huginn.settings",{}));
 const saveS=()=>LS.set("huginn.settings",S);
 let entries=LS.get("huginn.entries",[]);
 const saveEntries=()=>LS.set("huginn.entries",entries);
@@ -534,7 +560,7 @@ new ResizeObserver(()=>{drawAxis($("#liveAxis"),0,S.fmax);if(liveC.width&&!runni
 function grab(sec){if(!ring||!ringFill)return null;const sr=ac.sampleRate,n=Math.min(ringFill,Math.round(sec*sr)),out=new Float32Array(n),L=ring.length;let start=(ringPos-n+L)%L;for(let i=0;i<n;i++)out[i]=ring[(start+i)%L];return out}
 function capture(sug){const s=grab(S.capSec);if(!s){toast("Rien en mémoire pour l'instant");return}
   loadClip({sr:ac.sampleRate,samples:s,title:"Capture "+fmtT(Date.now()),info:`${(s.length/ac.sampleRate).toFixed(1)} s captées${lastFix?` · ${lastFix.lat.toFixed(5)}, ${lastFix.lon.toFixed(5)} ±${Math.round(lastFix.acc)} m`:""}`,source:demoNode?"demo":"micro",ts:Date.now(),fix:lastFix,suggest:sug||null});
-  showTab("analyse")}
+  showTab("analyse");if(S.autoCmp!==false&&AI.ready.bn)setTimeout(()=>$("#btnBn").click(),50)}
 $("#btnCapture").onclick=()=>capture();
 
 async function autoCapture(){const s=grab(4);if(!s)return;const id=uid(),m=measure(stftOf(s,ac.sampleRate),null);
@@ -591,7 +617,7 @@ function loadClip(c){stopPlay();clip=c;spec=stftOf(c.samples,c.sr);renderOff();v
   const e=editing&&entries.find(x=>x.id===editing);$("#spIn").value=e?e.sp:"";$("#spLatin").textContent=e?e.la:"";$("#typeIn").value=e?e.type:"";$("#notesIn").value=e?e.notes:"";
   $("#btnSave").textContent=editing?"Mettre à jour la fiche":"Enregistrer au carnet";
   if(c.suggest){$("#spIn").value=c.suggest.fr;$("#spLatin").textContent=c.suggest.la;c.ai=c.suggest}
-  AI.hits=[];aiResults={bn:null,perch:null};$("#aiRes").innerHTML="";$("#perchAsk").hidden=true;$("#perchBar").hidden=true;
+  AI.hits=[];aiResults={bn:null,perch:null};$("#aiRes").innerHTML="";if(typeof cmpToken!=="undefined"){cmpToken++;$("#cmpRes").innerHTML=`<p class="small muted">Lance « Identifier » : la comparaison suit automatiquement.</p>`}$("#perchAsk").hidden=true;$("#perchBar").hidden=true;
   updateMeasures();requestAnimationFrame(drawClip)}
 new ResizeObserver(()=>drawClip()).observe(clipC);
 
@@ -718,6 +744,7 @@ bindRange("#sens","#sensLbl",v=>v.toFixed(2),"sens");
 bindRange("#conf","#confLbl",v=>Math.round(v*100)+" %","conf",()=>{if(aiResults.bn||aiResults.perch)renderAiRes()});
 bindSeg("#segGeo","geo",()=>updateMask(true).catch(()=>{}));
 $("#monitor").onchange=applyAudioSettings;
+$("#autoCmp").checked=S.autoCmp!==false;$("#autoCmp").onchange=e=>{S.autoCmp=e.target.checked;saveS()};
 function setNight(on){document.documentElement.classList.toggle("night",on);S.night=on;saveS();$("#nightToggle").checked=on;buildLUT();if(liveC.width){paintBg(liveX,liveC)}if(spec){renderOff();drawClip()}if(map)renderMap()}
 $("#nightToggle").onchange=e=>setNight(e.target.checked);
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{buildLUT();if(spec){renderOff();drawClip()}if(!running&&liveC.width)paintBg(liveX,liveC)});
@@ -725,7 +752,7 @@ new MutationObserver(()=>{buildLUT();if(spec){renderOff();drawClip()}}).observe(
 
 function showTab(name){$$("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===name)));
   $$("main section").forEach(s=>s.hidden=s.id!=="tab-"+name);$("#main").scrollTop=0;
-  if(name==="analyse")requestAnimationFrame(drawClip);if(name==="settings")renderModelInfo();if(name==="log")renderMap();if(name==="listen")drawAxis($("#liveAxis"),0,S.fmax)}
+  if(name==="analyse")requestAnimationFrame(drawClip);if(name==="settings"){renderModelInfo();renderRefInfo()}if(name==="log")renderMap();if(name==="listen")drawAxis($("#liveAxis"),0,S.fmax)}
 $$("nav.tabs button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
 $("#btnDemo").onclick=()=>{loadClip(genDemo());showTab("analyse")};
 
@@ -756,6 +783,7 @@ const WSRC=[
 'self.onmessage=async e=>{const m=e.data;try{',
 ' if(m.t==="load"){if(!S[m.name]){const b=await getBuf(m.url,m.key,m.name);postMessage({t:"progress",name:m.name,phase:"init"});S[m.name]=await ort.InferenceSession.create(b,{executionProviders:["wasm"],graphOptimizationLevel:"all"})}postMessage({t:"ok",id:m.id})}',
 ' else if(m.t==="run"){const s=S[m.name];if(!s)throw new Error("modèle non chargé");const feeds={};feeds[s.inputNames[0]]=new ort.Tensor("float32",m.data,m.dims);const out=await s.run(feeds,[m.output]);const d=new Float32Array(out[m.output].data);postMessage({t:"ok",id:m.id,data:d},[d.buffer])}',
+' else if(m.t==="run2"){const s=S[m.name];if(!s)throw new Error("modèle non chargé");const feeds={};feeds[s.inputNames[0]]=new ort.Tensor("float32",m.data,m.dims);const out=await s.run(feeds,m.outputs);const r=m.outputs.map(k=>new Float32Array(out[k].data));postMessage({t:"ok",id:m.id,data:r},r.map(a=>a.buffer))}',
 ' else if(m.t==="has"){let ok=false;try{const c=await caches.open("huginn-models");ok=!!(await c.match(m.key))}catch(e){}postMessage({t:"ok",id:m.id,ok})}',
 ' else if(m.t==="drop"){try{const c=await caches.open("huginn-models");await c.delete(m.key)}catch(e){}if(S[m.name]){try{await S[m.name].release()}catch(e){}delete S[m.name]}postMessage({t:"ok",id:m.id})}',
 '}catch(err){const msg=typeof err==="number"?"erreur interne du moteur n°"+err:String(err&&err.message||err);postMessage({t:"error",id:m.id,msg})}};'
@@ -859,7 +887,8 @@ $("#aiRes").addEventListener("click",e=>{const b=e.target.closest("[data-use]");
 $("#btnBn").onclick=async()=>{if(!clip)return;if(IN_CLAUDE){toast("L'IA tourne seulement dans la version GitHub Pages");return}
   const btn=$("#btnBn");btn.disabled=true;btn.textContent="Analyse…";
   try{if(!AI.ready.bn){toast("Chargement du modèle BirdNET+…");await ensureAI()}const x=await clip32(),starts=analysisWindows(3,1.5);
-    const sc=await runBN(starts.map(t=>x.subarray(Math.round(t*32000),Math.round(t*32000)+96000)));const thr=S.conf||.35,list=aggregate(sc,starts,3,thr);
+    const res=await runBN2(starts.map(t=>x.subarray(Math.round(t*32000),Math.round(t*32000)+96000)));const sc=res.map(o=>postBN(o.raw));const thr=S.conf||.35,list=aggregate(sc,starts,3,thr);
+    const an={starts,raw:sc,emb:res.map(o=>o.emb),x32:x};setTimeout(()=>compareRefs(list,an).catch(err=>{$("#cmpRes").innerHTML=`<p class="small muted">Comparaison impossible : ${esc(err.message||err)}</p>`}),0);
     aiResults.bn=list;AI.hits=[];list.slice(0,3).forEach((r,k)=>{mergeWins(r.wins,3).forEach(([a,b])=>AI.hits.push({a,b,k,name:nameOf(r.i).fr,sc:r.max}))});renderAiRes();drawClip();
     if(list[0]&&!$("#spIn").value){const n=nameOf(list[0].i);if(list[0].max>=thr)clip.ai={m:"BirdNET+",fr:n.fr,la:n.la,sc:list[0].max}}}
   catch(e){toast("Analyse impossible : "+(e.message||e))}finally{btn.disabled=false;btn.textContent="Identifier · BirdNET+"}};
@@ -896,6 +925,112 @@ $("#btnGetPerch").onclick=async()=>{if(IN_CLAUDE)return;const gp=$("#btnGetPerch
   try{if(!AI.labels)await ensureAI();await perchLabels();await loadModel("perch");toast("Perch v2 prêt");$("#perchBar2").hidden=true}
   catch(e){toast("Perch v2 : "+(e.message||e));AI.err="Perch : "+(e.message||e)}finally{gp.disabled=false;gp.textContent="Télécharger Perch v2 (413 Mo)";$("#perchBar").hidden=true;$("#perchAsk").hidden=true;renderModelInfo()}};
 $("#btnDropPerch").onclick=async()=>{try{await wcall({t:"drop",name:"perch",key:MODELS.perch.key});AI.ready.perch=false;toast("Perch v2 supprimé du téléphone")}catch(e){toast("Suppression impossible")}renderModelInfo()};
+
+/* =========================================================
+   BIBLIOTHÈQUE DE RÉFÉRENCE (Wikimedia Commons, sans clé)
+   Pour chaque espèce : jusqu'à 6 enregistrements libres ; dans chacun,
+   les fenêtres de 3 s où BirdNET+ reconnaît le mieux l'espèce.
+   On garde l'empreinte (1280 valeurs), les mesures et un mini-spectro.
+   Tout est stocké sur le téléphone (IndexedDB), rien n'est envoyé.
+   ========================================================= */
+const REFV=1,REF_FILES=6,REF_SEC=30;
+const SNDKIND=[[/nocturnal flight|nfc|migration nocturne/i,"cri de vol nocturne"],[/flight ?call|cri en vol|cri de vol|flugruf/i,"cri de vol"],[/alarm|alarme|warn|scold/i,"cri d'alarme"],[/begging|quémande/i,"cri de quémande"],[/drum|tambour/i,"tambourinage"],[/subsong|babil/i,"babil"],[/song|chant|singing|gesang|canto/i,"chant"],[/\bcalls?\b|\bcri|\bruf\b|contact/i,"cri"]];
+const kindOf=s=>{s=String(s||"").replace(/[_-]+/g," ");for(const[re,k]of SNDKIND)if(re.test(s))return k;return""};
+const strip=s=>String(s||"").replace(/<[^>]*>/g," ").replace(/&nbsp;/g," ").replace(/&amp;/g,"&").replace(/&quot;/g,'"').replace(/&#0?39;/g,"'").replace(/\s+/g," ").trim();
+function refGet(sci){if(!idb)return Promise.resolve(null);return new Promise(res=>{try{const r=idb.transaction("refs").objectStore("refs").get(sci);r.onsuccess=()=>res(r.result||null);r.onerror=()=>res(null)}catch(e){res(null)}})}
+function refPut(sci,o){if(!idb)return Promise.resolve();return new Promise(res=>{try{const t=idb.transaction("refs","readwrite");t.objectStore("refs").put(o,sci);t.oncomplete=res;t.onerror=res}catch(e){res()}})}
+function refAllKeys(){if(!idb)return Promise.resolve([]);return new Promise(res=>{try{const r=idb.transaction("refs").objectStore("refs").getAllKeys();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>res([])}catch(e){res([])}})}
+function refClear(){if(!idb)return Promise.resolve();return new Promise(res=>{try{const t=idb.transaction("refs","readwrite");t.objectStore("refs").clear();t.oncomplete=res;t.onerror=res}catch(e){res()}})}
+
+async function commonsList(sci){const q=`intitle:"${sci}" filetype:audio`;
+  const url="https://commons.wikimedia.org/w/api.php?action=query&format=json&formatversion=2&origin=*&generator=search&gsrnamespace=6&gsrlimit=20&gsrsearch="+encodeURIComponent(q)+"&prop=videoinfo&viprop=url|mime|size|derivatives|extmetadata&viextmetadatafilter=Artist|LicenseShortName|ImageDescription";
+  const r=await fetch(url);if(!r.ok)throw new Error("Commons ne répond pas (HTTP "+r.status+")");const d=await r.json();const[g,sp]=sci.toLowerCase().split(" ");const out=[];
+  for(const pg of(d.query&&d.query.pages)||[]){const vi=(pg.videoinfo||[])[0],title=String(pg.title||"").replace(/^File:/i,"");if(!vi||!vi.url||(vi.size||0)>15e6)continue;
+    const tl=title.toLowerCase().replace(/_/g," ");if(!tl.includes(g)||!tl.includes(sp))continue;
+    const c=[{src:vi.url,type:String(vi.mime||"").split(";")[0]},...(vi.derivatives||[]).map(x=>({src:x.src,type:String(x.type||"").split(";")[0]}))];
+    if(!(vi.derivatives||[]).length&&/\.(ogg|oga|opus|flac|wav)$/i.test(vi.url)){const fn=vi.url.split("/").pop();c.push({src:vi.url.replace("/wikipedia/commons/","/wikipedia/commons/transcoded/")+"/"+fn+".mp3",type:"audio/mpeg"})}
+    const order=["audio/mpeg","audio/mp3","audio/mp4","audio/x-m4a","audio/aac","audio/wav","audio/x-wav","audio/wave","audio/flac"];
+    const best=c.filter(x=>x.src&&order.includes(x.type)).sort((a,b)=>order.indexOf(a.type)-order.indexOf(b.type))[0];if(!best)continue;
+    const em=vi.extmetadata||{},who=strip(em.Artist&&em.Artist.value).slice(0,60),lic=strip(em.LicenseShortName&&em.LicenseShortName.value),desc=strip(em.ImageDescription&&em.ImageDescription.value).slice(0,300);
+    out.push({url:best.src,page:vi.descriptionurl||("https://commons.wikimedia.org/wiki/"+encodeURIComponent(pg.title||"")),attr:[who?"© "+who:"",lic].filter(Boolean).join(" · "),title,kind:kindOf(title+" "+desc)})}
+  // on varie les types : d'abord un de chaque type, puis le reste
+  const seen=new Set(),a=[],b=[];out.forEach(o=>{(seen.has(o.kind)?b:a).push(o);seen.add(o.kind)});return a.concat(b)}
+
+let dctx=null;
+function decodeAB(ab){if(!dctx){const AC=window.AudioContext||window.webkitAudioContext;dctx=new AC()}return new Promise((res,rej)=>dctx.decodeAudioData(ab,res,rej))}
+async function runBN2(wins){const L=96000,out=[];for(let k=0;k<wins.length;k+=6){const part=wins.slice(k,k+6),d=new Float32Array(part.length*L);part.forEach((w,j)=>d.set(fit(w,L),j*L));
+    const r=await wcall({t:"run2",name:"bn",outputs:["predictions","embeddings_out"],data:d,dims:[part.length,L]},[d.buffer]);const n=AI.labels.length,P=r.data[0],E=r.data[1],ed=E.length/part.length;
+    for(let j=0;j<part.length;j++){const e=E.slice(j*ed,(j+1)*ed);let s=0;for(let q=0;q<ed;q++)s+=e[q]*e[q];s=Math.sqrt(s)||1;for(let q=0;q<ed;q++)e[q]/=s;out.push({raw:P.slice(j*n,(j+1)*n),emb:e})}}return out}
+const dot=(a,b)=>{let s=0;for(let i=0;i<a.length;i++)s+=a[i]*b[i];return s};
+/* mini-spectro 150 × 128 (0–12 kHz), octets */
+function miniSono(seg){const sp=stftOf(seg,32000),cols=150,rows=128,top=Math.min(sp.bins,Math.round(12000/sp.binHz)),o=new Uint8Array(cols*rows),lo=sp.max-70;
+  for(let c=0;c<cols;c++){const f0=Math.floor(c*sp.frames/cols),f1=Math.max(f0+1,Math.floor((c+1)*sp.frames/cols));for(let r=0;r<rows;r++){const b0=Math.floor(r*top/rows),b1=Math.max(b0+1,Math.floor((r+1)*top/rows));let m=-300;
+      for(let f=f0;f<f1;f++)for(let b=b0;b<b1;b++){const v=sp.db[f*sp.bins+b];if(v>m)m=v}const v=Math.max(0,Math.min(1,(m-lo)/70));o[(rows-1-r)*cols+c]=Math.round(v*255)}}return o}
+function drawSono(cv,sono){const d=Math.min(window.devicePixelRatio||1,3),r=cv.getBoundingClientRect();cv.width=Math.max(1,Math.round(r.width*d));cv.height=Math.max(1,Math.round(r.height*d));
+  const x=cv.getContext("2d"),off=document.createElement("canvas");off.width=150;off.height=128;const ox=off.getContext("2d"),img=ox.createImageData(150,128);
+  for(let i=0;i<sono.length;i++){const li=sono[i]*3;img.data[i*4]=LUT[li];img.data[i*4+1]=LUT[li+1];img.data[i*4+2]=LUT[li+2];img.data[i*4+3]=255}ox.putImageData(img,0,0);x.imageSmoothingEnabled=true;x.drawImage(off,0,0,cv.width,cv.height)}
+
+const REF={building:new Map(),bg:false,bgStop:false};
+async function refsFor(sci,onStep){const c=await refGet(sci);if(c&&c.v===REFV)return c;if(REF.building.has(sci))return REF.building.get(sci);
+  const p=(async()=>{const idx=AI.sciIdx.get(sci);const files=(await commonsList(sci)).slice(0,REF_FILES);const items=[];let k=0;
+    for(const f of files){k++;onStep&&onStep(k,files.length);try{const r=await fetch(f.url);if(!r.ok)continue;const buf=await decodeAB(await r.arrayBuffer());
+        let x=buf.getChannelData(0);x=await to32k(x.subarray(0,Math.min(x.length,Math.round(buf.sampleRate*REF_SEC))),buf.sampleRate);
+        const starts=[];for(let t=0;t===0||t+2<=x.length/32000;t+=3)starts.push(t);
+        const res=await runBN2(starts.map(t=>x.subarray(Math.round(t*32000),Math.round(t*32000)+96000)));
+        const ranked=res.map((o,i)=>({i,s:idx!=null?o.raw[idx]:0,o})).sort((a,b)=>b.s-a.s);const keep=ranked.filter(z=>z.s>=.25).slice(0,2);if(!keep.length&&ranked[0]&&ranked[0].s>=.1)keep.push(ranked[0]);
+        for(const z of keep){const t=starts[z.i],seg=fit(x.subarray(Math.round(t*32000),Math.round(t*32000)+96000),96000);const m=measure(stftOf(seg,32000),null);
+          items.push({url:f.url,page:f.page,attr:f.attr,title:f.title,kind:f.kind,t,sc:z.s,e:z.o.emb,m:m&&!m.empty?m:null,sono:miniSono(seg)})}}catch(e){}}
+    const rec={sci,v:REFV,ts:Date.now(),files:files.length,items};await refPut(sci,rec);return rec})();
+  REF.building.set(sci,p);try{return await p}finally{REF.building.delete(sci)}}
+
+/* statistiques de variance sur les références */
+const MKEYS=[["fpk","fréq. pic",v=>kHz(v)+" k"],["fmin","fréq. min",v=>kHz(v)+" k"],["fmax","fréq. max",v=>kHz(v)+" k"],["dur","durée",v=>v<1?Math.round(v*1000)+" ms":v.toFixed(1)+" s"],["notes","notes",v=>Math.round(v)],["rate","rythme",v=>v.toFixed(1)+"/s"]];
+function quant(a,q){const s=a.slice().sort((x,y)=>x-y),p=(s.length-1)*q,i=Math.floor(p);return s[i]+(s[Math.min(i+1,s.length-1)]-s[i])*(p-i)}
+function varianceRows(mine,refs){return MKEYS.map(([k,lab,fmt])=>{const vals=refs.map(r=>r.m&&r.m[k]).filter(v=>v!=null&&isFinite(v));if(vals.length<2||!mine||mine[k]==null)return null;
+  const lo=quant(vals,.1),hi=quant(vals,.9),mn=Math.min(...vals),mx=Math.max(...vals),v=mine[k];const st=v>=lo&&v<=hi?["ok","habituel"]:v>=mn&&v<=mx?["mid","rare mais vu"]:["out",v<mn?"plus bas que toutes les réf.":"plus haut que toutes les réf."];
+  return`<tr><td>${lab}</td><td class="mono">${fmt(v)}</td><td class="mono">${fmt(lo)} – ${fmt(hi)}</td><td><span class="st st-${st[0]}">${st[1]}</span></td></tr>`}).filter(Boolean).join("")}
+
+let cmpToken=0;
+async function compareRefs(list,an){const box=$("#cmpRes");const tok=++cmpToken;const cands=list.filter(r=>r.max>=.1).slice(0,3);
+  if(!cands.length){box.innerHTML=`<p class="small muted">Pas d'espèce candidate assez nette pour comparer.</p>`;return}
+  box.innerHTML=cands.map(r=>`<div class="cmp" id="cmp-${r.i}"><h4>${esc(nameOf(r.i).fr)} <span class="latin small">${esc(nameOf(r.i).la)}</span></h4><p class="small muted">Préparation des références…</p></div>`).join("");
+  for(const r of cands){if(tok!==cmpToken)return;const el=$("#cmp-"+r.i),n=nameOf(r.i);
+    // fenêtre de la capture où cette espèce ressort le plus
+    let bw=0,bs=-1;an.raw.forEach((p,w)=>{if(p[r.i]>bs){bs=p[r.i];bw=w}});const myE=an.emb[bw],t=an.starts[bw],x=an.x32,seg=fit(x.subarray(Math.round(t*32000),Math.round(t*32000)+96000),96000);
+    const myM=measure(stftOf(seg,32000),null),mySono=miniSono(seg);
+    let rec;try{rec=await refsFor(n.la,(k,nf)=>{if(tok===cmpToken)el.querySelector("p").textContent=`Références Wikimedia Commons : enregistrement ${k}/${nf}…`})}
+    catch(e){el.querySelector("p").textContent="Références indisponibles : "+(e.message||e)+" (il faut du réseau la première fois).";continue}
+    if(tok!==cmpToken)return;
+    if(!rec.items.length){el.innerHTML=`<h4>${esc(n.fr)} <span class="latin small">${esc(n.la)}</span></h4><p class="small muted">${rec.files?"Les enregistrements libres trouvés ne sont pas assez nets pour servir de référence.":"Aucun enregistrement libre de cette espèce sur Wikimedia Commons."} xeno-canto (avec clé) viendra compléter plus tard.</p>`;continue}
+    const sims=rec.items.map((it,j)=>({it,j,s:dot(myE,it.e)})).sort((a,b)=>b.s-a.s),best=sims[0];
+    const votes={};sims.slice(0,5).forEach(z=>{if(z.it.kind)votes[z.it.kind]=(votes[z.it.kind]||0)+Math.max(0,z.s)});const kv=Object.entries(votes).sort((a,b)=>b[1]-a[1])[0];
+    const sameKind=kv?rec.items.filter(it=>it.kind===kv[0]):[];const pool=sameKind.length>=3?sameKind:rec.items;
+    const vr=varianceRows(myM&&!myM.empty?myM:null,pool);const pct=v=>Math.round(Math.max(0,v)*100)+" %";
+    el.innerHTML=`<h4>${esc(n.fr)} <span class="latin small">${esc(n.la)}</span></h4>
+      <p class="small"><b>Ressemblance ${pct(best.s)}</b> avec la meilleure référence${kv?` · type probable : <b>${esc(kv[0])}</b>`:""} · ${rec.items.length} extraits de référence</p>
+      <div class="pair"><figure><canvas class="sono" data-k="me"></canvas><figcaption>Ta capture · ${t.toFixed(1)}–${(t+3).toFixed(1)} s</figcaption></figure>
+      <figure><canvas class="sono" data-k="ref"></canvas><figcaption>Réf. ${esc(best.it.kind||"type non précisé")} · ${pct(best.s)}</figcaption></figure></div>
+      <div class="row"><button class="btn ghost" data-play="${esc(best.it.url)}" data-t="${best.it.t}">▶ Écouter la référence</button><a class="small" href="${esc(best.it.page)}" target="_blank" rel="noopener">Source</a><span class="small muted">${esc(best.it.attr)}</span></div>
+      ${vr?`<div class="tablewrap"><table class="vtab"><thead><tr><th>Mesure</th><th>Toi</th><th>Habituel${sameKind.length>=3?` (${esc(kv[0])})`:""}</th><th></th></tr></thead><tbody>${vr}</tbody></table></div>`:`<p class="small muted">Pas assez de références mesurées pour la variance.</p>`}
+      ${sims.length>1?`<details><summary class="small">Autres références (${sims.length-1})</summary><div class="hits">${sims.slice(1,8).map(z=>`<div class="hit"><span class="nm small">${esc(z.it.kind||"type non précisé")}</span><span class="pc">${pct(z.s)}</span><span class="sub"><button class="btn ghost" style="min-height:32px;padding:2px 10px" data-play="${esc(z.it.url)}" data-t="${z.it.t}">▶</button><a href="${esc(z.it.page)}" target="_blank" rel="noopener">source</a><span>${esc(z.it.attr)}</span></span></div>`).join("")}</div></details>`:""}`;
+    requestAnimationFrame(()=>{drawSono(el.querySelector('[data-k="me"]'),mySono);drawSono(el.querySelector('[data-k="ref"]'),best.it.sono)});
+    if(r===cands[0]&&kv&&!$("#typeIn").value){const opt=Array.from($("#typeIn").options).find(o=>o.value.toLowerCase()===kv[0].toLowerCase()||(kv[0]==="cri"&&o.value==="Cri de contact")||(kv[0]==="cri de vol"&&o.value==="Cri de vol")||(kv[0]==="cri d'alarme"&&o.value==="Cri d'alarme"));if(opt)$("#typeIn").value=opt.value}}}
+let refAudio=null;
+$("#cmpRes").addEventListener("click",e=>{const b=e.target.closest("[data-play]");if(!b)return;if(refAudio){refAudio.pause();refAudio=null}
+  refAudio=new Audio(b.dataset.play);refAudio.currentTime=0;const t0=+b.dataset.t||0;refAudio.addEventListener("loadedmetadata",()=>{try{refAudio.currentTime=t0}catch(err){}},{once:true});
+  refAudio.play().catch(()=>toast("Lecture impossible"));setTimeout(()=>{if(refAudio)refAudio.pause()},3600)});
+
+/* préchargement France */
+async function renderRefInfo(){const el=$("#refInfo");if(!el)return;const keys=await refAllKeys();let n=0;
+  el.textContent=`${keys.length} espèce${keys.length>1?"s":""} en bibliothèque${REF.bg?" · construction en cours…":""}`;
+  $("#btnRefBuild").hidden=REF.bg;$("#btnRefStop").hidden=!REF.bg}
+$("#btnRefBuild").onclick=async()=>{if(IN_CLAUDE){toast("Disponible dans la version GitHub Pages");return}if(!AI.ready.bn){toast("Attends que l'IA soit prête");return}
+  const todo=[];for(let i=0;i<AI.mask.length;i++)if(AI.mask[i])todo.push(nameOf(i));const have=new Set(await refAllKeys());const list=todo.filter(n=>!have.has(n.la));
+  REF.bg=true;REF.bgStop=false;renderRefInfo();let k=0;
+  for(const n of list){if(REF.bgStop)break;k++;$("#refProg").textContent=`${k}/${list.length} · ${n.fr}`;try{await refsFor(n.la)}catch(e){$("#refProg").textContent=`${k}/${list.length} · ${n.fr} : ${e.message||e}`}}
+  REF.bg=false;$("#refProg").textContent=REF.bgStop?"Arrêté. Tu peux reprendre plus tard, c'est déjà fait reste en mémoire.":"Bibliothèque à jour pour la liste actuelle.";renderRefInfo()};
+$("#btnRefStop").onclick=()=>{REF.bgStop=true;$("#refProg").textContent="Arrêt après l'espèce en cours…"};
+$("#btnRefClear").onclick=async()=>{await refClear();toast("Bibliothèque vidée");renderRefInfo()};
 
 /* ---------- démarrage ---------- */
 if(S.night)document.documentElement.classList.add("night");$("#nightToggle").checked=!!S.night;

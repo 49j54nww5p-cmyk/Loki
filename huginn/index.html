@@ -381,7 +381,7 @@ nav.tabs button[aria-selected="true"]{color:var(--accent)}
 <script>
 (function(){
 "use strict";
-const VERSION="0.2.0";
+const VERSION="0.2.1";
 const IN_CLAUDE=!!(window.claude&&window.claude.use);
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 $("#ver").textContent="v"+VERSION;
@@ -731,14 +731,14 @@ $("#btnDemo").onclick=()=>{loadClip(genDemo());showTab("analyse")};
    Les modèles tournent dans un worker (onnxruntime-web, WASM)
    et restent en cache sur le téléphone après le 1er téléchargement.
    ========================================================= */
-const ORTBASE="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.3/dist/";
+const ORTBASE="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/";
 const MODELS={
   bn:{url:new URL("models/birdnet.onnx",location.href).href,key:"https://huginn.local/bn-3.0p3.1-c32",label:"BirdNET+ V3.0",size:67},
   geo:{url:new URL("models/geo.onnx",location.href).href,key:"https://huginn.local/geo-3.0.4-c32",label:"Géomodèle BirdNET+",size:14},
   perch:{url:"https://huggingface.co/justinchuby/Perch-onnx/resolve/main/perch_v2_no_dft.onnx",key:"https://huginn.local/perch-v2-nodft",label:"Perch v2",size:413}};
 const PERCH_LABELS="https://huggingface.co/cgeorgiaw/Perch/resolve/main/assets/labels.csv";
 const WSRC=[
-'importScripts("'+ORTBASE+'ort.wasm.min.js");',
+'import * as ort from "'+ORTBASE+'ort.wasm.bundle.min.mjs";',
 'ort.env.wasm.wasmPaths="'+ORTBASE+'";ort.env.wasm.numThreads=1;',
 'const S={};',
 'async function getBuf(url,key,name){let c=null;try{c=await caches.open("huginn-models")}catch(e){}',
@@ -749,17 +749,17 @@ const WSRC=[
 ' const buf=new Uint8Array(got); let o=0; for(const p of parts){buf.set(p,o);o+=p.length}',
 ' if(c){try{await c.put(key,new Response(buf,{headers:{"content-type":"application/octet-stream"}}))}catch(e){}}',
 ' return buf}',
-'onmessage=async e=>{const m=e.data;try{',
+'self.onmessage=async e=>{const m=e.data;try{',
 ' if(m.t==="load"){if(!S[m.name]){const b=await getBuf(m.url,m.key,m.name);postMessage({t:"progress",name:m.name,phase:"init"});S[m.name]=await ort.InferenceSession.create(b,{executionProviders:["wasm"],graphOptimizationLevel:"all"})}postMessage({t:"ok",id:m.id})}',
 ' else if(m.t==="run"){const s=S[m.name];if(!s)throw new Error("modèle non chargé");const feeds={};feeds[s.inputNames[0]]=new ort.Tensor("float32",m.data,m.dims);const out=await s.run(feeds,[m.output]);const d=new Float32Array(out[m.output].data);postMessage({t:"ok",id:m.id,data:d},[d.buffer])}',
 ' else if(m.t==="has"){let ok=false;try{const c=await caches.open("huginn-models");ok=!!(await c.match(m.key))}catch(e){}postMessage({t:"ok",id:m.id,ok})}',
 ' else if(m.t==="drop"){try{const c=await caches.open("huginn-models");await c.delete(m.key)}catch(e){}if(S[m.name]){try{await S[m.name].release()}catch(e){}delete S[m.name]}postMessage({t:"ok",id:m.id})}',
-'}catch(err){postMessage({t:"error",id:m.id,msg:String(err&&err.message||err)})}};'
+'}catch(err){const msg=typeof err==="number"?"erreur interne du moteur n°"+err:String(err&&err.message||err);postMessage({t:"error",id:m.id,msg})}};'
 ].join("\n");
 
 const AI={labels:null,mask:null,birdMask:null,mult:null,ready:{},loading:{},busy:false,timer:0,live:new Map(),hits:[],maskKey:"",maskInfo:"",err:"",progress:{}};
 let Wk=null,wid=0;const wp=new Map();
-function wk(){if(Wk)return Wk;Wk=new Worker(URL.createObjectURL(new Blob([WSRC],{type:"text/javascript"})));
+function wk(){if(Wk)return Wk;Wk=new Worker(URL.createObjectURL(new Blob([WSRC],{type:"text/javascript"})),{type:"module"});
   Wk.onmessage=e=>{const m=e.data;if(m.t==="progress"){AI.progress[m.name]=m;onProgress(m);return}const p=wp.get(m.id);if(!p)return;wp.delete(m.id);m.t==="error"?p.rej(new Error(m.msg)):p.res(m)};
   Wk.onerror=e=>{const msg=(e&&e.message)||"le moteur IA n'a pas démarré";wp.forEach(p=>p.rej(new Error(msg)));wp.clear();AI.err=msg;setAiChip()};return Wk}
 function wcall(msg,transfer){return new Promise((res,rej)=>{const id=++wid;wp.set(id,{res,rej});wk().postMessage(Object.assign({id},msg),transfer||[])})}

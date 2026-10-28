@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e0d0b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ramage">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Ramage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+/*@CSS@*/
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top"><div class="gut">
+    <span class="brand">Ramage</span>
+    <div class="chips">
+      <span class="chip" id="chipGps" title="GPS"><i class="dot"></i><span>GPS</span></span>
+      <span class="chip" id="chipAi" title="Intelligence artificielle"><i class="dot"></i><span>IA</span></span>
+      <button class="chip ic" id="btnHelp" aria-pressed="false" aria-label="Afficher les explications">?</button>
+    </div>
+  </div></header>
+
+  <main id="main">
+    <!-- ÉCOUTE -->
+    <section id="tab-listen" aria-label="Écoute">
+      <div class="specwrap" id="liveWrap">
+        <canvas id="live" aria-label="Spectrogramme en direct"></canvas>
+        <canvas id="liveOv" aria-hidden="true"></canvas>
+        <div class="axis" id="liveAxis" aria-hidden="true"></div>
+        <div class="tticks" aria-hidden="true"><span>−8 s</span><span>−6</span><span>−4</span><span>−2</span><span>0</span></div>
+        <div class="idle" id="liveIdle"><span>Touche le bouton pour écouter</span><small>double-tap sur le spectro : plein écran</small></div>
+        <div class="lvl" id="lvl" aria-hidden="true"><i></i></div>
+      </div>
+      <div class="gut">
+        <div class="note" id="micNote" hidden></div>
+        <div class="lhead"><h2>Entendus <b id="liveCount">0</b></h2><span class="mono small muted"><span id="aiState"></span> <b class="timer" id="timer"></b></span></div>
+        <div id="liveList"></div>
+        <p class="small muted help">Glisse une espèce vers la droite pour la valider au carnet, vers la gauche pour l'écarter : Ramage apprend de tes choix. Touche-la pour sa fiche.</p>
+      </div>
+    </section>
+
+    <!-- ANALYSE -->
+    <section id="tab-analyse" class="gut" aria-label="Analyse" hidden>
+      <div class="row between">
+        <h2 id="clipTitle">Analyse</h2>
+        <label class="btn ghost sm" for="fileIn">Importer un son</label>
+        <input type="file" id="fileIn" accept="audio/*,.wav,.mp3,.m4a,.flac" hidden>
+      </div>
+      <p class="small muted" id="clipInfo"></p>
+      <div class="specwrap boxed">
+        <canvas id="clipc" aria-label="Spectrogramme de l'extrait. Glisse pour encadrer un son."></canvas>
+        <div class="axis" id="clipAxis" aria-hidden="true"></div>
+      </div>
+      <p class="small muted help">Glisse le doigt pour encadrer un son. Touche sans glisser pour effacer le cadre.</p>
+      <div class="row">
+        <button class="btn primary" id="btnPlay">Lire</button>
+        <div class="seg" id="segSpeed" role="group" aria-label="Vitesse de lecture"><button data-v="1">1×</button><button data-v="0.5">½</button><button data-v="0.25">¼</button><button data-v="0.125">⅛</button></div>
+        <button class="btn ghost sm" id="btnZoom" disabled>Zoom cadre</button><button class="btn ghost sm" id="btnFull">Tout</button>
+      </div>
+      <div class="row">
+        <label class="toggle"><input type="checkbox" id="loop"> Boucle</label>
+        <label class="toggle"><input type="checkbox" id="bandOnly"> Bande du cadre seule</label>
+        <label class="toggle"><input type="checkbox" id="denoise"> Nettoyer le bruit</label>
+      </div>
+      <div class="ctl"><label for="pgain">Volume de lecture <span class="mono" id="pgainLbl">×1</span></label><input type="range" id="pgain" min="0" max="24" step="1" value="0"></div>
+      <p class="small muted help">À ½, ¼ et ⅛ le son descend d'une, deux ou trois octaves : roitelets et grimpereaux deviennent audibles.</p>
+
+      <h3>Mesures <span class="small muted" id="measScope"></span></h3>
+      <div class="measures" id="measures"></div>
+
+      <div class="card">
+        <h3>Identification</h3>
+        <div class="row"><button class="btn primary" id="btnBn">Identifier · BirdNET+</button><button class="btn" id="btnPerch">2e avis · Perch v2</button></div>
+        <div id="perchAsk" hidden></div>
+        <div class="bar" id="perchBar" hidden><i></i></div>
+        <div id="aiRes"></div>
+      </div>
+      <div class="card">
+        <h3>Comparaison aux références</h3>
+        <p class="small muted help">Ton son face aux enregistrements libres de Wikimedia Commons : ressemblance, chant ou cri probable, spectros côte à côte et variance. La 1<sup>re</sup> fois pour une espèce, il faut du réseau.</p>
+        <div id="cmpRes"><p class="small muted">Lance « Identifier » : la comparaison suit.</p></div>
+      </div>
+      <div class="card">
+        <h3>Ta fiche</h3>
+        <div class="field"><label class="lbl" for="spIn">Espèce</label><input id="spIn" list="spList" placeholder="ex. Pinson des arbres" autocomplete="off"><datalist id="spList"></datalist><span class="latin small" id="spLatin"></span></div>
+        <div class="field"><label class="lbl" for="typeIn">Type de vocalise</label><select id="typeIn"></select></div>
+        <div class="field"><label class="lbl" for="notesIn">Notes</label><textarea id="notesIn" placeholder="Comportement, effectif, posé ou en vol…"></textarea></div>
+        <div class="row"><button class="btn primary" id="btnSave">Enregistrer au carnet</button><button class="btn ghost" id="btnWav">Exporter le WAV</button></div>
+      </div>
+    </section>
+
+    <!-- CARNET -->
+    <section id="tab-log" class="gut" aria-label="Carnet" hidden>
+      <div class="row between"><h2>Carnet</h2><div class="row"><button class="btn ghost sm" id="btnCsv">CSV</button><button class="btn ghost sm" id="btnGeo">GeoJSON</button></div></div>
+      <div class="kpis" id="kpis"></div>
+      <div class="seg wide" id="segLog" role="tablist" aria-label="Partie du carnet"><button data-v="ses">Sorties</button><button data-v="ent">Fiches</button><button data-v="plu">Plumage</button><button data-v="map">Carte</button></div>
+      <div id="logSes" class="lpane"></div>
+      <div id="logEnt" class="lpane" hidden></div>
+      <div id="logPlu" class="lpane" hidden></div>
+      <div id="logMap" class="lpane" hidden>
+        <div class="row" id="mapCtl"><select id="mapSp" aria-label="Espèce affichée sur la carte"></select>
+          <div class="seg" id="mapSeason" role="group" aria-label="Saison"><button data-v="0">tout</button><button data-v="1">print.</button><button data-v="2">été</button><button data-v="3">aut.</button><button data-v="4">hiver</button></div></div>
+        <div id="map"></div><p class="small muted" id="mapEmpty" hidden>Aucune fiche géolocalisée pour l'instant.</p>
+      </div>
+    </section>
+
+    <!-- RÉGLAGES -->
+    <section id="tab-settings" class="gut" aria-label="Réglages" hidden>
+      <h2>Réglages</h2>
+      <div class="card">
+        <h3>Écoute</h3>
+        <div class="field"><label class="lbl" for="devSel">Micro</label><select id="devSel"><option value="">Micro par défaut</option></select>
+          <span class="small muted help">Un micro USB-C ou la parabole branchée apparaît ici après la première écoute.</span></div>
+        <div class="ctl"><span class="lbl">Filtre anti-bruit</span><div class="seg" id="segHp"><button data-v="0">off</button><button data-v="300">300 Hz</button><button data-v="1000">1 kHz</button><button data-v="2000">2 kHz</button></div>
+          <span class="small muted help">Coupe vent, route et ressac sous la fréquence choisie.</span></div>
+        <div class="ctl"><label for="gain">Amplification <span class="mono" id="gainLbl">×1</span></label><input type="range" id="gain" min="0" max="24" step="1" value="0"></div>
+        <div class="grid2">
+          <div class="ctl"><span class="lbl">Fréquence max</span><div class="seg" id="segFmax"><button data-v="8000">8 k</button><button data-v="11000">11 k</button><button data-v="16000">16 k</button></div></div>
+          <div class="ctl"><span class="lbl">Mémoire rétro</span><div class="seg" id="segBuf"><button data-v="15">15 s</button><button data-v="30">30 s</button><button data-v="60">60 s</button></div></div>
+          <div class="ctl"><span class="lbl">Durée de capture</span><div class="seg" id="segCap"><button data-v="5">5 s</button><button data-v="10">10 s</button><button data-v="15">15 s</button></div></div>
+          <div class="ctl"><label for="range">Contraste spectro <span class="mono" id="rangeLbl"></span></label><input type="range" id="range" min="40" max="100" step="5" value="70"></div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="monitor"> Écoute au casque en direct</label>
+      </div>
+      <div class="card">
+        <h3>Identification</h3>
+        <div class="grid2">
+          <div class="ctl"><label for="conf">Seuil de confiance <span class="mono" id="confLbl"></span></label><input type="range" id="conf" min="0.1" max="0.9" step="0.05" value="0.35"></div>
+          <div class="ctl"><label for="sens">Sensibilité <span class="mono" id="sensLbl"></span></label><input type="range" id="sens" min="0.5" max="1.5" step="0.05" value="1"><span class="small muted help">Plus haut = plus de détections, plus d'erreurs.</span></div>
+        </div>
+        <div class="ctl"><span class="lbl">Filtre géographique</span><div class="seg" id="segGeo"><button data-v="0">autour de moi</button><button data-v="1">France</button><button data-v="2">aucun</button></div>
+          <span class="small muted help">Espèces probables cette semaine autour de ta position (France entière sans GPS). « Aucun » pour les raretés.</span></div>
+        <label class="toggle"><input type="checkbox" id="autoThrT"> Seuil qui monte quand il y a du bruit</label>
+        <label class="toggle"><input type="checkbox" id="perchLiveT"> Perch v2 en 2e avis pendant l'écoute (s'il est téléchargé)</label>
+        <label class="toggle"><input type="checkbox" id="autoRefT"> Préparer les références des espèces entendues (réseau)</label>
+        <label class="toggle"><input type="checkbox" id="autoCmp"> Identifier et comparer automatiquement après une capture</label>
+      </div>
+      <div class="card">
+        <h3>Modèles</h3>
+        <div id="modelInfo" class="small"></div>
+        <div class="bar" id="perchBar2" hidden><i></i></div>
+        <div class="row"><button class="btn primary" id="btnGetPerch">Télécharger Perch v2 (413 Mo)</button><button class="btn ghost" id="btnDropPerch">Supprimer Perch</button></div>
+      </div>
+      <div class="card">
+        <h3>Références</h3>
+        <p class="small" id="refInfo"></p>
+        <p class="small muted help">Précharge les espèces de la liste actuelle pour marcher sans réseau : environ 30 s et 3 à 8 Mo par espèce, en wifi, appli ouverte.</p>
+        <div class="row"><button class="btn" id="btnRefBuild">Précharger</button><button class="btn" id="btnRefStop" hidden>Arrêter</button><button class="btn ghost" id="btnRefClear">Vider</button></div>
+        <p class="small mono muted" id="refProg"></p>
+      </div>
+      <div class="card">
+        <h3>Terrain</h3>
+        <label class="toggle"><input type="checkbox" id="hapT"> Vibration à chaque nouvelle espèce</label>
+        <label class="toggle"><input type="checkbox" id="beepT"> Bip discret (double si nouvelle pour ta liste de vie)</label>
+        <label class="toggle"><input type="checkbox" id="voiceT"> Annonce vocale du nom (écouteurs)</label>
+        <label class="toggle"><input type="checkbox" id="glovesT"> Mode gants (gros boutons)</label>
+        <label class="toggle"><input type="checkbox" id="nightToggle"> Mode nuit rouge</label>
+        <div class="ctl"><span class="lbl">Plein soleil</span><div class="seg" id="segSun"><button data-v="0">off</button><button data-v="1">9h–18h</button><button data-v="2">toujours</button></div></div>
+        <div class="ctl"><label for="thr">Sensibilité de la nuit <span class="mono" id="thrLbl"></span></label><input type="range" id="thr" min="6" max="24" step="1" value="12"><span class="small muted help">Écran noir : plus bas = plus d'événements gardés, plus de bruits.</span></div>
+      </div>
+      <div class="card">
+        <h3>Ce que Ramage a appris</h3>
+        <p class="small" id="learnInfo"></p>
+        <div class="row"><button class="btn ghost" id="btnLearnReset">Tout oublier</button></div>
+      </div>
+      <div class="card">
+        <h3>Sauvegarde</h3>
+        <div class="row"><button class="btn primary" id="btnBackup">Sauvegarder dans un fichier</button><label class="btn ghost" for="restoreIn">Restaurer</label><input type="file" id="restoreIn" accept=".json,application/json" hidden></div>
+        <p class="small" id="restoreMsg"></p>
+        <p class="small muted help">Fiches, sons, liste de vie, sorties et apprentissage. Range le fichier dans iCloud Drive. Restaurer fusionne sans rien effacer.</p>
+      </div>
+      <div class="card">
+        <h3>À propos · <span class="mono" id="aboutVer"></span></h3>
+        <div class="row"><button class="btn" id="btnTour">Mode d'emploi</button><button class="btn" id="btnNews">Quoi de neuf ?</button><button class="btn" id="btnAbout">Confidentialité et sources</button></div>
+        <div class="row"><button class="btn ghost" id="btnDemo">Extrait de démonstration</button><button class="btn ghost danger" id="btnWipe">Tout effacer</button></div>
+      </div>
+    </section>
+  </main>
+
+  <div class="ctrlbar" id="ctrlbar"><div class="gut">
+    <button class="cb" id="btnCapture" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V5h3M20 8V5h-3M4 16v3h3M20 16v3h-3"/><circle cx="12" cy="12" r="3"/></svg><span>Capturer <b id="capLbl">10 s</b></span></button>
+    <button class="rec" id="btnListen" aria-label="Écouter"><i></i></button>
+    <button class="cb" id="btnBlack" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg><span>Nuit <b id="autoCount"></b></span></button>
+  </div></div>
+
+  <nav class="tabs" aria-label="Écrans"><div class="gut" role="tablist">
+    <button role="tab" data-tab="listen" aria-selected="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h2M7 8v8M11 5v14M15 9v6M19 7v10"/></svg>Écoute</button>
+    <button role="tab" data-tab="analyse" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"/><rect x="8" y="9" width="6" height="5" stroke-dasharray="2 2"/></svg>Analyse</button>
+    <button role="tab" data-tab="log" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h10l3 3v15H6z"/><path d="M9 9h7M9 13h7M9 17h4"/></svg>Carnet</button>
+    <button role="tab" data-tab="settings" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>Réglages</button>
+  </div></nav>
+</div>
+
+<div id="black" hidden><div id="blackTxt"></div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="sheet" class="sheet" hidden><div class="sheetbox" role="dialog" aria-modal="true" aria-label="Détail"><button id="sheetClose" aria-label="Fermer">×</button><div id="sheetBody"></div></div></div>
+<div id="splash" aria-label="Ramage"><svg id="spFeather" viewBox="-200 -170 400 340" preserveAspectRatio="xMidYMid meet" aria-hidden="true"></svg>
+  <div class="sptxt"><span class="sptitle">Ramage</span><span class="spsub">« Si votre ramage se rapporte à votre plumage… »</span></div><span class="sptap">touche pour passer</span></div>
+<div id="tour" hidden role="dialog" aria-modal="true" aria-label="Mode d'emploi"><div id="tourIn"></div></div>
+<label id="hapL" aria-hidden="true"><input type="checkbox" switch tabindex="-1"></label>
+<div id="upd" hidden><span id="updTxt"></span><button class="btn primary sm" id="updGo">Recharger</button></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/*@JS@*/
+</script>
+</body>
+</html>

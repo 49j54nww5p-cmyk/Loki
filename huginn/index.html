@@ -411,12 +411,14 @@ th{color:var(--muted);font-weight:500}
         <div class="ctl"><span class="lbl">Filtre anti-bruit</span><div class="seg" id="segHp"><button data-v="0">off</button><button data-v="300">300 Hz</button><button data-v="1000">1 kHz</button><button data-v="2000">2 kHz</button></div>
           <span class="small muted help">Coupe vent, route et ressac sous la fréquence choisie.</span></div>
         <div class="ctl"><label for="gain">Amplification <span class="mono" id="gainLbl">×1</span></label><input type="range" id="gain" min="0" max="24" step="1" value="0"></div>
+        <div class="ctl"><span class="lbl">Échelle du spectro</span><div class="seg" id="segSpecMode"><button data-v="0">fixe en dBFS (comme Audacity / Raven)</button><button data-v="1">auto</button></div><span class="small muted help">Fixe : la même couleur veut toujours dire le même niveau, comme dans les logiciels de bioacoustique. Défaut −100 à −20 dBFS. Auto : se cale sur le bruit de fond.</span></div>
         <div class="ctl"><span class="lbl">Couleurs du spectro</span><div class="seg" id="segPal"><button data-v="0">chaleur</button><button data-v="1">viridis</button><button data-v="2">gris</button></div></div>
         <div class="grid2">
           <div class="ctl"><span class="lbl">Fréquence max</span><div class="seg" id="segFmax"><button data-v="8000">8 k</button><button data-v="11000">11 k</button><button data-v="16000">16 k</button></div></div>
           <div class="ctl"><span class="lbl">Mémoire rétro</span><div class="seg" id="segBuf"><button data-v="15">15 s</button><button data-v="30">30 s</button><button data-v="60">60 s</button></div></div>
           <div class="ctl"><span class="lbl">Durée de capture</span><div class="seg" id="segCap"><button data-v="5">5 s</button><button data-v="10">10 s</button><button data-v="15">15 s</button></div></div>
-          <div class="ctl"><label for="range">Contraste spectro <span class="mono" id="rangeLbl"></span></label><input type="range" id="range" min="40" max="100" step="5" value="70"></div>
+          <div class="ctl"><label for="range">Plage (dB) <span class="mono" id="rangeLbl"></span></label><input type="range" id="range" min="40" max="120" step="5" value="80"></div>
+          <div class="ctl"><label for="specTop">Haut de l'échelle <span class="mono" id="specTopLbl"></span></label><input type="range" id="specTop" min="-60" max="0" step="5" value="-20"></div>
         </div>
         <label class="toggle"><input type="checkbox" id="monitor"> Écoute au casque en direct</label>
       </div>
@@ -512,12 +514,12 @@ th{color:var(--muted);font-weight:500}
    Les clés « huginn.* » et la base « huginn » sont gardées :
    ainsi le carnet, les sons et la liste de vie d'avant restent là.
    ========================================================= */
-const VERSION="1.4.1";
+const VERSION="1.5.0";
 const IN_CLAUDE=!!(window.claude&&window.claude.use);
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const S=Object.assign({fmax:11000,bufSec:30,capSec:10,range:70,thr:12,hp:300,gain:0,deviceId:"",night:false,sun:0,sens:1,conf:0.35,geo:0,mapSeason:0,autoCmp:true,autoRef:true,pal:0},LS.get("huginn.settings",{}));
+const S=Object.assign({fmax:11000,bufSec:30,capSec:10,range:70,thr:12,hp:300,gain:0,deviceId:"",night:false,sun:0,sens:1,conf:0.35,geo:0,mapSeason:0,autoCmp:true,autoRef:true,pal:0,specTop:-20,specAuto:false},LS.get("huginn.settings",{}));
 const saveS=()=>LS.set("huginn.settings",S);
 
 let toastT;
@@ -588,6 +590,9 @@ function makeFFT(N){const lev=Math.log2(N)|0,rev=new Uint32Array(N);for(let i=0;
     for(let b=0;b<N/2;b++)outPow[b]=re[b]*re[b]+im[b]*im[b]}}
 
 const NFFT=1024,fft=makeFFT(NFFT);
+/* calibrage : puissance FFT (fenêtre de Hann, N=1024) -> dBFS. Une sinusoïde pleine échelle donne 0 dBFS.
+   Même échelle que Audacity / Raven / Sonic Visualiser : affichage par défaut de −100 à −20 dBFS (Audacity : gain 20 dB, plage 80 dB). */
+const DBFS=20*Math.log10(NFFT/4);
 function stftOf(samples,sr){const bins=NFFT/2,maxFrames=6000;let hop=256,frames=Math.max(1,Math.floor((samples.length-NFFT)/hop)+1);
   if(frames>maxFrames){hop=Math.ceil((samples.length-NFFT)/(maxFrames-1));frames=Math.floor((samples.length-NFFT)/hop)+1}
   const db=new Float32Array(frames*bins),pw=new Float32Array(bins);let mx=-300;
@@ -620,7 +625,7 @@ function buildLUT(){const root=document.documentElement,themed=root.classList.co
   const st=(themed?["--spec0","--spec1","--spec2","--spec3"].map(v=>cssVar(v)||"#000"):PALS[S.pal|0]||PALS[0]).map(hex2rgb),n=st.length-1;
   for(let i=0;i<256;i++){const x=i/255*n,k=Math.min(n-1,Math.floor(x)),f=x-k;for(let c=0;c<3;c++)LUT[i*3+c]=Math.round(st[k][c]+(st[k+1][c]-st[k][c])*f)}
   const cb=$("#cbar");if(cb){const stops=[];for(let i=0;i<=8;i++){const li=Math.round((8-i)/8*255)*3;stops.push(`rgb(${LUT[li]},${LUT[li+1]},${LUT[li+2]}) ${i*12.5}%`)}cb.style.background=`linear-gradient(${stops.join(",")})`}
-  const t=$("#cblTop"),b=$("#cblBot");if(t){t.textContent=`+${Math.max(30,(S.range||70)-25)} dB`;b.textContent="fond"}}
+  const t=$("#cblTop"),b=$("#cblBot");if(t){if(S.specAuto===true){t.textContent=`+${Math.max(30,(S.range||70)-25)} dB`;b.textContent="fond"}else{const top=S.specTop??-20;t.textContent=`${top} dBFS`;b.textContent=`${top-(S.range||80)} dBFS`}}}
 function sizeCanvas(c){const r=c.getBoundingClientRect(),d=dprOf(),w=Math.max(1,Math.round(r.width*d)),h=Math.max(1,Math.round(r.height*d));if(c.width!==w||c.height!==h){c.width=w;c.height=h;return true}return false}
 function paintBg(ctx,c){ctx.fillStyle=`rgb(${LUT[0]},${LUT[1]},${LUT[2]})`;ctx.fillRect(0,0,c.width,c.height)}
 function drawAxis(el,fmin,fmax){const step=fmax-fmin>9000?2000:fmax-fmin>3000?1000:500;let h="";for(let f=Math.ceil(fmin/step)*step;f<fmax;f+=step){if(f<=fmin)continue;h+=`<span style="top:${(1-(f-fmin)/(fmax-fmin))*100}%">${(f/1000).toFixed(step<1000?1:0)} k</span>`}el.innerHTML=h}
@@ -700,20 +705,23 @@ async function stored(c,key){if(await c.match(key))return true;const m=await met
 async function store(url,key,name,sizes){const c=await cache();if(await stored(c,key))return;
   const urls=Array.isArray(url)?url:[url],id=urls.join("|"),tot0=sizes?sizes.reduce((a,b)=>a+b,0):0;
   let m=await meta(c,key);if(!m||m.url!==id)m={url:id,n:0,size:0,total:tot0,done:false};
+  /* taille attendue : seulement celle qu'on connaît d'avance. Le serveur peut envoyer le fichier compressé (gzip) :
+     sa « content-length » est alors plus petite que le fichier reçu, ce qui faisait échouer BirdNET+ (« 67 / 60 Mo »). */
+  m.total=tot0;if(!sizes&&m.n>0){m.n=0;m.size=0}let prog=tot0;
   let parts=[],plen=0,last=0;
   const putMeta=()=>c.put(key+"/meta",new Response(JSON.stringify(m),{headers:{"content-type":"application/json"}}));
   const flush=async()=>{if(!plen)return;await c.put(key+"/p"+m.n,new Response(new Blob(parts),{headers:{"x-len":String(plen)}}));m.n++;m.size+=plen;parts=[];plen=0;await putMeta()};
   for(let restart=0;restart<2;restart++){let cum=0,ok=true;
     for(let p=0;p<urls.length;p++){const psz=sizes?sizes[p]:0;if(psz&&m.size>=cum+psz){cum+=psz;continue}
       const off=m.size-cum;let res=null;
-      if(off>0){try{res=await fetch(urls[p],{headers:{Range:"bytes="+off+"-"}});if(res.status!==206)res=null}catch(e){res=null}
+      if(off>0&&sizes){try{res=await fetch(urls[p],{headers:{Range:"bytes="+off+"-"}});if(res.status!==206)res=null}catch(e){res=null}
         if(!res){m.n=0;m.size=0;await putMeta();ok=false;break}}
       else res=await fetch(urls[p]);
       if(!res.ok)throw new Error("téléchargement refusé (HTTP "+res.status+")");
-      if(!m.total){const cl=+res.headers.get("content-length")||0;m.total=cl}
+      if(!prog){const cl=+res.headers.get("content-length")||0;prog=cl}
       const rd=res.body.getReader();
       for(;;){const x=await rd.read();if(x.done)break;parts.push(x.value);plen+=x.value.length;if(plen>=CH)await flush();
-        const now=Date.now();if(now-last>300){last=now;postMessage({t:"progress",name,got:m.size+plen,total:m.total})}}
+        const now=Date.now();if(now-last>300){last=now;postMessage({t:"progress",name,got:m.size+plen,total:Math.max(prog,m.size+plen)})}}
       cum+=psz||0}
     if(ok)break}
   await flush();
@@ -1024,14 +1032,14 @@ function frame(){if(!running)return;rafId=requestAnimationFrame(frame);
   if(k>W||AUD.total-SPECT.drawn>AUD.fill){k=Math.min(W,Math.floor(Math.min(AUD.fill,W*hop)/hop));SPECT.drawn=AUD.total-k*hop}
   /* niveau du spectro : calé sur le bruit de fond mesuré en continu (comme Raven/Audacity en auto),
      pas sur un niveau fixe : sinon un micro sensible ou la parabole saturent tout en jaune */
-  const nyq=sr/2,gdb=S.gain,paint=!autoState.on,dyn=liveDyn();let lo=SPECT.floor==null?-200:SPECT.floor-4;
+  const nyq=sr/2,gdb=S.gain,paint=!autoState.on,fixed=S.specAuto!==true,dyn=fixed?(S.range||80):liveDyn();let lo=fixed?(S.specTop??-20)-dyn:(SPECT.floor==null?-200:SPECT.floor-4);
   let img=null;if(paint){if(!SPECT.img||SPECT.img.width!==k)SPECT.img=liveX.createImageData(k,H);img=SPECT.img.data}
   const b1=Math.round(1500/nyq*512),b2=Math.min(511,Math.round(10000/nyq*512));let bandMax=-200,sq=0;
   for(let c=0;c<k;c++){const end=SPECT.drawn+(c+1)*hop;if(end-1024<AUD.total-AUD.fill)continue;lfft(AUD.ring,absToRing(end-1024),lpw,AUD.ring.length);
-    let bm=-200;for(let b=b1;b<=b2;b++){const v=10*Math.log10(lpw[b]+1e-20)-60+gdb;if(v>bm)bm=v}if(bm>bandMax)bandMax=bm;
-    {const tmp=SPECT.tmp||(SPECT.tmp=new Float32Array(64)),bt=Math.round(S.fmax/nyq*512);for(let q=0;q<64;q++){const b=Math.max(2,Math.round((q+.5)/64*bt));tmp[q]=10*Math.log10(lpw[b]+1e-20)}
+    let bm=-200;for(let b=b1;b<=b2;b++){const v=10*Math.log10(lpw[b]+1e-20)-DBFS+gdb;if(v>bm)bm=v}if(bm>bandMax)bandMax=bm;
+    if(!fixed){const tmp=SPECT.tmp||(SPECT.tmp=new Float32Array(64)),bt=Math.round(S.fmax/nyq*512);for(let q=0;q<64;q++){const b=Math.max(2,Math.round((q+.5)/64*bt));tmp[q]=10*Math.log10(lpw[b]+1e-20)}
       tmp.sort();const med=tmp[24];if(med>-150){const F=SPECT.floor;SPECT.floor=(F==null||F<-150)?med:(med<F?F*.85+med*.15:F*.97+med*.03)}lo=(SPECT.floor==null?med:SPECT.floor)-4}
-    if(paint)for(let y=0;y<H;y++){const f=(1-y/H)*S.fmax,b=Math.min(511,Math.round(f/nyq*512));let v=(10*Math.log10(lpw[b]+1e-20)-lo)/dyn;v=v<0?0:v>1?1:v;const li=Math.round(v*255)*3,o=(y*k+c)*4;img[o]=LUT[li];img[o+1]=LUT[li+1];img[o+2]=LUT[li+2];img[o+3]=255}}
+    if(paint)for(let y=0;y<H;y++){const f=(1-y/H)*S.fmax,b=Math.min(511,Math.round(f/nyq*512));let v=(10*Math.log10(lpw[b]+1e-20)-(fixed?DBFS-gdb:0)-lo)/dyn;v=v<0?0:v>1?1:v;const li=Math.round(v*255)*3,o=(y*k+c)*4;img[o]=LUT[li];img[o+1]=LUT[li+1];img[o+2]=LUT[li+2];img[o+3]=255}}
   /* niveau : RMS du dernier bloc */
   {const st=absToRing(AUD.total-hop*k);for(let i=0;i<hop*k;i+=4){const v=AUD.ring[(st+i)%AUD.ring.length];sq+=v*v}const rms=10*Math.log10(sq/(hop*k/4)+1e-12)+gdb,l=$("#lvl");l.firstElementChild.style.width=Math.max(0,Math.min(100,(rms+70)/70*100))+"%";l.classList.toggle("hot",rms>-6)}
   SPECT.drawn+=k*hop;
@@ -1324,7 +1332,7 @@ const clipC=$("#clipc"),clipX=clipC.getContext("2d");
 let clip=null,spec=null,off=null,view=null,sel=null,drag=null,player=null,playRaf=0,editing=null,speed=1,aiResults={bn:null,perch:null},hitsC=[],cmpToken=0;
 
 function renderOff(){if(!spec)return;const fTop=Math.min(S.fmax,spec.sr/2),bMax=Math.max(2,Math.round(fTop/spec.binHz));off=document.createElement("canvas");off.width=spec.frames;off.height=bMax;
-  const ox=off.getContext("2d"),img=ox.createImageData(spec.frames,bMax),d=img.data,lo=spec.max-S.range;
+  const ox=off.getContext("2d"),img=ox.createImageData(spec.frames,bMax),d=img.data,lo=S.specAuto===true?spec.max-S.range:DBFS+(S.specTop??-20)-(S.range||80);
   for(let f=0;f<spec.frames;f++)for(let y=0;y<bMax;y++){const b=bMax-1-y;let v=(spec.db[f*spec.bins+b]-lo)/S.range;v=v<0?0:v>1?1:v;const li=Math.round(v*255)*3,o=(y*spec.frames+f)*4;d[o]=LUT[li];d[o+1]=LUT[li+1];d[o+2]=LUT[li+2];d[o+3]=255}
   ox.putImageData(img,0,0);off.fTop=bMax*spec.binHz}
 function drawClip(){if($("#tab-analyse").hidden)return;sizeCanvas(clipC);const W=clipC.width,H=clipC.height;paintBg(clipX,clipC);if(!spec||!off)return;
@@ -1556,6 +1564,9 @@ bindSeg("#segGeo","geo",()=>updateMask(true).catch(()=>{}));
 bindRange("#gain","#gainLbl",xFmt,"gain",applyAudioSettings);
 bindRange("#pgain","#pgainLbl",xFmt,null);
 bindRange("#range","#rangeLbl",v=>v+" dB","range",()=>{buildLUT();if(spec){renderOff();drawClip()}});
+bindRange("#specTop","#specTopLbl",v=>v+" dBFS","specTop",()=>{buildLUT();if(spec){renderOff();drawClip()}});
+{const g=$("#segSpecMode"),set=()=>g.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String((b.dataset.v==="1")===(S.specAuto===true))));set();
+  g.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.specAuto=b.dataset.v==="1";saveS();set();buildLUT();if(spec){renderOff();drawClip()}})}
 bindSeg("#segPal","pal",rethemed);
 bindRange("#thr","#thrLbl",v=>"+"+v+" dB","thr");
 bindRange("#sens","#sensLbl",v=>v.toFixed(2),"sens");
@@ -1632,6 +1643,7 @@ $("#tour").addEventListener("touchend",e=>{if(TST.x==null)return;const dx=e.chan
 
 /* nouveautés */
 const NEWS=[
+  {n:"1.5",d:"1er novembre 2026",items:[["wave","Spectro étalonné en dBFS","Même échelle que Audacity, Raven ou Sonic Visualiser : fenêtre de Hann, 1024 points, de −100 à −20 dBFS par défaut. Une même couleur veut toujours dire le même niveau, d'un enregistrement à l'autre."],["bird","BirdNET+ se recharge","Corrige l'erreur « téléchargement coupé à 67 / 60 Mo »."]]},
   {n:"1.4.1",d:"1er novembre 2026",items:[["wave","Spectro qui ne sature plus","Le niveau se cale tout seul sur le bruit de fond : fond sombre, oiseaux en clair, même avec la parabole ou un micro sensible. Le contraste (Réglages) règle la plage au-dessus du fond."]]},
   {n:"1.4",d:"28 octobre 2026",items:[["moon","La nuit complète","Toute la nuit enregistrée (AAC, une pièce par heure) et, pour chaque espèce, les 5 meilleurs extraits de 10 s. Au réveil : un dossier ZIP trié nuit › espèce › extraits, avec le tableau des espèces à 80 % et plus."]]},
   {n:"1.3",d:"28 octobre 2026",items:[["bird","Les raretés ne sont plus effacées","Avant, une espèce non attendue ici cette semaine (comme le Pouillot verdâtre à Lanton) était filtrée d'office. Maintenant elle passe si BirdNET+ est très sûr, marquée « rareté ? à vérifier »."]]},

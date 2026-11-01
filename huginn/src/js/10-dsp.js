@@ -10,6 +10,9 @@ function makeFFT(N){const lev=Math.log2(N)|0,rev=new Uint32Array(N);for(let i=0;
     for(let b=0;b<N/2;b++)outPow[b]=re[b]*re[b]+im[b]*im[b]}}
 
 const NFFT=1024,fft=makeFFT(NFFT);
+/* calibrage : puissance FFT (fenêtre de Hann, N=1024) -> dBFS. Une sinusoïde pleine échelle donne 0 dBFS.
+   Même échelle que Audacity / Raven / Sonic Visualiser : affichage par défaut de −100 à −20 dBFS (Audacity : gain 20 dB, plage 80 dB). */
+const DBFS=20*Math.log10(NFFT/4);
 function stftOf(samples,sr){const bins=NFFT/2,maxFrames=6000;let hop=256,frames=Math.max(1,Math.floor((samples.length-NFFT)/hop)+1);
   if(frames>maxFrames){hop=Math.ceil((samples.length-NFFT)/(maxFrames-1));frames=Math.floor((samples.length-NFFT)/hop)+1}
   const db=new Float32Array(frames*bins),pw=new Float32Array(bins);let mx=-300;
@@ -42,7 +45,7 @@ function buildLUT(){const root=document.documentElement,themed=root.classList.co
   const st=(themed?["--spec0","--spec1","--spec2","--spec3"].map(v=>cssVar(v)||"#000"):PALS[S.pal|0]||PALS[0]).map(hex2rgb),n=st.length-1;
   for(let i=0;i<256;i++){const x=i/255*n,k=Math.min(n-1,Math.floor(x)),f=x-k;for(let c=0;c<3;c++)LUT[i*3+c]=Math.round(st[k][c]+(st[k+1][c]-st[k][c])*f)}
   const cb=$("#cbar");if(cb){const stops=[];for(let i=0;i<=8;i++){const li=Math.round((8-i)/8*255)*3;stops.push(`rgb(${LUT[li]},${LUT[li+1]},${LUT[li+2]}) ${i*12.5}%`)}cb.style.background=`linear-gradient(${stops.join(",")})`}
-  const t=$("#cblTop"),b=$("#cblBot");if(t){t.textContent=`+${Math.max(30,(S.range||70)-25)} dB`;b.textContent="fond"}}
+  const t=$("#cblTop"),b=$("#cblBot");if(t){if(S.specAuto===true){t.textContent=`+${Math.max(30,(S.range||70)-25)} dB`;b.textContent="fond"}else{const top=S.specTop??-20;t.textContent=`${top} dBFS`;b.textContent=`${top-(S.range||80)} dBFS`}}}
 function sizeCanvas(c){const r=c.getBoundingClientRect(),d=dprOf(),w=Math.max(1,Math.round(r.width*d)),h=Math.max(1,Math.round(r.height*d));if(c.width!==w||c.height!==h){c.width=w;c.height=h;return true}return false}
 function paintBg(ctx,c){ctx.fillStyle=`rgb(${LUT[0]},${LUT[1]},${LUT[2]})`;ctx.fillRect(0,0,c.width,c.height)}
 function drawAxis(el,fmin,fmax){const step=fmax-fmin>9000?2000:fmax-fmin>3000?1000:500;let h="";for(let f=Math.ceil(fmin/step)*step;f<fmax;f+=step){if(f<=fmin)continue;h+=`<span style="top:${(1-(f-fmin)/(fmax-fmin))*100}%">${(f/1000).toFixed(step<1000?1:0)} k</span>`}el.innerHTML=h}

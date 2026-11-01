@@ -20,6 +20,9 @@ bindSeg("#segGeo","geo",()=>updateMask(true).catch(()=>{}));
 bindRange("#gain","#gainLbl",xFmt,"gain",applyAudioSettings);
 bindRange("#pgain","#pgainLbl",xFmt,null);
 bindRange("#range","#rangeLbl",v=>v+" dB","range",()=>{buildLUT();if(spec){renderOff();drawClip()}});
+bindRange("#specTop","#specTopLbl",v=>v+" dBFS","specTop",()=>{buildLUT();if(spec){renderOff();drawClip()}});
+{const g=$("#segSpecMode"),set=()=>g.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String((b.dataset.v==="1")===(S.specAuto===true))));set();
+  g.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.specAuto=b.dataset.v==="1";saveS();set();buildLUT();if(spec){renderOff();drawClip()}})}
 bindSeg("#segPal","pal",rethemed);
 bindRange("#thr","#thrLbl",v=>"+"+v+" dB","thr");
 bindRange("#sens","#sensLbl",v=>v.toFixed(2),"sens");
@@ -96,6 +99,7 @@ $("#tour").addEventListener("touchend",e=>{if(TST.x==null)return;const dx=e.chan
 
 /* nouveautés */
 const NEWS=[
+  {n:"1.5",d:"1er novembre 2026",items:[["wave","Spectro étalonné en dBFS","Même échelle que Audacity, Raven ou Sonic Visualiser : fenêtre de Hann, 1024 points, de −100 à −20 dBFS par défaut. Une même couleur veut toujours dire le même niveau, d'un enregistrement à l'autre."],["bird","BirdNET+ se recharge","Corrige l'erreur « téléchargement coupé à 67 / 60 Mo »."]]},
   {n:"1.4.1",d:"1er novembre 2026",items:[["wave","Spectro qui ne sature plus","Le niveau se cale tout seul sur le bruit de fond : fond sombre, oiseaux en clair, même avec la parabole ou un micro sensible. Le contraste (Réglages) règle la plage au-dessus du fond."]]},
   {n:"1.4",d:"28 octobre 2026",items:[["moon","La nuit complète","Toute la nuit enregistrée (AAC, une pièce par heure) et, pour chaque espèce, les 5 meilleurs extraits de 10 s. Au réveil : un dossier ZIP trié nuit › espèce › extraits, avec le tableau des espèces à 80 % et plus."]]},
   {n:"1.3",d:"28 octobre 2026",items:[["bird","Les raretés ne sont plus effacées","Avant, une espèce non attendue ici cette semaine (comme le Pouillot verdâtre à Lanton) était filtrée d'office. Maintenant elle passe si BirdNET+ est très sûr, marquée « rareté ? à vérifier »."]]},

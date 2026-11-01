@@ -27,20 +27,23 @@ async function stored(c,key){if(await c.match(key))return true;const m=await met
 async function store(url,key,name,sizes){const c=await cache();if(await stored(c,key))return;
   const urls=Array.isArray(url)?url:[url],id=urls.join("|"),tot0=sizes?sizes.reduce((a,b)=>a+b,0):0;
   let m=await meta(c,key);if(!m||m.url!==id)m={url:id,n:0,size:0,total:tot0,done:false};
+  /* taille attendue : seulement celle qu'on connaît d'avance. Le serveur peut envoyer le fichier compressé (gzip) :
+     sa « content-length » est alors plus petite que le fichier reçu, ce qui faisait échouer BirdNET+ (« 67 / 60 Mo »). */
+  m.total=tot0;if(!sizes&&m.n>0){m.n=0;m.size=0}let prog=tot0;
   let parts=[],plen=0,last=0;
   const putMeta=()=>c.put(key+"/meta",new Response(JSON.stringify(m),{headers:{"content-type":"application/json"}}));
   const flush=async()=>{if(!plen)return;await c.put(key+"/p"+m.n,new Response(new Blob(parts),{headers:{"x-len":String(plen)}}));m.n++;m.size+=plen;parts=[];plen=0;await putMeta()};
   for(let restart=0;restart<2;restart++){let cum=0,ok=true;
     for(let p=0;p<urls.length;p++){const psz=sizes?sizes[p]:0;if(psz&&m.size>=cum+psz){cum+=psz;continue}
       const off=m.size-cum;let res=null;
-      if(off>0){try{res=await fetch(urls[p],{headers:{Range:"bytes="+off+"-"}});if(res.status!==206)res=null}catch(e){res=null}
+      if(off>0&&sizes){try{res=await fetch(urls[p],{headers:{Range:"bytes="+off+"-"}});if(res.status!==206)res=null}catch(e){res=null}
         if(!res){m.n=0;m.size=0;await putMeta();ok=false;break}}
       else res=await fetch(urls[p]);
       if(!res.ok)throw new Error("téléchargement refusé (HTTP "+res.status+")");
-      if(!m.total){const cl=+res.headers.get("content-length")||0;m.total=cl}
+      if(!prog){const cl=+res.headers.get("content-length")||0;prog=cl}
       const rd=res.body.getReader();
       for(;;){const x=await rd.read();if(x.done)break;parts.push(x.value);plen+=x.value.length;if(plen>=CH)await flush();
-        const now=Date.now();if(now-last>300){last=now;postMessage({t:"progress",name,got:m.size+plen,total:m.total})}}
+        const now=Date.now();if(now-last>300){last=now;postMessage({t:"progress",name,got:m.size+plen,total:Math.max(prog,m.size+plen)})}}
       cum+=psz||0}
     if(ok)break}
   await flush();

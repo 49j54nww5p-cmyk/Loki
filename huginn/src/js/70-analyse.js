@@ -14,7 +14,7 @@ const clipC=$("#clipc"),clipX=clipC.getContext("2d");
 let clip=null,spec=null,off=null,view=null,sel=null,drag=null,player=null,playRaf=0,editing=null,speed=1,aiResults={bn:null,perch:null},hitsC=[],cmpToken=0;
 
 function renderOff(){if(!spec)return;const fTop=Math.min(S.fmax,spec.sr/2),bMax=Math.max(2,Math.round(fTop/spec.binHz));off=document.createElement("canvas");off.width=spec.frames;off.height=bMax;
-  const ox=off.getContext("2d"),img=ox.createImageData(spec.frames,bMax),d=img.data,lo=spec.max-S.range;
+  const ox=off.getContext("2d"),img=ox.createImageData(spec.frames,bMax),d=img.data,lo=S.specAuto===true?spec.max-S.range:DBFS+(S.specTop??-20)-(S.range||80);
   for(let f=0;f<spec.frames;f++)for(let y=0;y<bMax;y++){const b=bMax-1-y;let v=(spec.db[f*spec.bins+b]-lo)/S.range;v=v<0?0:v>1?1:v;const li=Math.round(v*255)*3,o=(y*spec.frames+f)*4;d[o]=LUT[li];d[o+1]=LUT[li+1];d[o+2]=LUT[li+2];d[o+3]=255}
   ox.putImageData(img,0,0);off.fTop=bMax*spec.binHz}
 function drawClip(){if($("#tab-analyse").hidden)return;sizeCanvas(clipC);const W=clipC.width,H=clipC.height;paintBg(clipX,clipC);if(!spec||!off)return;

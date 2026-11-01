@@ -48,14 +48,14 @@ function frame(){if(!running)return;rafId=requestAnimationFrame(frame);
   if(k>W||AUD.total-SPECT.drawn>AUD.fill){k=Math.min(W,Math.floor(Math.min(AUD.fill,W*hop)/hop));SPECT.drawn=AUD.total-k*hop}
   /* niveau du spectro : calé sur le bruit de fond mesuré en continu (comme Raven/Audacity en auto),
      pas sur un niveau fixe : sinon un micro sensible ou la parabole saturent tout en jaune */
-  const nyq=sr/2,gdb=S.gain,paint=!autoState.on,dyn=liveDyn();let lo=SPECT.floor==null?-200:SPECT.floor-4;
+  const nyq=sr/2,gdb=S.gain,paint=!autoState.on,fixed=S.specAuto!==true,dyn=fixed?(S.range||80):liveDyn();let lo=fixed?(S.specTop??-20)-dyn:(SPECT.floor==null?-200:SPECT.floor-4);
   let img=null;if(paint){if(!SPECT.img||SPECT.img.width!==k)SPECT.img=liveX.createImageData(k,H);img=SPECT.img.data}
   const b1=Math.round(1500/nyq*512),b2=Math.min(511,Math.round(10000/nyq*512));let bandMax=-200,sq=0;
   for(let c=0;c<k;c++){const end=SPECT.drawn+(c+1)*hop;if(end-1024<AUD.total-AUD.fill)continue;lfft(AUD.ring,absToRing(end-1024),lpw,AUD.ring.length);
-    let bm=-200;for(let b=b1;b<=b2;b++){const v=10*Math.log10(lpw[b]+1e-20)-60+gdb;if(v>bm)bm=v}if(bm>bandMax)bandMax=bm;
-    {const tmp=SPECT.tmp||(SPECT.tmp=new Float32Array(64)),bt=Math.round(S.fmax/nyq*512);for(let q=0;q<64;q++){const b=Math.max(2,Math.round((q+.5)/64*bt));tmp[q]=10*Math.log10(lpw[b]+1e-20)}
+    let bm=-200;for(let b=b1;b<=b2;b++){const v=10*Math.log10(lpw[b]+1e-20)-DBFS+gdb;if(v>bm)bm=v}if(bm>bandMax)bandMax=bm;
+    if(!fixed){const tmp=SPECT.tmp||(SPECT.tmp=new Float32Array(64)),bt=Math.round(S.fmax/nyq*512);for(let q=0;q<64;q++){const b=Math.max(2,Math.round((q+.5)/64*bt));tmp[q]=10*Math.log10(lpw[b]+1e-20)}
       tmp.sort();const med=tmp[24];if(med>-150){const F=SPECT.floor;SPECT.floor=(F==null||F<-150)?med:(med<F?F*.85+med*.15:F*.97+med*.03)}lo=(SPECT.floor==null?med:SPECT.floor)-4}
-    if(paint)for(let y=0;y<H;y++){const f=(1-y/H)*S.fmax,b=Math.min(511,Math.round(f/nyq*512));let v=(10*Math.log10(lpw[b]+1e-20)-lo)/dyn;v=v<0?0:v>1?1:v;const li=Math.round(v*255)*3,o=(y*k+c)*4;img[o]=LUT[li];img[o+1]=LUT[li+1];img[o+2]=LUT[li+2];img[o+3]=255}}
+    if(paint)for(let y=0;y<H;y++){const f=(1-y/H)*S.fmax,b=Math.min(511,Math.round(f/nyq*512));let v=(10*Math.log10(lpw[b]+1e-20)-(fixed?DBFS-gdb:0)-lo)/dyn;v=v<0?0:v>1?1:v;const li=Math.round(v*255)*3,o=(y*k+c)*4;img[o]=LUT[li];img[o+1]=LUT[li+1];img[o+2]=LUT[li+2];img[o+3]=255}}
   /* niveau : RMS du dernier bloc */
   {const st=absToRing(AUD.total-hop*k);for(let i=0;i<hop*k;i+=4){const v=AUD.ring[(st+i)%AUD.ring.length];sq+=v*v}const rms=10*Math.log10(sq/(hop*k/4)+1e-12)+gdb,l=$("#lvl");l.firstElementChild.style.width=Math.max(0,Math.min(100,(rms+70)/70*100))+"%";l.classList.toggle("hot",rms>-6)}
   SPECT.drawn+=k*hop;

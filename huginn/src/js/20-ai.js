@@ -79,7 +79,12 @@ function loadModel(name){if(AI.ready[name])return Promise.resolve();if(AI.loadin
   const p=wcall({t:"load",name,url:M.url,key:M.key,sizes:M.sizes}).then(()=>{AI.ready[name]=true;delete AI.loading[name];setAiChip()},e=>{delete AI.loading[name];throw e});AI.loading[name]=p;setAiChip();return p}
 async function loadLabels(){if(AI.labels)return;const r=await fetch("labels.json?v=2");if(!r.ok)throw new Error("liste des espèces introuvable");const j=await r.json();
   AI.labels=j.audio;AI.geoMap=j.geo;const n=j.audio.length;AI.mult=new Float32Array(n).fill(1);for(const k in j.mult)AI.mult[+k]=j.mult[k];
-  AI.birdMask=new Uint8Array(n);j.audio.forEach((a,i)=>AI.birdMask[i]=a[3]);AI.mask=AI.birdMask.slice();AI.sciIdx=new Map(j.audio.map((a,i)=>[a[0],i]))}
+  AI.birdMask=new Uint8Array(n);j.audio.forEach((a,i)=>AI.birdMask[i]=a[3]);AI.mask=AI.birdMask.slice();AI.sciIdx=new Map(j.audio.map((a,i)=>[a[0],i]));
+  /* liste « possibles en France » : 601 espèces vues par le géomodèle sur toute la France, avec leurs semaines (raretés de migration comprises) */
+  try{const f=await (await fetch("fr.json?v=1")).json();AI.frWeeks=new Map();for(const la in f.sp){const i=AI.sciIdx.get(la);if(i!=null)AI.frWeeks.set(i,BigInt("0x"+f.sp[la]))}}catch(e){AI.frWeeks=null}}
+/* espèces possibles en France cette semaine-ci (± 2 semaines) */
+function frSeasonMask(w){const m=new Uint8Array(AI.labels.length);if(!AI.frWeeks){for(let i=0;i<m.length;i++)m[i]=AI.birdMask[i];return m}
+  const bit=1n<<BigInt((w-1+48)%48);AI.frWeeks.forEach((b,i)=>{if(b&bit)m[i]=1});return m}
 const nameOf=i=>{const a=AI.labels[i];return{fr:a[1]||a[2],la:a[0]}};
 async function ensureAI(){if(IN_CLAUDE)return;try{await loadLabels();await loadModel("bn");await loadModel("geo");await updateMask(true)}
   catch(e){AI.err=String(e.message||e);setAiChip();toast("IA indisponible : "+AI.err)}}
@@ -88,9 +93,11 @@ async function ensureAI(){if(IN_CLAUDE)return;try{await loadLabels();await loadM
 const FR_PTS=[[48.85,2.35],[47.22,-1.55],[44.84,-.58],[43.6,1.44],[43.3,5.37],[45.76,4.84],[48.58,7.75],[50.63,3.06],[48.39,-4.49],[42.69,2.89],[45.9,6.12],[46.58,.34],[47.32,5.04],[42.15,9.1]];
 const weekNow=(d=new Date())=>d.getMonth()*4+Math.min(4,Math.floor((d.getDate()-1)/7.75)+1);
 async function updateMask(force){if(!AI.labels||!AI.ready.geo)return;const mode=S.geo|0,w=weekNow();let pts,key,label;
-  if(mode===2){key="none";label="toutes les espèces"}else if(mode===0&&lastFix){pts=[[lastFix.lat,lastFix.lon]];key=`gps:${lastFix.lat.toFixed(1)},${lastFix.lon.toFixed(1)}:${w}`;label="autour de toi"}else{pts=FR_PTS;key="fr:"+w;label="France"}
+  if(mode===2){key="none";label="monde entier"}else if(mode===0&&lastFix){pts=[[lastFix.lat,lastFix.lon]];key=`gps:${lastFix.lat.toFixed(1)},${lastFix.lon.toFixed(1)}:${w}`;label="autour de toi"}else if(mode===0){pts=FR_PTS;key="fr0:"+w;label="France (sans GPS)"}else{key="frx:"+w;label="France + raretés de saison"}
   if(!force&&key===AI.maskKey)return;AI.maskKey=key;
+  AI.frMask=frSeasonMask(w);
   if(mode===2)AI.mask=AI.birdMask.slice();
+  else if(mode===1){AI.mask=AI.frMask.slice();AI.geoP=null;if(lastFix){const r=await wcall({t:"run",name:"geo",output:"probabilities",data:new Float32Array([lastFix.lat,lastFix.lon,w]),dims:[1,3]});const gp=new Float32Array(AI.labels.length);for(let g=0;g<r.data.length;g++){const k=AI.geoMap[g];if(r.data[g]>gp[k])gp[k]=r.data[g]}AI.geoP=gp}}
   else{const m=new Uint8Array(AI.labels.length),gp=new Float32Array(AI.labels.length);
     for(const[la,lo]of pts){const r=await wcall({t:"run",name:"geo",output:"probabilities",data:new Float32Array([la,lo,w]),dims:[1,3]});const p=r.data;for(let g=0;g<p.length;g++){const k=AI.geoMap[g];if(p[g]>gp[k])gp[k]=p[g];if(p[g]>=.03)m[k]=1}}
     for(let i=0;i<m.length;i++)m[i]&=AI.birdMask[i];AI.mask=m;AI.geoP=gp}
@@ -102,7 +109,7 @@ function rarity(i){if(isRareOut(i))return["x","rareté ? à vérifier"];const p=
    Elle passe si BirdNET+ est très sûr (≥ RARE_T) et s'affiche « rareté ? à vérifier ». */
 const RARE_T=.75;AI.rareHit=new Set();
 function postBN(p){const n=AI.labels.length,o=new Float32Array(n),bias=((S.sens||1)-1)*5,rare=S.rare!==false;
-  for(let i=0;i<n;i++){const inM=AI.mask[i];if(!inM&&!(rare&&AI.birdMask[i]))continue;let v=p[i]*AI.mult[i];if(!(v>0))continue;if(bias){v=Math.min(Math.max(v,1e-6),1-1e-6);v=1/(1+Math.exp(-(Math.log(v/(1-v))+bias)))}
+  for(let i=0;i<n;i++){const inM=AI.mask[i];if(!inM&&!(rare&&AI.frMask&&AI.frMask[i]))continue;let v=p[i]*AI.mult[i];if(!(v>0))continue;if(bias){v=Math.min(Math.max(v,1e-6),1-1e-6);v=1/(1+Math.exp(-(Math.log(v/(1-v))+bias)))}
     if(!inM){if(v<RARE_T)continue;AI.rareHit.add(i)}o[i]=v}return o}
 const isRareOut=i=>!!(AI.mask&&!AI.mask[i]);
 /* prédictions + empreintes normalisées (1280 valeurs) par fenêtre de 3 s */

@@ -143,8 +143,8 @@
           <div class="ctl"><label for="conf">Seuil de confiance <span class="mono" id="confLbl"></span></label><input type="range" id="conf" min="0.1" max="0.9" step="0.05" value="0.35"></div>
           <div class="ctl"><label for="sens">Sensibilité <span class="mono" id="sensLbl"></span></label><input type="range" id="sens" min="0.5" max="1.5" step="0.05" value="1"><span class="small muted help">Plus haut = plus de détections, plus d'erreurs.</span></div>
         </div>
-        <div class="ctl"><span class="lbl">Filtre géographique</span><div class="seg" id="segGeo"><button data-v="0">autour de moi</button><button data-v="1">France</button><button data-v="2">aucun</button></div>
-          <span class="small muted help">Espèces probables cette semaine autour de ta position (France entière sans GPS). « Aucun » pour les raretés.</span></div>
+        <div class="ctl"><span class="lbl">Filtre géographique</span><div class="seg" id="segGeo"><button data-v="0">autour de moi</button><button data-v="1">France + raretés</button><button data-v="2">monde (déconseillé)</button></div>
+          <span class="small muted help">« Autour de moi » : espèces probables ici cette semaine. « France + raretés » : les 601 espèces possibles en France, seulement aux semaines où elles passent (Pouillot de Pallas en automne, etc.). « Monde » : 8 000 espèces, à éviter.</span></div>
         <label class="toggle"><input type="checkbox" id="rareT"> Signaler les raretés hors liste (si BirdNET+ est très sûr)</label>
         <label class="toggle"><input type="checkbox" id="autoThrT"> Seuil qui monte quand il y a du bruit</label>
         <label class="toggle"><input type="checkbox" id="perchLiveT"> Perch v2 en 2e avis pendant l'écoute (s'il est téléchargé)</label>

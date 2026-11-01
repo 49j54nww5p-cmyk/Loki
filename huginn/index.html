@@ -429,8 +429,8 @@ th{color:var(--muted);font-weight:500}
           <div class="ctl"><label for="conf">Seuil de confiance <span class="mono" id="confLbl"></span></label><input type="range" id="conf" min="0.1" max="0.9" step="0.05" value="0.35"></div>
           <div class="ctl"><label for="sens">Sensibilité <span class="mono" id="sensLbl"></span></label><input type="range" id="sens" min="0.5" max="1.5" step="0.05" value="1"><span class="small muted help">Plus haut = plus de détections, plus d'erreurs.</span></div>
         </div>
-        <div class="ctl"><span class="lbl">Filtre géographique</span><div class="seg" id="segGeo"><button data-v="0">autour de moi</button><button data-v="1">France</button><button data-v="2">aucun</button></div>
-          <span class="small muted help">Espèces probables cette semaine autour de ta position (France entière sans GPS). « Aucun » pour les raretés.</span></div>
+        <div class="ctl"><span class="lbl">Filtre géographique</span><div class="seg" id="segGeo"><button data-v="0">autour de moi</button><button data-v="1">France + raretés</button><button data-v="2">monde (déconseillé)</button></div>
+          <span class="small muted help">« Autour de moi » : espèces probables ici cette semaine. « France + raretés » : les 601 espèces possibles en France, seulement aux semaines où elles passent (Pouillot de Pallas en automne, etc.). « Monde » : 8 000 espèces, à éviter.</span></div>
         <label class="toggle"><input type="checkbox" id="rareT"> Signaler les raretés hors liste (si BirdNET+ est très sûr)</label>
         <label class="toggle"><input type="checkbox" id="autoThrT"> Seuil qui monte quand il y a du bruit</label>
         <label class="toggle"><input type="checkbox" id="perchLiveT"> Perch v2 en 2e avis pendant l'écoute (s'il est téléchargé)</label>
@@ -515,7 +515,7 @@ th{color:var(--muted);font-weight:500}
    Les clés « huginn.* » et la base « huginn » sont gardées :
    ainsi le carnet, les sons et la liste de vie d'avant restent là.
    ========================================================= */
-const VERSION="1.6.2";
+const VERSION="1.7.0";
 const IN_CLAUDE=!!(window.claude&&window.claude.use);
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 
@@ -758,7 +758,12 @@ function loadModel(name){if(AI.ready[name])return Promise.resolve();if(AI.loadin
   const p=wcall({t:"load",name,url:M.url,key:M.key,sizes:M.sizes}).then(()=>{AI.ready[name]=true;delete AI.loading[name];setAiChip()},e=>{delete AI.loading[name];throw e});AI.loading[name]=p;setAiChip();return p}
 async function loadLabels(){if(AI.labels)return;const r=await fetch("labels.json?v=2");if(!r.ok)throw new Error("liste des espèces introuvable");const j=await r.json();
   AI.labels=j.audio;AI.geoMap=j.geo;const n=j.audio.length;AI.mult=new Float32Array(n).fill(1);for(const k in j.mult)AI.mult[+k]=j.mult[k];
-  AI.birdMask=new Uint8Array(n);j.audio.forEach((a,i)=>AI.birdMask[i]=a[3]);AI.mask=AI.birdMask.slice();AI.sciIdx=new Map(j.audio.map((a,i)=>[a[0],i]))}
+  AI.birdMask=new Uint8Array(n);j.audio.forEach((a,i)=>AI.birdMask[i]=a[3]);AI.mask=AI.birdMask.slice();AI.sciIdx=new Map(j.audio.map((a,i)=>[a[0],i]));
+  /* liste « possibles en France » : 601 espèces vues par le géomodèle sur toute la France, avec leurs semaines (raretés de migration comprises) */
+  try{const f=await (await fetch("fr.json?v=1")).json();AI.frWeeks=new Map();for(const la in f.sp){const i=AI.sciIdx.get(la);if(i!=null)AI.frWeeks.set(i,BigInt("0x"+f.sp[la]))}}catch(e){AI.frWeeks=null}}
+/* espèces possibles en France cette semaine-ci (± 2 semaines) */
+function frSeasonMask(w){const m=new Uint8Array(AI.labels.length);if(!AI.frWeeks){for(let i=0;i<m.length;i++)m[i]=AI.birdMask[i];return m}
+  const bit=1n<<BigInt((w-1+48)%48);AI.frWeeks.forEach((b,i)=>{if(b&bit)m[i]=1});return m}
 const nameOf=i=>{const a=AI.labels[i];return{fr:a[1]||a[2],la:a[0]}};
 async function ensureAI(){if(IN_CLAUDE)return;try{await loadLabels();await loadModel("bn");await loadModel("geo");await updateMask(true)}
   catch(e){AI.err=String(e.message||e);setAiChip();toast("IA indisponible : "+AI.err)}}
@@ -767,9 +772,11 @@ async function ensureAI(){if(IN_CLAUDE)return;try{await loadLabels();await loadM
 const FR_PTS=[[48.85,2.35],[47.22,-1.55],[44.84,-.58],[43.6,1.44],[43.3,5.37],[45.76,4.84],[48.58,7.75],[50.63,3.06],[48.39,-4.49],[42.69,2.89],[45.9,6.12],[46.58,.34],[47.32,5.04],[42.15,9.1]];
 const weekNow=(d=new Date())=>d.getMonth()*4+Math.min(4,Math.floor((d.getDate()-1)/7.75)+1);
 async function updateMask(force){if(!AI.labels||!AI.ready.geo)return;const mode=S.geo|0,w=weekNow();let pts,key,label;
-  if(mode===2){key="none";label="toutes les espèces"}else if(mode===0&&lastFix){pts=[[lastFix.lat,lastFix.lon]];key=`gps:${lastFix.lat.toFixed(1)},${lastFix.lon.toFixed(1)}:${w}`;label="autour de toi"}else{pts=FR_PTS;key="fr:"+w;label="France"}
+  if(mode===2){key="none";label="monde entier"}else if(mode===0&&lastFix){pts=[[lastFix.lat,lastFix.lon]];key=`gps:${lastFix.lat.toFixed(1)},${lastFix.lon.toFixed(1)}:${w}`;label="autour de toi"}else if(mode===0){pts=FR_PTS;key="fr0:"+w;label="France (sans GPS)"}else{key="frx:"+w;label="France + raretés de saison"}
   if(!force&&key===AI.maskKey)return;AI.maskKey=key;
+  AI.frMask=frSeasonMask(w);
   if(mode===2)AI.mask=AI.birdMask.slice();
+  else if(mode===1){AI.mask=AI.frMask.slice();AI.geoP=null;if(lastFix){const r=await wcall({t:"run",name:"geo",output:"probabilities",data:new Float32Array([lastFix.lat,lastFix.lon,w]),dims:[1,3]});const gp=new Float32Array(AI.labels.length);for(let g=0;g<r.data.length;g++){const k=AI.geoMap[g];if(r.data[g]>gp[k])gp[k]=r.data[g]}AI.geoP=gp}}
   else{const m=new Uint8Array(AI.labels.length),gp=new Float32Array(AI.labels.length);
     for(const[la,lo]of pts){const r=await wcall({t:"run",name:"geo",output:"probabilities",data:new Float32Array([la,lo,w]),dims:[1,3]});const p=r.data;for(let g=0;g<p.length;g++){const k=AI.geoMap[g];if(p[g]>gp[k])gp[k]=p[g];if(p[g]>=.03)m[k]=1}}
     for(let i=0;i<m.length;i++)m[i]&=AI.birdMask[i];AI.mask=m;AI.geoP=gp}
@@ -781,7 +788,7 @@ function rarity(i){if(isRareOut(i))return["x","rareté ? à vérifier"];const p=
    Elle passe si BirdNET+ est très sûr (≥ RARE_T) et s'affiche « rareté ? à vérifier ». */
 const RARE_T=.75;AI.rareHit=new Set();
 function postBN(p){const n=AI.labels.length,o=new Float32Array(n),bias=((S.sens||1)-1)*5,rare=S.rare!==false;
-  for(let i=0;i<n;i++){const inM=AI.mask[i];if(!inM&&!(rare&&AI.birdMask[i]))continue;let v=p[i]*AI.mult[i];if(!(v>0))continue;if(bias){v=Math.min(Math.max(v,1e-6),1-1e-6);v=1/(1+Math.exp(-(Math.log(v/(1-v))+bias)))}
+  for(let i=0;i<n;i++){const inM=AI.mask[i];if(!inM&&!(rare&&AI.frMask&&AI.frMask[i]))continue;let v=p[i]*AI.mult[i];if(!(v>0))continue;if(bias){v=Math.min(Math.max(v,1e-6),1-1e-6);v=1/(1+Math.exp(-(Math.log(v/(1-v))+bias)))}
     if(!inM){if(v<RARE_T)continue;AI.rareHit.add(i)}o[i]=v}return o}
 const isRareOut=i=>!!(AI.mask&&!AI.mask[i]);
 /* prédictions + empreintes normalisées (1280 valeurs) par fenêtre de 3 s */
@@ -1718,6 +1725,7 @@ $("#tour").addEventListener("touchend",e=>{if(TST.x==null)return;const dx=e.chan
 
 /* nouveautés */
 const NEWS=[
+  {n:"1.7",d:"1er novembre 2026",items:[["bird","France + raretés de saison","Nouvelle liste : les 601 espèces possibles en France (raretés de migration comprises : Pouillots de Pallas, à grands sourcils, brun…), chacune seulement aux semaines où elle passe. Remplace le mode à 8 000 espèces. En « autour de moi », une rareté hors liste locale n'est acceptée que si elle est dans cette liste et de saison."]]},
   {n:"1.6.2",d:"1er novembre 2026",items:[["two","Perch v2 : les scores comme Google l'a entraîné","Softmax sur toutes ses classes. Testé sur de vrais chants xeno-canto : le pinson sort à 59–92 %, les autres espèces restent sous 5 %, le bruit sous 6 %."]]},
   {n:"1.6.1",d:"1er novembre 2026",items:[["two","Perch ne voit plus de hiboux dans le silence","La v1.6 lisait mal les scores de Perch : sur du bruit, Chouette hulotte et Hibou moyen-duc sortaient à 100 %. Les scores sont recalés sur des mesures (bruit : moins de 25 %, vrais chants : 60 à 99 %)."],["book","Perch complet depuis Fichiers","Réglages › Modèles › « Charger depuis Fichiers » : choisis perch_v2_no_dft.onnx rangé sur ton iPhone, plus besoin de le télécharger dans l'appli."]]},
   {n:"1.6",d:"1er novembre 2026",items:[["wave","Enregistrement continu","Tout ce que tu écoutes est enregistré. À l'arrêt, Ramage te demande si tu gardes l'enregistrement complet (Carnet › Sorties, export en m4a)."],["two","Fini les espèces inventées par Perch","Perch notait ses espèces les unes par rapport aux autres : sur du bruit, l'une sortait forcément haut. Chaque espèce a maintenant sa vraie probabilité ; Perch seul n'ajoute une espèce qu'à 85 % et plus."],["bird","Raretés plus strictes","Une espèce hors liste doit atteindre 75 % chez BirdNET+, et être confirmée par Perch s'il est activé."]]},

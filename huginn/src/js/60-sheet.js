@@ -9,7 +9,7 @@ function kindLine(k){if(!k)return`<p class="small muted">Type de son : pas encor
   return`<p class="small"><span class="tg k${k.sure?"":" unsure"}" style="--k:${kindVar(k.k)}">${esc(k.k.toUpperCase())}${k.sure?"":" ?"}</span> ${k.src==="réf"?`d'après les ${k.n} références les plus proches${k.sure?"":", sans accord net"}`:"d'après la forme du son (notes, durée) : à confirmer"}</p>`}
 async function openFocus(i){const r=LIVE.get(i);if(!r)return;const rk=rarity(i),thr=thrNow();
   const perchTxt=AI.ready.perch?(r.perch?Math.round(r.perch*100)+" %":"pas confirmé"):"non chargé";
-  const agree=r.perch>=.5&&r.bn>=thr*.9?`<div class="agreeb">${svgIc("two",18)} Les deux IA sont d'accord</div>`:AI.ready.perch&&!r.viaPerch?`<div class="agreeb" style="color:var(--muted)">Perch v2 ne l'a pas (encore) confirmé</div>`:"";
+  const agree=r.perch>=.3&&r.bn>=thr*.9?`<div class="agreeb">${svgIc("two",18)} Les deux IA sont d'accord</div>`:AI.ready.perch&&!r.viaPerch?`<div class="agreeb" style="color:var(--muted)">Perch v2 ne l'a pas (encore) confirmé</div>`:"";
   openSheet(`<div class="hero">${imgPh(r.la,"m")}<div class="shade"></div><div class="hd"><div class="tags">${r.lifer?`<span class="tg new">NOUVEAU</span>`:""}${rk?`<span class="tg rare">${rk[1]}</span>`:""}</div><h2 class="fname">${esc(r.fr)}</h2><p class="latin">${esc(r.la)}</p></div></div>
     <div class="fbody">
       <div class="duo"><div><b>${r.bn?Math.round(r.bn*100)+" %":"—"}</b><span>BirdNET+</span></div><div><b>${perchTxt.endsWith("%")?perchTxt:"—"}</b><span>Perch v2${perchTxt.endsWith("%")?"":" · "+perchTxt}</span></div>${agree}</div>

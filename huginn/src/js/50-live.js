@@ -90,7 +90,7 @@ function updateKind(r){const k=kindGuess(REF.mem.get(r.la),r.emb,r.seg);if(k)r.k
 async function liveTick(){if(!running||aiBusy||!AI.ready.bn||!AI.labels||!ac)return;const s=grab(3);if(!s||s.length<ac.sampleRate*2)return;aiBusy=true;
   try{const x=await to32k(s,ac.sampleRate),[o]=await runBN2([x]),sc=postBN(o.raw),now=Date.now(),thr=thrNow();
     const cand=topK(sc,8,thr*.6);cand.forEach(i=>{sc[i]=learnAdjust(nameOf(i).la,o.emb,sc[i])});
-    const hits=cand.filter(i=>sc[i]>=thr&&!AI.rejected.has(i)&&!(isRareOut(i)&&AI.ready.perch&&!(PSEEN.get(i)>=.5))).sort((a,b)=>sc[b]-sc[a]).slice(0,4);let alert=null;
+    const hits=cand.filter(i=>sc[i]>=thr&&!AI.rejected.has(i)&&!(isRareOut(i)&&AI.ready.perch&&!(PSEEN.get(i)>=.3))).sort((a,b)=>sc[b]-sc[a]).slice(0,4);let alert=null;
     for(const i of hits){const r=liveRec(i,now);if(r.isNew){r.isNew=false;if(!alert||r.lifer)alert=r}
       r.n++;r.last=now;r.cur=sc[i];r.bn=Math.max(r.bn,sc[i]);if(sc[i]>r.max){r.max=sc[i];r.emb=o.emb;r.seg=fit(x,96000).slice();updateKind(r)}
       addMark(i,s.end-s.length,s.end,sc[i]);if(autoState.on)nightHit(i,sc[i],s.end);
@@ -106,7 +106,7 @@ async function perchTick(){if(!running||!AI.ready.perch||perchBusy||!AI.perchIdx
       r.perch=Math.max(r.perch||0,sc[i]);r.lastP=now;if(r.viaPerch){r.last=now;addMark(i,s.end-s.length,s.end,sc[i])}});renderLive()}catch(e){}finally{perchBusy=false}}
 
 /* ---- liste : chaque espèce garde sa place, elle s'allume quand elle chante ---- */
-function rowHTML(r,now){const on=running&&now-r.last<4500,k=r.kind,rk=rarity(r.i),tr=traps(r.la),two=r.perch>=.5&&r.bn>=thrNow()*.9;
+function rowHTML(r,now){const on=running&&now-r.last<4500,k=r.kind,rk=rarity(r.i),tr=traps(r.la),two=r.perch>=.3&&r.bn>=thrNow()*.9;
   const kt=k?`<span class="tg k${k.sure?"":" unsure"}" style="--k:${kindVar(k.k)}" title="${k.src==="réf"?`d'après ${k.n} références proches`:"d'après la forme du son"}">${esc(k.k.toUpperCase())}${k.sure?"":" ?"}</span>`:`<span class="tg">TYPE ?</span>`;
   const at=two?`<span class="tg ai2" title="BirdNET+ ${Math.round(r.bn*100)} % · Perch ${Math.round(r.perch*100)} %">2 IA ✓</span>`:r.viaPerch?`<span class="tg" title="trouvé par Perch v2">PERCH</span>`:"";
   return`<div class="ph">${imgPh(r.la,"s")}</div><div class="mid"><div class="nm">${esc(r.fr)}</div><div class="la">${esc(r.la)}</div>

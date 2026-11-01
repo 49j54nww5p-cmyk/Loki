@@ -515,7 +515,7 @@ th{color:var(--muted);font-weight:500}
    Les clés « huginn.* » et la base « huginn » sont gardées :
    ainsi le carnet, les sons et la liste de vie d'avant restent là.
    ========================================================= */
-const VERSION="1.6.1";
+const VERSION="1.6.2";
 const IN_CLAUDE=!!(window.claude&&window.claude.use);
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 
@@ -796,12 +796,13 @@ async function perchLabels(){if(AI.perchIdx)return;let txt=null,c=null;try{c=awa
   if(!txt){const r=await fetch(PERCH_LABELS);if(!r.ok)throw new Error("liste Perch introuvable (HTTP "+r.status+")");txt=await r.text();if(c)try{await c.put("https://huginn.local/perch-labels",new Response(txt))}catch(e){}}
   const lines=txt.split(/\r?\n/).slice(1).filter(Boolean);AI.perchIdx=Int32Array.from(lines.map(l=>{const k=AI.sciIdx.get(l.replace(/^"|"$/g,"").trim());return k==null?-1:k}))}
 async function runPerch(wins){const L=160000,res=[];for(const w of wins){const d=new Float32Array(L);d.set(fit(w,L));const r=await wcall({t:"run",name:"perch",output:"label",data:d,dims:[1,L]},[d.buffer]);
-    /* Perch v2 sort des « logits » qui ne sont PAS des probabilités : une sigmoïde directe donne 99 % sur du silence
-       (v1.6.0 : Chouette hulotte et Hibou moyen-duc à 100 % sans aucun son). Mesures faites sur le modèle complet :
-       silence ou bruit → logit max 4,5 à 7,4 (toujours Chouette hulotte, Grand-duc, Râle…), vrais oiseaux → 9 à 13.
-       Le score est donc recentré : 50 % à 8,5, 85 % à 10,2, et le bruit reste sous 25 %. */
-    const lg=r.data,n=AI.labels.length,sc=new Float32Array(n);
-    for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&(AI.mask[k]||AI.rareHit.has(k))&&Number.isFinite(lg[j])){const v=perchScore(lg[j]);if(v>sc[k])sc[k]=v}}res.push(sc)}return res}
+    /* Perch v2 est entraîné avec un softmax sur ses 14 795 classes (oiseaux, insectes, amphibiens, bruits).
+       On normalise donc sur TOUTES les classes, puis on garde les espèces d'ici.
+       Testé sur de vrais enregistrements xeno-canto (modèle int8) : pinson 59–92 %, 2e espèce ≤ 5 %, bruit ≤ 6 %, silence ≈ 0.
+       (Sigmoïde brute v1.6.0 : 99 % sur du silence ; sigmoïde recentrée : bruit 40 %, 2e espèce jusqu'à 70 %.) */
+    const lg=r.data,n=AI.labels.length,sc=new Float32Array(n);let mx=-1e9;for(let j=0;j<lg.length;j++)if(Number.isFinite(lg[j])&&lg[j]>mx)mx=lg[j];
+    let sum=0;for(let j=0;j<lg.length;j++)if(Number.isFinite(lg[j]))sum+=Math.exp(lg[j]-mx);
+    for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&(AI.mask[k]||AI.rareHit.has(k))&&Number.isFinite(lg[j])){const v=Math.exp(lg[j]-mx)/sum;if(v>sc[k])sc[k]=v}}res.push(sc)}return res}
 const PERCH_MID=8.5;const perchScore=l=>1/(1+Math.exp(-(l-PERCH_MID)));
 /* téléchargement seul (gardé sur le téléphone), puis activation à part : si l'activation fait fermer l'appli
    faute de mémoire, le fichier reste là et l'appli ne réessaie pas toute seule au lancement suivant */
@@ -1139,7 +1140,7 @@ function updateKind(r){const k=kindGuess(REF.mem.get(r.la),r.emb,r.seg);if(k)r.k
 async function liveTick(){if(!running||aiBusy||!AI.ready.bn||!AI.labels||!ac)return;const s=grab(3);if(!s||s.length<ac.sampleRate*2)return;aiBusy=true;
   try{const x=await to32k(s,ac.sampleRate),[o]=await runBN2([x]),sc=postBN(o.raw),now=Date.now(),thr=thrNow();
     const cand=topK(sc,8,thr*.6);cand.forEach(i=>{sc[i]=learnAdjust(nameOf(i).la,o.emb,sc[i])});
-    const hits=cand.filter(i=>sc[i]>=thr&&!AI.rejected.has(i)&&!(isRareOut(i)&&AI.ready.perch&&!(PSEEN.get(i)>=.5))).sort((a,b)=>sc[b]-sc[a]).slice(0,4);let alert=null;
+    const hits=cand.filter(i=>sc[i]>=thr&&!AI.rejected.has(i)&&!(isRareOut(i)&&AI.ready.perch&&!(PSEEN.get(i)>=.3))).sort((a,b)=>sc[b]-sc[a]).slice(0,4);let alert=null;
     for(const i of hits){const r=liveRec(i,now);if(r.isNew){r.isNew=false;if(!alert||r.lifer)alert=r}
       r.n++;r.last=now;r.cur=sc[i];r.bn=Math.max(r.bn,sc[i]);if(sc[i]>r.max){r.max=sc[i];r.emb=o.emb;r.seg=fit(x,96000).slice();updateKind(r)}
       addMark(i,s.end-s.length,s.end,sc[i]);if(autoState.on)nightHit(i,sc[i],s.end);
@@ -1155,7 +1156,7 @@ async function perchTick(){if(!running||!AI.ready.perch||perchBusy||!AI.perchIdx
       r.perch=Math.max(r.perch||0,sc[i]);r.lastP=now;if(r.viaPerch){r.last=now;addMark(i,s.end-s.length,s.end,sc[i])}});renderLive()}catch(e){}finally{perchBusy=false}}
 
 /* ---- liste : chaque espèce garde sa place, elle s'allume quand elle chante ---- */
-function rowHTML(r,now){const on=running&&now-r.last<4500,k=r.kind,rk=rarity(r.i),tr=traps(r.la),two=r.perch>=.5&&r.bn>=thrNow()*.9;
+function rowHTML(r,now){const on=running&&now-r.last<4500,k=r.kind,rk=rarity(r.i),tr=traps(r.la),two=r.perch>=.3&&r.bn>=thrNow()*.9;
   const kt=k?`<span class="tg k${k.sure?"":" unsure"}" style="--k:${kindVar(k.k)}" title="${k.src==="réf"?`d'après ${k.n} références proches`:"d'après la forme du son"}">${esc(k.k.toUpperCase())}${k.sure?"":" ?"}</span>`:`<span class="tg">TYPE ?</span>`;
   const at=two?`<span class="tg ai2" title="BirdNET+ ${Math.round(r.bn*100)} % · Perch ${Math.round(r.perch*100)} %">2 IA ✓</span>`:r.viaPerch?`<span class="tg" title="trouvé par Perch v2">PERCH</span>`:"";
   return`<div class="ph">${imgPh(r.la,"s")}</div><div class="mid"><div class="nm">${esc(r.fr)}</div><div class="la">${esc(r.la)}</div>
@@ -1327,7 +1328,7 @@ function kindLine(k){if(!k)return`<p class="small muted">Type de son : pas encor
   return`<p class="small"><span class="tg k${k.sure?"":" unsure"}" style="--k:${kindVar(k.k)}">${esc(k.k.toUpperCase())}${k.sure?"":" ?"}</span> ${k.src==="réf"?`d'après les ${k.n} références les plus proches${k.sure?"":", sans accord net"}`:"d'après la forme du son (notes, durée) : à confirmer"}</p>`}
 async function openFocus(i){const r=LIVE.get(i);if(!r)return;const rk=rarity(i),thr=thrNow();
   const perchTxt=AI.ready.perch?(r.perch?Math.round(r.perch*100)+" %":"pas confirmé"):"non chargé";
-  const agree=r.perch>=.5&&r.bn>=thr*.9?`<div class="agreeb">${svgIc("two",18)} Les deux IA sont d'accord</div>`:AI.ready.perch&&!r.viaPerch?`<div class="agreeb" style="color:var(--muted)">Perch v2 ne l'a pas (encore) confirmé</div>`:"";
+  const agree=r.perch>=.3&&r.bn>=thr*.9?`<div class="agreeb">${svgIc("two",18)} Les deux IA sont d'accord</div>`:AI.ready.perch&&!r.viaPerch?`<div class="agreeb" style="color:var(--muted)">Perch v2 ne l'a pas (encore) confirmé</div>`:"";
   openSheet(`<div class="hero">${imgPh(r.la,"m")}<div class="shade"></div><div class="hd"><div class="tags">${r.lifer?`<span class="tg new">NOUVEAU</span>`:""}${rk?`<span class="tg rare">${rk[1]}</span>`:""}</div><h2 class="fname">${esc(r.fr)}</h2><p class="latin">${esc(r.la)}</p></div></div>
     <div class="fbody">
       <div class="duo"><div><b>${r.bn?Math.round(r.bn*100)+" %":"—"}</b><span>BirdNET+</span></div><div><b>${perchTxt.endsWith("%")?perchTxt:"—"}</b><span>Perch v2${perchTxt.endsWith("%")?"":" · "+perchTxt}</span></div>${agree}</div>
@@ -1717,6 +1718,7 @@ $("#tour").addEventListener("touchend",e=>{if(TST.x==null)return;const dx=e.chan
 
 /* nouveautés */
 const NEWS=[
+  {n:"1.6.2",d:"1er novembre 2026",items:[["two","Perch v2 : les scores comme Google l'a entraîné","Softmax sur toutes ses classes. Testé sur de vrais chants xeno-canto : le pinson sort à 59–92 %, les autres espèces restent sous 5 %, le bruit sous 6 %."]]},
   {n:"1.6.1",d:"1er novembre 2026",items:[["two","Perch ne voit plus de hiboux dans le silence","La v1.6 lisait mal les scores de Perch : sur du bruit, Chouette hulotte et Hibou moyen-duc sortaient à 100 %. Les scores sont recalés sur des mesures (bruit : moins de 25 %, vrais chants : 60 à 99 %)."],["book","Perch complet depuis Fichiers","Réglages › Modèles › « Charger depuis Fichiers » : choisis perch_v2_no_dft.onnx rangé sur ton iPhone, plus besoin de le télécharger dans l'appli."]]},
   {n:"1.6",d:"1er novembre 2026",items:[["wave","Enregistrement continu","Tout ce que tu écoutes est enregistré. À l'arrêt, Ramage te demande si tu gardes l'enregistrement complet (Carnet › Sorties, export en m4a)."],["two","Fini les espèces inventées par Perch","Perch notait ses espèces les unes par rapport aux autres : sur du bruit, l'une sortait forcément haut. Chaque espèce a maintenant sa vraie probabilité ; Perch seul n'ajoute une espèce qu'à 85 % et plus."],["bird","Raretés plus strictes","Une espèce hors liste doit atteindre 75 % chez BirdNET+, et être confirmée par Perch s'il est activé."]]},
   {n:"1.5",d:"1er novembre 2026",items:[["wave","Spectro étalonné en dBFS","Même échelle que Audacity, Raven ou Sonic Visualiser : fenêtre de Hann, 1024 points, de −100 à −20 dBFS par défaut. Une même couleur veut toujours dire le même niveau, d'un enregistrement à l'autre."],["bird","BirdNET+ se recharge","Corrige l'erreur « téléchargement coupé à 67 / 60 Mo »."]]},

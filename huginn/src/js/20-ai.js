@@ -117,12 +117,13 @@ async function perchLabels(){if(AI.perchIdx)return;let txt=null,c=null;try{c=awa
   if(!txt){const r=await fetch(PERCH_LABELS);if(!r.ok)throw new Error("liste Perch introuvable (HTTP "+r.status+")");txt=await r.text();if(c)try{await c.put("https://huginn.local/perch-labels",new Response(txt))}catch(e){}}
   const lines=txt.split(/\r?\n/).slice(1).filter(Boolean);AI.perchIdx=Int32Array.from(lines.map(l=>{const k=AI.sciIdx.get(l.replace(/^"|"$/g,"").trim());return k==null?-1:k}))}
 async function runPerch(wins){const L=160000,res=[];for(const w of wins){const d=new Float32Array(L);d.set(fit(w,L));const r=await wcall({t:"run",name:"perch",output:"label",data:d,dims:[1,L]},[d.buffer]);
-    /* Perch v2 sort des « logits » qui ne sont PAS des probabilités : une sigmoïde directe donne 99 % sur du silence
-       (v1.6.0 : Chouette hulotte et Hibou moyen-duc à 100 % sans aucun son). Mesures faites sur le modèle complet :
-       silence ou bruit → logit max 4,5 à 7,4 (toujours Chouette hulotte, Grand-duc, Râle…), vrais oiseaux → 9 à 13.
-       Le score est donc recentré : 50 % à 8,5, 85 % à 10,2, et le bruit reste sous 25 %. */
-    const lg=r.data,n=AI.labels.length,sc=new Float32Array(n);
-    for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&(AI.mask[k]||AI.rareHit.has(k))&&Number.isFinite(lg[j])){const v=perchScore(lg[j]);if(v>sc[k])sc[k]=v}}res.push(sc)}return res}
+    /* Perch v2 est entraîné avec un softmax sur ses 14 795 classes (oiseaux, insectes, amphibiens, bruits).
+       On normalise donc sur TOUTES les classes, puis on garde les espèces d'ici.
+       Testé sur de vrais enregistrements xeno-canto (modèle int8) : pinson 59–92 %, 2e espèce ≤ 5 %, bruit ≤ 6 %, silence ≈ 0.
+       (Sigmoïde brute v1.6.0 : 99 % sur du silence ; sigmoïde recentrée : bruit 40 %, 2e espèce jusqu'à 70 %.) */
+    const lg=r.data,n=AI.labels.length,sc=new Float32Array(n);let mx=-1e9;for(let j=0;j<lg.length;j++)if(Number.isFinite(lg[j])&&lg[j]>mx)mx=lg[j];
+    let sum=0;for(let j=0;j<lg.length;j++)if(Number.isFinite(lg[j]))sum+=Math.exp(lg[j]-mx);
+    for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&(AI.mask[k]||AI.rareHit.has(k))&&Number.isFinite(lg[j])){const v=Math.exp(lg[j]-mx)/sum;if(v>sc[k])sc[k]=v}}res.push(sc)}return res}
 const PERCH_MID=8.5;const perchScore=l=>1/(1+Math.exp(-(l-PERCH_MID)));
 /* téléchargement seul (gardé sur le téléphone), puis activation à part : si l'activation fait fermer l'appli
    faute de mémoire, le fichier reste là et l'appli ne réessaie pas toute seule au lancement suivant */

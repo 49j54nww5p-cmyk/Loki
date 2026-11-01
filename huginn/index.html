@@ -515,7 +515,7 @@ th{color:var(--muted);font-weight:500}
    Les clés « huginn.* » et la base « huginn » sont gardées :
    ainsi le carnet, les sons et la liste de vie d'avant restent là.
    ========================================================= */
-const VERSION="1.7.0";
+const VERSION="1.7.1";
 const IN_CLAUDE=!!(window.claude&&window.claude.use);
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 
@@ -829,6 +829,11 @@ async function perchDownload(){if(await perchCached())return;try{if(navigator.st
 async function perchActivate(){if(AI.ready.perch)return;if(!AI.labels)await ensureAI();await perchLabels();LS.set("huginn.perchLoading",Date.now());
   try{await loadModel("perch")}finally{try{localStorage.removeItem("huginn.perchLoading")}catch(e){}}}
 const perchCrashed=()=>!!LS.get("huginn.perchLoading",0);
+/* Perch complet (413 Mo) : à l'activation, Safari doit tenir le fichier ET sa copie dans le moteur, soit ≈ 900 Mo.
+   Sur iPhone ça dépasse la limite d'un onglet : Safari ferme la page (« problème récurrent »).
+   Après un plantage avec la complète, on repasse tout seul sur la légère (int8), qui reconnaît les mêmes espèces. */
+const IS_IPHONE=/iPhone|iPod/.test(navigator.userAgent);
+if(perchCrashed()&&S.perchV==="full"){S.perchV="lite";saveS();try{localStorage.removeItem("huginn.perchLoading")}catch(e){}LS.set("huginn.perchFullFail",Date.now())}
 async function autoPerch(){if(IN_CLAUDE||S.perchLive===false||AI.ready.perch||perchCrashed())return;if(!(await perchCached()))return;try{await perchActivate();return}catch(e){}}
 
 /* Ramage apprend de toi : empreintes des espèces validées et écartées */
@@ -870,7 +875,7 @@ function onProgress(m){if(m.name!=="perch"){setAiChip();return}const pct=m.phase
   const gp=$("#btnGetPerch");gp.disabled=true;gp.textContent=txt;const a=$("#perchAsk");a.hidden=false;a.innerHTML=`<p class="small muted">${txt}</p>`}
 async function renderModelInfo(){const el=$("#modelInfo");if(!el)return;if(IN_CLAUDE){el.textContent="Les modèles ne se chargent pas dans l'aperçu : ouvre la version GitHub Pages.";return}
   const pc=AI.ready.perch||await perchCached(),gp=$("#btnGetPerch"),ap=$("#btnActPerch"),cr=perchCrashed();gp.hidden=!!pc;if(!gp.disabled)gp.textContent="Télécharger "+MODELS.perch.label+" ("+MODELS.perch.size+" Mo)";ap.hidden=!pc||!!AI.ready.perch||!!AI.loading.perch;$("#btnDropPerch").hidden=!pc;
-  const pn=$("#perchNote");pn.hidden=!(pc&&!AI.ready.perch&&cr);pn.textContent="La dernière activation de Perch a fermé l'appli : l'iPhone a manqué de mémoire. Le fichier est bien gardé sur le téléphone. Ferme les autres applis puis réessaie ; sinon BirdNET+ seul marche très bien.";
+  const pn=$("#perchNote");pn.hidden=!((pc&&!AI.ready.perch&&cr)||(LS.get("huginn.perchFullFail",0)&&S.perchV!=="full"&&!AI.ready.perch));pn.textContent=LS.get("huginn.perchFullFail",0)&&S.perchV!=="full"?"Perch complet (413 Mo) a fait fermer Safari : il demande environ 900 Mo de mémoire à l'activation, plus qu'un onglet n'en a droit sur iPhone. Ramage est repassé sur la version légère, qui reconnaît les mêmes espèces (testé sur de vrais chants : mêmes résultats à quelques % près). Le fichier complet reste sur le téléphone ; il marchera sur ordinateur ou iPad.":"La dernière activation de Perch a fermé l'appli : l'iPhone a manqué de mémoire. Le fichier est bien gardé sur le téléphone. Ferme les autres applis puis réessaie ; sinon BirdNET+ seul marche très bien.";
   el.innerHTML=`<div>BirdNET+ V3.0 · ${MODELS.bn.size} Mo : <b>${AI.ready.bn?"prêt":AI.loading.bn?"chargement":"non chargé"}</b></div><div>Géomodèle · ${MODELS.geo.size} Mo : <b>${AI.ready.geo?"prêt":"non chargé"}</b>${AI.maskInfo?` · ${esc(AI.maskInfo)}`:""}</div><div>${esc(MODELS.perch.label)} · ${MODELS.perch.size} Mo : <b>${AI.ready.perch?"prêt":AI.loading.perch?"activation…":pc?"sur le téléphone ✓ (pas encore activé)":"pas téléchargé"}</b></div>${AI.err?`<div class="muted">Dernière erreur : ${esc(AI.err)}</div>`:""}`}
 
 /* ===== 30-refs.js ===== */
@@ -1669,7 +1674,7 @@ bindSeg("#segSun","sun",applySun);setInterval(applySun,60000);
 $("#btnGetPerch").onclick=async()=>{if(IN_CLAUDE)return;const gp=$("#btnGetPerch");gp.disabled=true;gp.textContent="Démarrage…";
   try{await perchDownload();try{localStorage.removeItem("huginn.perchLoading")}catch(e){}toast("Perch v2 est sur le téléphone");$("#perchBar2").hidden=true;renderModelInfo();await perchActivate();toast("Perch v2 prêt")}
   catch(e){toast("Perch v2 : "+(e.message||e));AI.err="Perch : "+(e.message||e)}finally{gp.disabled=false;gp.textContent="Télécharger "+MODELS.perch.label+" ("+MODELS.perch.size+" Mo)";$("#perchBar2").hidden=true;$("#perchBar").hidden=true;$("#perchAsk").hidden=true;renderModelInfo();setAiChip()}};
-$("#btnActPerch").onclick=async()=>{const b=$("#btnActPerch");b.disabled=true;b.textContent="Activation…";try{await perchActivate();toast("Perch v2 prêt")}catch(e){toast("Perch v2 : "+(e.message||e))}finally{b.disabled=false;b.textContent="Activer Perch v2";$("#perchBar2").hidden=true;renderModelInfo();setAiChip()}};
+$("#btnActPerch").onclick=async()=>{if(S.perchV==="full"&&IS_IPHONE&&!confirm("Perch complet demande environ 900 Mo de mémoire à l'activation : sur iPhone, Safari risque de fermer la page. Essayer quand même ?"))return;const b=$("#btnActPerch");b.disabled=true;b.textContent="Activation…";try{await perchActivate();toast("Perch v2 prêt")}catch(e){toast("Perch v2 : "+(e.message||e))}finally{b.disabled=false;b.textContent="Activer Perch v2";$("#perchBar2").hidden=true;renderModelInfo();setAiChip()}};
 {const g=$("#segPerchV"),set=()=>g.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===(S.perchV==="full"?"full":"lite"))));set();
   g.addEventListener("click",async e=>{const b=e.target.closest("button");if(!b||b.dataset.v===(S.perchV==="full"?"full":"lite"))return;S.perchV=b.dataset.v;saveS();set();
     if(AI.ready.perch){try{await wcall({t:"unload",name:"perch"})}catch(err){}AI.ready.perch=false}try{localStorage.removeItem("huginn.perchLoading")}catch(err){}

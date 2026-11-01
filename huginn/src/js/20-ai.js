@@ -150,6 +150,11 @@ async function perchDownload(){if(await perchCached())return;try{if(navigator.st
 async function perchActivate(){if(AI.ready.perch)return;if(!AI.labels)await ensureAI();await perchLabels();LS.set("huginn.perchLoading",Date.now());
   try{await loadModel("perch")}finally{try{localStorage.removeItem("huginn.perchLoading")}catch(e){}}}
 const perchCrashed=()=>!!LS.get("huginn.perchLoading",0);
+/* Perch complet (413 Mo) : à l'activation, Safari doit tenir le fichier ET sa copie dans le moteur, soit ≈ 900 Mo.
+   Sur iPhone ça dépasse la limite d'un onglet : Safari ferme la page (« problème récurrent »).
+   Après un plantage avec la complète, on repasse tout seul sur la légère (int8), qui reconnaît les mêmes espèces. */
+const IS_IPHONE=/iPhone|iPod/.test(navigator.userAgent);
+if(perchCrashed()&&S.perchV==="full"){S.perchV="lite";saveS();try{localStorage.removeItem("huginn.perchLoading")}catch(e){}LS.set("huginn.perchFullFail",Date.now())}
 async function autoPerch(){if(IN_CLAUDE||S.perchLive===false||AI.ready.perch||perchCrashed())return;if(!(await perchCached()))return;try{await perchActivate();return}catch(e){}}
 
 /* Ramage apprend de toi : empreintes des espèces validées et écartées */
@@ -191,5 +196,5 @@ function onProgress(m){if(m.name!=="perch"){setAiChip();return}const pct=m.phase
   const gp=$("#btnGetPerch");gp.disabled=true;gp.textContent=txt;const a=$("#perchAsk");a.hidden=false;a.innerHTML=`<p class="small muted">${txt}</p>`}
 async function renderModelInfo(){const el=$("#modelInfo");if(!el)return;if(IN_CLAUDE){el.textContent="Les modèles ne se chargent pas dans l'aperçu : ouvre la version GitHub Pages.";return}
   const pc=AI.ready.perch||await perchCached(),gp=$("#btnGetPerch"),ap=$("#btnActPerch"),cr=perchCrashed();gp.hidden=!!pc;if(!gp.disabled)gp.textContent="Télécharger "+MODELS.perch.label+" ("+MODELS.perch.size+" Mo)";ap.hidden=!pc||!!AI.ready.perch||!!AI.loading.perch;$("#btnDropPerch").hidden=!pc;
-  const pn=$("#perchNote");pn.hidden=!(pc&&!AI.ready.perch&&cr);pn.textContent="La dernière activation de Perch a fermé l'appli : l'iPhone a manqué de mémoire. Le fichier est bien gardé sur le téléphone. Ferme les autres applis puis réessaie ; sinon BirdNET+ seul marche très bien.";
+  const pn=$("#perchNote");pn.hidden=!((pc&&!AI.ready.perch&&cr)||(LS.get("huginn.perchFullFail",0)&&S.perchV!=="full"&&!AI.ready.perch));pn.textContent=LS.get("huginn.perchFullFail",0)&&S.perchV!=="full"?"Perch complet (413 Mo) a fait fermer Safari : il demande environ 900 Mo de mémoire à l'activation, plus qu'un onglet n'en a droit sur iPhone. Ramage est repassé sur la version légère, qui reconnaît les mêmes espèces (testé sur de vrais chants : mêmes résultats à quelques % près). Le fichier complet reste sur le téléphone ; il marchera sur ordinateur ou iPad.":"La dernière activation de Perch a fermé l'appli : l'iPhone a manqué de mémoire. Le fichier est bien gardé sur le téléphone. Ferme les autres applis puis réessaie ; sinon BirdNET+ seul marche très bien.";
   el.innerHTML=`<div>BirdNET+ V3.0 · ${MODELS.bn.size} Mo : <b>${AI.ready.bn?"prêt":AI.loading.bn?"chargement":"non chargé"}</b></div><div>Géomodèle · ${MODELS.geo.size} Mo : <b>${AI.ready.geo?"prêt":"non chargé"}</b>${AI.maskInfo?` · ${esc(AI.maskInfo)}`:""}</div><div>${esc(MODELS.perch.label)} · ${MODELS.perch.size} Mo : <b>${AI.ready.perch?"prêt":AI.loading.perch?"activation…":pc?"sur le téléphone ✓ (pas encore activé)":"pas téléchargé"}</b></div>${AI.err?`<div class="muted">Dernière erreur : ${esc(AI.err)}</div>`:""}`}

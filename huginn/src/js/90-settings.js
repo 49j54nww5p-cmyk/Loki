@@ -34,6 +34,7 @@ bindToggle("#voiceT","voice",true,on=>{if(on)speak("Annonce vocale activée")});
 bindToggle("#glovesT","gloves",false,on=>document.body.classList.toggle("gloves",on));
 bindToggle("#autoThrT","autoThr",true);
 bindToggle("#rareT","rare",true);
+bindToggle("#recAllT","recAll",true);
 bindToggle("#perchLiveT","perchLive",true,on=>{if(on)autoPerch()});
 bindToggle("#autoRefT","autoRef",true);
 bindToggle("#autoCmp","autoCmp",true);
@@ -99,6 +100,7 @@ $("#tour").addEventListener("touchend",e=>{if(TST.x==null)return;const dx=e.chan
 
 /* nouveautés */
 const NEWS=[
+  {n:"1.6",d:"1er novembre 2026",items:[["wave","Enregistrement continu","Tout ce que tu écoutes est enregistré. À l'arrêt, Ramage te demande si tu gardes l'enregistrement complet (Carnet › Sorties, export en m4a)."],["two","Fini les espèces inventées par Perch","Perch notait ses espèces les unes par rapport aux autres : sur du bruit, l'une sortait forcément haut. Chaque espèce a maintenant sa vraie probabilité ; Perch seul n'ajoute une espèce qu'à 85 % et plus."],["bird","Raretés plus strictes","Une espèce hors liste doit atteindre 75 % chez BirdNET+, et être confirmée par Perch s'il est activé."]]},
   {n:"1.5",d:"1er novembre 2026",items:[["wave","Spectro étalonné en dBFS","Même échelle que Audacity, Raven ou Sonic Visualiser : fenêtre de Hann, 1024 points, de −100 à −20 dBFS par défaut. Une même couleur veut toujours dire le même niveau, d'un enregistrement à l'autre."],["bird","BirdNET+ se recharge","Corrige l'erreur « téléchargement coupé à 67 / 60 Mo »."]]},
   {n:"1.4.1",d:"1er novembre 2026",items:[["wave","Spectro qui ne sature plus","Le niveau se cale tout seul sur le bruit de fond : fond sombre, oiseaux en clair, même avec la parabole ou un micro sensible. Le contraste (Réglages) règle la plage au-dessus du fond."]]},
   {n:"1.4",d:"28 octobre 2026",items:[["moon","La nuit complète","Toute la nuit enregistrée (AAC, une pièce par heure) et, pour chaque espèce, les 5 meilleurs extraits de 10 s. Au réveil : un dossier ZIP trié nuit › espèce › extraits, avec le tableau des espèces à 80 % et plus."]]},

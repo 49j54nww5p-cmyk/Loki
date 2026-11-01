@@ -100,7 +100,7 @@ function rarity(i){if(isRareOut(i))return["x","rareté ? à vérifier"];const p=
 /* BirdNET+ : sigmoïdes -> filtre oiseaux/géo, liste noire, sensibilité */
 /* Raretés : une espèce hors de la liste attendue ici cette semaine n'est plus effacée.
    Elle passe si BirdNET+ est très sûr (≥ RARE_T) et s'affiche « rareté ? à vérifier ». */
-const RARE_T=.5;AI.rareHit=new Set();
+const RARE_T=.75;AI.rareHit=new Set();
 function postBN(p){const n=AI.labels.length,o=new Float32Array(n),bias=((S.sens||1)-1)*5,rare=S.rare!==false;
   for(let i=0;i<n;i++){const inM=AI.mask[i];if(!inM&&!(rare&&AI.birdMask[i]))continue;let v=p[i]*AI.mult[i];if(bias){v=Math.min(Math.max(v,1e-6),1-1e-6);v=1/(1+Math.exp(-(Math.log(v/(1-v))+bias)))}
     if(!inM){if(v<RARE_T)continue;AI.rareHit.add(i)}o[i]=v}return o}
@@ -117,9 +117,11 @@ async function perchLabels(){if(AI.perchIdx)return;let txt=null,c=null;try{c=awa
   if(!txt){const r=await fetch(PERCH_LABELS);if(!r.ok)throw new Error("liste Perch introuvable (HTTP "+r.status+")");txt=await r.text();if(c)try{await c.put("https://huginn.local/perch-labels",new Response(txt))}catch(e){}}
   const lines=txt.split(/\r?\n/).slice(1).filter(Boolean);AI.perchIdx=Int32Array.from(lines.map(l=>{const k=AI.sciIdx.get(l.replace(/^"|"$/g,"").trim());return k==null?-1:k}))}
 async function runPerch(wins){const L=160000,res=[];for(const w of wins){const d=new Float32Array(L);d.set(fit(w,L));const r=await wcall({t:"run",name:"perch",output:"label",data:d,dims:[1,L]},[d.buffer]);
-    const lg=r.data,n=AI.labels.length,sc=new Float32Array(n);let mx=-1e9;for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&(AI.mask[k]||AI.rareHit.has(k))&&lg[j]>mx)mx=lg[j]}
-    let sum=0;for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&(AI.mask[k]||AI.rareHit.has(k)))sum+=Math.exp(lg[j]-mx)}
-    for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&(AI.mask[k]||AI.rareHit.has(k)))sc[k]=Math.max(sc[k],Math.exp(lg[j]-mx)/sum)}res.push(sc)}return res}
+    /* Perch est multi-étiquettes : chaque espèce a sa propre probabilité (sigmoïde).
+       Avant, je les renormalisais entre elles (softmax) sur les seules espèces d'ici : même sur du bruit,
+       l'une d'elles sortait forcément haut. C'est ce qui inventait des espèces (ex. Pouillot brun). */
+    const lg=r.data,n=AI.labels.length,sc=new Float32Array(n);
+    for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&(AI.mask[k]||AI.rareHit.has(k))){const v=1/(1+Math.exp(-lg[j]));if(v>sc[k])sc[k]=v}}res.push(sc)}return res}
 /* téléchargement seul (gardé sur le téléphone), puis activation à part : si l'activation fait fermer l'appli
    faute de mémoire, le fichier reste là et l'appli ne réessaie pas toute seule au lancement suivant */
 let perchWake=null;

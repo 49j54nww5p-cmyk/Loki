@@ -11,7 +11,6 @@ const getNights=()=>LS.get("huginn.nights",[]);
 function saveNight(n){const a=getNights().filter(x=>x.id!==n.id);a.unshift(n);LS.set("huginn.nights",a.slice(0,30))}
 
 /* --- enregistrement complet, une pièce par heure --- */
-function recMime(){if(!window.MediaRecorder)return null;for(const m of["audio/mp4;codecs=mp4a.40.2","audio/mp4","audio/aac","audio/webm;codecs=opus","audio/webm"])try{if(MediaRecorder.isTypeSupported(m))return m}catch(e){}return""}
 function nightRecStart(){if(!stream||!NIGHT)return;const mime=recMime();if(mime==null)return;
   const part={k:NIGHT.id+"/h"+NIGHT.audio.length,start:Date.now(),n:0,bytes:0,mime:mime||"audio/mp4"};NIGHT.audio.push(part);
   try{nRec=new MediaRecorder(stream,mime?{mimeType:mime,audioBitsPerSecond:96000}:{audioBitsPerSecond:96000})}catch(e){NIGHT.audio.pop();NIGHT.recErr=String(e.message||e);return}
@@ -25,7 +24,7 @@ function nightRecStop(){clearTimeout(nHourT);return new Promise(res=>{if(!nRec||
 
 /* --- détections : on garde les meilleurs passages de chaque espèce --- */
 function nightStart(){NIGHT={id:"n"+uid(),start:Date.now(),end:null,lat:lastFix?lastFix.lat:null,lon:lastFix?lastFix.lon:null,acc:lastFix?lastFix.acc:null,sp:{},audio:[],mic:S.deviceId?"externe":"téléphone"};
-  saveNight(NIGHT);nightRecStart()}
+  saveNight(NIGHT);if(!REC.on)nightRecStart()}
 function nightHit(i,sc,end){if(!NIGHT||sc<.1)return;const n=nameOf(i),r=LIVE.get(i),now=Date.now(),h=new Date(now).getHours();
   const o=NIGHT.sp[n.la]||(NIGHT.sp[n.la]={fr:n.fr,la:n.la,n:0,max:0,first:now,last:now,hours:{},clips:[],kind:""});
   o.n++;o.last=now;o.max=Math.max(o.max,sc);o.hours[h]=(o.hours[h]||0)+1;if(r&&r.kind)o.kind=r.kind.k;if(r&&r.perch)o.perch=Math.max(o.perch||0,r.perch);
@@ -39,7 +38,7 @@ function nightHit(i,sc,end){if(!NIGHT||sc<.1)return;const n=nameOf(i),r=LIVE.get
   setTimeout(async()=>{const s=grab(NIGHT_SEC);if(!s){o.clips.splice(o.clips.indexOf(slot),1);return}if(!o.clips.includes(slot))return;const x=await to32k(s,ac.sampleRate);
     await putClip(slot.id,{sr:32000,pcm:toI16(x)});slot.pending=false;if(NIGHT)saveNight(NIGHT)},4000);
   saveNight(NIGHT)}
-async function nightStop(){if(!NIGHT)return null;await nightRecStop();await new Promise(r=>setTimeout(r,4500));NIGHT.end=Date.now();const n=NIGHT;NIGHT=null;
+async function nightStop(){if(!NIGHT)return null;await nightRecStop();if(REC.on){const st=NIGHT.start;NIGHT.audio=REC.parts.filter(p=>p.n>0&&p.end>=st).map(p=>Object.assign({},p))}await new Promise(r=>setTimeout(r,4500));NIGHT.end=Date.now();const n=NIGHT;NIGHT=null;
   Object.values(n.sp).forEach(o=>{o.clips=o.clips.filter(c=>!c.pending)});saveNight(n);return n}
 
 /* --- rapport et exports --- */

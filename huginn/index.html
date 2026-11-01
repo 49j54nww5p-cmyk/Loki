@@ -330,7 +330,7 @@ th{color:var(--muted);font-weight:500}
       <button class="bigplay" id="btnStart" aria-label="Écouter"><i></i><span>Écouter</span></button>
       <div class="gut">
         <div class="note" id="micNote" hidden></div>
-        <div class="lhead"><h2>Entendus <b id="liveCount">0</b></h2><span class="mono small muted"><span id="aiState"></span> <b class="timer" id="timer"></b></span></div>
+        <div class="lhead"><h2>Entendus <b id="liveCount">0</b></h2><span class="mono small muted"><span id="aiState"></span> <b class="timer" id="timer"></b> <span class="tg" id="recDot" hidden style="color:var(--live);border-color:var(--live)">● REC</span></span></div>
         <div id="liveList"></div>
         <p class="small muted help">Glisse une espèce vers la droite pour la valider au carnet, vers la gauche pour l'écarter : Ramage apprend de tes choix. Touche-la pour sa fiche.</p>
       </div>
@@ -420,6 +420,7 @@ th{color:var(--muted);font-weight:500}
           <div class="ctl"><label for="range">Plage (dB) <span class="mono" id="rangeLbl"></span></label><input type="range" id="range" min="40" max="120" step="5" value="80"></div>
           <div class="ctl"><label for="specTop">Haut de l'échelle <span class="mono" id="specTopLbl"></span></label><input type="range" id="specTop" min="-60" max="0" step="5" value="-20"></div>
         </div>
+        <label class="toggle"><input type="checkbox" id="recAllT"> Enregistrer toute l'écoute (te demande à la fin si tu gardes)</label>
         <label class="toggle"><input type="checkbox" id="monitor"> Écoute au casque en direct</label>
       </div>
       <div class="card">
@@ -514,7 +515,7 @@ th{color:var(--muted);font-weight:500}
    Les clés « huginn.* » et la base « huginn » sont gardées :
    ainsi le carnet, les sons et la liste de vie d'avant restent là.
    ========================================================= */
-const VERSION="1.5.0";
+const VERSION="1.6.0";
 const IN_CLAUDE=!!(window.claude&&window.claude.use);
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 
@@ -778,7 +779,7 @@ function rarity(i){if(isRareOut(i))return["x","rareté ? à vérifier"];const p=
 /* BirdNET+ : sigmoïdes -> filtre oiseaux/géo, liste noire, sensibilité */
 /* Raretés : une espèce hors de la liste attendue ici cette semaine n'est plus effacée.
    Elle passe si BirdNET+ est très sûr (≥ RARE_T) et s'affiche « rareté ? à vérifier ». */
-const RARE_T=.5;AI.rareHit=new Set();
+const RARE_T=.75;AI.rareHit=new Set();
 function postBN(p){const n=AI.labels.length,o=new Float32Array(n),bias=((S.sens||1)-1)*5,rare=S.rare!==false;
   for(let i=0;i<n;i++){const inM=AI.mask[i];if(!inM&&!(rare&&AI.birdMask[i]))continue;let v=p[i]*AI.mult[i];if(bias){v=Math.min(Math.max(v,1e-6),1-1e-6);v=1/(1+Math.exp(-(Math.log(v/(1-v))+bias)))}
     if(!inM){if(v<RARE_T)continue;AI.rareHit.add(i)}o[i]=v}return o}
@@ -795,9 +796,11 @@ async function perchLabels(){if(AI.perchIdx)return;let txt=null,c=null;try{c=awa
   if(!txt){const r=await fetch(PERCH_LABELS);if(!r.ok)throw new Error("liste Perch introuvable (HTTP "+r.status+")");txt=await r.text();if(c)try{await c.put("https://huginn.local/perch-labels",new Response(txt))}catch(e){}}
   const lines=txt.split(/\r?\n/).slice(1).filter(Boolean);AI.perchIdx=Int32Array.from(lines.map(l=>{const k=AI.sciIdx.get(l.replace(/^"|"$/g,"").trim());return k==null?-1:k}))}
 async function runPerch(wins){const L=160000,res=[];for(const w of wins){const d=new Float32Array(L);d.set(fit(w,L));const r=await wcall({t:"run",name:"perch",output:"label",data:d,dims:[1,L]},[d.buffer]);
-    const lg=r.data,n=AI.labels.length,sc=new Float32Array(n);let mx=-1e9;for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&(AI.mask[k]||AI.rareHit.has(k))&&lg[j]>mx)mx=lg[j]}
-    let sum=0;for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&(AI.mask[k]||AI.rareHit.has(k)))sum+=Math.exp(lg[j]-mx)}
-    for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&(AI.mask[k]||AI.rareHit.has(k)))sc[k]=Math.max(sc[k],Math.exp(lg[j]-mx)/sum)}res.push(sc)}return res}
+    /* Perch est multi-étiquettes : chaque espèce a sa propre probabilité (sigmoïde).
+       Avant, je les renormalisais entre elles (softmax) sur les seules espèces d'ici : même sur du bruit,
+       l'une d'elles sortait forcément haut. C'est ce qui inventait des espèces (ex. Pouillot brun). */
+    const lg=r.data,n=AI.labels.length,sc=new Float32Array(n);
+    for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&(AI.mask[k]||AI.rareHit.has(k))){const v=1/(1+Math.exp(-lg[j]));if(v>sc[k])sc[k]=v}}res.push(sc)}return res}
 /* téléchargement seul (gardé sur le téléphone), puis activation à part : si l'activation fait fermer l'appli
    faute de mémoire, le fichier reste là et l'appli ne réessaie pas toute seule au lancement suivant */
 let perchWake=null;
@@ -981,6 +984,57 @@ function speak(t){if(S.voice===false||!t||!window.speechSynthesis)return;try{con
 function primeSpeech(){try{if(S.voice!==false&&window.speechSynthesis){const u=new SpeechSynthesisUtterance(" ");u.volume=0;speechSynthesis.speak(u)}}catch(e){}}
 function alertNew(lifer,fr){if(S.haptic!==false)haptic(lifer);beep(lifer);if(fr)speak(lifer?"Nouveau ! "+fr:fr)}
 
+/* ===== 45-rec.js ===== */
+/* =========================================================
+   Enregistrement continu : dès que l'écoute démarre, tout est enregistré
+   (AAC ≈ 43 Mo par heure, rangé par blocs de 30 s, une pièce par heure).
+   À l'arrêt, Ramage demande si on garde l'enregistrement complet.
+   La nuit complète réutilise le même enregistrement.
+   ========================================================= */
+const REC={on:false,id:null,start:0,parts:[],r:null,t:0,err:""};
+const getRecs=()=>LS.get("huginn.recs",[]);
+function saveRecs(a){LS.set("huginn.recs",a.slice(0,100))}
+function recMime(){if(!window.MediaRecorder)return null;for(const m of["audio/mp4;codecs=mp4a.40.2","audio/mp4","audio/aac","audio/webm;codecs=opus","audio/webm"])try{if(MediaRecorder.isTypeSupported(m))return m}catch(e){}return""}
+function recStart(){if(REC.on||!stream||S.recAll===false)return;const mime=recMime();if(mime==null){REC.err="ce navigateur ne sait pas enregistrer";return}
+  REC.on=true;REC.id="r"+uid();REC.start=Date.now();REC.parts=[];REC.err="";recPart();$("#recDot").hidden=false}
+function recPart(){if(!REC.on||!stream)return;const mime=recMime();const part={k:REC.id+"/h"+REC.parts.length,start:Date.now(),end:Date.now(),n:0,bytes:0,mime:mime||"audio/mp4"};REC.parts.push(part);
+  try{REC.r=new MediaRecorder(stream,mime?{mimeType:mime,audioBitsPerSecond:96000}:{audioBitsPerSecond:96000})}catch(e){REC.parts.pop();REC.err=String(e.message||e);REC.on=false;return}
+  part.mime=(REC.r.mimeType||part.mime).split(";")[0];
+  REC.r.ondataavailable=ev=>{if(!ev.data||!ev.data.size)return;const i=part.n++;part.bytes+=ev.data.size;part.end=Date.now();dbPut("night",part.k+"/"+i,ev.data)};
+  REC.r.start(30000);clearTimeout(REC.t);
+  const d=new Date(),ms=Math.min(3600e3,(60-d.getMinutes())*60e3-d.getSeconds()*1e3)||3600e3;
+  REC.t=setTimeout(()=>{if(!REC.on)return;const r=REC.r;r.onstop=()=>recPart();try{r.stop()}catch(e){recPart()}},ms)}
+function recStop(){clearTimeout(REC.t);$("#recDot").hidden=true;return new Promise(res=>{const done=()=>{const out=REC.on||REC.parts.length?{id:REC.id,start:REC.start,end:Date.now(),parts:REC.parts.filter(p=>p.n>0)}:null;REC.on=false;REC.r=null;REC.parts=[];res(out)};
+  if(!REC.r||REC.r.state==="inactive"){done();return}const r=REC.r;r.onstop=()=>setTimeout(done,300);try{r.stop()}catch(e){done()}})}
+const recBytes=r=>r.parts.reduce((s,p)=>s+p.bytes,0);
+function recDrop(rec,except){for(const p of rec.parts){if(except&&except.has(p.k))continue;for(let i=0;i<p.n;i++)dbDel("night",p.k+"/"+i)}}
+/* pièces déjà prises par une nuit complète : elles ne sont jamais supprimées ici */
+function recUsedByNights(){const s=new Set();getNights().forEach(n=>(n.audio||[]).forEach(a=>s.add(a.k)));return s}
+
+/* la question à l'arrêt */
+function recAsk(rec,where){if(!rec||!rec.parts.length)return"";const mb=recBytes(rec)/1e6,dur=rec.end-rec.start;
+  return`<div class="card" id="recAsk" style="margin:12px 16px 0"><h3>Enregistrement complet</h3><p class="small">${dureeTxt(dur)} · ${mb<1?mb.toFixed(1):mb.toFixed(0)} Mo · ${rec.parts.length} pièce${rec.parts.length>1?"s":""}</p>
+    <div class="row"><button class="btn primary" id="recKeep">Garder</button><button class="btn ghost danger" id="recDel">Supprimer</button></div>
+    <p class="small muted">Gardé : dans Carnet › Sorties, à exporter en fichier (m4a). Si tu fermes sans choisir, il est gardé.</p></div>`}
+function recBind(rec,meta){if(!rec)return;let decided=false;const keep=()=>{if(decided)return;decided=true;const a=getRecs();a.unshift(Object.assign({id:rec.id,start:rec.start,end:rec.end,parts:rec.parts,lat:lastFix?lastFix.lat:null,lon:lastFix?lastFix.lon:null,mic:S.deviceId?"externe":"téléphone"},meta||{}));saveRecs(a);renderLog()};
+  const k=$("#recKeep"),d=$("#recDel");if(!k)return;
+  k.onclick=()=>{keep();$("#recAsk").innerHTML=`<h3>Enregistrement gardé ✓</h3><p class="small muted">Carnet › Sorties › Enregistrements.</p>`;toast("Enregistrement gardé")};
+  d.onclick=()=>{if(d.dataset.c!=="1"){d.dataset.c="1";d.textContent="Toucher encore pour supprimer";return}decided=true;recDrop(rec,recUsedByNights());$("#recAsk").innerHTML=`<p class="small muted">Enregistrement supprimé.</p>`;toast("Enregistrement supprimé")};
+  /* fermé sans choisir : on garde */
+  const sh=$("#sheet"),obs=new MutationObserver(()=>{if(sh.hidden){obs.disconnect();keep()}});obs.observe(sh,{attributes:true,attributeFilter:["hidden"]})}
+function openRecOnly(rec){if(!rec||!rec.parts.length)return;openSheet(`<div class="sumhead"><span class="eyebrow">Écoute terminée</span><h2>${fmtD(rec.start)} · ${fmtT(rec.start)} → ${fmtT(rec.end)}</h2><p class="small muted">Aucune espèce retenue pendant cette écoute.</p></div>${recAsk(rec)}`,"summary");recBind(rec)}
+
+/* export d'une pièce */
+async function exportRecPart(p){const parts=[];for(let i=0;i<p.n;i++){const b=await dbGet("night",p.k+"/"+i);if(b)parts.push(b)}
+  if(!parts.length){toast("Cette pièce n'est plus sur le téléphone");return}const ext=/webm/.test(p.mime)?"webm":"m4a";
+  await saveFile(`ramage_${stamp(p.start)}.${ext}`,new Blob(parts,{type:p.mime}))}
+function openRec(r){if(!r)return;const mb=recBytes(r)/1e6;
+  openSheet(`<div class="sumhead"><span class="eyebrow">Enregistrement complet</span><h2>${fmtD(r.start)} · ${fmtT(r.start)} → ${fmtT(r.end)}</h2><p class="small muted">${dureeTxt(r.end-r.start)} · ${mb.toFixed(0)} Mo · micro ${esc(r.mic||"")}${r.lat!=null?` · ${r.lat.toFixed(5)}, ${r.lon.toFixed(5)}`:""}</p></div>
+    <div class="row">${r.parts.map((p,k)=>`<button class="btn sm" data-rp="${k}">⤓ ${fmtT(p.start)}–${fmtT(p.end)}</button>`).join("")}</div>
+    <div class="row" style="margin-top:12px"><button class="btn ghost danger sm" id="recDrop">Supprimer cet enregistrement</button></div>`,"summary");
+  $("#sheetBody").querySelectorAll("[data-rp]").forEach(b=>b.onclick=()=>exportRecPart(r.parts[+b.dataset.rp]));
+  const d=$("#recDrop");d.onclick=()=>{if(d.dataset.c!=="1"){d.dataset.c="1";d.textContent="Toucher encore pour supprimer";return}recDrop(r,recUsedByNights());saveRecs(getRecs().filter(x=>x.id!==r.id));closeSheet();renderLog();toast("Enregistrement supprimé")}}
+
 /* ===== 50-live.js ===== */
 /* =========================================================
    Écoute en direct : spectro scientifique + liste qui s'allume.
@@ -1006,7 +1060,7 @@ function imgPh(la,sz){ensurePhoto(la);const u=PH[la]?(sz==="m"?PH[la].m:PH[la].s
 async function startListen(){ctx();primeSpeech();
   try{const c={echoCancellation:false,noiseSuppression:false,autoGainControl:false};if(S.deviceId)c.deviceId={exact:S.deviceId};stream=await navigator.mediaDevices.getUserMedia({audio:c})}
   catch(e){showMicNote();return}
-  await ensureTap();srcNode=ac.createMediaStreamSource(stream);srcNode.connect(hp);allocRing();listDevices();startGPS();beginLoop()}
+  await ensureTap();srcNode=ac.createMediaStreamSource(stream);srcNode.connect(hp);allocRing();listDevices();startGPS();beginLoop();recStart()}
 function showMicNote(){const n=$("#micNote");n.hidden=false;
   n.innerHTML=`<b>${IN_CLAUDE?"Micro indisponible dans l'aperçu.":"Micro refusé."}</b> ${IN_CLAUDE?"Le micro marche dans la version GitHub Pages.":"Autorise le micro pour ce site dans Réglages iOS › Safari › Micro, puis recharge."}<div class="row" style="margin-top:8px"><button class="btn sm" id="btnLiveDemo">Lancer la démo</button></div>`;
   $("#btnLiveDemo").onclick=startDemoLive}
@@ -1015,7 +1069,7 @@ async function startDemoLive(){ctx();await ensureTap();const d=genDemo(),b=ac.cr
 function beginLoop(){running=true;document.body.classList.add("listening");$("#liveIdle").hidden=true;
   $("#btnCapture").disabled=false;$("#btnBlack").disabled=false;SPECT.drawn=AUD.total;SPECT.W=0;SPECT.floor=null;MARKS.length=0;
   if(!SES)SES={start:Date.now(),sp:new Map()};startAI();renderLive();cancelAnimationFrame(rafId);rafId=requestAnimationFrame(frame)}
-function stopListen(){running=false;document.body.classList.remove("listening");cancelAnimationFrame(rafId);stopAI();sessionEnd();
+async function stopListen(){running=false;document.body.classList.remove("listening");cancelAnimationFrame(rafId);stopAI();const rec=await recStop();sessionEnd(rec);
   if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}if(srcNode){try{srcNode.disconnect()}catch(e){}srcNode=null}
   if(demoNode){try{demoNode.stop();demoNode.disconnect()}catch(e){}demoNode=null}
   stopGPS();$("#btnCapture").disabled=true;$("#btnBlack").disabled=true;$("#lvl i").style.width="0";renderLive()}
@@ -1065,7 +1119,7 @@ function drawOverlay(){const W=liveO.width,H=liveO.height,d=dprOf();liveOX.clear
 new ResizeObserver(()=>{drawAxis($("#liveAxis"),0,S.fmax);if(!running){sizeCanvas(liveC);paintBg(liveX,liveC);sizeCanvas(liveO);drawOverlay()}}).observe(liveC);
 
 /* ---- IA en direct ---- */
-let aiTimer=0,perchTimer=0,aiBusy=false,perchBusy=false;
+let aiTimer=0,perchTimer=0,aiBusy=false,perchBusy=false;const PSEEN=new Map();/* scores Perch des raretés en attente de confirmation */
 function startAI(){clearInterval(aiTimer);clearInterval(perchTimer);aiTimer=setInterval(liveTick,1500);perchTimer=setInterval(perchTick,5000);if(!AI.ready.bn&&!IN_CLAUDE)ensureAI()}
 function stopAI(){clearInterval(aiTimer);clearInterval(perchTimer)}
 function liveRec(i,now){let r=LIVE.get(i);if(!r){const n=nameOf(i);r={i,fr:n.fr,la:n.la,first:now,last:now,max:0,bn:0,perch:0,n:0,lifer:isLifer(n.la),kind:null};LIVE.set(i,r);r.isNew=true;
@@ -1074,7 +1128,7 @@ function updateKind(r){const k=kindGuess(REF.mem.get(r.la),r.emb,r.seg);if(k)r.k
 async function liveTick(){if(!running||aiBusy||!AI.ready.bn||!AI.labels||!ac)return;const s=grab(3);if(!s||s.length<ac.sampleRate*2)return;aiBusy=true;
   try{const x=await to32k(s,ac.sampleRate),[o]=await runBN2([x]),sc=postBN(o.raw),now=Date.now(),thr=thrNow();
     const cand=topK(sc,8,thr*.6);cand.forEach(i=>{sc[i]=learnAdjust(nameOf(i).la,o.emb,sc[i])});
-    const hits=cand.filter(i=>sc[i]>=thr&&!AI.rejected.has(i)).sort((a,b)=>sc[b]-sc[a]).slice(0,4);let alert=null;
+    const hits=cand.filter(i=>sc[i]>=thr&&!AI.rejected.has(i)&&!(isRareOut(i)&&AI.ready.perch&&!(PSEEN.get(i)>=.5))).sort((a,b)=>sc[b]-sc[a]).slice(0,4);let alert=null;
     for(const i of hits){const r=liveRec(i,now);if(r.isNew){r.isNew=false;if(!alert||r.lifer)alert=r}
       r.n++;r.last=now;r.cur=sc[i];r.bn=Math.max(r.bn,sc[i]);if(sc[i]>r.max){r.max=sc[i];r.emb=o.emb;r.seg=fit(x,96000).slice();updateKind(r)}
       addMark(i,s.end-s.length,s.end,sc[i]);if(autoState.on)nightHit(i,sc[i],s.end);
@@ -1084,11 +1138,13 @@ async function liveTick(){if(!running||aiBusy||!AI.ready.bn||!AI.labels||!ac)ret
   catch(e){AI.err=String(e.message||e)}finally{aiBusy=false}}
 async function perchTick(){if(!running||!AI.ready.perch||perchBusy||!AI.perchIdx||S.perchLive===false||!ac)return;const s=grab(5);if(!s||s.length<ac.sampleRate*4)return;perchBusy=true;
   try{const x=await to32k(s,ac.sampleRate),[sc]=await runPerch([x]),now=Date.now();
-    topK(sc,3,.4).forEach(i=>{if(AI.rejected.has(i))return;let r=LIVE.get(i);if(!r){if(sc[i]<.6)return;r=liveRec(i,now);r.isNew=false;r.viaPerch=true;r.max=sc[i]*.9;r.n=1;if(!autoState.on)alertNew(r.lifer,r.fr)}
+    /* Perch seul n'ajoute une espèce que s'il est très sûr, et jamais une rareté hors liste */
+    AI.rareHit.forEach(i=>{if(sc[i]>(PSEEN.get(i)||0))PSEEN.set(i,sc[i])});
+    topK(sc,3,.4).forEach(i=>{if(AI.rejected.has(i))return;let r=LIVE.get(i);if(!r){if(sc[i]<.85||isRareOut(i))return;r=liveRec(i,now);r.isNew=false;r.viaPerch=true;r.max=sc[i]*.9;r.n=1;if(!autoState.on)alertNew(r.lifer,r.fr)}
       r.perch=Math.max(r.perch||0,sc[i]);r.lastP=now;if(r.viaPerch){r.last=now;addMark(i,s.end-s.length,s.end,sc[i])}});renderLive()}catch(e){}finally{perchBusy=false}}
 
 /* ---- liste : chaque espèce garde sa place, elle s'allume quand elle chante ---- */
-function rowHTML(r,now){const on=running&&now-r.last<4500,k=r.kind,rk=rarity(r.i),tr=traps(r.la),two=r.perch>=.3&&r.bn>=thrNow()*.9;
+function rowHTML(r,now){const on=running&&now-r.last<4500,k=r.kind,rk=rarity(r.i),tr=traps(r.la),two=r.perch>=.5&&r.bn>=thrNow()*.9;
   const kt=k?`<span class="tg k${k.sure?"":" unsure"}" style="--k:${kindVar(k.k)}" title="${k.src==="réf"?`d'après ${k.n} références proches`:"d'après la forme du son"}">${esc(k.k.toUpperCase())}${k.sure?"":" ?"}</span>`:`<span class="tg">TYPE ?</span>`;
   const at=two?`<span class="tg ai2" title="BirdNET+ ${Math.round(r.bn*100)} % · Perch ${Math.round(r.perch*100)} %">2 IA ✓</span>`:r.viaPerch?`<span class="tg" title="trouvé par Perch v2">PERCH</span>`:"";
   return`<div class="ph">${imgPh(r.la,"s")}</div><div class="mid"><div class="nm">${esc(r.fr)}</div><div class="la">${esc(r.la)}</div>
@@ -1130,10 +1186,10 @@ $("#liveWrap").addEventListener("pointerup",()=>{const n=Date.now();if(n-lastTap
 
 /* ---- sortie : chrono et résumé à l'arrêt ---- */
 setInterval(()=>{const t=$("#timer");if(!running||!SES){t.textContent="";return}const s=Math.floor((Date.now()-SES.start)/1000);t.textContent=`· ${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`},500);
-function sessionEnd(){if(!SES)return;const s=SES;SES=null;s.end=Date.now();if(s.end-s.start<15000||!s.sp.size)return;
+function sessionEnd(recd){if(!SES){openRecOnly(recd);return}const s=SES;SES=null;s.end=Date.now();if(s.end-s.start<15000||!s.sp.size){openRecOnly(recd);return}
   const rec={id:uid(),kind:"sortie",start:s.start,end:s.end,lat:lastFix?lastFix.lat:null,lon:lastFix?lastFix.lon:null,
     list:Array.from(s.sp.values()).filter(r=>{const i=AI.sciIdx&&AI.sciIdx.get(r.la);return!(i!=null&&AI.rejected.has(i))}).sort((a,b)=>b.max-a.max).map(r=>({fr:r.fr,la:r.la,n:r.n,max:r.max,kind:r.kind||"",lifer:r.lifer}))};
-  if(!rec.list.length)return;saveSession(rec);openSummary(rec)}
+  if(!rec.list.length){openRecOnly(recd);return}saveSession(rec);openSummary(rec,recd)}
 
 /* ---- capture rétro ---- */
 $("#btnCapture").onclick=()=>capture();
@@ -1166,7 +1222,6 @@ const getNights=()=>LS.get("huginn.nights",[]);
 function saveNight(n){const a=getNights().filter(x=>x.id!==n.id);a.unshift(n);LS.set("huginn.nights",a.slice(0,30))}
 
 /* --- enregistrement complet, une pièce par heure --- */
-function recMime(){if(!window.MediaRecorder)return null;for(const m of["audio/mp4;codecs=mp4a.40.2","audio/mp4","audio/aac","audio/webm;codecs=opus","audio/webm"])try{if(MediaRecorder.isTypeSupported(m))return m}catch(e){}return""}
 function nightRecStart(){if(!stream||!NIGHT)return;const mime=recMime();if(mime==null)return;
   const part={k:NIGHT.id+"/h"+NIGHT.audio.length,start:Date.now(),n:0,bytes:0,mime:mime||"audio/mp4"};NIGHT.audio.push(part);
   try{nRec=new MediaRecorder(stream,mime?{mimeType:mime,audioBitsPerSecond:96000}:{audioBitsPerSecond:96000})}catch(e){NIGHT.audio.pop();NIGHT.recErr=String(e.message||e);return}
@@ -1180,7 +1235,7 @@ function nightRecStop(){clearTimeout(nHourT);return new Promise(res=>{if(!nRec||
 
 /* --- détections : on garde les meilleurs passages de chaque espèce --- */
 function nightStart(){NIGHT={id:"n"+uid(),start:Date.now(),end:null,lat:lastFix?lastFix.lat:null,lon:lastFix?lastFix.lon:null,acc:lastFix?lastFix.acc:null,sp:{},audio:[],mic:S.deviceId?"externe":"téléphone"};
-  saveNight(NIGHT);nightRecStart()}
+  saveNight(NIGHT);if(!REC.on)nightRecStart()}
 function nightHit(i,sc,end){if(!NIGHT||sc<.1)return;const n=nameOf(i),r=LIVE.get(i),now=Date.now(),h=new Date(now).getHours();
   const o=NIGHT.sp[n.la]||(NIGHT.sp[n.la]={fr:n.fr,la:n.la,n:0,max:0,first:now,last:now,hours:{},clips:[],kind:""});
   o.n++;o.last=now;o.max=Math.max(o.max,sc);o.hours[h]=(o.hours[h]||0)+1;if(r&&r.kind)o.kind=r.kind.k;if(r&&r.perch)o.perch=Math.max(o.perch||0,r.perch);
@@ -1194,7 +1249,7 @@ function nightHit(i,sc,end){if(!NIGHT||sc<.1)return;const n=nameOf(i),r=LIVE.get
   setTimeout(async()=>{const s=grab(NIGHT_SEC);if(!s){o.clips.splice(o.clips.indexOf(slot),1);return}if(!o.clips.includes(slot))return;const x=await to32k(s,ac.sampleRate);
     await putClip(slot.id,{sr:32000,pcm:toI16(x)});slot.pending=false;if(NIGHT)saveNight(NIGHT)},4000);
   saveNight(NIGHT)}
-async function nightStop(){if(!NIGHT)return null;await nightRecStop();await new Promise(r=>setTimeout(r,4500));NIGHT.end=Date.now();const n=NIGHT;NIGHT=null;
+async function nightStop(){if(!NIGHT)return null;await nightRecStop();if(REC.on){const st=NIGHT.start;NIGHT.audio=REC.parts.filter(p=>p.n>0&&p.end>=st).map(p=>Object.assign({},p))}await new Promise(r=>setTimeout(r,4500));NIGHT.end=Date.now();const n=NIGHT;NIGHT=null;
   Object.values(n.sp).forEach(o=>{o.clips=o.clips.filter(c=>!c.pending)});saveNight(n);return n}
 
 /* --- rapport et exports --- */
@@ -1261,7 +1316,7 @@ function kindLine(k){if(!k)return`<p class="small muted">Type de son : pas encor
   return`<p class="small"><span class="tg k${k.sure?"":" unsure"}" style="--k:${kindVar(k.k)}">${esc(k.k.toUpperCase())}${k.sure?"":" ?"}</span> ${k.src==="réf"?`d'après les ${k.n} références les plus proches${k.sure?"":", sans accord net"}`:"d'après la forme du son (notes, durée) : à confirmer"}</p>`}
 async function openFocus(i){const r=LIVE.get(i);if(!r)return;const rk=rarity(i),thr=thrNow();
   const perchTxt=AI.ready.perch?(r.perch?Math.round(r.perch*100)+" %":"pas confirmé"):"non chargé";
-  const agree=r.perch>=.3&&r.bn>=thr*.9?`<div class="agreeb">${svgIc("two",18)} Les deux IA sont d'accord</div>`:AI.ready.perch&&!r.viaPerch?`<div class="agreeb" style="color:var(--muted)">Perch v2 ne l'a pas (encore) confirmé</div>`:"";
+  const agree=r.perch>=.5&&r.bn>=thr*.9?`<div class="agreeb">${svgIc("two",18)} Les deux IA sont d'accord</div>`:AI.ready.perch&&!r.viaPerch?`<div class="agreeb" style="color:var(--muted)">Perch v2 ne l'a pas (encore) confirmé</div>`:"";
   openSheet(`<div class="hero">${imgPh(r.la,"m")}<div class="shade"></div><div class="hd"><div class="tags">${r.lifer?`<span class="tg new">NOUVEAU</span>`:""}${rk?`<span class="tg rare">${rk[1]}</span>`:""}</div><h2 class="fname">${esc(r.fr)}</h2><p class="latin">${esc(r.la)}</p></div></div>
     <div class="fbody">
       <div class="duo"><div><b>${r.bn?Math.round(r.bn*100)+" %":"—"}</b><span>BirdNET+</span></div><div><b>${perchTxt.endsWith("%")?perchTxt:"—"}</b><span>Perch v2${perchTxt.endsWith("%")?"":" · "+perchTxt}</span></div>${agree}</div>
@@ -1287,11 +1342,11 @@ async function openFocus(i){const r=LIVE.get(i);if(!r)return;const rk=rarity(i),
 
 /* ---- résumé de sortie ---- */
 function summaryText(rec){return`Ramage · ${rec.kind==="nocmig"?"nuit":"sortie"} du ${fmtD(rec.start)} ${fmtT(rec.start)} (${dureeTxt(rec.end-rec.start)})\n${rec.list.length} espèce${rec.list.length>1?"s":""} :\n`+rec.list.map(s=>`- ${s.fr}${s.kind?" ("+s.kind+")":""}${s.n>1?" ×"+s.n:""}`).join("\n")}
-function openSummary(rec){if(!rec)return;const newc=rec.list.filter(s=>s.lifer).length;
+function openSummary(rec,recd){if(!rec)return;const newc=rec.list.filter(s=>s.lifer).length;
   openSheet(`<div class="sumhead"><span class="eyebrow">${rec.kind==="nocmig"?"Rapport de la nuit":"Sortie terminée"}</span><h2>${fmtD(rec.start)} · ${fmtT(rec.start)}</h2>
     <div class="kpis"><div><b>${dureeTxt(rec.end-rec.start)}</b><span>durée</span></div><div><b>${rec.list.length}</b><span>espèces</span></div><div><b>${newc}</b><span>nouvelles</span></div></div></div>
     ${rec.hours?nightChart(rec.hours):""}<div class="sumlist">${rec.list.map(s=>`<div class="srow">${imgPh(s.la,"s")}<span class="sn"><b>${esc(s.fr)}${s.lifer?` <span class="tg new">NOUVEAU</span>`:""}</b><small>${[s.kind,s.times].filter(Boolean).map(esc).join(" · ")}</small></span><span class="sp2">${s.n>1?"×"+s.n:""} ${s.max!=null?Math.round(s.max*100)+" %":""}</span></div>`).join("")}</div>
-    <div class="row" style="margin-top:12px"><button class="btn primary" id="sumShare">Partager</button><button class="btn" id="sumVal">Valider ≥ 70 % au carnet</button></div>`,"summary");
+    <div class="row" style="margin-top:12px"><button class="btn primary" id="sumShare">Partager</button><button class="btn" id="sumVal">Valider ≥ 70 % au carnet</button></div>${recAsk(recd)}`,"summary");recBind(recd);
   $("#sumShare").onclick=async()=>{const t=summaryText(rec);try{if(navigator.share){await navigator.share({text:t});return}}catch(e){if(e&&e.name==="AbortError")return}try{await navigator.clipboard.writeText(t);toast("Résumé copié")}catch(e){toast("Partage indisponible")}};
   $("#sumVal").onclick=()=>{let k=0;rec.list.filter(s=>s.max>=.7&&s.la).forEach(s=>{if(entries.some(e=>e.la===s.la&&e.ts>=rec.start))return;entries.unshift({id:uid(),ts:rec.start,lat:rec.lat,lon:rec.lon,acc:null,sp:s.fr,la:s.la,type:KIND_TYPE[s.kind]||"",notes:"",source:rec.kind==="nocmig"?"auto":"micro",dur:0,m:null,ai:{m:"BirdNET+",fr:s.fr,la:s.la,sc:s.max}});addLife(s.fr,s.la);k++});
     saveEntries();renderLog();toast(k?`${k} espèce${k>1?"s":""} ajoutée${k>1?"s":""} au carnet`:"Rien de nouveau à ajouter")}}
@@ -1471,9 +1526,10 @@ function renderLog(){if($("#tab-log").hidden)return;const ses=getSessions();
   if(logPane==="ses")renderSessions(ses);else if(logPane==="ent")renderEntries();else if(logPane==="plu")renderPlumage();else renderMap()}
 
 /* sorties et nuits */
-function renderSessions(ses){const el=$("#logSes"),nights=getNights();
-  el.innerHTML=(nights.length?`<h3>Nuits complètes</h3><div class="sumlist">${nights.map((n,k)=>{const L=Object.values(n.sp),ok=L.filter(o=>o.max>=NIGHT_MIN).length;return`<button class="srow" data-night="${k}"><span class="tart" style="width:40px;height:40px;border-radius:10px">${svgIc("moon",20)}</span><span class="sn"><b>Nuit · ${fmtD(n.start)} ${fmtT(n.start)}</b><small>${n.end?dureeTxt(n.end-n.start):"en cours"} · ${ok} espèce${ok>1?"s":""} ≥ 80 % · ${L.length} au total</small></span><span class="sp2">›</span></button>`}).join("")}</div><h3>Sorties</h3>`:"")+(ses.length?`<div class="sumlist">${ses.slice(0,40).map((s,k)=>`<button class="srow" data-ses="${k}"><span class="tart" style="width:40px;height:40px;border-radius:10px">${svgIc(s.kind==="nocmig"?"moon":"bird",20)}</span><span class="sn"><b>${s.kind==="nocmig"?"Nuit":"Sortie"} · ${fmtD(s.start)} ${fmtT(s.start)}</b><small>${dureeTxt(s.end-s.start)} · ${s.list.length} espèce${s.list.length>1?"s":""} · ${esc(s.list.slice(0,3).map(x=>x.fr).join(", "))}${s.list.length>3?"…":""}</small></span><span class="sp2">›</span></button>`).join("")}</div>`
-   :(nights.length?"":`<p class="empty">Tes sorties apparaissent ici quand tu arrêtes une écoute de plus de 15 secondes avec au moins une espèce.</p>`));
+function renderSessions(ses){const el=$("#logSes"),nights=getNights(),recs=getRecs();
+  el.innerHTML=(recs.length?`<h3>Enregistrements</h3><div class="sumlist">${recs.map((r,k)=>`<button class="srow" data-rec="${k}"><span class="tart" style="width:40px;height:40px;border-radius:10px">${svgIc("wave",20)}</span><span class="sn"><b>${fmtD(r.start)} · ${fmtT(r.start)}–${fmtT(r.end)}</b><small>${dureeTxt(r.end-r.start)} · ${(recBytes(r)/1e6).toFixed(0)} Mo</small></span><span class="sp2">›</span></button>`).join("")}</div>`:"")+(nights.length?`<h3>Nuits complètes</h3><div class="sumlist">${nights.map((n,k)=>{const L=Object.values(n.sp),ok=L.filter(o=>o.max>=NIGHT_MIN).length;return`<button class="srow" data-night="${k}"><span class="tart" style="width:40px;height:40px;border-radius:10px">${svgIc("moon",20)}</span><span class="sn"><b>Nuit · ${fmtD(n.start)} ${fmtT(n.start)}</b><small>${n.end?dureeTxt(n.end-n.start):"en cours"} · ${ok} espèce${ok>1?"s":""} ≥ 80 % · ${L.length} au total</small></span><span class="sp2">›</span></button>`}).join("")}</div><h3>Sorties</h3>`:"")+(ses.length?`<div class="sumlist">${ses.slice(0,40).map((s,k)=>`<button class="srow" data-ses="${k}"><span class="tart" style="width:40px;height:40px;border-radius:10px">${svgIc(s.kind==="nocmig"?"moon":"bird",20)}</span><span class="sn"><b>${s.kind==="nocmig"?"Nuit":"Sortie"} · ${fmtD(s.start)} ${fmtT(s.start)}</b><small>${dureeTxt(s.end-s.start)} · ${s.list.length} espèce${s.list.length>1?"s":""} · ${esc(s.list.slice(0,3).map(x=>x.fr).join(", "))}${s.list.length>3?"…":""}</small></span><span class="sp2">›</span></button>`).join("")}</div>`
+   :(nights.length||recs.length?"":`<p class="empty">Tes sorties apparaissent ici quand tu arrêtes une écoute de plus de 15 secondes avec au moins une espèce.</p>`));
+  el.querySelectorAll("[data-rec]").forEach(b=>b.onclick=()=>openRec(getRecs()[+b.dataset.rec]));
   el.querySelectorAll("[data-night]").forEach(b=>b.onclick=()=>openNight(getNights()[+b.dataset.night]));
   el.querySelectorAll("[data-ses]").forEach(b=>b.onclick=()=>openSummary(getSessions()[+b.dataset.ses]))}
 
@@ -1578,6 +1634,7 @@ bindToggle("#voiceT","voice",true,on=>{if(on)speak("Annonce vocale activée")});
 bindToggle("#glovesT","gloves",false,on=>document.body.classList.toggle("gloves",on));
 bindToggle("#autoThrT","autoThr",true);
 bindToggle("#rareT","rare",true);
+bindToggle("#recAllT","recAll",true);
 bindToggle("#perchLiveT","perchLive",true,on=>{if(on)autoPerch()});
 bindToggle("#autoRefT","autoRef",true);
 bindToggle("#autoCmp","autoCmp",true);
@@ -1643,6 +1700,7 @@ $("#tour").addEventListener("touchend",e=>{if(TST.x==null)return;const dx=e.chan
 
 /* nouveautés */
 const NEWS=[
+  {n:"1.6",d:"1er novembre 2026",items:[["wave","Enregistrement continu","Tout ce que tu écoutes est enregistré. À l'arrêt, Ramage te demande si tu gardes l'enregistrement complet (Carnet › Sorties, export en m4a)."],["two","Fini les espèces inventées par Perch","Perch notait ses espèces les unes par rapport aux autres : sur du bruit, l'une sortait forcément haut. Chaque espèce a maintenant sa vraie probabilité ; Perch seul n'ajoute une espèce qu'à 85 % et plus."],["bird","Raretés plus strictes","Une espèce hors liste doit atteindre 75 % chez BirdNET+, et être confirmée par Perch s'il est activé."]]},
   {n:"1.5",d:"1er novembre 2026",items:[["wave","Spectro étalonné en dBFS","Même échelle que Audacity, Raven ou Sonic Visualiser : fenêtre de Hann, 1024 points, de −100 à −20 dBFS par défaut. Une même couleur veut toujours dire le même niveau, d'un enregistrement à l'autre."],["bird","BirdNET+ se recharge","Corrige l'erreur « téléchargement coupé à 67 / 60 Mo »."]]},
   {n:"1.4.1",d:"1er novembre 2026",items:[["wave","Spectro qui ne sature plus","Le niveau se cale tout seul sur le bruit de fond : fond sombre, oiseaux en clair, même avec la parabole ou un micro sensible. Le contraste (Réglages) règle la plage au-dessus du fond."]]},
   {n:"1.4",d:"28 octobre 2026",items:[["moon","La nuit complète","Toute la nuit enregistrée (AAC, une pièce par heure) et, pour chaque espèce, les 5 meilleurs extraits de 10 s. Au réveil : un dossier ZIP trié nuit › espèce › extraits, avec le tableau des espèces à 80 % et plus."]]},

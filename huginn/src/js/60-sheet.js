@@ -9,7 +9,7 @@ function kindLine(k){if(!k)return`<p class="small muted">Type de son : pas encor
   return`<p class="small"><span class="tg k${k.sure?"":" unsure"}" style="--k:${kindVar(k.k)}">${esc(k.k.toUpperCase())}${k.sure?"":" ?"}</span> ${k.src==="réf"?`d'après les ${k.n} références les plus proches${k.sure?"":", sans accord net"}`:"d'après la forme du son (notes, durée) : à confirmer"}</p>`}
 async function openFocus(i){const r=LIVE.get(i);if(!r)return;const rk=rarity(i),thr=thrNow();
   const perchTxt=AI.ready.perch?(r.perch?Math.round(r.perch*100)+" %":"pas confirmé"):"non chargé";
-  const agree=r.perch>=.3&&r.bn>=thr*.9?`<div class="agreeb">${svgIc("two",18)} Les deux IA sont d'accord</div>`:AI.ready.perch&&!r.viaPerch?`<div class="agreeb" style="color:var(--muted)">Perch v2 ne l'a pas (encore) confirmé</div>`:"";
+  const agree=r.perch>=.5&&r.bn>=thr*.9?`<div class="agreeb">${svgIc("two",18)} Les deux IA sont d'accord</div>`:AI.ready.perch&&!r.viaPerch?`<div class="agreeb" style="color:var(--muted)">Perch v2 ne l'a pas (encore) confirmé</div>`:"";
   openSheet(`<div class="hero">${imgPh(r.la,"m")}<div class="shade"></div><div class="hd"><div class="tags">${r.lifer?`<span class="tg new">NOUVEAU</span>`:""}${rk?`<span class="tg rare">${rk[1]}</span>`:""}</div><h2 class="fname">${esc(r.fr)}</h2><p class="latin">${esc(r.la)}</p></div></div>
     <div class="fbody">
       <div class="duo"><div><b>${r.bn?Math.round(r.bn*100)+" %":"—"}</b><span>BirdNET+</span></div><div><b>${perchTxt.endsWith("%")?perchTxt:"—"}</b><span>Perch v2${perchTxt.endsWith("%")?"":" · "+perchTxt}</span></div>${agree}</div>
@@ -35,11 +35,11 @@ async function openFocus(i){const r=LIVE.get(i);if(!r)return;const rk=rarity(i),
 
 /* ---- résumé de sortie ---- */
 function summaryText(rec){return`Ramage · ${rec.kind==="nocmig"?"nuit":"sortie"} du ${fmtD(rec.start)} ${fmtT(rec.start)} (${dureeTxt(rec.end-rec.start)})\n${rec.list.length} espèce${rec.list.length>1?"s":""} :\n`+rec.list.map(s=>`- ${s.fr}${s.kind?" ("+s.kind+")":""}${s.n>1?" ×"+s.n:""}`).join("\n")}
-function openSummary(rec){if(!rec)return;const newc=rec.list.filter(s=>s.lifer).length;
+function openSummary(rec,recd){if(!rec)return;const newc=rec.list.filter(s=>s.lifer).length;
   openSheet(`<div class="sumhead"><span class="eyebrow">${rec.kind==="nocmig"?"Rapport de la nuit":"Sortie terminée"}</span><h2>${fmtD(rec.start)} · ${fmtT(rec.start)}</h2>
     <div class="kpis"><div><b>${dureeTxt(rec.end-rec.start)}</b><span>durée</span></div><div><b>${rec.list.length}</b><span>espèces</span></div><div><b>${newc}</b><span>nouvelles</span></div></div></div>
     ${rec.hours?nightChart(rec.hours):""}<div class="sumlist">${rec.list.map(s=>`<div class="srow">${imgPh(s.la,"s")}<span class="sn"><b>${esc(s.fr)}${s.lifer?` <span class="tg new">NOUVEAU</span>`:""}</b><small>${[s.kind,s.times].filter(Boolean).map(esc).join(" · ")}</small></span><span class="sp2">${s.n>1?"×"+s.n:""} ${s.max!=null?Math.round(s.max*100)+" %":""}</span></div>`).join("")}</div>
-    <div class="row" style="margin-top:12px"><button class="btn primary" id="sumShare">Partager</button><button class="btn" id="sumVal">Valider ≥ 70 % au carnet</button></div>`,"summary");
+    <div class="row" style="margin-top:12px"><button class="btn primary" id="sumShare">Partager</button><button class="btn" id="sumVal">Valider ≥ 70 % au carnet</button></div>${recAsk(recd)}`,"summary");recBind(recd);
   $("#sumShare").onclick=async()=>{const t=summaryText(rec);try{if(navigator.share){await navigator.share({text:t});return}}catch(e){if(e&&e.name==="AbortError")return}try{await navigator.clipboard.writeText(t);toast("Résumé copié")}catch(e){toast("Partage indisponible")}};
   $("#sumVal").onclick=()=>{let k=0;rec.list.filter(s=>s.max>=.7&&s.la).forEach(s=>{if(entries.some(e=>e.la===s.la&&e.ts>=rec.start))return;entries.unshift({id:uid(),ts:rec.start,lat:rec.lat,lon:rec.lon,acc:null,sp:s.fr,la:s.la,type:KIND_TYPE[s.kind]||"",notes:"",source:rec.kind==="nocmig"?"auto":"micro",dur:0,m:null,ai:{m:"BirdNET+",fr:s.fr,la:s.la,sc:s.max}});addLife(s.fr,s.la);k++});
     saveEntries();renderLog();toast(k?`${k} espèce${k>1?"s":""} ajoutée${k>1?"s":""} au carnet`:"Rien de nouveau à ajouter")}}

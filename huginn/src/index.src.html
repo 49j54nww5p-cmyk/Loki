@@ -44,7 +44,7 @@
       <button class="bigplay" id="btnStart" aria-label="Écouter"><i></i><span>Écouter</span></button>
       <div class="gut">
         <div class="note" id="micNote" hidden></div>
-        <div class="lhead"><h2>Entendus <b id="liveCount">0</b></h2><span class="mono small muted"><span id="aiState"></span> <b class="timer" id="timer"></b></span></div>
+        <div class="lhead"><h2>Entendus <b id="liveCount">0</b></h2><span class="mono small muted"><span id="aiState"></span> <b class="timer" id="timer"></b> <span class="tg" id="recDot" hidden style="color:var(--live);border-color:var(--live)">● REC</span></span></div>
         <div id="liveList"></div>
         <p class="small muted help">Glisse une espèce vers la droite pour la valider au carnet, vers la gauche pour l'écarter : Ramage apprend de tes choix. Touche-la pour sa fiche.</p>
       </div>
@@ -134,6 +134,7 @@
           <div class="ctl"><label for="range">Plage (dB) <span class="mono" id="rangeLbl"></span></label><input type="range" id="range" min="40" max="120" step="5" value="80"></div>
           <div class="ctl"><label for="specTop">Haut de l'échelle <span class="mono" id="specTopLbl"></span></label><input type="range" id="specTop" min="-60" max="0" step="5" value="-20"></div>
         </div>
+        <label class="toggle"><input type="checkbox" id="recAllT"> Enregistrer toute l'écoute (te demande à la fin si tu gardes)</label>
         <label class="toggle"><input type="checkbox" id="monitor"> Écoute au casque en direct</label>
       </div>
       <div class="card">

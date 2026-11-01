@@ -22,7 +22,7 @@ function imgPh(la,sz){ensurePhoto(la);const u=PH[la]?(sz==="m"?PH[la].m:PH[la].s
 async function startListen(){ctx();primeSpeech();
   try{const c={echoCancellation:false,noiseSuppression:false,autoGainControl:false};if(S.deviceId)c.deviceId={exact:S.deviceId};stream=await navigator.mediaDevices.getUserMedia({audio:c})}
   catch(e){showMicNote();return}
-  await ensureTap();srcNode=ac.createMediaStreamSource(stream);srcNode.connect(hp);allocRing();listDevices();startGPS();beginLoop()}
+  await ensureTap();srcNode=ac.createMediaStreamSource(stream);srcNode.connect(hp);allocRing();listDevices();startGPS();beginLoop();recStart()}
 function showMicNote(){const n=$("#micNote");n.hidden=false;
   n.innerHTML=`<b>${IN_CLAUDE?"Micro indisponible dans l'aperçu.":"Micro refusé."}</b> ${IN_CLAUDE?"Le micro marche dans la version GitHub Pages.":"Autorise le micro pour ce site dans Réglages iOS › Safari › Micro, puis recharge."}<div class="row" style="margin-top:8px"><button class="btn sm" id="btnLiveDemo">Lancer la démo</button></div>`;
   $("#btnLiveDemo").onclick=startDemoLive}
@@ -31,7 +31,7 @@ async function startDemoLive(){ctx();await ensureTap();const d=genDemo(),b=ac.cr
 function beginLoop(){running=true;document.body.classList.add("listening");$("#liveIdle").hidden=true;
   $("#btnCapture").disabled=false;$("#btnBlack").disabled=false;SPECT.drawn=AUD.total;SPECT.W=0;SPECT.floor=null;MARKS.length=0;
   if(!SES)SES={start:Date.now(),sp:new Map()};startAI();renderLive();cancelAnimationFrame(rafId);rafId=requestAnimationFrame(frame)}
-function stopListen(){running=false;document.body.classList.remove("listening");cancelAnimationFrame(rafId);stopAI();sessionEnd();
+async function stopListen(){running=false;document.body.classList.remove("listening");cancelAnimationFrame(rafId);stopAI();const rec=await recStop();sessionEnd(rec);
   if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}if(srcNode){try{srcNode.disconnect()}catch(e){}srcNode=null}
   if(demoNode){try{demoNode.stop();demoNode.disconnect()}catch(e){}demoNode=null}
   stopGPS();$("#btnCapture").disabled=true;$("#btnBlack").disabled=true;$("#lvl i").style.width="0";renderLive()}
@@ -81,7 +81,7 @@ function drawOverlay(){const W=liveO.width,H=liveO.height,d=dprOf();liveOX.clear
 new ResizeObserver(()=>{drawAxis($("#liveAxis"),0,S.fmax);if(!running){sizeCanvas(liveC);paintBg(liveX,liveC);sizeCanvas(liveO);drawOverlay()}}).observe(liveC);
 
 /* ---- IA en direct ---- */
-let aiTimer=0,perchTimer=0,aiBusy=false,perchBusy=false;
+let aiTimer=0,perchTimer=0,aiBusy=false,perchBusy=false;const PSEEN=new Map();/* scores Perch des raretés en attente de confirmation */
 function startAI(){clearInterval(aiTimer);clearInterval(perchTimer);aiTimer=setInterval(liveTick,1500);perchTimer=setInterval(perchTick,5000);if(!AI.ready.bn&&!IN_CLAUDE)ensureAI()}
 function stopAI(){clearInterval(aiTimer);clearInterval(perchTimer)}
 function liveRec(i,now){let r=LIVE.get(i);if(!r){const n=nameOf(i);r={i,fr:n.fr,la:n.la,first:now,last:now,max:0,bn:0,perch:0,n:0,lifer:isLifer(n.la),kind:null};LIVE.set(i,r);r.isNew=true;
@@ -90,7 +90,7 @@ function updateKind(r){const k=kindGuess(REF.mem.get(r.la),r.emb,r.seg);if(k)r.k
 async function liveTick(){if(!running||aiBusy||!AI.ready.bn||!AI.labels||!ac)return;const s=grab(3);if(!s||s.length<ac.sampleRate*2)return;aiBusy=true;
   try{const x=await to32k(s,ac.sampleRate),[o]=await runBN2([x]),sc=postBN(o.raw),now=Date.now(),thr=thrNow();
     const cand=topK(sc,8,thr*.6);cand.forEach(i=>{sc[i]=learnAdjust(nameOf(i).la,o.emb,sc[i])});
-    const hits=cand.filter(i=>sc[i]>=thr&&!AI.rejected.has(i)).sort((a,b)=>sc[b]-sc[a]).slice(0,4);let alert=null;
+    const hits=cand.filter(i=>sc[i]>=thr&&!AI.rejected.has(i)&&!(isRareOut(i)&&AI.ready.perch&&!(PSEEN.get(i)>=.5))).sort((a,b)=>sc[b]-sc[a]).slice(0,4);let alert=null;
     for(const i of hits){const r=liveRec(i,now);if(r.isNew){r.isNew=false;if(!alert||r.lifer)alert=r}
       r.n++;r.last=now;r.cur=sc[i];r.bn=Math.max(r.bn,sc[i]);if(sc[i]>r.max){r.max=sc[i];r.emb=o.emb;r.seg=fit(x,96000).slice();updateKind(r)}
       addMark(i,s.end-s.length,s.end,sc[i]);if(autoState.on)nightHit(i,sc[i],s.end);
@@ -100,11 +100,13 @@ async function liveTick(){if(!running||aiBusy||!AI.ready.bn||!AI.labels||!ac)ret
   catch(e){AI.err=String(e.message||e)}finally{aiBusy=false}}
 async function perchTick(){if(!running||!AI.ready.perch||perchBusy||!AI.perchIdx||S.perchLive===false||!ac)return;const s=grab(5);if(!s||s.length<ac.sampleRate*4)return;perchBusy=true;
   try{const x=await to32k(s,ac.sampleRate),[sc]=await runPerch([x]),now=Date.now();
-    topK(sc,3,.4).forEach(i=>{if(AI.rejected.has(i))return;let r=LIVE.get(i);if(!r){if(sc[i]<.6)return;r=liveRec(i,now);r.isNew=false;r.viaPerch=true;r.max=sc[i]*.9;r.n=1;if(!autoState.on)alertNew(r.lifer,r.fr)}
+    /* Perch seul n'ajoute une espèce que s'il est très sûr, et jamais une rareté hors liste */
+    AI.rareHit.forEach(i=>{if(sc[i]>(PSEEN.get(i)||0))PSEEN.set(i,sc[i])});
+    topK(sc,3,.4).forEach(i=>{if(AI.rejected.has(i))return;let r=LIVE.get(i);if(!r){if(sc[i]<.85||isRareOut(i))return;r=liveRec(i,now);r.isNew=false;r.viaPerch=true;r.max=sc[i]*.9;r.n=1;if(!autoState.on)alertNew(r.lifer,r.fr)}
       r.perch=Math.max(r.perch||0,sc[i]);r.lastP=now;if(r.viaPerch){r.last=now;addMark(i,s.end-s.length,s.end,sc[i])}});renderLive()}catch(e){}finally{perchBusy=false}}
 
 /* ---- liste : chaque espèce garde sa place, elle s'allume quand elle chante ---- */
-function rowHTML(r,now){const on=running&&now-r.last<4500,k=r.kind,rk=rarity(r.i),tr=traps(r.la),two=r.perch>=.3&&r.bn>=thrNow()*.9;
+function rowHTML(r,now){const on=running&&now-r.last<4500,k=r.kind,rk=rarity(r.i),tr=traps(r.la),two=r.perch>=.5&&r.bn>=thrNow()*.9;
   const kt=k?`<span class="tg k${k.sure?"":" unsure"}" style="--k:${kindVar(k.k)}" title="${k.src==="réf"?`d'après ${k.n} références proches`:"d'après la forme du son"}">${esc(k.k.toUpperCase())}${k.sure?"":" ?"}</span>`:`<span class="tg">TYPE ?</span>`;
   const at=two?`<span class="tg ai2" title="BirdNET+ ${Math.round(r.bn*100)} % · Perch ${Math.round(r.perch*100)} %">2 IA ✓</span>`:r.viaPerch?`<span class="tg" title="trouvé par Perch v2">PERCH</span>`:"";
   return`<div class="ph">${imgPh(r.la,"s")}</div><div class="mid"><div class="nm">${esc(r.fr)}</div><div class="la">${esc(r.la)}</div>
@@ -146,10 +148,10 @@ $("#liveWrap").addEventListener("pointerup",()=>{const n=Date.now();if(n-lastTap
 
 /* ---- sortie : chrono et résumé à l'arrêt ---- */
 setInterval(()=>{const t=$("#timer");if(!running||!SES){t.textContent="";return}const s=Math.floor((Date.now()-SES.start)/1000);t.textContent=`· ${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`},500);
-function sessionEnd(){if(!SES)return;const s=SES;SES=null;s.end=Date.now();if(s.end-s.start<15000||!s.sp.size)return;
+function sessionEnd(recd){if(!SES){openRecOnly(recd);return}const s=SES;SES=null;s.end=Date.now();if(s.end-s.start<15000||!s.sp.size){openRecOnly(recd);return}
   const rec={id:uid(),kind:"sortie",start:s.start,end:s.end,lat:lastFix?lastFix.lat:null,lon:lastFix?lastFix.lon:null,
     list:Array.from(s.sp.values()).filter(r=>{const i=AI.sciIdx&&AI.sciIdx.get(r.la);return!(i!=null&&AI.rejected.has(i))}).sort((a,b)=>b.max-a.max).map(r=>({fr:r.fr,la:r.la,n:r.n,max:r.max,kind:r.kind||"",lifer:r.lifer}))};
-  if(!rec.list.length)return;saveSession(rec);openSummary(rec)}
+  if(!rec.list.length){openRecOnly(recd);return}saveSession(rec);openSummary(rec,recd)}
 
 /* ---- capture rétro ---- */
 $("#btnCapture").onclick=()=>capture();

@@ -442,6 +442,9 @@ th{color:var(--muted);font-weight:500}
         <div id="modelInfo" class="small"></div>
         <div class="bar" id="perchBar2" hidden><i></i></div>
         <div class="ctl"><span class="lbl">Version de Perch v2</span><div class="seg" id="segPerchV"><button data-v="lite">légère · 131 Mo</button><button data-v="full">complète · 413 Mo</button></div><span class="small muted help">La complète est en pleine précision. La légère se trompe nettement plus (même n°1 que la complète sur un peu plus d’une fenêtre sur deux seulement), mais demande trois fois moins de mémoire. Pour la complète, le plus simple : « Charger depuis Fichiers » avec le fichier perch_v2_no_dft.onnx rangé sur ton iPhone.</span></div>
+        <div class="field"><label class="lbl" for="perchUrl">Serveur Perch complet (facultatif)</label><input id="perchUrl" type="url" placeholder="https://ton-nom-ramage-perch.hf.space" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <div class="row"><button class="btn sm" id="perchUrlTest">Tester</button><span class="small muted" id="perchUrlInfo"></span></div>
+          <span class="small muted help">Avec un serveur, le vrai Perch complet (413 Mo) tourne à distance : le téléphone envoie 5 s de son quand BirdNET+ entend quelque chose. Il faut du réseau. Laisse vide pour Perch sur le téléphone.</span></div>
         <p class="note small" id="perchNote" hidden></p>
         <div class="row"><button class="btn primary" id="btnGetPerch">Télécharger Perch v2</button><button class="btn primary" id="btnActPerch" hidden>Activer Perch v2</button><button class="btn" id="btnFilePerch">Charger depuis Fichiers</button><input type="file" id="perchFile" hidden><button class="btn ghost" id="btnDropPerch" hidden>Supprimer Perch</button></div>
         <p class="small muted help">Perch est gardé sur le téléphone après un seul téléchargement (en wifi, appli ouverte). L'activer demande beaucoup de mémoire : ferme les autres applis avant.</p>
@@ -515,7 +518,7 @@ th{color:var(--muted);font-weight:500}
    Les clés « huginn.* » et la base « huginn » sont gardées :
    ainsi le carnet, les sons et la liste de vie d'avant restent là.
    ========================================================= */
-const VERSION="1.7.1";
+const VERSION="1.8.0";
 const IN_CLAUDE=!!(window.claude&&window.claude.use);
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 
@@ -802,7 +805,13 @@ async function perchCached(){try{const c=await caches.open("huginn-models"),k=MO
 async function perchLabels(){if(AI.perchIdx)return;let txt=null,c=null;try{c=await caches.open("huginn-models");const h=await c.match("https://huginn.local/perch-labels");if(h)txt=await h.text()}catch(e){}
   if(!txt){const r=await fetch(PERCH_LABELS);if(!r.ok)throw new Error("liste Perch introuvable (HTTP "+r.status+")");txt=await r.text();if(c)try{await c.put("https://huginn.local/perch-labels",new Response(txt))}catch(e){}}
   const lines=txt.split(/\r?\n/).slice(1).filter(Boolean);AI.perchIdx=Int32Array.from(lines.map(l=>{const k=AI.sciIdx.get(l.replace(/^"|"$/g,"").trim());return k==null?-1:k}))}
-async function runPerch(wins){const L=160000,res=[];for(const w of wins){const d=new Float32Array(L);d.set(fit(w,L));const r=await wcall({t:"run",name:"perch",output:"label",data:d,dims:[1,L]},[d.buffer]);
+/* Perch complet sur un serveur (Hugging Face) : on envoie 5 s de son en PCM 16 bits, il renvoie ses 30 meilleures espèces */
+const perchRemoteOn=()=>!!(S.perchUrl&&S.perchUrl.startsWith("https://"));
+async function runPerchRemote(wins){const res=[];for(const w of wins){const x=fit(w,160000),pcm=toI16(x),ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),12000);
+    let d;try{const r=await fetch(S.perchUrl,{method:"POST",body:pcm.buffer,headers:{"Content-Type":"application/octet-stream"},signal:ctl.signal});if(!r.ok)throw new Error("serveur Perch : HTTP "+r.status);d=await r.json()}
+    catch(e){AI.remoteErr=e.name==="AbortError"?"serveur Perch trop lent (réseau ?)":String(e.message||e);throw new Error(AI.remoteErr)}finally{clearTimeout(t)}
+    AI.remoteErr="";AI.remoteMs=d.ms;const sc=new Float32Array(AI.labels.length);for(const o of d.top||[]){const k=AI.sciIdx.get(o.la);if(k!=null&&(AI.mask[k]||AI.rareHit.has(k))&&o.p>sc[k])sc[k]=o.p}res.push(sc)}return res}
+async function runPerch(wins){if(perchRemoteOn())return runPerchRemote(wins);const L=160000,res=[];for(const w of wins){const d=new Float32Array(L);d.set(fit(w,L));const r=await wcall({t:"run",name:"perch",output:"label",data:d,dims:[1,L]},[d.buffer]);
     /* Perch v2 est entraîné avec un softmax sur ses 14 795 classes (oiseaux, insectes, amphibiens, bruits).
        On normalise donc sur TOUTES les classes, puis on garde les espèces d'ici.
        Testé sur de vrais enregistrements xeno-canto (modèle int8) : pinson 59–92 %, 2e espèce ≤ 5 %, bruit ≤ 6 %, silence ≈ 0.
@@ -865,7 +874,7 @@ function traps(la){const out=[];PAIRS.forEach(([a,b,t])=>{if(la===a||la===b){con
 function setAiChip(){const c=$("#chipAi"),t=c.lastElementChild;c.classList.remove("ok","load","err");
   if(IN_CLAUDE)t.textContent="IA off";
   else if(AI.err&&!AI.ready.bn){c.classList.add("err");t.textContent="IA"}
-  else if(AI.ready.bn){c.classList.add("ok");t.textContent=AI.ready.perch?"IA ×2":"IA"}
+  else if(AI.ready.bn){c.classList.add("ok");t.textContent=perchRemoteOn()?(AI.remoteErr?"IA ×2 ⚠":"IA ×2 ☁"):AI.ready.perch?"IA ×2":"IA"}
   else if(AI.loading.bn){c.classList.add("load");const p=AI.progress.bn;t.textContent=p&&p.total?`IA ${Math.round(p.got/p.total*100)} %`:"IA"}
   else t.textContent="IA";
   c.title=AI.ready.bn?`BirdNET+ prêt${AI.ready.perch?" · Perch v2 prêt":""} · ${AI.maskInfo}`:AI.err||"chargement";renderModelInfo()}
@@ -1160,7 +1169,10 @@ async function liveTick(){if(!running||aiBusy||!AI.ready.bn||!AI.labels||!ac)ret
     if(alert&&!autoState.on)alertNew(alert.lifer,alert.fr);
     $("#aiState").textContent=`${AI.nHere?AI.nHere+" esp. possibles · ":""}seuil ${Math.round(thr*100)} %`;renderLive()}
   catch(e){AI.err=String(e.message||e)}finally{aiBusy=false}}
-async function perchTick(){if(!running||!AI.ready.perch||perchBusy||!AI.perchIdx||S.perchLive===false||!ac)return;const s=grab(5);if(!s||s.length<ac.sampleRate*4)return;perchBusy=true;
+let lastRemote=0;
+async function perchTick(){const remote=perchRemoteOn();if(!running||(!AI.ready.perch&&!remote)||perchBusy||(!remote&&!AI.perchIdx)||S.perchLive===false||!ac||!AI.labels)return;
+  /* serveur : seulement quand BirdNET+ vient d'entendre quelque chose, ou toutes les 15 s, pour économiser les données */
+  if(remote){const recent=Array.from(LIVE.values()).some(r=>Date.now()-r.last<6000);if(!recent&&Date.now()-lastRemote<15000)return;lastRemote=Date.now()}const s=grab(5);if(!s||s.length<ac.sampleRate*4)return;perchBusy=true;
   try{const x=await to32k(s,ac.sampleRate),[sc]=await runPerch([x]),now=Date.now();
     /* Perch seul n'ajoute une espèce que s'il est très sûr, et jamais une rareté hors liste */
     AI.rareHit.forEach(i=>{if(sc[i]>(PSEEN.get(i)||0))PSEEN.set(i,sc[i])});
@@ -1505,12 +1517,12 @@ $("#btnBn").onclick=async()=>{if(!clip)return;if(IN_CLAUDE){toast("L'IA tourne s
     if(list[0]&&!$("#spIn").value&&list[0].max>=thr){const n=nameOf(list[0].i);clip.ai={m:"BirdNET+",fr:n.fr,la:n.la,sc:list[0].max}}}
   catch(e){toast("Analyse impossible : "+(e.message||e))}finally{btn.disabled=false;btn.textContent="Identifier · BirdNET+"}};
 async function doPerch(){const btn=$("#btnPerch");btn.disabled=true;btn.textContent="Perch…";$("#perchAsk").hidden=true;
-  try{if(!AI.labels)await ensureAI();await perchLabels();if(!AI.ready.perch){await perchDownload();await perchActivate();$("#perchBar").hidden=true;$("#perchAsk").hidden=true}
+  try{if(!AI.labels)await ensureAI();if(!perchRemoteOn())await perchLabels();if(!AI.ready.perch&&!perchRemoteOn()){await perchDownload();await perchActivate();$("#perchBar").hidden=true;$("#perchAsk").hidden=true}
     const x=await clip32(),starts=analysisWindows(5,2.5),sc=await runPerch(starts.map(t=>x.subarray(Math.round(t*32000),Math.round(t*32000)+160000)));aiResults.perch=aggregate(sc,starts,S.conf||.35);renderAiRes()}
   catch(e){$("#perchBar").hidden=true;$("#perchAsk").hidden=false;$("#perchAsk").innerHTML=`<p class="small">Perch v2 n'a pas pu tourner : ${esc(e.message||e)}. Le modèle fait ${MODELS.perch.size} Mo : il faut du réseau et de la place.</p>`}
   finally{btn.disabled=false;btn.textContent="2e avis · Perch v2";renderModelInfo()}}
 $("#btnPerch").onclick=async()=>{if(!clip)return;if(IN_CLAUDE){toast("L'IA tourne seulement dans la version GitHub Pages");return}
-  if(AI.ready.perch||await perchCached())return doPerch();const a=$("#perchAsk");a.hidden=false;
+  if(perchRemoteOn()||AI.ready.perch||await perchCached())return doPerch();const a=$("#perchAsk");a.hidden=false;
   a.innerHTML=`<p class="small">${esc(MODELS.perch.label)} pèse <b>${MODELS.perch.size} Mo</b>, téléchargés une fois puis gardés sur le téléphone. À faire en wifi.</p><div class="row"><button class="btn primary sm" id="perchGo">Télécharger</button><button class="btn ghost sm" id="perchNo">Plus tard</button></div>`;
   $("#perchGo").onclick=doPerch;$("#perchNo").onclick=()=>{a.hidden=true}};
 
@@ -1674,6 +1686,9 @@ bindSeg("#segSun","sun",applySun);setInterval(applySun,60000);
 $("#btnGetPerch").onclick=async()=>{if(IN_CLAUDE)return;const gp=$("#btnGetPerch");gp.disabled=true;gp.textContent="Démarrage…";
   try{await perchDownload();try{localStorage.removeItem("huginn.perchLoading")}catch(e){}toast("Perch v2 est sur le téléphone");$("#perchBar2").hidden=true;renderModelInfo();await perchActivate();toast("Perch v2 prêt")}
   catch(e){toast("Perch v2 : "+(e.message||e));AI.err="Perch : "+(e.message||e)}finally{gp.disabled=false;gp.textContent="Télécharger "+MODELS.perch.label+" ("+MODELS.perch.size+" Mo)";$("#perchBar2").hidden=true;$("#perchBar").hidden=true;$("#perchAsk").hidden=true;renderModelInfo();setAiChip()}};
+{const el=$("#perchUrl");el.value=S.perchUrl||"";el.onchange=()=>{let v=el.value.trim().replace(/\/+$/,"");if(v&&!/^https:\/\//.test(v))v="https://"+v;el.value=v;S.perchUrl=v;saveS();setAiChip();renderModelInfo()};
+  $("#perchUrlTest").onclick=async()=>{const i=$("#perchUrlInfo");el.onchange();if(!S.perchUrl){i.textContent="adresse vide";return}i.textContent="test… (1re fois : le serveur se réveille, jusqu'à 1 min)";
+    try{const t=performance.now(),r=await fetch(S.perchUrl,{cache:"no-store"}),d=await r.json();i.textContent=d.ok?`✓ ${d.modele} · ${Math.round(performance.now()-t)} ms`:"réponse inattendue"}catch(e){i.textContent="injoignable : "+(e.message||e)}}}
 $("#btnActPerch").onclick=async()=>{if(S.perchV==="full"&&IS_IPHONE&&!confirm("Perch complet demande environ 900 Mo de mémoire à l'activation : sur iPhone, Safari risque de fermer la page. Essayer quand même ?"))return;const b=$("#btnActPerch");b.disabled=true;b.textContent="Activation…";try{await perchActivate();toast("Perch v2 prêt")}catch(e){toast("Perch v2 : "+(e.message||e))}finally{b.disabled=false;b.textContent="Activer Perch v2";$("#perchBar2").hidden=true;renderModelInfo();setAiChip()}};
 {const g=$("#segPerchV"),set=()=>g.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===(S.perchV==="full"?"full":"lite"))));set();
   g.addEventListener("click",async e=>{const b=e.target.closest("button");if(!b||b.dataset.v===(S.perchV==="full"?"full":"lite"))return;S.perchV=b.dataset.v;saveS();set();
@@ -1730,6 +1745,7 @@ $("#tour").addEventListener("touchend",e=>{if(TST.x==null)return;const dx=e.chan
 
 /* nouveautés */
 const NEWS=[
+  {n:"1.8",d:"1er novembre 2026",items:[["two","Perch complet sur serveur","Réglages › Modèles : colle l'adresse de ton serveur Perch (Hugging Face) et le vrai Perch de 413 Mo donne son avis, même sur iPhone. Le son n'est envoyé que quand BirdNET+ entend quelque chose."]]},
   {n:"1.7",d:"1er novembre 2026",items:[["bird","France + raretés de saison","Nouvelle liste : les 601 espèces possibles en France (raretés de migration comprises : Pouillots de Pallas, à grands sourcils, brun…), chacune seulement aux semaines où elle passe. Remplace le mode à 8 000 espèces. En « autour de moi », une rareté hors liste locale n'est acceptée que si elle est dans cette liste et de saison."]]},
   {n:"1.6.2",d:"1er novembre 2026",items:[["two","Perch v2 : les scores comme Google l'a entraîné","Softmax sur toutes ses classes. Testé sur de vrais chants xeno-canto : le pinson sort à 59–92 %, les autres espèces restent sous 5 %, le bruit sous 6 %."]]},
   {n:"1.6.1",d:"1er novembre 2026",items:[["two","Perch ne voit plus de hiboux dans le silence","La v1.6 lisait mal les scores de Perch : sur du bruit, Chouette hulotte et Hibou moyen-duc sortaient à 100 %. Les scores sont recalés sur des mesures (bruit : moins de 25 %, vrais chants : 60 à 99 %)."],["book","Perch complet depuis Fichiers","Réglages › Modèles › « Charger depuis Fichiers » : choisis perch_v2_no_dft.onnx rangé sur ton iPhone, plus besoin de le télécharger dans l'appli."]]},

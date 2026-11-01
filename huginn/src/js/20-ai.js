@@ -123,7 +123,13 @@ async function perchCached(){try{const c=await caches.open("huginn-models"),k=MO
 async function perchLabels(){if(AI.perchIdx)return;let txt=null,c=null;try{c=await caches.open("huginn-models");const h=await c.match("https://huginn.local/perch-labels");if(h)txt=await h.text()}catch(e){}
   if(!txt){const r=await fetch(PERCH_LABELS);if(!r.ok)throw new Error("liste Perch introuvable (HTTP "+r.status+")");txt=await r.text();if(c)try{await c.put("https://huginn.local/perch-labels",new Response(txt))}catch(e){}}
   const lines=txt.split(/\r?\n/).slice(1).filter(Boolean);AI.perchIdx=Int32Array.from(lines.map(l=>{const k=AI.sciIdx.get(l.replace(/^"|"$/g,"").trim());return k==null?-1:k}))}
-async function runPerch(wins){const L=160000,res=[];for(const w of wins){const d=new Float32Array(L);d.set(fit(w,L));const r=await wcall({t:"run",name:"perch",output:"label",data:d,dims:[1,L]},[d.buffer]);
+/* Perch complet sur un serveur (Hugging Face) : on envoie 5 s de son en PCM 16 bits, il renvoie ses 30 meilleures espèces */
+const perchRemoteOn=()=>!!(S.perchUrl&&S.perchUrl.startsWith("https://"));
+async function runPerchRemote(wins){const res=[];for(const w of wins){const x=fit(w,160000),pcm=toI16(x),ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),12000);
+    let d;try{const r=await fetch(S.perchUrl,{method:"POST",body:pcm.buffer,headers:{"Content-Type":"application/octet-stream"},signal:ctl.signal});if(!r.ok)throw new Error("serveur Perch : HTTP "+r.status);d=await r.json()}
+    catch(e){AI.remoteErr=e.name==="AbortError"?"serveur Perch trop lent (réseau ?)":String(e.message||e);throw new Error(AI.remoteErr)}finally{clearTimeout(t)}
+    AI.remoteErr="";AI.remoteMs=d.ms;const sc=new Float32Array(AI.labels.length);for(const o of d.top||[]){const k=AI.sciIdx.get(o.la);if(k!=null&&(AI.mask[k]||AI.rareHit.has(k))&&o.p>sc[k])sc[k]=o.p}res.push(sc)}return res}
+async function runPerch(wins){if(perchRemoteOn())return runPerchRemote(wins);const L=160000,res=[];for(const w of wins){const d=new Float32Array(L);d.set(fit(w,L));const r=await wcall({t:"run",name:"perch",output:"label",data:d,dims:[1,L]},[d.buffer]);
     /* Perch v2 est entraîné avec un softmax sur ses 14 795 classes (oiseaux, insectes, amphibiens, bruits).
        On normalise donc sur TOUTES les classes, puis on garde les espèces d'ici.
        Testé sur de vrais enregistrements xeno-canto (modèle int8) : pinson 59–92 %, 2e espèce ≤ 5 %, bruit ≤ 6 %, silence ≈ 0.
@@ -186,7 +192,7 @@ function traps(la){const out=[];PAIRS.forEach(([a,b,t])=>{if(la===a||la===b){con
 function setAiChip(){const c=$("#chipAi"),t=c.lastElementChild;c.classList.remove("ok","load","err");
   if(IN_CLAUDE)t.textContent="IA off";
   else if(AI.err&&!AI.ready.bn){c.classList.add("err");t.textContent="IA"}
-  else if(AI.ready.bn){c.classList.add("ok");t.textContent=AI.ready.perch?"IA ×2":"IA"}
+  else if(AI.ready.bn){c.classList.add("ok");t.textContent=perchRemoteOn()?(AI.remoteErr?"IA ×2 ⚠":"IA ×2 ☁"):AI.ready.perch?"IA ×2":"IA"}
   else if(AI.loading.bn){c.classList.add("load");const p=AI.progress.bn;t.textContent=p&&p.total?`IA ${Math.round(p.got/p.total*100)} %`:"IA"}
   else t.textContent="IA";
   c.title=AI.ready.bn?`BirdNET+ prêt${AI.ready.perch?" · Perch v2 prêt":""} · ${AI.maskInfo}`:AI.err||"chargement";renderModelInfo()}

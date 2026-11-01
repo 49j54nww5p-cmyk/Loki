@@ -156,6 +156,9 @@
         <div id="modelInfo" class="small"></div>
         <div class="bar" id="perchBar2" hidden><i></i></div>
         <div class="ctl"><span class="lbl">Version de Perch v2</span><div class="seg" id="segPerchV"><button data-v="lite">légère · 131 Mo</button><button data-v="full">complète · 413 Mo</button></div><span class="small muted help">La complète est en pleine précision. La légère se trompe nettement plus (même n°1 que la complète sur un peu plus d’une fenêtre sur deux seulement), mais demande trois fois moins de mémoire. Pour la complète, le plus simple : « Charger depuis Fichiers » avec le fichier perch_v2_no_dft.onnx rangé sur ton iPhone.</span></div>
+        <div class="field"><label class="lbl" for="perchUrl">Serveur Perch complet (facultatif)</label><input id="perchUrl" type="url" placeholder="https://ton-nom-ramage-perch.hf.space" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <div class="row"><button class="btn sm" id="perchUrlTest">Tester</button><span class="small muted" id="perchUrlInfo"></span></div>
+          <span class="small muted help">Avec un serveur, le vrai Perch complet (413 Mo) tourne à distance : le téléphone envoie 5 s de son quand BirdNET+ entend quelque chose. Il faut du réseau. Laisse vide pour Perch sur le téléphone.</span></div>
         <p class="note small" id="perchNote" hidden></p>
         <div class="row"><button class="btn primary" id="btnGetPerch">Télécharger Perch v2</button><button class="btn primary" id="btnActPerch" hidden>Activer Perch v2</button><button class="btn" id="btnFilePerch">Charger depuis Fichiers</button><input type="file" id="perchFile" hidden><button class="btn ghost" id="btnDropPerch" hidden>Supprimer Perch</button></div>
         <p class="small muted help">Perch est gardé sur le téléphone après un seul téléchargement (en wifi, appli ouverte). L'activer demande beaucoup de mémoire : ferme les autres applis avant.</p>

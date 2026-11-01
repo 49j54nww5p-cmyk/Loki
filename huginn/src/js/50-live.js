@@ -98,7 +98,10 @@ async function liveTick(){if(!running||aiBusy||!AI.ready.bn||!AI.labels||!ac)ret
     if(alert&&!autoState.on)alertNew(alert.lifer,alert.fr);
     $("#aiState").textContent=`${AI.nHere?AI.nHere+" esp. possibles · ":""}seuil ${Math.round(thr*100)} %`;renderLive()}
   catch(e){AI.err=String(e.message||e)}finally{aiBusy=false}}
-async function perchTick(){if(!running||!AI.ready.perch||perchBusy||!AI.perchIdx||S.perchLive===false||!ac)return;const s=grab(5);if(!s||s.length<ac.sampleRate*4)return;perchBusy=true;
+let lastRemote=0;
+async function perchTick(){const remote=perchRemoteOn();if(!running||(!AI.ready.perch&&!remote)||perchBusy||(!remote&&!AI.perchIdx)||S.perchLive===false||!ac||!AI.labels)return;
+  /* serveur : seulement quand BirdNET+ vient d'entendre quelque chose, ou toutes les 15 s, pour économiser les données */
+  if(remote){const recent=Array.from(LIVE.values()).some(r=>Date.now()-r.last<6000);if(!recent&&Date.now()-lastRemote<15000)return;lastRemote=Date.now()}const s=grab(5);if(!s||s.length<ac.sampleRate*4)return;perchBusy=true;
   try{const x=await to32k(s,ac.sampleRate),[sc]=await runPerch([x]),now=Date.now();
     /* Perch seul n'ajoute une espèce que s'il est très sûr, et jamais une rareté hors liste */
     AI.rareHit.forEach(i=>{if(sc[i]>(PSEEN.get(i)||0))PSEEN.set(i,sc[i])});

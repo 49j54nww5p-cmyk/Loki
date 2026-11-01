@@ -259,11 +259,19 @@ th{color:var(--muted);font-weight:500}
 #toast{position:fixed;left:50%;bottom:calc(var(--tabs) + var(--ctrl) + 12px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);z-index:90;background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;pointer-events:none;transition:all .25s;max-width:88vw;text-align:center}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 #upd{position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 58px);z-index:60;background:var(--raised);border:1px solid var(--accent);border-radius:12px;padding:8px 8px 8px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px}
-#tour{position:fixed;inset:0;z-index:70;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
-#tourIn{max-width:420px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
-#tourIn p{color:var(--muted)}
-.tart{width:84px;height:84px;border-radius:24px;display:flex;align-items:center;justify-content:center;background:var(--surface);border:1px solid var(--line);color:var(--fg)}
-.tdots{display:flex;gap:6px}.tdots i{width:6px;height:6px;border-radius:3px;background:var(--line)}.tdots i.on{width:18px;background:var(--fg)}
+#guide{position:fixed;inset:0;z-index:75}
+.gsvg{position:absolute;inset:0;width:100%;height:100%}
+.gring{fill:none;stroke:var(--accent);stroke-width:2.5;animation:gpulse 1.6s ease-in-out infinite}
+@keyframes gpulse{50%{stroke-width:5;stroke-opacity:.55}}
+.garr{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linecap:round;stroke-dasharray:7 6;animation:gflow 1s linear infinite}
+@keyframes gflow{to{stroke-dashoffset:-13}}
+.gbub{position:absolute;left:16px;right:16px;max-width:400px;margin:0 auto;background:var(--raised);border:1px solid var(--accent);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:8px;box-shadow:0 12px 32px rgba(0,0,0,.5)}
+.gbub p{color:var(--muted);font-size:15px}.gbub .tact{margin-top:6px}
+.gswipe{position:absolute;width:28px;height:28px;border-radius:50%;background:color-mix(in srgb,var(--accent) 35%,transparent);border:2px solid var(--accent);pointer-events:none;animation:gswipe 2.8s ease-in-out infinite}
+@keyframes gswipe{0%{transform:translateX(0);opacity:0}8%{opacity:1}35%{transform:translateX(110px);opacity:1}45%{transform:translateX(120px);opacity:0}55%{transform:translateX(0);opacity:0}63%{opacity:1}90%{transform:translateX(-110px);opacity:1}100%{transform:translateX(-120px);opacity:0}}
+body.g-ctrl .ctrlbar{display:block}
+body.guiding #main{overflow:hidden}
+@media (prefers-reduced-motion:reduce){.gring,.garr,.gswipe{animation:none}}
 .tact{display:flex;gap:10px;width:100%;justify-content:center}.tact .btn{flex:1;max-width:200px}
 #hapL{position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;left:-10px;top:-10px}
 

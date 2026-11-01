@@ -88,27 +88,59 @@ $("#restoreIn").onchange=async e=>{const f=e.target.files[0];e.target.value="";i
     renderLog();renderLearnInfo();$("#restoreMsg").textContent=`Restauré : ${ne} fiche${ne>1?"s":""} ajoutée${ne>1?"s":""}, liste de vie et sorties fusionnées.`;toast("Sauvegarde restaurée")}
   catch(err){$("#restoreMsg").textContent="Restauration impossible : "+(err.message||err)}};
 
-/* mode d'emploi */
-const TOUR=[
-  {ic:"bird",t:"Bienvenue sur Ramage",d:"Ramage reconnaît les oiseaux à leur ramage, chants et cris, directement sur ton téléphone, même sans réseau une fois les modèles chargés."},
-  {ic:"wave",t:"Écouter",d:"Touche « Écouter » au centre et tends le téléphone ; pour arrêter, le bouton rouge en bas. Le spectro défile en haut ; chaque espèce reconnue s'inscrit dessus, au moment où elle chante."},
-  {ic:"list",t:"La liste qui s'allume",d:"En dessous, les espèces entendues gardent leur place et s'allument quand elles chantent. Chaque ligne dit chant ou cri, et « 2 IA ✓ » quand BirdNET+ et Perch v2 sont d'accord. Un « ? » veut dire : pas encore sûr."},
-  {ic:"two",t:"Valider, écarter",d:"Glisse une espèce vers la droite pour la valider au carnet, vers la gauche pour l'écarter : Ramage apprend de tes choix. Touche-la pour sa fiche : photo, référence, ressemblance et variance."},
-  {ic:"frame",t:"Capturer, analyser",d:"Les 30 dernières secondes restent en mémoire : « Capturer » garde un son déjà passé. Dans Analyse, encadre un son au doigt : mesures, ralenti jusqu'à ⅛, nettoyage, comparaison aux références."},
-  {ic:"moon",t:"La nuit complète",d:"Bouton « Nuit » : écran noir, téléphone sur batterie, parabole branchée. Ramage enregistre toute la nuit et garde les 5 meilleurs extraits de chaque espèce. Au réveil : un dossier trié par espèce, prêt à m'envoyer pour Faune-France."},
-  {ic:"shield",t:"Tout reste chez toi",d:"Pas de compte. Le son est analysé sur le téléphone et n'est jamais envoyé. Sauvegarde de temps en temps (Réglages) et ajoute Ramage à l'écran d'accueil depuis Safari."}];
-const TST={i:0};
-function renderTour(){const s=TOUR[TST.i],last=TST.i===TOUR.length-1;
-  $("#tourIn").innerHTML=`<div class="tart">${svgIc(s.ic,40)}</div><span class="eyebrow">${TST.i+1} / ${TOUR.length}</span><h2>${esc(s.t)}</h2><p>${esc(s.d)}</p><div class="tdots">${TOUR.map((_,k)=>`<i class="${k===TST.i?"on":""}"></i>`).join("")}</div>
-   <div class="tact">${last?"":`<button class="btn ghost" id="tSkip">Passer</button>`}<button class="btn primary" id="tNext">${last?"C'est parti":"Suivant"}</button></div>`;
-  $("#tNext").onclick=()=>{if(last)endTour();else{TST.i++;renderTour()}};if(!last)$("#tSkip").onclick=endTour}
-function openTour(){TST.i=0;$("#tour").hidden=false;renderTour()}
-function endTour(){$("#tour").hidden=true;S.toured=Date.now();S.newsSeen=VERSION;saveS()}
-$("#tour").addEventListener("touchstart",e=>{TST.x=e.touches[0].clientX},{passive:true});
-$("#tour").addEventListener("touchend",e=>{if(TST.x==null)return;const dx=e.changedTouches[0].clientX-TST.x;TST.x=null;if(dx<-60&&TST.i<TOUR.length-1){TST.i++;renderTour()}else if(dx>60&&TST.i>0){TST.i--;renderTour()}});
+/* mode d'emploi : visite guidée, un rond et une flèche sur les vrais boutons */
+const GUIDE=[
+  {t:"Bienvenue sur Ramage",d:"Une minute de visite : je te montre où tout se trouve, directement sur l'appli. Touche « Suivant », ou glisse vers la gauche."},
+  {tab:"listen",el:"#btnStart",round:1,t:"Écouter",d:"Touche ce bouton pour lancer l'écoute. Il disparaît pendant l'écoute ; le son est analysé sur le téléphone."},
+  {tab:"listen",el:"#liveWrap",t:"Le spectro",d:"Le son défile de droite à gauche : la hauteur en kHz, la force en couleur (dBFS, comme Raven). Le nom de chaque espèce reconnue s'inscrit au-dessus de son chant. Double-tap : plein écran."},
+  {tab:"listen",el:"#liveList",demo:1,t:"Les oiseaux entendus",d:"Chaque espèce garde sa ligne et s'allume quand elle chante : CHANT ou CRI, score, et « 2 IA ✓ » quand BirdNET+ et Perch sont d'accord. Ici, un exemple."},
+  {tab:"listen",el:"#liveList .sp",demo:1,swipe:1,t:"Glisse pour trier",d:"Vers la droite : validé au carnet. Vers la gauche : écarté, et Ramage apprend de ton choix. Touche la ligne pour la fiche de l'espèce."},
+  {tab:"listen",ctrl:1,el:"#btnListen",round:1,t:"Arrêter",d:"Pendant l'écoute, ce bouton rouge arrête tout. Ramage te demande alors si tu gardes l'enregistrement complet."},
+  {tab:"listen",ctrl:1,el:"#btnCapture",t:"Capturer",d:"Garde les dernières secondes, même un chant déjà passé, et l'ouvre dans Analyse."},
+  {tab:"listen",ctrl:1,el:"#btnBlack",t:"La nuit",d:"Écran noir et enregistrement toute la nuit, parabole branchée. Au réveil : les 5 meilleurs extraits par espèce, rangés pour Faune-France."},
+  {el:"#chipAi",t:"L'état des IA",d:"Point vert « IA ×2 » : BirdNET+ et Perch sont prêts. ☁ : Perch complet tourne sur ton serveur. Orange : chargement."},
+  {el:"#btnHelp",round:1,t:"Le « ? »",d:"Affiche une petite explication sous chaque outil et chaque réglage."},
+  {el:'nav.tabs [data-tab="analyse"]',t:"Analyse",d:"Importe un son ou ouvre une capture : encadre au doigt, 9 mesures, ralenti jusqu'à ⅛, nettoyage, comparaison aux références."},
+  {el:'nav.tabs [data-tab="log"]',t:"Carnet",d:"Sorties, nuits, enregistrements, fiches, ta collection Plumage et la carte. Exports CSV, GeoJSON et ZIP."},
+  {tab:"settings",el:"#segGeo",t:"Filtre géographique",d:"« autour de moi » : les espèces probables ici cette semaine (conseillé). « France + raretés » : 601 espèces, vagabonds compris, aux bonnes semaines."},
+  {tab:"settings",el:()=>$("#modelInfo").closest(".card"),t:"Les modèles",d:"BirdNET+ et Perch se téléchargent une fois et restent sur le téléphone. Colle ici l'adresse de ton serveur pour Perch complet."},
+  {tab:"settings",el:"#btnTour",t:"Revoir le guide",d:"Il est ici, dans Réglages › À propos, quand tu veux. Bonne écoute !"}];
+const GD={i:0,on:false};
+const DEMO_ROWS=`<div class="sp on g-demo" style="--k:var(--song)"><div class="ph"></div><div class="mid"><div class="nm">Rougegorge familier</div><div class="la">Erithacus rubecula</div><div class="tags"><span class="tg k" style="--k:var(--song)">CHANT</span><span class="tg ai2">2 IA ✓</span></div></div><div class="rt"><span class="pct">92<small>%</small></span><span class="eq"><i></i><i></i><i></i></span></div></div>
+<div class="sp g-demo" style="--k:var(--call)"><div class="ph"></div><div class="mid"><div class="nm">Pinson des arbres</div><div class="la">Fringilla coelebs</div><div class="tags"><span class="tg k" style="--k:var(--call)">CRI</span></div></div><div class="rt"><span class="pct">74<small>%</small></span><span class="ago">il y a 23 s</span></div></div>`;
+function guideDemo(on){const l=$("#liveList");l.querySelectorAll(".g-demo").forEach(e=>e.remove());const em=l.querySelector(".empty");
+  if(on&&!l.querySelector(".sp")){l.insertAdjacentHTML("afterbegin",DEMO_ROWS);if(em)em.hidden=true}else if(em)em.hidden=false}
+function openTour(){if(running){toast("Arrête l'écoute pour suivre le guide");return}GD.i=0;GD.on=true;$("#guide").hidden=false;document.body.classList.add("guiding");guideGo()}
+function endTour(){GD.on=false;$("#guide").hidden=true;document.body.classList.remove("guiding","g-ctrl");guideDemo(false);showTab("listen");S.toured=Date.now();S.newsSeen=VERSION;saveS()}
+function guideGo(){const s=GUIDE[GD.i];if(s.tab&&!document.body.classList.contains("tab-"+s.tab))showTab(s.tab);
+  document.body.classList.toggle("g-ctrl",!!s.ctrl);guideDemo(!!s.demo);
+  const t=s.el?(typeof s.el==="function"?s.el():$(s.el)):null;
+  if(t){const r=t.getBoundingClientRect(),top=60,bot=innerHeight-(s.ctrl?0:150);if(r.top<top||r.bottom>bot){t.scrollIntoView({block:"center",behavior:"instant"})}}
+  requestAnimationFrame(()=>requestAnimationFrame(()=>guideDraw(s,t)))}
+function guideDraw(s,t){const W=innerWidth,H=innerHeight,last=GD.i===GUIDE.length-1;
+  const b=$("#gBub");b.innerHTML=`<span class="eyebrow">${GD.i+1} / ${GUIDE.length}</span><h2>${esc(s.t)}</h2><p>${esc(s.d)}</p>
+   <div class="tact">${GD.i?`<button class="btn ghost" id="gPrev">Retour</button>`:`<button class="btn ghost" id="gSkip">Passer</button>`}<button class="btn primary" id="gNext">${last?"C'est parti":"Suivant"}</button></div>`;
+  $("#gNext").onclick=()=>{if(last)endTour();else{GD.i++;guideGo()}};if(GD.i)$("#gPrev").onclick=()=>{GD.i--;guideGo()};else $("#gSkip").onclick=endTour;
+  const hole=$("#gHole"),ring=$("#gRing"),arr=$("#gArr"),sw=$("#gSwipe");sw.hidden=true;
+  if(!t||!t.getClientRects().length){hole.setAttribute("d","");ring.setAttribute("d","");arr.setAttribute("d","");b.style.top=Math.max(80,H/2-120)+"px";b.style.bottom="auto";b.classList.add("mid");return}
+  b.classList.remove("mid");const r=t.getBoundingClientRect(),pad=s.round?10:8,cx=r.left+r.width/2,cy=r.top+r.height/2;let shape,ex,ey;
+  if(s.round){const R=Math.max(r.width,r.height)/2+pad;shape=`M${cx-R} ${cy}a${R} ${R} 0 1 0 ${2*R} 0a${R} ${R} 0 1 0 ${-2*R} 0z`;var hr={t:cy-R,b:cy+R,l:cx-R,r:cx+R}}
+  else{const x=Math.max(4,r.left-pad),y=r.top-pad,w=Math.min(W-8,r.right+pad)-x,h=r.height+2*pad,k=Math.min(16,h/2);
+    shape=`M${x+k} ${y}h${w-2*k}a${k} ${k} 0 0 1 ${k} ${k}v${h-2*k}a${k} ${k} 0 0 1 ${-k} ${k}h${-(w-2*k)}a${k} ${k} 0 0 1 ${-k} ${-k}v${-(h-2*k)}a${k} ${k} 0 0 1 ${k} ${-k}z`;var hr={t:y,b:y+h,l:x,r:x+w}}
+  hole.setAttribute("d",shape);ring.setAttribute("d",shape);
+  const below=(hr.t+hr.b)/2<H*.48;b.style.top=below?Math.min(H-b.offsetHeight-16,hr.b+56)+"px":"auto";b.style.bottom=below?"auto":Math.min(H-b.offsetHeight-16,H-hr.t+56)+"px";
+  const bb=b.getBoundingClientRect(),sx=Math.min(bb.right-40,Math.max(bb.left+40,cx)),sy=below?bb.top-6:bb.bottom+6;
+  ex=Math.min(hr.r-6,Math.max(hr.l+6,cx));ey=below?hr.b+8:hr.t-8;
+  if(Math.abs(sy-ey)<14){arr.setAttribute("d","")}else{const bend=(sx<W/2?1:-1)*Math.min(60,Math.abs(sy-ey)*.6);arr.setAttribute("d",`M${sx} ${sy}Q${(sx+ex)/2+bend} ${(sy+ey)/2} ${ex} ${ey}`)}
+  if(s.swipe){sw.hidden=false;sw.style.left=(r.left+r.width/2-14)+"px";sw.style.top=(r.top+r.height/2-14)+"px"}}
+$("#guide").addEventListener("touchstart",e=>{GD.x=e.touches[0].clientX},{passive:true});
+$("#guide").addEventListener("touchend",e=>{if(GD.x==null)return;const dx=e.changedTouches[0].clientX-GD.x;GD.x=null;if(dx<-60&&GD.i<GUIDE.length-1){GD.i++;guideGo()}else if(dx>60&&GD.i>0){GD.i--;guideGo()}});
+addEventListener("resize",()=>{if(GD.on)guideGo()});
+addEventListener("keydown",e=>{if(!GD.on)return;if(e.key==="Escape")endTour();else if(e.key==="ArrowRight"&&GD.i<GUIDE.length-1){GD.i++;guideGo()}else if(e.key==="ArrowLeft"&&GD.i>0){GD.i--;guideGo()}});
 
 /* nouveautés */
 const NEWS=[
+  {n:"1.9",d:"1er novembre 2026",items:[["spark","Un vrai mode d'emploi","Visite guidée sur l'appli elle-même : un rond doré et une flèche montrent chaque bouton, avec son explication. Réglages › À propos › Mode d'emploi pour la revoir."]]},
   {n:"1.8",d:"1er novembre 2026",items:[["two","Perch complet sur serveur","Réglages › Modèles : colle l'adresse de ton serveur Perch (Hugging Face) et le vrai Perch de 413 Mo donne son avis, même sur iPhone. Le son n'est envoyé que quand BirdNET+ entend quelque chose."]]},
   {n:"1.7",d:"1er novembre 2026",items:[["bird","France + raretés de saison","Nouvelle liste : les 601 espèces possibles en France (raretés de migration comprises : Pouillots de Pallas, à grands sourcils, brun…), chacune seulement aux semaines où elle passe. Remplace le mode à 8 000 espèces. En « autour de moi », une rareté hors liste locale n'est acceptée que si elle est dans cette liste et de saison."]]},
   {n:"1.6.2",d:"1er novembre 2026",items:[["two","Perch v2 : les scores comme Google l'a entraîné","Softmax sur toutes ses classes. Testé sur de vrais chants xeno-canto : le pinson sort à 59–92 %, les autres espèces restent sous 5 %, le bruit sous 6 %."]]},

@@ -218,7 +218,13 @@
 <div id="sheet" class="sheet" hidden><div class="sheetbox" role="dialog" aria-modal="true" aria-label="Détail"><button id="sheetClose" aria-label="Fermer">×</button><div id="sheetBody"></div></div></div>
 <div id="splash" aria-label="Ramage"><svg id="spFeather" viewBox="-200 -170 400 340" preserveAspectRatio="xMidYMid meet" aria-hidden="true"></svg>
   <div class="sptxt"><span class="sptitle">Ramage</span><span class="spsub">« Si votre ramage se rapporte à votre plumage… »</span></div><span class="sptap">touche pour passer</span></div>
-<div id="tour" hidden role="dialog" aria-modal="true" aria-label="Mode d'emploi"><div id="tourIn"></div></div>
+<div id="guide" hidden role="dialog" aria-modal="true" aria-label="Mode d'emploi">
+  <svg class="gsvg" aria-hidden="true"><defs><mask id="gMask"><rect width="100%" height="100%" fill="#fff"/><path id="gHole" fill="#000"/></mask>
+    <marker id="gHead" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--accent)"/></marker></defs>
+    <rect width="100%" height="100%" fill="rgba(0,0,0,.74)" mask="url(#gMask)"/><path id="gRing" class="gring"/><path id="gArr" class="garr" marker-end="url(#gHead)"/></svg>
+  <div id="gSwipe" class="gswipe" hidden></div>
+  <div id="gBub" class="gbub"></div>
+</div>
 <label id="hapL" aria-hidden="true"><input type="checkbox" switch tabindex="-1"></label>
 <div id="upd" hidden><span id="updTxt"></span><button class="btn primary sm" id="updGo">Recharger</button></div>
 

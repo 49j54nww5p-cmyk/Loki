@@ -155,9 +155,9 @@
         <h3>Modèles</h3>
         <div id="modelInfo" class="small"></div>
         <div class="bar" id="perchBar2" hidden><i></i></div>
-        <div class="ctl"><span class="lbl">Version de Perch v2</span><div class="seg" id="segPerchV"><button data-v="lite">légère · 131 Mo</button><button data-v="full">complète · 413 Mo</button></div><span class="small muted help">La légère tient dans la mémoire de l'iPhone, avec une toute petite perte de précision sur les scores. La complète est en pleine précision mais peut faire fermer l'appli à l'activation.</span></div>
+        <div class="ctl"><span class="lbl">Version de Perch v2</span><div class="seg" id="segPerchV"><button data-v="lite">légère · 131 Mo</button><button data-v="full">complète · 413 Mo</button></div><span class="small muted help">La complète est en pleine précision. La légère se trompe nettement plus (même n°1 que la complète sur un peu plus d’une fenêtre sur deux seulement), mais demande trois fois moins de mémoire. Pour la complète, le plus simple : « Charger depuis Fichiers » avec le fichier perch_v2_no_dft.onnx rangé sur ton iPhone.</span></div>
         <p class="note small" id="perchNote" hidden></p>
-        <div class="row"><button class="btn primary" id="btnGetPerch">Télécharger Perch v2</button><button class="btn primary" id="btnActPerch" hidden>Activer Perch v2</button><button class="btn ghost" id="btnDropPerch" hidden>Supprimer Perch</button></div>
+        <div class="row"><button class="btn primary" id="btnGetPerch">Télécharger Perch v2</button><button class="btn primary" id="btnActPerch" hidden>Activer Perch v2</button><button class="btn" id="btnFilePerch">Charger depuis Fichiers</button><input type="file" id="perchFile" hidden><button class="btn ghost" id="btnDropPerch" hidden>Supprimer Perch</button></div>
         <p class="small muted help">Perch est gardé sur le téléphone après un seul téléchargement (en wifi, appli ouverte). L'activer demande beaucoup de mémoire : ferme les autres applis avant.</p>
       </div>
       <div class="card">

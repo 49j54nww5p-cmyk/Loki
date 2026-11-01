@@ -102,7 +102,7 @@ function rarity(i){if(isRareOut(i))return["x","rareté ? à vérifier"];const p=
    Elle passe si BirdNET+ est très sûr (≥ RARE_T) et s'affiche « rareté ? à vérifier ». */
 const RARE_T=.75;AI.rareHit=new Set();
 function postBN(p){const n=AI.labels.length,o=new Float32Array(n),bias=((S.sens||1)-1)*5,rare=S.rare!==false;
-  for(let i=0;i<n;i++){const inM=AI.mask[i];if(!inM&&!(rare&&AI.birdMask[i]))continue;let v=p[i]*AI.mult[i];if(bias){v=Math.min(Math.max(v,1e-6),1-1e-6);v=1/(1+Math.exp(-(Math.log(v/(1-v))+bias)))}
+  for(let i=0;i<n;i++){const inM=AI.mask[i];if(!inM&&!(rare&&AI.birdMask[i]))continue;let v=p[i]*AI.mult[i];if(!(v>0))continue;if(bias){v=Math.min(Math.max(v,1e-6),1-1e-6);v=1/(1+Math.exp(-(Math.log(v/(1-v))+bias)))}
     if(!inM){if(v<RARE_T)continue;AI.rareHit.add(i)}o[i]=v}return o}
 const isRareOut=i=>!!(AI.mask&&!AI.mask[i]);
 /* prédictions + empreintes normalisées (1280 valeurs) par fenêtre de 3 s */
@@ -117,14 +117,25 @@ async function perchLabels(){if(AI.perchIdx)return;let txt=null,c=null;try{c=awa
   if(!txt){const r=await fetch(PERCH_LABELS);if(!r.ok)throw new Error("liste Perch introuvable (HTTP "+r.status+")");txt=await r.text();if(c)try{await c.put("https://huginn.local/perch-labels",new Response(txt))}catch(e){}}
   const lines=txt.split(/\r?\n/).slice(1).filter(Boolean);AI.perchIdx=Int32Array.from(lines.map(l=>{const k=AI.sciIdx.get(l.replace(/^"|"$/g,"").trim());return k==null?-1:k}))}
 async function runPerch(wins){const L=160000,res=[];for(const w of wins){const d=new Float32Array(L);d.set(fit(w,L));const r=await wcall({t:"run",name:"perch",output:"label",data:d,dims:[1,L]},[d.buffer]);
-    /* Perch est multi-étiquettes : chaque espèce a sa propre probabilité (sigmoïde).
-       Avant, je les renormalisais entre elles (softmax) sur les seules espèces d'ici : même sur du bruit,
-       l'une d'elles sortait forcément haut. C'est ce qui inventait des espèces (ex. Pouillot brun). */
+    /* Perch v2 sort des « logits » qui ne sont PAS des probabilités : une sigmoïde directe donne 99 % sur du silence
+       (v1.6.0 : Chouette hulotte et Hibou moyen-duc à 100 % sans aucun son). Mesures faites sur le modèle complet :
+       silence ou bruit → logit max 4,5 à 7,4 (toujours Chouette hulotte, Grand-duc, Râle…), vrais oiseaux → 9 à 13.
+       Le score est donc recentré : 50 % à 8,5, 85 % à 10,2, et le bruit reste sous 25 %. */
     const lg=r.data,n=AI.labels.length,sc=new Float32Array(n);
-    for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&(AI.mask[k]||AI.rareHit.has(k))){const v=1/(1+Math.exp(-lg[j]));if(v>sc[k])sc[k]=v}}res.push(sc)}return res}
+    for(let j=0;j<lg.length;j++){const k=AI.perchIdx[j];if(k>=0&&(AI.mask[k]||AI.rareHit.has(k))&&Number.isFinite(lg[j])){const v=perchScore(lg[j]);if(v>sc[k])sc[k]=v}}res.push(sc)}return res}
+const PERCH_MID=8.5;const perchScore=l=>1/(1+Math.exp(-(l-PERCH_MID)));
 /* téléchargement seul (gardé sur le téléphone), puis activation à part : si l'activation fait fermer l'appli
    faute de mémoire, le fichier reste là et l'appli ne réessaie pas toute seule au lancement suivant */
 let perchWake=null;
+/* Perch complet depuis un fichier du téléphone (app Fichiers) : copié par morceaux de 16 Mo, comme un téléchargement */
+async function perchImport(file,onp){const M=PERCHV.full,c=await caches.open("huginn-models"),CH=16*1024*1024;
+  try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){}
+  if(AI.ready.perch){try{await wcall({t:"unload",name:"perch"})}catch(e){}AI.ready.perch=false}
+  try{await wcall({t:"drop",name:"perch",key:M.key})}catch(e){}
+  const head=new Uint8Array(await file.slice(0,4).arrayBuffer());if(head[0]!==0x08)throw new Error("ce fichier n'est pas un modèle .onnx");
+  let n=0;for(let o=0;o<file.size;o+=CH){const b=await file.slice(o,Math.min(file.size,o+CH)).arrayBuffer();await c.put(M.key+"/p"+n,new Response(b,{headers:{"x-len":String(b.byteLength)}}));n++;onp&&onp(Math.min(file.size,o+CH),file.size)}
+  await c.put(M.key+"/meta",new Response(JSON.stringify({url:M.url,n,size:file.size,total:file.size,done:true,from:"fichier"}),{headers:{"content-type":"application/json"}}));
+  S.perchV="full";saveS();try{localStorage.removeItem("huginn.perchLoading")}catch(e){}}
 async function perchDownload(){if(await perchCached())return;try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){}
   try{if(navigator.wakeLock)perchWake=await navigator.wakeLock.request("screen")}catch(e){}
   try{await wcall({t:"dl",name:"perch",url:MODELS.perch.url,key:MODELS.perch.key,sizes:MODELS.perch.sizes})}finally{if(perchWake){perchWake.release().catch(()=>{});perchWake=null}}}

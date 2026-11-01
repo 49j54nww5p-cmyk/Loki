@@ -55,6 +55,12 @@ $("#btnActPerch").onclick=async()=>{const b=$("#btnActPerch");b.disabled=true;b.
   g.addEventListener("click",async e=>{const b=e.target.closest("button");if(!b||b.dataset.v===(S.perchV==="full"?"full":"lite"))return;S.perchV=b.dataset.v;saveS();set();
     if(AI.ready.perch){try{await wcall({t:"unload",name:"perch"})}catch(err){}AI.ready.perch=false}try{localStorage.removeItem("huginn.perchLoading")}catch(err){}
     $("#btnGetPerch").textContent="Télécharger "+MODELS.perch.label+" ("+MODELS.perch.size+" Mo)";renderModelInfo();setAiChip()})}
+$("#btnFilePerch").onclick=()=>{if(!IN_CLAUDE)$("#perchFile").click()};
+$("#perchFile").onchange=async e=>{const f=e.target.files&&e.target.files[0];e.target.value="";if(!f)return;const b=$("#btnFilePerch");b.disabled=true;const bar=$("#perchBar2");bar.hidden=false;
+  try{await perchImport(f,(got,tot)=>{bar.firstElementChild.style.width=(got/tot*100)+"%";b.textContent=`Copie ${Math.round(got/1e6)} / ${Math.round(tot/1e6)} Mo`});
+    $("#segPerchV").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.v==="full")));toast(`Perch complet copié (${Math.round(f.size/1e6)} Mo) : activation…`);renderModelInfo();
+    await perchActivate();toast("Perch v2 complet prêt")}
+  catch(err){toast("Perch : "+(err.message||err));AI.err="Perch : "+(err.message||err)}finally{b.disabled=false;b.textContent="Charger depuis Fichiers";bar.hidden=true;renderModelInfo();setAiChip()}};
 $("#btnDropPerch").onclick=async()=>{try{await wcall({t:"drop",name:"perch",key:MODELS.perch.key});AI.ready.perch=false;toast("Perch v2 supprimé du téléphone")}catch(e){toast("Suppression impossible")}renderModelInfo();setAiChip()};
 
 /* apprentissage */
@@ -100,6 +106,7 @@ $("#tour").addEventListener("touchend",e=>{if(TST.x==null)return;const dx=e.chan
 
 /* nouveautés */
 const NEWS=[
+  {n:"1.6.1",d:"1er novembre 2026",items:[["two","Perch ne voit plus de hiboux dans le silence","La v1.6 lisait mal les scores de Perch : sur du bruit, Chouette hulotte et Hibou moyen-duc sortaient à 100 %. Les scores sont recalés sur des mesures (bruit : moins de 25 %, vrais chants : 60 à 99 %)."],["book","Perch complet depuis Fichiers","Réglages › Modèles › « Charger depuis Fichiers » : choisis perch_v2_no_dft.onnx rangé sur ton iPhone, plus besoin de le télécharger dans l'appli."]]},
   {n:"1.6",d:"1er novembre 2026",items:[["wave","Enregistrement continu","Tout ce que tu écoutes est enregistré. À l'arrêt, Ramage te demande si tu gardes l'enregistrement complet (Carnet › Sorties, export en m4a)."],["two","Fini les espèces inventées par Perch","Perch notait ses espèces les unes par rapport aux autres : sur du bruit, l'une sortait forcément haut. Chaque espèce a maintenant sa vraie probabilité ; Perch seul n'ajoute une espèce qu'à 85 % et plus."],["bird","Raretés plus strictes","Une espèce hors liste doit atteindre 75 % chez BirdNET+, et être confirmée par Perch s'il est activé."]]},
   {n:"1.5",d:"1er novembre 2026",items:[["wave","Spectro étalonné en dBFS","Même échelle que Audacity, Raven ou Sonic Visualiser : fenêtre de Hann, 1024 points, de −100 à −20 dBFS par défaut. Une même couleur veut toujours dire le même niveau, d'un enregistrement à l'autre."],["bird","BirdNET+ se recharge","Corrige l'erreur « téléchargement coupé à 67 / 60 Mo »."]]},
   {n:"1.4.1",d:"1er novembre 2026",items:[["wave","Spectro qui ne sature plus","Le niveau se cale tout seul sur le bruit de fond : fond sombre, oiseaux en clair, même avec la parabole ou un micro sensible. Le contraste (Réglages) règle la plage au-dessus du fond."]]},

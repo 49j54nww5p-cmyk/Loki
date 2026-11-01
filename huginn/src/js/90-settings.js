@@ -15,7 +15,7 @@ const xFmt=v=>"×"+Math.pow(10,v/20).toFixed(v>12?0:1);
 bindSeg("#segHp","hp",applyAudioSettings);
 bindSeg("#segFmax","fmax",()=>{drawAxis($("#liveAxis"),0,S.fmax);if(spec){renderOff();view.f1=Math.min(view.f1,off.fTop);if(view.f1<=view.f0)view={t0:view.t0,t1:view.t1,f0:0,f1:off.fTop};drawClip()}});
 bindSeg("#segBuf","bufSec",()=>{if(ac&&running)allocRing()});
-bindSeg("#segCap","capSec",()=>$("#capLbl").textContent=S.capSec+" s");
+bindSeg("#segCap","capSec",()=>$("#capLbl").textContent=S.capSec+" s");bindSeg("#segCapMode","capMode");
 bindSeg("#segGeo","geo",()=>updateMask(true).catch(()=>{}));
 bindRange("#gain","#gainLbl",xFmt,"gain",applyAudioSettings);
 bindRange("#pgain","#pgainLbl",xFmt,null);
@@ -96,7 +96,7 @@ const GUIDE=[
   {tab:"listen",el:"#liveList",demo:1,t:"Les oiseaux entendus",d:"Chaque espèce garde sa ligne et s'allume quand elle chante : CHANT ou CRI, score, et « 2 IA ✓ » quand BirdNET+ et Perch sont d'accord. Ici, un exemple."},
   {tab:"listen",el:"#liveList .sp",demo:1,swipe:1,t:"Glisse pour trier",d:"Vers la droite : validé au carnet. Vers la gauche : écarté, et Ramage apprend de ton choix. Touche la ligne pour la fiche de l'espèce."},
   {tab:"listen",ctrl:1,el:"#btnListen",round:1,t:"Arrêter",d:"Pendant l'écoute, ce bouton rouge arrête tout. Ramage te demande alors si tu gardes l'enregistrement complet."},
-  {tab:"listen",ctrl:1,el:"#btnCapture",t:"Capturer",d:"Garde les dernières secondes, même un chant déjà passé, et l'ouvre dans Analyse."},
+  {tab:"listen",ctrl:1,el:"#btnCapture",t:"Capturer",d:"Un doute sur un oiseau ? Touche ici : les 10 dernières secondes s'ouvrent en analyse rapide (spectro, les 2 IA, Valider), et l'écoute continue derrière."},
   {tab:"listen",ctrl:1,el:"#btnBlack",t:"La nuit",d:"Écran noir et enregistrement toute la nuit, parabole branchée. Au réveil : les 5 meilleurs extraits par espèce, rangés pour Faune-France."},
   {el:"#chipAi",t:"L'état des IA",d:"Point vert « IA ×2 » : BirdNET+ et Perch sont prêts. ☁ : Perch complet tourne sur ton serveur. Orange : chargement."},
   {el:"#btnHelp",round:1,t:"Le « ? »",d:"Affiche une petite explication sous chaque outil et chaque réglage."},
@@ -140,6 +140,7 @@ addEventListener("keydown",e=>{if(!GD.on)return;if(e.key==="Escape")endTour();el
 
 /* nouveautés */
 const NEWS=[
+  {n:"1.10",d:"1er novembre 2026",items:[["frame","Capturer = analyse rapide","Un doute ? Touche « Capturer » : les 10 dernières secondes s'ouvrent par-dessus l'écoute, qui continue. Spectro, avis de BirdNET+ et Perch, où chaque oiseau chante, et « Valider » pour le carnet. « Analyse détaillée » pour les outils complets. Réglages › Écoute pour revenir à l'ancien comportement."]]},
   {n:"1.9",d:"1er novembre 2026",items:[["spark","Un vrai mode d'emploi","Visite guidée sur l'appli elle-même : un rond doré et une flèche montrent chaque bouton, avec son explication. Réglages › À propos › Mode d'emploi pour la revoir."]]},
   {n:"1.8",d:"1er novembre 2026",items:[["two","Perch complet sur serveur","Réglages › Modèles : colle l'adresse de ton serveur Perch (Hugging Face) et le vrai Perch de 413 Mo donne son avis, même sur iPhone. Le son n'est envoyé que quand BirdNET+ entend quelque chose."]]},
   {n:"1.7",d:"1er novembre 2026",items:[["bird","France + raretés de saison","Nouvelle liste : les 601 espèces possibles en France (raretés de migration comprises : Pouillots de Pallas, à grands sourcils, brun…), chacune seulement aux semaines où elle passe. Remplace le mode à 8 000 espèces. En « autour de moi », une rareté hors liste locale n'est acceptée que si elle est dans cette liste et de saison."]]},

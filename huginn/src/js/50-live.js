@@ -157,7 +157,7 @@ function sessionEnd(recd){if(!SES){openRecOnly(recd);return}const s=SES;SES=null
   if(!rec.list.length){openRecOnly(recd);return}saveSession(rec);openSummary(rec,recd)}
 
 /* ---- capture rétro ---- */
-$("#btnCapture").onclick=()=>capture();
+$("#btnCapture").onclick=()=>S.capMode===1?capture():quickCapture();
 $("#capLbl").textContent=S.capSec+" s";
 
 /* ---- la nuit : écran noir, l'appli garde 4 s autour de chaque son ---- */

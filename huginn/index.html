@@ -238,6 +238,15 @@ th{color:var(--muted);font-weight:500}
 .srow .sp2{font:13px var(--f-mono);color:var(--muted)}
 .lpane .srow{padding-left:0;padding-right:0}
 .sheet .row{padding:0 16px}
+.qlive{color:var(--ok)}
+.qwrap{position:relative;margin:4px 16px 0}
+.qsono{display:block;width:100%;height:150px;border-radius:10px;border:1px solid var(--line);touch-action:none}
+.qf{position:absolute;left:6px;top:4px;font:500 10px var(--f-mono);color:#fff;text-shadow:0 0 3px #000}
+.qmarks{position:relative;height:20px;margin-top:5px;margin-bottom:-4px}.qmarks i{position:absolute;height:5px;border-radius:3px}
+.qt{display:flex;justify-content:space-between;font-size:10px;color:var(--muted)}
+.qres{display:flex;flex-direction:column;gap:8px;padding:12px 16px 0}
+.qrow.weak{opacity:.6}.qrow .rt .btn{min-height:32px}
+.qacts{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px}
 .prose{padding:0 16px;display:flex;flex-direction:column;gap:8px;font-size:14px}.prose ul{margin:0;padding-left:18px}.prose h3{margin-top:8px}
 .srcs{display:flex;flex-direction:column;gap:8px;padding:0 16px}
 .src{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;font-size:13px;display:flex;flex-direction:column;gap:4px}
@@ -425,6 +434,7 @@ body.guiding #main{overflow:hidden}
           <div class="ctl"><span class="lbl">Fréquence max</span><div class="seg" id="segFmax"><button data-v="8000">8 k</button><button data-v="11000">11 k</button><button data-v="16000">16 k</button></div></div>
           <div class="ctl"><span class="lbl">Mémoire rétro</span><div class="seg" id="segBuf"><button data-v="15">15 s</button><button data-v="30">30 s</button><button data-v="60">60 s</button></div></div>
           <div class="ctl"><span class="lbl">Durée de capture</span><div class="seg" id="segCap"><button data-v="5">5 s</button><button data-v="10">10 s</button><button data-v="15">15 s</button></div></div>
+          <div class="ctl"><span class="lbl">Le bouton Capturer ouvre</span><div class="seg" id="segCapMode"><button data-v="0">analyse rapide (l'écoute continue)</button><button data-v="1">l'onglet Analyse</button></div></div>
           <div class="ctl"><label for="range">Plage (dB) <span class="mono" id="rangeLbl"></span></label><input type="range" id="range" min="40" max="120" step="5" value="80"></div>
           <div class="ctl"><label for="specTop">Haut de l'échelle <span class="mono" id="specTopLbl"></span></label><input type="range" id="specTop" min="-60" max="0" step="5" value="-20"></div>
         </div>
@@ -532,12 +542,12 @@ body.guiding #main{overflow:hidden}
    Les clés « huginn.* » et la base « huginn » sont gardées :
    ainsi le carnet, les sons et la liste de vie d'avant restent là.
    ========================================================= */
-const VERSION="1.9.0";
+const VERSION="1.10.0";
 const IN_CLAUDE=!!(window.claude&&window.claude.use);
 const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const S=Object.assign({fmax:11000,bufSec:30,capSec:10,range:70,thr:12,hp:300,gain:0,deviceId:"",night:false,sun:0,sens:1,conf:0.35,geo:0,mapSeason:0,autoCmp:true,autoRef:true,pal:0,specTop:-20,specAuto:false},LS.get("huginn.settings",{}));
+const S=Object.assign({fmax:11000,bufSec:30,capSec:10,range:70,thr:12,hp:300,gain:0,deviceId:"",night:false,sun:0,sens:1,conf:0.35,geo:0,mapSeason:0,autoCmp:true,autoRef:true,pal:0,specTop:-20,specAuto:false,capMode:0},LS.get("huginn.settings",{}));
 const saveS=()=>LS.set("huginn.settings",S);
 
 let toastT;
@@ -1242,7 +1252,7 @@ function sessionEnd(recd){if(!SES){openRecOnly(recd);return}const s=SES;SES=null
   if(!rec.list.length){openRecOnly(recd);return}saveSession(rec);openSummary(rec,recd)}
 
 /* ---- capture rétro ---- */
-$("#btnCapture").onclick=()=>capture();
+$("#btnCapture").onclick=()=>S.capMode===1?capture():quickCapture();
 $("#capLbl").textContent=S.capSec+" s";
 
 /* ---- la nuit : écran noir, l'appli garde 4 s autour de chaque son ---- */
@@ -1562,6 +1572,64 @@ async function compareRefs(list,an){const box=$("#cmpRes"),tok=++cmpToken,cands=
     if(r===cands[0]&&kg&&!$("#typeIn").value&&KIND_TYPE[kg.k])$("#typeIn").value=KIND_TYPE[kg.k]}}
 $("#cmpRes").addEventListener("click",e=>{const b=e.target.closest("[data-play]");if(b)playUrl(b.dataset.play,+b.dataset.t||0,3600)});
 
+/* ===== 75-quick.js ===== */
+/* =========================================================
+   Analyse rapide : « Capturer » ouvre les dernières secondes
+   dans un volet par-dessus l'écoute, qui continue derrière.
+   ========================================================= */
+const QK={n:0};
+function quickSono(cv,x){const sp=stftOf(x,32000),d=dprOf(),r=cv.getBoundingClientRect();cv.width=Math.max(1,Math.round(r.width*d));cv.height=Math.max(1,Math.round(r.height*d));
+  const cols=Math.min(600,cv.width),rows=160,top=Math.min(sp.bins,Math.round(Math.min(S.fmax||11000,16000)/sp.binHz)),lo=sp.max-70,img=new ImageData(cols,rows);
+  for(let c=0;c<cols;c++){const f0=Math.floor(c*sp.frames/cols),f1=Math.max(f0+1,Math.floor((c+1)*sp.frames/cols));
+    for(let rr=0;rr<rows;rr++){const b0=Math.floor(rr*top/rows),b1=Math.max(b0+1,Math.floor((rr+1)*top/rows));let m=-300;
+      for(let f=f0;f<f1;f++)for(let b=b0;b<b1;b++){const v=sp.db[f*sp.bins+b];if(v>m)m=v}
+      const li=Math.round(Math.max(0,Math.min(1,(m-lo)/70))*255)*3,o=((rows-1-rr)*cols+c)*4;img.data[o]=LUT[li];img.data[o+1]=LUT[li+1];img.data[o+2]=LUT[li+2];img.data[o+3]=255}}
+  const off=document.createElement("canvas");off.width=cols;off.height=rows;off.getContext("2d").putImageData(img,0,0);const g=cv.getContext("2d");g.imageSmoothingEnabled=true;g.drawImage(off,0,0,cv.width,cv.height);
+  return top*sp.binHz}
+const QCOL=["var(--accent)","var(--song)","var(--call)"];
+async function quickCapture(){const s=grab(S.capSec);if(!s){toast("Rien en mémoire pour l'instant");return}
+  const sr=ac.sampleRate,dur=s.length/sr,ts=Date.now(),fix=lastFix,n=++QK.n;
+  loadClip({sr,samples:s,title:"Capture "+fmtT(ts),info:`${dur.toFixed(1)} s captées${fix?` · ${fix.lat.toFixed(5)}, ${fix.lon.toFixed(5)} ±${Math.round(fix.acc)} m`:""}`,source:demoNode?"demo":"micro",ts,fix});
+  openSheet(`<div class="sumhead"><span class="eyebrow">Analyse rapide · ${Math.round(dur)} dernières secondes</span><h2>Qui chantait ?</h2>
+      <p class="small qlive">${running?"● L'écoute continue derrière, rien n'est coupé":"Écoute arrêtée"}</p></div>
+    <div class="qwrap"><canvas class="qsono" id="qSono"></canvas><span class="qf" id="qTop"></span><div class="qmarks" id="qMarks"></div>
+      <div class="qt mono"><span>−${Math.round(dur)} s</span><span>−${Math.round(dur/2)} s</span><span>maintenant</span></div></div>
+    <div class="qres" id="qRes"><p class="small muted">BirdNET+ écoute l'extrait…</p></div>
+    <div class="qacts"><button class="btn ghost" id="qFull">Analyse détaillée</button><button class="btn primary" id="qBack">Retour à l'écoute</button></div>`,"quick");
+  $("#qBack").onclick=closeSheet;$("#qFull").onclick=()=>{closeSheet();showTab("analyse");if(S.autoCmp!==false&&AI.ready.bn)setTimeout(()=>$("#btnBn").click(),50)};
+  const x=await to32k(s,sr);if(n!==QK.n)return;
+  requestAnimationFrame(()=>{const cv=$("#qSono");if(cv){const ft=quickSono(cv,x);$("#qTop").textContent=kHz(ft)+" kHz"}});
+  if(IN_CLAUDE){$("#qRes").innerHTML=`<p class="small muted">L'IA tourne seulement dans la version GitHub Pages.</p>`;return}
+  try{if(!AI.ready.bn){$("#qRes").innerHTML=`<p class="small muted">Chargement de BirdNET+…</p>`;await ensureAI()}
+    const D=x.length/32000,thr=S.conf||.35,st3=[];for(let t=0;t===0||t+1.5<=D-1.5;t+=1.5)st3.push(Math.min(t,Math.max(0,D-3)));
+    const res=await runBN2(st3.map(t=>x.subarray(Math.round(t*32000),Math.round(t*32000)+96000)));if(n!==QK.n||!$("#qRes"))return;
+    const sc=res.map(o=>postBN(o.raw)),bn=aggregate(sc,st3,thr),emb=res.map(o=>o.emb);
+    const Q={x,D,thr,bn,sc,emb,perch:null,s,sr,ts,fix,saved:new Set()};QK.cur=Q;quickRender(Q);
+    if(AI.ready.perch||perchRemoteOn()){const st5=[];for(let t=0;t===0||t+2.5<=D-2.5;t+=2.5)st5.push(Math.min(t,Math.max(0,D-5)));
+      const ps=await runPerch(st5.map(t=>x.subarray(Math.round(t*32000),Math.round(t*32000)+160000)));if(n!==QK.n||!$("#qRes"))return;
+      Q.perch=aggregate(ps,st5,thr);quickRender(Q)}}
+  catch(e){const r=$("#qRes");if(r)r.innerHTML=`<p class="small muted">Analyse impossible : ${esc(e.message||e)}</p>`}}
+function quickRender(Q){const pm=new Map((Q.perch||[]).map(r=>[r.i,r])),rows=[];
+  Q.bn.slice(0,6).forEach(r=>{if(r.max>=.1)rows.push({i:r.i,bn:r.max,wins:r.wins,pe:pm.has(r.i)?pm.get(r.i).max:null})});
+  (Q.perch||[]).forEach(p=>{if(p.max>=.3&&!rows.some(r=>r.i===p.i))rows.push({i:p.i,bn:0,wins:p.wins.map(t=>t),pe:p.max,w5:1})});
+  rows.forEach(r=>r.best=Math.max(r.bn,r.pe||0));rows.sort((a,b)=>b.best-a.best);Q.rows=rows;
+  const el=$("#qRes");if(!el)return;
+  if(!rows.length){el.innerHTML=`<p class="small muted">Aucun oiseau net dans ces ${Math.round(Q.D)} secondes. Le son est peut-être trop loin ou trop faible : ouvre l'analyse détaillée pour regarder le spectro de près.</p>`;$("#qMarks").innerHTML="";return}
+  const perTxt=Q.perch?"":AI.ready.perch||perchRemoteOn()?" · Perch écoute…":"";
+  el.innerHTML=`<p class="small muted">${rows.filter(r=>r.best>=Q.thr).length} espèce(s) au-dessus du seuil de ${Math.round(Q.thr*100)} %${perTxt}</p>`+rows.map((r,k)=>{const n=nameOf(r.i),two=r.pe!=null&&r.pe>=.3&&r.bn>=Q.thr*.9,done=Q.saved.has(r.i),rk=rarity(r.i);
+    return`<div class="sp qrow${k<3?" on":""}${r.best<Q.thr?" weak":""}" style="--k:${QCOL[k]||"var(--muted)"}"><div class="ph">${imgPh(n.la,"s")}</div>
+      <div class="mid"><div class="nm">${esc(n.fr)}</div><div class="la">${esc(n.la)}</div><div class="tags">${two?`<span class="tg ai2">2 IA ✓</span>`:""}${rk?`<span class="tg rare">${rk[1]}</span>`:""}<span class="tg">BirdNET+ ${r.bn?Math.round(r.bn*100)+" %":"—"}</span>${Q.perch?`<span class="tg">Perch ${r.pe!=null?Math.round(r.pe*100)+" %":"—"}</span>`:""}</div></div>
+      <div class="rt"><span class="pct">${Math.round(r.best*100)}<small>%</small></span><button class="btn ${done?"ghost":"primary"} sm" data-qok="${r.i}" ${done?"disabled":""}>${done?"✓ carnet":"Valider"}</button></div></div>`}).join("");
+  const mk=[];rows.slice(0,3).forEach((r,k)=>{const w=r.w5?5:3;mergeWins(r.wins,w).forEach(([a,b])=>mk.push(`<i style="left:${a/Q.D*100}%;width:${Math.max(1.5,(Math.min(b,Q.D)-a)/Q.D*100)}%;top:${k*7}px;background:${QCOL[k]}"></i>`))});
+  $("#qMarks").innerHTML=mk.join("")}
+document.addEventListener("click",async e=>{const b=e.target.closest("[data-qok]");if(!b||!QK.cur)return;const Q=QK.cur,i=+b.dataset.qok,n=nameOf(i),r=Q.rows.find(x=>x.i===i);if(!r||Q.saved.has(i))return;
+  b.disabled=true;const id=uid(),fx=Q.fix,lv=LIVE.get(i);
+  const ent={id,ts:Q.ts,lat:fx?fx.lat:null,lon:fx?fx.lon:null,acc:fx?fx.acc:null,sp:n.fr,la:n.la,type:lv&&lv.kind?KIND_TYPE[lv.kind.k]||"":"",notes:"Analyse rapide",source:demoNode?"demo":"micro",dur:Q.s.length/Q.sr,m:null,
+    ai:{m:r.bn>=(r.pe||0)?"BirdNET+":"Perch v2",fr:n.fr,la:n.la,sc:r.best}};
+  await putClip(id,{sr:Q.sr,pcm:toI16(Q.s)});const m=measure(stftOf(Q.s,Q.sr),null);if(m&&!m.empty)ent.m=m;
+  entries.unshift(ent);saveEntries();const nw=addLife(n.fr,n.la);let bw=0,bs=-1;Q.sc.forEach((p,w)=>{if(p[i]>bs){bs=p[i];bw=w}});learnAdd(n.la,Q.emb[bw],true);
+  if(lv){lv.validated=true;lv.lifer=false;renderLive()}Q.saved.add(i);quickRender(Q);renderLog();toast(nw?`${n.fr} : nouvelle espèce sur ta liste de vie !`:`${n.fr} validé au carnet`)});
+
 /* ===== 80-carnet.js ===== */
 /* =========================================================
    Carnet : sorties, fiches, Plumage (ta collection), carte, exports
@@ -1665,7 +1733,7 @@ const xFmt=v=>"×"+Math.pow(10,v/20).toFixed(v>12?0:1);
 bindSeg("#segHp","hp",applyAudioSettings);
 bindSeg("#segFmax","fmax",()=>{drawAxis($("#liveAxis"),0,S.fmax);if(spec){renderOff();view.f1=Math.min(view.f1,off.fTop);if(view.f1<=view.f0)view={t0:view.t0,t1:view.t1,f0:0,f1:off.fTop};drawClip()}});
 bindSeg("#segBuf","bufSec",()=>{if(ac&&running)allocRing()});
-bindSeg("#segCap","capSec",()=>$("#capLbl").textContent=S.capSec+" s");
+bindSeg("#segCap","capSec",()=>$("#capLbl").textContent=S.capSec+" s");bindSeg("#segCapMode","capMode");
 bindSeg("#segGeo","geo",()=>updateMask(true).catch(()=>{}));
 bindRange("#gain","#gainLbl",xFmt,"gain",applyAudioSettings);
 bindRange("#pgain","#pgainLbl",xFmt,null);
@@ -1746,7 +1814,7 @@ const GUIDE=[
   {tab:"listen",el:"#liveList",demo:1,t:"Les oiseaux entendus",d:"Chaque espèce garde sa ligne et s'allume quand elle chante : CHANT ou CRI, score, et « 2 IA ✓ » quand BirdNET+ et Perch sont d'accord. Ici, un exemple."},
   {tab:"listen",el:"#liveList .sp",demo:1,swipe:1,t:"Glisse pour trier",d:"Vers la droite : validé au carnet. Vers la gauche : écarté, et Ramage apprend de ton choix. Touche la ligne pour la fiche de l'espèce."},
   {tab:"listen",ctrl:1,el:"#btnListen",round:1,t:"Arrêter",d:"Pendant l'écoute, ce bouton rouge arrête tout. Ramage te demande alors si tu gardes l'enregistrement complet."},
-  {tab:"listen",ctrl:1,el:"#btnCapture",t:"Capturer",d:"Garde les dernières secondes, même un chant déjà passé, et l'ouvre dans Analyse."},
+  {tab:"listen",ctrl:1,el:"#btnCapture",t:"Capturer",d:"Un doute sur un oiseau ? Touche ici : les 10 dernières secondes s'ouvrent en analyse rapide (spectro, les 2 IA, Valider), et l'écoute continue derrière."},
   {tab:"listen",ctrl:1,el:"#btnBlack",t:"La nuit",d:"Écran noir et enregistrement toute la nuit, parabole branchée. Au réveil : les 5 meilleurs extraits par espèce, rangés pour Faune-France."},
   {el:"#chipAi",t:"L'état des IA",d:"Point vert « IA ×2 » : BirdNET+ et Perch sont prêts. ☁ : Perch complet tourne sur ton serveur. Orange : chargement."},
   {el:"#btnHelp",round:1,t:"Le « ? »",d:"Affiche une petite explication sous chaque outil et chaque réglage."},
@@ -1790,6 +1858,7 @@ addEventListener("keydown",e=>{if(!GD.on)return;if(e.key==="Escape")endTour();el
 
 /* nouveautés */
 const NEWS=[
+  {n:"1.10",d:"1er novembre 2026",items:[["frame","Capturer = analyse rapide","Un doute ? Touche « Capturer » : les 10 dernières secondes s'ouvrent par-dessus l'écoute, qui continue. Spectro, avis de BirdNET+ et Perch, où chaque oiseau chante, et « Valider » pour le carnet. « Analyse détaillée » pour les outils complets. Réglages › Écoute pour revenir à l'ancien comportement."]]},
   {n:"1.9",d:"1er novembre 2026",items:[["spark","Un vrai mode d'emploi","Visite guidée sur l'appli elle-même : un rond doré et une flèche montrent chaque bouton, avec son explication. Réglages › À propos › Mode d'emploi pour la revoir."]]},
   {n:"1.8",d:"1er novembre 2026",items:[["two","Perch complet sur serveur","Réglages › Modèles : colle l'adresse de ton serveur Perch (Hugging Face) et le vrai Perch de 413 Mo donne son avis, même sur iPhone. Le son n'est envoyé que quand BirdNET+ entend quelque chose."]]},
   {n:"1.7",d:"1er novembre 2026",items:[["bird","France + raretés de saison","Nouvelle liste : les 601 espèces possibles en France (raretés de migration comprises : Pouillots de Pallas, à grands sourcils, brun…), chacune seulement aux semaines où elle passe. Remplace le mode à 8 000 espèces. En « autour de moi », une rareté hors liste locale n'est acceptée que si elle est dans cette liste et de saison."]]},

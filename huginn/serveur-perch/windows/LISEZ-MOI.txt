@@ -1,0 +1,12 @@
+Ramage - serveur Perch v2 complet sur ton PC (gratuit)
+
+1. Dezippe ce dossier ou tu veux (par exemple dans Documents).
+2. Double-clique sur Lancer-Perch.bat.
+   - Si Windows affiche "Windows a protege votre ordinateur" : Informations complementaires > Executer quand meme.
+   - La 1re fois : il installe Python si besoin (relance ensuite), puis numpy/onnxruntime,
+     le tunnel Cloudflare et le modele Perch (413 Mo). Compte 5 a 10 minutes.
+3. A la fin, une adresse https://....trycloudflare.com s'affiche (deja copiee).
+   Envoie-la sur ton iPhone et colle-la dans Ramage : Reglages > Modeles > Serveur Perch complet > Tester.
+
+Le PC doit rester allume (pas en veille) pendant que tu ecoutes.
+Rien n'est garde : chaque son de 5 s est analyse puis oublie.

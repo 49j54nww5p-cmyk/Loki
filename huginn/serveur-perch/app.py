@@ -16,7 +16,7 @@ def fetch(url, path):
         urllib.request.urlretrieve(url, path + ".part"); os.rename(path + ".part", path)
     return path
 
-LABELS = [l.strip().strip('"') for l in open(fetch(LABELS_URL, DIR + "/labels.csv")).read().splitlines()[1:] if l.strip()]
+LABELS = [l.strip().strip('"') for l in open(fetch(LABELS_URL, DIR + "/labels.csv"), encoding="utf-8").read().splitlines()[1:] if l.strip()]
 SESS = ort.InferenceSession(fetch(MODEL_URL, DIR + "/perch_v2_no_dft.onnx"), providers=["CPUExecutionProvider"])
 INP = SESS.get_inputs()[0].name
 ALLOW = os.environ.get("ALLOW_ORIGIN", "*")

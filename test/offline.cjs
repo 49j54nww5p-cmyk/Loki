@@ -1,5 +1,6 @@
 // Hors ligne : le service worker garde l'appli et sert les photos du pack terrain sans réseau.
 // L'appli est servie par un petit serveur local (localhost compte comme sécurisé pour un service worker).
+process.env.PW_EXPERIMENTAL_SERVICE_WORKER_NETWORK_EVENTS = "1"; /* le réseau du service worker passe aussi par les routes du test */
 const { chromium } = require("playwright");
 const { spawn } = require("child_process");
 const path = require("path");

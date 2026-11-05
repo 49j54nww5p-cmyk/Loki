@@ -184,22 +184,35 @@ function interleave(specs) {
 function pickTarget(ses) {
   const P = ses.pool?.list || [];
   if (!P.length) return null;
-  const recent = new Set(ses.recent.slice(-Math.min(12, Math.floor(P.length / 2))));
-  const tday = todayNum();
-  let best = null, bw = -Infinity;
-  for (const t of sample(P, Math.min(P.length, 40))) {
-    if (recent.has(t.id)) continue;
+  /* Pas de doublon dans la série tant qu'il reste des espèces jamais posées ici ;
+     ensuite, au moins une demi-liste d'écart avant de revoir un oiseau. */
+  const asked = new Set(ses.recent);
+  const fresh = P.filter(t => !asked.has(t.id));
+  const cand = fresh.length ? fresh : (() => { const rc = new Set(ses.recent.slice(-Math.max(3, Math.floor(P.length / 2)))); return P.filter(t => !rc.has(t.id)); })();
+  const C = cand.length ? cand : P;
+  const tday = todayNum(), dk = dayKey();
+  /* Une question sur trois environ va à un oiseau encore jamais vu (s'il en reste) */
+  const never = C.filter(t => !S.sp[t.id]?.n);
+  if (never.length && Math.random() < (ses.kind === "review" ? .1 : .35)) return pick(never);
+  /* Les oiseaux à revoir ou ratés : environ un tiers de la série, pas plus */
+  const roomWeak = (ses.nWeak || 0) < Math.max(2, Math.ceil((ses.len || 10) * .3));
+  let best = null, bw = -Infinity, bWeak = false;
+  for (const t of sample(C, Math.min(C.length, 120))) {
     const r = S.sp[t.id];
-    let w = Math.random();
-    if (!r || !r.n) w += .3;
+    let w = Math.random() * 1.2, weak = false;
+    if (!r || !r.n) w += .35;
     else {
-      if (Object.values(r.due || {}).some(d => d <= tday)) w += .7;
-      w += (1 - r.ok / r.n) * .8;
+      const due = Object.values(r.due || {}).some(d => d <= tday), miss = 1 - r.ok / r.n;
+      weak = due || miss > .4;
+      if (roomWeak) { if (due) w += .45; w += Math.min(.4, miss * .5); }
+      else if (weak) w -= .3;
       if (stars(r) === 3) w -= .25;
+      if (r.last === dk) w -= .45;   /* déjà vu aujourd'hui dans une autre série */
     }
-    if (w > bw) { bw = w; best = t; }
+    if (w > bw) { bw = w; best = t; bWeak = weak; }
   }
-  return best || pick(P);
+  if (best && bWeak) ses.nWeak = (ses.nWeak || 0) + 1;
+  return best || pick(C);
 }
 function randomSpec(ses) {
   const c = ses.cfg;
@@ -248,6 +261,11 @@ async function buildQ(ses, spec) {
     q.photo = await agePhoto(q.t, ses.zone, c.age);
     if (!q.photo) return null;
     if (q.stim === "photo") q.stim = "field";
+  }
+  /* Varier les photos : quand les photos de référence ont déjà été montrées (ou une fois sur quatre), photo de terrain inédite */
+  if (q.stim === "photo" && q.level === "species" && !q.pair && navigator.onLine !== false && (Math.random() < .25 || await refWorn(q.t))) {
+    const ph = await fieldPhoto(q.t, ses.zone).catch(() => null);
+    if (ph) { q.photo = ph; q.stim = "field"; }
   }
   if (q.stim === "field" && !q.photo) { q.photo = await fieldPhoto(q.t, ses.zone); if (!q.photo) q.stim = "photo"; }
   if ((q.stim === "photo" || q.stim === "soncho") && !q.photo) { q.photo = await refPhoto(q.t); if (!q.photo) return null; }

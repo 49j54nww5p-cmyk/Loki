@@ -508,7 +508,7 @@ async function refPhoto(t) {
   if (!list.length && t.img) list = [{ lg: sizeUrl(t.img.md, "large"), md: t.img.md, attr: t.img.attr, lic: t.img.lic }];
   if (!list.length) return null;
   const r = S.sp[t.id], seen = new Set(r?.ps || []), won = new Set([...(r?.pk || []), ...(r?.fk || [])]);
-  const cands = list.slice(0, 14).filter(p => p.lg !== LASTPH.get(t.id));
+  const cands = list.slice(0, 30).filter(p => p.lg !== LASTPH.get(t.id));
   const unseen = cands.filter(p => !seen.has(photoKey(p.lg || p.md))), notWon = cands.filter(p => !won.has(photoKey(p.lg || p.md)));
   const pool = unseen.length ? unseen : notWon.length ? notWon : cands;
   const ph = pick(pool.length ? pool : list);
@@ -520,28 +520,38 @@ const AGEV = { adult: 2, juv: 8 };
 const AGEN = { adult: "Adulte", juv: "Juvénile" };
 async function agePhoto(t, zone, age) {
   const fields = "id,uri,place_guess,observed_on,photos.url,photos.attribution,photos.license_code";
-  const base = { taxon_id: t.id, photos: "true", quality_grade: "research", term_id: 1, term_value_id: AGEV[age], order_by: "random", per_page: 10, fields };
+  const base = { taxon_id: t.id, photos: "true", quality_grade: "research", photo_license: PHOTO_LIC, term_id: 1, term_value_id: AGEV[age], order_by: "random", per_page: 10, fields };
   const tries = zone && (zone.id || zone.lat != null) ? [{ ...base, ...zoneParams(zone) }, base] : [base];
   const seen = new Set(S.sp[t.id]?.ps || []);
   for (const p of tries) {
     const d = await obsSearch(p, true).catch(() => null);
     const cands = [];
     for (const o of d?.results || []) {
-      const ph = (o.photos || []).find(x => x && x.url);
+      const ph = (o.photos || []).find(x => x && x.url && x.license_code && !seen.has(photoKey(sizeUrl(x.url, "large"))));
       if (ph) cands.push({ ...photoObj(ph), field: true, age, place: o.place_guess || "", date: o.observed_on || "", uri: o.uri || "" });
     }
     if (cands.length) { const fresh = cands.filter(c => !seen.has(photoKey(c.lg || c.md))); return pick(fresh.length ? fresh : cands); }
   }
   return null;
 }
+/* Toutes les photos de référence (les 30 premières) déjà montrées pour cette espèce ? */
+async function refWorn(t) {
+  const r = S.sp[t.id];
+  if (!r || !(r.ps || []).length) return false;
+  const list = (await photosFor([t.id]).catch(() => [[]]))[0] || [];
+  const seen = new Set(r.ps);
+  return list.length > 0 && list.slice(0, 30).every(p => seen.has(photoKey(p.lg || p.md)));
+}
+const PHOTO_LIC = "cc0,cc-by,cc-by-nc,cc-by-sa,cc-by-nc-sa,cc-by-nd,cc-by-nc-nd";
 async function fieldPhoto(t, zone) {
   const fields = "id,uri,place_guess,observed_on,photos.url,photos.attribution,photos.license_code";
-  const base = { taxon_id: t.id, photos: "true", quality_grade: "research", order_by: "random", per_page: 5 + rnd(5), fields };
+  const seen = new Set(S.sp[t.id]?.ps || []);
+  const base = { taxon_id: t.id, photos: "true", quality_grade: "research", photo_license: PHOTO_LIC, order_by: "random", per_page: 8 + rnd(6), fields };
   const tries = zone && (zone.id || zone.lat != null) ? [{ ...base, ...zoneParams(zone) }, base] : [base];
   for (const p of tries) {
     const d = await obsSearch(p, true).catch(() => null);
     for (const o of d?.results || []) {
-      const ph = (o.photos || []).find(x => x && x.url);
+      const ph = (o.photos || []).find(x => x && x.url && x.license_code && !seen.has(photoKey(sizeUrl(x.url, "large"))));
       if (ph) return { ...photoObj(ph), field: true, place: o.place_guess || "", date: o.observed_on || "", uri: o.uri || "" };
     }
   }

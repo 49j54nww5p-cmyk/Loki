@@ -983,6 +983,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-05.1", n: "2.7", items: [
+    { ic: "spark", t: "Plus de variété", d: "Plus d'oiseau en double dans une série, des nouveaux à chaque fois, et des photos de terrain inédites quand tu as déjà vu les autres." }
+  ] },
   { v: "2026-10-25.7", n: "2.6", items: [
     { ic: "bulb", t: "Boîte à idées", d: "Une envie, un bug, un oiseau mal nommé : Réglages, « Boîte à idées ». Tout est lu." }
   ] },

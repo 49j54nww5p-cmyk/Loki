@@ -2642,7 +2642,7 @@ async function refPhoto(t) {
   if (!list.length && t.img) list = [{ lg: sizeUrl(t.img.md, "large"), md: t.img.md, attr: t.img.attr, lic: t.img.lic }];
   if (!list.length) return null;
   const r = S.sp[t.id], seen = new Set(r?.ps || []), won = new Set([...(r?.pk || []), ...(r?.fk || [])]);
-  const cands = list.slice(0, 14).filter(p => p.lg !== LASTPH.get(t.id));
+  const cands = list.slice(0, 30).filter(p => p.lg !== LASTPH.get(t.id));
   const unseen = cands.filter(p => !seen.has(photoKey(p.lg || p.md))), notWon = cands.filter(p => !won.has(photoKey(p.lg || p.md)));
   const pool = unseen.length ? unseen : notWon.length ? notWon : cands;
   const ph = pick(pool.length ? pool : list);
@@ -2654,28 +2654,38 @@ const AGEV = { adult: 2, juv: 8 };
 const AGEN = { adult: "Adulte", juv: "Juvénile" };
 async function agePhoto(t, zone, age) {
   const fields = "id,uri,place_guess,observed_on,photos.url,photos.attribution,photos.license_code";
-  const base = { taxon_id: t.id, photos: "true", quality_grade: "research", term_id: 1, term_value_id: AGEV[age], order_by: "random", per_page: 10, fields };
+  const base = { taxon_id: t.id, photos: "true", quality_grade: "research", photo_license: PHOTO_LIC, term_id: 1, term_value_id: AGEV[age], order_by: "random", per_page: 10, fields };
   const tries = zone && (zone.id || zone.lat != null) ? [{ ...base, ...zoneParams(zone) }, base] : [base];
   const seen = new Set(S.sp[t.id]?.ps || []);
   for (const p of tries) {
     const d = await obsSearch(p, true).catch(() => null);
     const cands = [];
     for (const o of d?.results || []) {
-      const ph = (o.photos || []).find(x => x && x.url);
+      const ph = (o.photos || []).find(x => x && x.url && x.license_code && !seen.has(photoKey(sizeUrl(x.url, "large"))));
       if (ph) cands.push({ ...photoObj(ph), field: true, age, place: o.place_guess || "", date: o.observed_on || "", uri: o.uri || "" });
     }
     if (cands.length) { const fresh = cands.filter(c => !seen.has(photoKey(c.lg || c.md))); return pick(fresh.length ? fresh : cands); }
   }
   return null;
 }
+/* Toutes les photos de référence (les 30 premières) déjà montrées pour cette espèce ? */
+async function refWorn(t) {
+  const r = S.sp[t.id];
+  if (!r || !(r.ps || []).length) return false;
+  const list = (await photosFor([t.id]).catch(() => [[]]))[0] || [];
+  const seen = new Set(r.ps);
+  return list.length > 0 && list.slice(0, 30).every(p => seen.has(photoKey(p.lg || p.md)));
+}
+const PHOTO_LIC = "cc0,cc-by,cc-by-nc,cc-by-sa,cc-by-nc-sa,cc-by-nd,cc-by-nc-nd";
 async function fieldPhoto(t, zone) {
   const fields = "id,uri,place_guess,observed_on,photos.url,photos.attribution,photos.license_code";
-  const base = { taxon_id: t.id, photos: "true", quality_grade: "research", order_by: "random", per_page: 5 + rnd(5), fields };
+  const seen = new Set(S.sp[t.id]?.ps || []);
+  const base = { taxon_id: t.id, photos: "true", quality_grade: "research", photo_license: PHOTO_LIC, order_by: "random", per_page: 8 + rnd(6), fields };
   const tries = zone && (zone.id || zone.lat != null) ? [{ ...base, ...zoneParams(zone) }, base] : [base];
   for (const p of tries) {
     const d = await obsSearch(p, true).catch(() => null);
     for (const o of d?.results || []) {
-      const ph = (o.photos || []).find(x => x && x.url);
+      const ph = (o.photos || []).find(x => x && x.url && x.license_code && !seen.has(photoKey(sizeUrl(x.url, "large"))));
       if (ph) return { ...photoObj(ph), field: true, place: o.place_guess || "", date: o.observed_on || "", uri: o.uri || "" };
     }
   }
@@ -3184,22 +3194,35 @@ function interleave(specs) {
 function pickTarget(ses) {
   const P = ses.pool?.list || [];
   if (!P.length) return null;
-  const recent = new Set(ses.recent.slice(-Math.min(12, Math.floor(P.length / 2))));
-  const tday = todayNum();
-  let best = null, bw = -Infinity;
-  for (const t of sample(P, Math.min(P.length, 40))) {
-    if (recent.has(t.id)) continue;
+  /* Pas de doublon dans la série tant qu'il reste des espèces jamais posées ici ;
+     ensuite, au moins une demi-liste d'écart avant de revoir un oiseau. */
+  const asked = new Set(ses.recent);
+  const fresh = P.filter(t => !asked.has(t.id));
+  const cand = fresh.length ? fresh : (() => { const rc = new Set(ses.recent.slice(-Math.max(3, Math.floor(P.length / 2)))); return P.filter(t => !rc.has(t.id)); })();
+  const C = cand.length ? cand : P;
+  const tday = todayNum(), dk = dayKey();
+  /* Une question sur trois environ va à un oiseau encore jamais vu (s'il en reste) */
+  const never = C.filter(t => !S.sp[t.id]?.n);
+  if (never.length && Math.random() < (ses.kind === "review" ? .1 : .35)) return pick(never);
+  /* Les oiseaux à revoir ou ratés : environ un tiers de la série, pas plus */
+  const roomWeak = (ses.nWeak || 0) < Math.max(2, Math.ceil((ses.len || 10) * .3));
+  let best = null, bw = -Infinity, bWeak = false;
+  for (const t of sample(C, Math.min(C.length, 120))) {
     const r = S.sp[t.id];
-    let w = Math.random();
-    if (!r || !r.n) w += .3;
+    let w = Math.random() * 1.2, weak = false;
+    if (!r || !r.n) w += .35;
     else {
-      if (Object.values(r.due || {}).some(d => d <= tday)) w += .7;
-      w += (1 - r.ok / r.n) * .8;
+      const due = Object.values(r.due || {}).some(d => d <= tday), miss = 1 - r.ok / r.n;
+      weak = due || miss > .4;
+      if (roomWeak) { if (due) w += .45; w += Math.min(.4, miss * .5); }
+      else if (weak) w -= .3;
       if (stars(r) === 3) w -= .25;
+      if (r.last === dk) w -= .45;   /* déjà vu aujourd'hui dans une autre série */
     }
-    if (w > bw) { bw = w; best = t; }
+    if (w > bw) { bw = w; best = t; bWeak = weak; }
   }
-  return best || pick(P);
+  if (best && bWeak) ses.nWeak = (ses.nWeak || 0) + 1;
+  return best || pick(C);
 }
 function randomSpec(ses) {
   const c = ses.cfg;
@@ -3248,6 +3271,11 @@ async function buildQ(ses, spec) {
     q.photo = await agePhoto(q.t, ses.zone, c.age);
     if (!q.photo) return null;
     if (q.stim === "photo") q.stim = "field";
+  }
+  /* Varier les photos : quand les photos de référence ont déjà été montrées (ou une fois sur quatre), photo de terrain inédite */
+  if (q.stim === "photo" && q.level === "species" && !q.pair && navigator.onLine !== false && (Math.random() < .25 || await refWorn(q.t))) {
+    const ph = await fieldPhoto(q.t, ses.zone).catch(() => null);
+    if (ph) { q.photo = ph; q.stim = "field"; }
   }
   if (q.stim === "field" && !q.photo) { q.photo = await fieldPhoto(q.t, ses.zone); if (!q.photo) q.stim = "photo"; }
   if ((q.stim === "photo" || q.stim === "soncho") && !q.photo) { q.photo = await refPhoto(q.t); if (!q.photo) return null; }
@@ -7757,6 +7785,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-05.1", n: "2.7", items: [
+    { ic: "spark", t: "Plus de variété", d: "Plus d'oiseau en double dans une série, des nouveaux à chaque fois, et des photos de terrain inédites quand tu as déjà vu les autres." }
+  ] },
   { v: "2026-10-25.7", n: "2.6", items: [
     { ic: "bulb", t: "Boîte à idées", d: "Une envie, un bug, un oiseau mal nommé : Réglages, « Boîte à idées ». Tout est lu." }
   ] },

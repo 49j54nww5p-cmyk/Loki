@@ -350,6 +350,8 @@ async function getPool(p) {
     list = list.filter(t => !seen.has(t.id)).slice(0, size);
   }
   if (p.freq === "rare") list = list.slice(0, size);
+  /* De saison : on écarte les données isolées (oiseau noté une seule fois à cette période) */
+  if (p.freq === "season" && list.filter(t => t.c >= 3).length >= 12) list = list.filter(t => t.c >= 3);
   list.forEach(lexAdd);
   return { list, byId: new Map(list.map(t => [t.id, t])) };
 }
@@ -543,11 +545,17 @@ async function refWorn(t) {
   return list.length > 0 && list.slice(0, 30).every(p => seen.has(photoKey(p.lg || p.md)));
 }
 const PHOTO_LIC = "cc0,cc-by,cc-by-nc,cc-by-sa,cc-by-nc-sa,cc-by-nd,cc-by-nc-nd";
-async function fieldPhoto(t, zone) {
+/* months : photos prises à cette période de l'année (plumage de saison) — dans la zone, puis en France, puis sans contrainte */
+async function fieldPhoto(t, zone, months) {
   const fields = "id,uri,place_guess,observed_on,photos.url,photos.attribution,photos.license_code";
   const seen = new Set(S.sp[t.id]?.ps || []);
   const base = { taxon_id: t.id, photos: "true", quality_grade: "research", photo_license: PHOTO_LIC, order_by: "random", per_page: 8 + rnd(6), fields };
-  const tries = zone && (zone.id || zone.lat != null) ? [{ ...base, ...zoneParams(zone) }, base] : [base];
+  const hasZ = zone && (zone.id || zone.lat != null);
+  let tries = hasZ ? [{ ...base, ...zoneParams(zone) }, base] : [base];
+  if (months && months.length) {
+    const mb = { ...base, month: months.join(",") };
+    tries = [...(hasZ ? [{ ...mb, ...zoneParams(zone) }] : []), { ...mb, place_id: 6753 }, ...tries];
+  }
   for (const p of tries) {
     const d = await obsSearch(p, true).catch(() => null);
     for (const o of d?.results || []) {

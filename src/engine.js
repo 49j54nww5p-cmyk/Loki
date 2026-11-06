@@ -262,12 +262,19 @@ async function buildQ(ses, spec) {
     if (!q.photo) return null;
     if (q.stim === "photo") q.stim = "field";
   }
+  /* « De saison » : photo prise à cette période de l'année (pas de plumage nuptial en novembre) */
+  const trM = c.trip ? (S.trips || []).find(x => x.id === c.trip)?.m : 0;
+  const mon = c.freq === "season" ? seasonMonths() : trM ? [((trM + 10) % 12) + 1, trM, (trM % 12) + 1] : null;
+  if (mon && !c.age && (q.stim === "photo" || q.stim === "field") && navigator.onLine !== false) {
+    const ph = await fieldPhoto(q.t, ses.zone, mon).catch(() => null);
+    if (ph) { q.photo = ph; q.stim = "field"; q.season = true; }
+  }
   /* Varier les photos : quand les photos de référence ont déjà été montrées (ou une fois sur quatre), photo de terrain inédite */
   if (q.stim === "photo" && q.level === "species" && !q.pair && navigator.onLine !== false && (Math.random() < .25 || await refWorn(q.t))) {
     const ph = await fieldPhoto(q.t, ses.zone).catch(() => null);
     if (ph) { q.photo = ph; q.stim = "field"; }
   }
-  if (q.stim === "field" && !q.photo) { q.photo = await fieldPhoto(q.t, ses.zone); if (!q.photo) q.stim = "photo"; }
+  if (q.stim === "field" && !q.photo) { q.photo = await fieldPhoto(q.t, ses.zone, mon); if (!q.photo) q.stim = "photo"; }
   if ((q.stim === "photo" || q.stim === "soncho") && !q.photo) { q.photo = await refPhoto(q.t); if (!q.photo) return null; }
   if ((q.stim === "fr" || q.stim === "la") && q.format === "tiles") q.format = "qcm";
   if (q.level !== "species" && q.format === "tiles") q.format = "qcm";

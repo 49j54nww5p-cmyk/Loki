@@ -2484,6 +2484,8 @@ async function getPool(p) {
     list = list.filter(t => !seen.has(t.id)).slice(0, size);
   }
   if (p.freq === "rare") list = list.slice(0, size);
+  /* De saison : on écarte les données isolées (oiseau noté une seule fois à cette période) */
+  if (p.freq === "season" && list.filter(t => t.c >= 3).length >= 12) list = list.filter(t => t.c >= 3);
   list.forEach(lexAdd);
   return { list, byId: new Map(list.map(t => [t.id, t])) };
 }
@@ -2677,11 +2679,17 @@ async function refWorn(t) {
   return list.length > 0 && list.slice(0, 30).every(p => seen.has(photoKey(p.lg || p.md)));
 }
 const PHOTO_LIC = "cc0,cc-by,cc-by-nc,cc-by-sa,cc-by-nc-sa,cc-by-nd,cc-by-nc-nd";
-async function fieldPhoto(t, zone) {
+/* months : photos prises à cette période de l'année (plumage de saison) — dans la zone, puis en France, puis sans contrainte */
+async function fieldPhoto(t, zone, months) {
   const fields = "id,uri,place_guess,observed_on,photos.url,photos.attribution,photos.license_code";
   const seen = new Set(S.sp[t.id]?.ps || []);
   const base = { taxon_id: t.id, photos: "true", quality_grade: "research", photo_license: PHOTO_LIC, order_by: "random", per_page: 8 + rnd(6), fields };
-  const tries = zone && (zone.id || zone.lat != null) ? [{ ...base, ...zoneParams(zone) }, base] : [base];
+  const hasZ = zone && (zone.id || zone.lat != null);
+  let tries = hasZ ? [{ ...base, ...zoneParams(zone) }, base] : [base];
+  if (months && months.length) {
+    const mb = { ...base, month: months.join(",") };
+    tries = [...(hasZ ? [{ ...mb, ...zoneParams(zone) }] : []), { ...mb, place_id: 6753 }, ...tries];
+  }
   for (const p of tries) {
     const d = await obsSearch(p, true).catch(() => null);
     for (const o of d?.results || []) {
@@ -3272,12 +3280,19 @@ async function buildQ(ses, spec) {
     if (!q.photo) return null;
     if (q.stim === "photo") q.stim = "field";
   }
+  /* « De saison » : photo prise à cette période de l'année (pas de plumage nuptial en novembre) */
+  const trM = c.trip ? (S.trips || []).find(x => x.id === c.trip)?.m : 0;
+  const mon = c.freq === "season" ? seasonMonths() : trM ? [((trM + 10) % 12) + 1, trM, (trM % 12) + 1] : null;
+  if (mon && !c.age && (q.stim === "photo" || q.stim === "field") && navigator.onLine !== false) {
+    const ph = await fieldPhoto(q.t, ses.zone, mon).catch(() => null);
+    if (ph) { q.photo = ph; q.stim = "field"; q.season = true; }
+  }
   /* Varier les photos : quand les photos de référence ont déjà été montrées (ou une fois sur quatre), photo de terrain inédite */
   if (q.stim === "photo" && q.level === "species" && !q.pair && navigator.onLine !== false && (Math.random() < .25 || await refWorn(q.t))) {
     const ph = await fieldPhoto(q.t, ses.zone).catch(() => null);
     if (ph) { q.photo = ph; q.stim = "field"; }
   }
-  if (q.stim === "field" && !q.photo) { q.photo = await fieldPhoto(q.t, ses.zone); if (!q.photo) q.stim = "photo"; }
+  if (q.stim === "field" && !q.photo) { q.photo = await fieldPhoto(q.t, ses.zone, mon); if (!q.photo) q.stim = "photo"; }
   if ((q.stim === "photo" || q.stim === "soncho") && !q.photo) { q.photo = await refPhoto(q.t); if (!q.photo) return null; }
   if ((q.stim === "fr" || q.stim === "la") && q.format === "tiles") q.format = "qcm";
   if (q.level !== "species" && q.format === "tiles") q.format = "qcm";
@@ -7785,6 +7800,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-06.1", n: "2.8", items: [
+    { ic: "cal", t: "« De saison » pour de vrai", d: "Les photos viennent d'observations faites à cette période de l'année, près de chez toi : en novembre, des bécasseaux en plumage d'hiver, pas en nuptial." }
+  ] },
   { v: "2026-11-05.1", n: "2.7", items: [
     { ic: "spark", t: "Plus de variété", d: "Plus d'oiseau en double dans une série, des nouveaux à chaque fois, et des photos de terrain inédites quand tu as déjà vu les autres." }
   ] },

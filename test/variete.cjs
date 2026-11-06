@@ -37,9 +37,20 @@ const { handle } = require("./mock.cjs");
   if (weakIn > 10) fail("trop de ratés en boucle : " + weakIn);
   const newIn2 = c.ids.filter(id => !a.ids.includes(id) && !weak.includes(id)).length;
   if (pool >= 40 && newIn2 < 6) fail("trop peu d'oiseaux nouveaux en série 2 : " + newIn2);
+  // « De saison » : les photos viennent d'observations faites à cette période (pas de plumage nuptial hors saison)
+  const reqs = []; p.on("request", r => { if (/\/observations\?/.test(r.url()) && /taxon_id=/.test(r.url())) reqs.push(r.url()); });
+  await p.evaluate(() => { S.set.zone = { name: "Lanton", lat: 44.7, lng: -1.03, r: 15 }; LASTCFG = { ...baseCfg(), freq: "season", len: 4, format: "qcm", stim: ["photo"] }; startSession(LASTCFG); });
+  let seas = 0;
+  for (let i = 0; i < 4; i++) {
+    await p.waitForFunction(() => SES && SES.q && !SES.q.done && document.querySelector("#answers [data-k]"), null, { timeout: 20000 });
+    if (await p.evaluate(() => SES.q.stim === "field" && SES.q.season)) seas++;
+    await p.click(`#answers [data-k="${await p.evaluate(() => SES.q.answerKey)}"]`); await p.waitForSelector(".fb.show"); await p.click(".fb [data-act=next]");
+  }
+  const mo = await p.evaluate(() => seasonMonths().join("%2C"));
+  if (seas < 4 || !reqs.some(u => u.includes("month=" + mo) && /lat=44\.700/.test(u))) fail("photos de saison : " + seas + " " + reqs.slice(0, 2).join(" "));
   const both = [...a.phs, ...c.phs].filter(Boolean);
   if (dup(both) > both.length / 4) fail("photos répétées : " + dup(both) + "/" + both.length);
-  console.log("variété : pool", pool, "· série 1", new Set(a.ids).size, "oiseaux dont", weakIn, "ratés · série 2", newIn2, "nouveaux · photos répétées", dup(both), "/", both.length);
+  console.log("de saison : 4/4 photos de la période dans la zone ·", "variété : pool", pool, "· série 1", new Set(a.ids).size, "oiseaux dont", weakIn, "ratés · série 2", newIn2, "nouveaux · photos répétées", dup(both), "/", both.length);
   console.log("ERR", errs); await b.close();
   if (errs.length) process.exit(1);
 })().catch(e => { console.error("CRASH", e.message); process.exit(1); });

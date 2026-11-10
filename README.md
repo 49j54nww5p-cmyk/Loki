@@ -39,6 +39,7 @@ Sur iPhone : ouvre le lien dans Safari, bouton Partager, puis « Sur l'écran d'
 
 Le numéro de version s'affiche en bas des Réglages ; « Nouveautés » liste toutes les versions.
 
+- **4.2** (10 novembre 2026) : pictos maison, animations dans toutes les pages, grand parcours de 1000 étapes (17 chapitres × 10 tours) avec un coffre par chapitre
 - **4.1** (10 novembre 2026) : parcours à difficulté cumulative (leurres, chants, latin, écrire, jeunes, chrono), tous les écrans au nouveau look, correctif iPhone (encoche, barre du bas)
 - **4.0** (10 novembre 2026) : nouveau look « photo d'abord » (oiseau du jour plein écran, réponses en verre, bilan en photos) et grand parcours de 972 étapes (13 chapitres × 12 tours) derrière « Lancer la série du jour » ; photos « tous droits réservés » écartées quand une photo libre existe
 - **3.1** (10 novembre 2026) : ouverture animée (un oiseau traverse, le nom apparaît), niveau en haut de l'accueil, tous les modes en une grille, onde au toucher

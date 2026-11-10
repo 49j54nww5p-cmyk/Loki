@@ -988,6 +988,10 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-10.5", n: "4.2", items: [
+    { ic: "map", t: "1000 étapes et des coffres", d: "4 nouveaux chapitres (oiseaux de nuit, Corse, migrateurs, outre-mer) et un coffre à ouvrir à la fin de chaque chapitre." },
+    { ic: "bird", t: "Pictos maison et pages animées", d: "De nouvelles icônes dessinées pour Plumage ; les chiffres comptent, les vignettes arrivent, les fenêtres rebondissent." }
+  ] },
   { v: "2026-11-10.4", n: "4.1", items: [
     { ic: "trophy", t: "Un parcours qui monte en difficulté", d: "Chaque tour garde tout ce qui précède et ajoute une difficulté : leurres, chants, latin, écrire le nom, jeunes et femelles, chrono… Plus de choix aux révisions et au bilan." },
     { ic: "frame", t: "Tout l'appli au nouveau look", d: "Carnet, Progrès, Réglages, Sur mesure, fiches, duels : même style partout. Sur iPhone, l'en-tête passe sous l'encoche." }

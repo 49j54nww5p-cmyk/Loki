@@ -1,10 +1,11 @@
 /* ============================================================
    Plumage — le grand parcours (« Lancer la série du jour »)
-   13 chapitres rangés logiquement (jardin → forêt → champs → villes → eaux douces →
-   roselières → limicoles → laridés → mer → rapaces → montagne → Sud → raretés).
+   17 chapitres rangés logiquement (jardin → forêt → champs → villes → eaux douces →
+   roselières → limicoles → laridés → mer → rapaces → nuit → montagne → Sud →
+   Corse et Méditerranée → migrateurs → raretés → outre-mer).
    Chaque chapitre : des étapes de 4-5 espèces, une révision toutes les 2 étapes,
-   un bilan de chapitre. Le tout est rejoué en 12 tours de plus en plus durs
-   (photos, terrain, chants, latin, écrire, chrono…) : 1 020 étapes.
+   un bilan de chapitre, puis un coffre à ouvrir. 100 étapes par tour, rejouées en
+   10 tours de plus en plus durs (photos, terrain, chants, latin, écrire, chrono…) : 1 000 étapes.
    ============================================================ */
 const PS = id => PATHI[id].steps;
 const GCH = [
@@ -48,6 +49,11 @@ const GCH = [
   { k: "rapaces", n: "Les rapaces", steps: [...PS("rapaces"),
     { n: "Aigles et vautours", sp: [["Aquila chrysaetos", "Aigle royal"], ["Hieraaetus pennatus", "Aigle botté"], ["Gyps fulvus", "Vautour fauve"], ["Neophron percnopterus", "Vautour percnoptère"], ["Haliaeetus albicilla", "Pygargue à queue blanche"]] }
   ] },
+  { k: "nuit", n: "Les oiseaux de nuit", steps: [
+    { n: "Les grands nocturnes", sp: [["Bubo bubo", "Grand-duc d'Europe"], ["Asio flammeus", "Hibou des marais"], ["Strix uralensis", "Chouette de l'Oural"], ["Caprimulgus ruficollis", "Engoulevent à collier roux"]] },
+    { n: "Ils chantent la nuit", sp: [["Luscinia megarhynchos", "Rossignol philomèle"], ["Locustella naevia", "Locustelle tachetée"], ["Locustella luscinioides", "Locustelle luscinioïde"], ["Acrocephalus palustris", "Rousserolle verderolle"], ["Acrocephalus melanopogon", "Lusciniole à moustaches"]] },
+    { n: "Râles et marouettes", sp: [["Crex crex", "Râle des genêts"], ["Porzana porzana", "Marouette ponctuée"], ["Zapornia parva", "Marouette poussin"], ["Zapornia pusilla", "Marouette de Baillon"]] }
+  ] },
   { k: "montagne", n: "La montagne", steps: [
     { n: "Les sommets", sp: [["Tichodroma muraria", "Tichodrome échelette"], ["Pyrrhocorax graculus", "Chocard à bec jaune"], ["Montifringilla nivalis", "Niverolle alpine"], ["Prunella collaris", "Accenteur alpin"], ["Lagopus muta", "Lagopède alpin"]] },
     { n: "Les forêts d'altitude", sp: [["Nucifraga caryocatactes", "Cassenoix moucheté"], ["Tetrao urogallus", "Grand Tétras"], ["Lyrurus tetrix", "Tétras lyre"], ["Glaucidium passerinum", "Chevêchette d'Europe"], ["Aegolius funereus", "Chouette de Tengmalm"]] },
@@ -57,21 +63,34 @@ const GCH = [
     { n: "La garrigue", sp: [["Curruca melanocephala", "Fauvette mélanocéphale"], ["Curruca cantillans", "Fauvette passerinette"], ["Monticola solitarius", "Monticole bleu"], ["Oenanthe hispanica", "Traquet oreillard"], ["Emberiza cia", "Bruant fou"]] },
     { n: "Les couleurs du Sud", sp: [["Merops apiaster", "Guêpier d'Europe"], ["Coracias garrulus", "Rollier d'Europe"], ["Clamator glandarius", "Coucou geai"], ["Caprimulgus europaeus", "Engoulevent d'Europe"], ["Burhinus oedicnemus", "Œdicnème criard"]] }
   ] },
+  { k: "medit", n: "Corse et Méditerranée", steps: [
+    { n: "Les oiseaux de Corse", sp: [["Sitta whiteheadi", "Sittelle corse"], ["Carduelis corsicana", "Venturon corse"], ["Curruca sarda", "Fauvette sarde"], ["Curruca conspicillata", "Fauvette à lunettes"], ["Gypaetus barbatus", "Gypaète barbu"]] },
+    { n: "La grande bleue", sp: [["Calonectris diomedea", "Puffin de Scopoli"], ["Puffinus yelkouan", "Puffin yelkouan"], ["Ichthyaetus audouinii", "Goéland d'Audouin"], ["Chroicocephalus genei", "Goéland railleur"], ["Gelochelidon nilotica", "Sterne hansel"]] },
+    { n: "Lagunes et salins", sp: [["Glareola pratincola", "Glaréole à collier"], ["Porphyrio porphyrio", "Talève sultane"], ["Netta rufina", "Nette rousse"], ["Plegadis falcinellus", "Ibis falcinelle"]] },
+    { n: "La Crau et les steppes", sp: [["Pterocles alchata", "Ganga cata"], ["Tetrax tetrax", "Outarde canepetière"], ["Falco naumanni", "Faucon crécerellette"], ["Melanocorypha calandra", "Alouette calandre"], ["Calandrella brachydactyla", "Alouette calandrelle"]] }
+  ] },
+  { k: "migr", n: "Migrateurs et hivernants", steps: [
+    { n: "Les passereaux de passage", sp: [["Motacilla flava", "Bergeronnette printanière"], ["Hippolais icterina", "Hypolaïs ictérine"], ["Hippolais polyglotta", "Hypolaïs polyglotte"], ["Curruca curruca", "Fauvette babillarde"], ["Muscicapa striata", "Gobemouche gris"]] },
+    { n: "Les grands voyageurs", sp: [["Ciconia nigra", "Cigogne noire"], ["Anser albifrons", "Oie rieuse"], ["Branta leucopsis", "Bernache nonnette"], ["Cygnus cygnus", "Cygne chanteur"], ["Mergellus albellus", "Harle piette"]] },
+    { n: "Limicoles de passage", sp: [["Tringa glareola", "Chevalier sylvain"], ["Calidris temminckii", "Bécasseau de Temminck"], ["Lymnocryptes minimus", "Bécassine sourde"], ["Eudromias morinellus", "Pluvier guignard"]] }
+  ] },
   { k: "rares", n: "Les visiteurs rares", steps: [
     { n: "Raretés d'automne", sp: [["Phylloscopus inornatus", "Pouillot à grands sourcils"], ["Bombycilla garrulus", "Jaseur boréal"], ["Anthus richardi", "Pipit de Richard"], ["Lanius excubitor", "Pie-grièche grise"], ["Calidris pugnax", "Combattant varié"]] }
+  ] },
+  { k: "outremer", n: "L'outre-mer", steps: [
+    { n: "La Réunion", sp: [["Hypsipetes borbonicus", "Bulbul de la Réunion"], ["Zosterops borbonicus", "Zostérops des Mascareignes"], ["Saxicola tectes", "Tarier de la Réunion"], ["Terpsiphone bourbonnensis", "Tchitrec des Mascareignes"], ["Phaethon lepturus", "Phaéton à bec jaune"]] },
+    { n: "Les Antilles", sp: [["Coereba flaveola", "Sucrier à ventre jaune"], ["Quiscalus lugubris", "Quiscale merle"], ["Eulampis jugularis", "Colibri madère"], ["Orthorhyncus cristatus", "Colibri huppé"], ["Loxigilla noctis", "Sporophile rougegorge"]] }
   ] }
 ];
-/* Les 12 tours : chaque tour garde tout ce qui précède et ajoute une difficulté (cumulatif, mélangé) */
+/* Les 10 tours : chaque tour garde tout ce qui précède et ajoute une difficulté (cumulatif, mélangé) */
 const GTOURS = [
   { n: "Photos", d: "3 choix", stim: ["photo"], k: 3 },
-  { n: "Photos", d: "4 choix", stim: ["photo"], k: 4 },
-  { n: "+ Terrain et leurres", d: "photos de terrain, des oiseaux qui se ressemblent", stim: ["photo", "field"], k: 4, leurres: 1 },
+  { n: "+ Terrain et leurres", d: "4 choix, photos de terrain, des oiseaux qui se ressemblent", stim: ["photo", "field"], k: 4, leurres: 1 },
   { n: "+ Chants", d: "5 choix, les chants arrivent", stim: ["photo", "field", "son"], k: 5, leurres: 1 },
   { n: "+ Noms latins", d: "latin ↔ français", stim: ["photo", "field", "son", "la", "fr"], k: 5, leurres: 1 },
   { n: "+ Lequel chante ?", d: "4 chants à comparer", stim: ["photo", "field", "son", "la", "fr", "soncho"], k: 5, leurres: 1 },
   { n: "+ Écrire", d: "6 choix, et parfois tu tapes le nom", stim: ["photo", "field", "son", "la", "fr", "soncho"], k: 6, leurres: 1, type: .2 },
   { n: "+ Jeunes et femelles", d: "les plumages qui piègent", stim: ["photo", "field", "son", "la", "fr", "soncho"], k: 6, leurres: 1, type: .25, juv: .25 },
-  { n: "+ Plus d'écrit", d: "un tiers à taper, chants compris", stim: ["field", "field", "son", "son", "la", "fr", "soncho"], k: 6, leurres: 1, type: .35, juv: .3 },
   { n: "+ Chrono", d: "10 secondes par question", stim: ["field", "son", "la", "fr", "soncho"], k: 6, leurres: 1, type: .3, juv: .3, timer: 10 },
   { n: "+ Moitié à l'écrit", d: "jeunes, leurres, chrono", stim: ["field", "son", "son", "la", "fr", "soncho"], k: 6, leurres: 1, type: .5, juv: .4, timer: 10 },
   { n: "Expert", d: "tout, tout le temps", stim: ["field", "son", "son", "la", "fr", "soncho"], k: 6, leurres: 1, type: .6, juv: .5, timer: 10 }
@@ -86,6 +105,7 @@ const GBASE = (() => {
       if (L > 2 && si % 2 === 1 && si < L - 1) out.push({ n: "Révision", sp: [...ch.steps[si - 1].sp, ...st.sp], ch: ci, kind: "rev" });
     });
     if (L > 1) out.push({ n: `Bilan : ${ch.n}`, sp: ch.steps.flatMap(s => s.sp), ch: ci, kind: "boss" });
+    out.filter(s => s.ch === ci).forEach((s, k) => { s.ck = ch.k; s.pos = k; });
   });
   return out;
 })();
@@ -96,37 +116,107 @@ const GPT = GBASE.length;   // étapes par tour
 const gStep = i => GRAND.steps[i];
 const gNext = () => pathNext(GRAND);
 
+/* ---------- Ancienne progression (13 chapitres × 12 tours = 972 étapes) → nouvelle (17 × 10 = 1 000) ----------
+   Les étapes sont retrouvées par (tour, chapitre, position dans le chapitre) : rien n'est perdu sauf les
+   deux tours supprimés (« Photos 4 choix » et « Plus d'écrit », fondus dans leurs voisins). */
+const GOLD = { ch: [["jardin", 6], ["foret", 6], ["champs", 5], ["villes", 3], ["eaux", 4], ["roseaux", 5], ["limicoles", 5], ["larides", 3], ["mer", 4], ["rapaces", 5], ["montagne", 3], ["sud", 2], ["rares", 1]],
+  tours: [0, -1, 1, 2, 3, 4, 5, 6, -1, 7, 8, 9] };
+function gMigrate(st) {
+  const old = GOLD.ch.flatMap(([k, L]) => { const n = L + (L > 2 ? Math.floor((L - 1) / 2) : 0) + (L > 1 ? 1 : 0); return Array.from({ length: n }, (_, pos) => ({ k, pos })); });
+  const s = {};
+  for (const [i, v] of Object.entries(st.s || {})) {
+    const t = GOLD.tours[Math.floor(+i / old.length)], o = old[+i % old.length];
+    if (t == null || t < 0 || !o) continue;
+    const j = GBASE.findIndex(b => b.ck === o.k && b.pos === o.pos);
+    if (j >= 0) s[t * GPT + j] = Math.max(s[t * GPT + j] || 0, v);
+  }
+  st.s = s;
+  return st;
+}
+if (S.gv !== 2) { if (S.paths?.grand) gMigrate(S.paths.grand); S.gv = 2; save(); }
+
+/* ---------- Les coffres : un par chapitre et par tour, à ouvrir une fois le bilan réussi ---------- */
+const gKey = (ti, ci) => `${GCH[ci].k}.${ti}`;
+const gIdx = (ti, ci) => GBASE.map((s, k) => s.ch === ci ? ti * GPT + k : -1).filter(k => k >= 0);
+const gFull = (ti, ci) => gIdx(ti, ci).every(i => stepStars("grand", i) > 0);
+const gOpened = (ti, ci) => !!(pathSt("grand").c || {})[gKey(ti, ci)];
+/* La récompense : un joker de flamme un coffre sur trois (s'il en reste de la place), sinon de l'XP qui grimpe avec les tours */
+function gPrize(ti, ci) {
+  const n = ti * GCH.length + ci;
+  if (n % 3 === 2 && (S.streak.jokers || 0) < 3) return { kind: "joker", v: 1, t: "+1 joker de flamme", d: "Un jour raté ne cassera pas ta série." };
+  const xp = 60 + 20 * ti + (n % 3 === 2 ? 40 : 0);
+  return { kind: "xp", v: xp, t: `+${xp} XP`, d: `Bonus du chapitre « ${GCH[ci].n} ».` };
+}
+const CHEST = `<svg class="chest" viewBox="0 0 64 56" aria-hidden="true">
+  <g class="lid"><path d="M8 24V16a14 10 0 0 1 14-10h20a14 10 0 0 1 14 10v8z" fill="#FFCE00"/><path d="M8 24V16a14 10 0 0 1 14-10h20a14 10 0 0 1 14 10v8z" fill="none" stroke="#7A5A00" stroke-width="3"/><path d="M24 6v18M40 6v18" stroke="#B89400" stroke-width="5"/></g>
+  <rect x="8" y="24" width="48" height="26" rx="4" fill="#E0B000" stroke="#7A5A00" stroke-width="3"/><path d="M24 24v26M40 24v26" stroke="#B89400" stroke-width="5"/>
+  <rect x="27" y="20" width="10" height="13" rx="3" fill="#2A1F00"/><circle cx="32" cy="26" r="2.2" fill="#FFCE00"/></svg>`;
+function gChestHtml(ti, ci, full, opened) {
+  const st = opened ? "open" : full ? "ready" : "lock";
+  return `<li class="k-chest c-${st}" style="--x:1"><button class="gnode gchest" data-act="gchest" data-t="${ti}" data-c="${ci}" ${st === "ready" ? "" : "disabled"} aria-label="Coffre du chapitre">${CHEST}</button>
+    <span class="glab"><b>${opened ? "Coffre ouvert" : full ? "Coffre à ouvrir !" : "Coffre du chapitre"}</b><small>${opened ? "Récompense récupérée" : full ? "Touche-le" : "Réussis le bilan pour l'ouvrir"}</small></span></li>`;
+}
+async function gChestOpen(el) {
+  const ti = +el.dataset.t, ci = +el.dataset.c;
+  if (!gFull(ti, ci) || gOpened(ti, ci)) return;
+  const pz = gPrize(ti, ci), st = (S.paths = S.paths || {}).grand = S.paths.grand || { s: {} };
+  (st.c = st.c || {})[gKey(ti, ci)] = 1;   /* enregistré avant l'animation : une seule récompense, même en tapant deux fois */
+  if (pz.kind === "joker") S.streak.jokers = (S.streak.jokers || 0) + 1; else addXp(pz.v);
+  save(true);
+  try { sfx.lvl(); } catch (e) { /* son facultatif */ }
+  const node = el.closest(".k-chest, .gchest-bar") || el;
+  node.classList.add("opening");
+  const calm = S.set.calm || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+  await new Promise(r => setTimeout(r, calm ? 50 : 900));
+  const box = document.createElement("div");
+  box.className = "gprize"; box.setAttribute("role", "dialog");
+  box.innerHTML = `<div class="gprize-card"><div class="gprize-ch">${CHEST}<i class="rays"></i></div>
+    <small>Coffre · ${esc(GCH[ci].n)} · tour ${ti + 1}</small><h2>${esc(pz.t)}</h2><p>${esc(pz.d)}</p>
+    <button class="btn primary wide gprize-ok">${pz.kind === "joker" ? ic("flame") : ic("spark")}Récupérer</button></div>`;
+  document.body.appendChild(box);
+  requestAnimationFrame(() => box.classList.add("on"));
+  const close = () => { box.remove(); if (VIEW === "grand") rerender(); };
+  box.querySelector(".gprize-ok").addEventListener("click", close);
+  box.addEventListener("click", e => { if (e.target === box) close(); });
+}
+
 /* ---------- L'écran du parcours ---------- */
 const GV = { tour: -1, ch: -1 };
 function chHtml(ti, ci, nx) {
-  const idx = GBASE.map((s, k) => s.ch === ci ? ti * GPT + k : -1).filter(k => k >= 0);
+  const idx = gIdx(ti, ci);
   const done = idx.filter(i => stepStars("grand", i) > 0).length, open = stepOpen(GRAND, idx[0]);
+  const full = done === idx.length, opened = gOpened(ti, ci), ready = full && !opened;
   const cur = idx.includes(nx), exp = GV.ch === ci || (GV.ch === -1 && cur);
   const ch = GCH[ci], cover = ch.steps[0].sp[0];
-  return `<div class="gch ${open ? "" : "lock"} ${cur ? "cur" : ""} ${done === idx.length ? "full" : ""}">
+  return `<div class="gch ${open ? "" : "lock"} ${cur ? "cur" : ""} ${full ? "full" : ""} ${ready ? "chest-ready" : ""}">
     <button class="gcov" data-act="gch" data-c="${ci}" data-sci="${esc(cover[0])}" ${open ? "" : "disabled"}>
       <span class="gtx"><small>Chapitre ${ci + 1} · ${done}/${idx.length}</small><b>${esc(ch.n)}</b></span>
-      <span class="gst">${open ? (done === idx.length ? ic("check") : cur ? ic("play") : "") : ic("lock")}</span></button>
+      <span class="gst">${open ? (full ? ic("check") : cur ? ic("play") : "") : ic("lock")}</span></button>
+    ${ready && !exp ? `<button class="gchest-bar" data-act="gchest" data-t="${ti}" data-c="${ci}">${CHEST}<span><b>Coffre à ouvrir</b><small>Chapitre terminé : ta récompense t'attend</small></span>${ic("chev")}</button>` : ""}
     ${exp && open ? `<ol class="groad">${idx.map((i, k) => { const st = stepStars("grand", i), ok = stepOpen(GRAND, i), s = gStep(i), here = i === nx;
       return `<li class="${st ? "done" : ""} ${ok ? "" : "lock"} ${here ? "here" : ""} k-${s.kind}" style="--x:${[0, 1, 2, 1][k % 4]}">
         <button class="gnode" data-act="gstep" data-i="${i}" ${ok ? "" : "disabled"} aria-label="Étape ${i + 1}">${st ? ic("check") : here ? ic("play") : s.kind === "boss" ? ic("trophy") : s.kind === "rev" ? ic("replay") : ok ? i + 1 : ic("lock")}</button>
-        <span class="glab"><b>${esc(s.n)}</b><small>Étape ${i + 1}${st ? " · " + "★".repeat(st) : ""}</small></span></li>`; }).join("")}</ol>` : ""}
+        <span class="glab"><b>${esc(s.n)}</b><small>Étape ${i + 1}${st ? " · " + "★".repeat(st) : ""}</small></span></li>`; }).join("")}${gChestHtml(ti, ci, full, opened)}</ol>` : ""}
   </div>`;
 }
 function grandHtml() {
+  if (S.gv !== 2) { if (S.paths?.grand) gMigrate(S.paths.grand); S.gv = 2; save(); }
   const nx = gNext(), curT = nx < 0 ? GTOURS.length - 1 : Math.floor(nx / GPT);
   const ti = GV.tour >= 0 ? Math.min(GV.tour, curT) : curT, T = GTOURS[ti];
-  const done = GRAND.steps.filter((_, i) => stepStars("grand", i) > 0).length;
+  const done = GRAND.steps.filter((_, i) => stepStars("grand", i) > 0).length, tot = GRAND.steps.length;
+  const chests = GTOURS.reduce((a, _, t) => a + GCH.filter((_, c) => gOpened(t, c)).length, 0);
   return `<section class="view grand">
-  <header class="ghead"><button class="icon-btn" data-act="home" aria-label="Retour">${ic("x")}</button><h1>Ton parcours</h1><span class="gcount">${done} / ${GRAND.steps.length}</span></header>
+  <header class="ghead"><button class="icon-btn" data-act="home" aria-label="Retour">${ic("x")}</button><h1>Ton parcours</h1><span class="gcount">Tour ${curT + 1}/${GTOURS.length}</span></header>
+  <div class="gtotal"><div class="gtotal-n"><b>${done}</b><span>/ ${fmt(tot)} étapes</span><small>${CHEST}${chests} coffre${chests > 1 ? "s" : ""}</small></div><span class="gbar"><i style="width:${(100 * done / tot).toFixed(1)}%"></i></span></div>
   <div class="gtours">${GTOURS.map((t, k) => `<button class="${k === ti ? "on" : ""}" data-act="gtour" data-t="${k}" ${k > curT ? "disabled" : ""}>${k > curT ? ic("lock", "xs") : ""}Tour ${k + 1}</button>`).join("")}</div>
-  <p class="gtour-d"><b>Tour ${ti + 1} · ${esc(T.n)}</b> ${esc(T.d)}. Chaque tour garde tout ce qui précède. Dans un chapitre : un choix de plus aux révisions, deux au bilan. ${PASS} bonnes réponses sur ${PLEN} pour avancer.</p>
+  <p class="gtour-d"><b>Tour ${ti + 1} · ${esc(T.n)}</b> ${esc(T.d)}. Chaque tour garde tout ce qui précède. Dans un chapitre : un choix de plus aux révisions, deux au bilan, et un coffre à la fin. ${PASS} bonnes réponses sur ${PLEN} pour avancer.</p>
   <div class="gchs">${GCH.map((_, ci) => chHtml(ti, ci, nx)).join("")}</div>
   <button class="glink" data-act="daily">${ic("shuffle", "xs")}Série du jour classique : 12 questions mélangées</button>
 </section>`;
 }
 async function grandMount() {
-  const here = $(".groad li.here");
+  if (typeof ACT === "object" && !ACT.gchest) ACT.gchest = gChestOpen;   /* ACT (ui.js) n'existe qu'une fois tout le script chargé */
+  const here = $(".gchest-bar") || $(".groad li.here");
   if (here) setTimeout(() => here.scrollIntoView({ block: "center", behavior: "smooth" }), 250);
   for (const b of $$(".gcov[data-sci]")) {
     const ch = GCH[+b.dataset.c], sp = ch.steps[0].sp[0];

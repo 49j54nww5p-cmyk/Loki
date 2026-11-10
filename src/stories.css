@@ -218,7 +218,14 @@ body.lite .glass,body.lite .choice{background:#1F1F1F}
 .groad li{flex-wrap:nowrap;justify-content:flex-start;text-align:left}
 .glab{min-width:0;flex:1}
 /* rien ne doit dépasser en largeur (sinon le téléphone dézoome et la barre d'onglets sort de l'écran) */
-html,body{overflow-x:hidden;max-width:100%}
+#app{overflow-x:clip}
 .nav{box-sizing:border-box;max-width:min(540px,100%)}
 .nav button{min-width:0}
 .nav button .i{padding:4px 12px}
+
+/* iPhone : l'en-tête passe sous l'encoche / la Dynamic Island, la barre d'onglets colle au bas de l'écran */
+.home > .hud{top:0;padding-top:max(8px, calc(env(safe-area-inset-top, 0px) - 4px))}
+@supports (padding-top:env(safe-area-inset-top)){
+  @media (display-mode:standalone){ .home > .hud{padding-top:max(52px, calc(env(safe-area-inset-top, 0px) + 6px))} }
+}
+.story{height:calc(100dvh - 64px - env(safe-area-inset-bottom, 0px))}

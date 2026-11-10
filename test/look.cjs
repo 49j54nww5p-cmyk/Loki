@@ -39,7 +39,7 @@ const CT = { html: "text/html", js: "application/javascript", css: "text/css", w
     await p.evaluate(() => { ACT.quit && ACT.quit(); }); await p.evaluate(() => go("home")); await p.waitForSelector(".view.home");
   }
   for (const t of ["carnet", "progress", "settings"]) if (want(t)) {
-    await p.evaluate(() => { for (const id of [12716, 13094, 7044, 4956, 13858, 9083, 14850, 2548, 10069, 14886]) { const r = rec({ id, sci: "", fr: "" }); r.n = 4; r.ok = 3; r.last = dayKey(); } save(true); }).catch(() => {});
+    await p.evaluate(async () => { const pool = await getPool({ zone: S.set.zone, freq: "common", size: 60 }); pool.list.slice(0, 16).forEach((t, i) => { const r = rec(t); r.n = 4 + i % 3; r.ok = 2 + i % 4; r.last = dayKey(); if (i % 3 === 0) { r.pk = [1, 2, 3]; r.fk = [4]; r.od = [1, 2, 3]; } }); save(true); }).catch(() => {});
     await p.click(`#nav [data-tab=${t}]`); await p.waitForSelector(`.view.${t}`); await p.waitForTimeout(2500); await shot(t); await shot(t + "-full", true);
     await p.click("#nav [data-tab=home]"); await p.waitForSelector(".view.home");
   }

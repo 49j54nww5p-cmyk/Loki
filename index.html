@@ -1998,10 +1998,454 @@ body.lite .glass,body.lite .choice{background:#1F1F1F}
 .groad li{flex-wrap:nowrap;justify-content:flex-start;text-align:left}
 .glab{min-width:0;flex:1}
 /* rien ne doit dépasser en largeur (sinon le téléphone dézoome et la barre d'onglets sort de l'écran) */
-html,body{overflow-x:hidden;max-width:100%}
+#app{overflow-x:clip}
 .nav{box-sizing:border-box;max-width:min(540px,100%)}
 .nav button{min-width:0}
 .nav button .i{padding:4px 12px}
+
+/* iPhone : l'en-tête passe sous l'encoche / la Dynamic Island, la barre d'onglets colle au bas de l'écran */
+.home > .hud{top:0;padding-top:max(8px, calc(env(safe-area-inset-top, 0px) - 4px))}
+@supports (padding-top:env(safe-area-inset-top)){
+  @media (display-mode:standalone){ .home > .hud{padding-top:max(52px, calc(env(safe-area-inset-top, 0px) + 6px))} }
+}
+.story{height:calc(100dvh - 64px - env(safe-area-inset-bottom, 0px))}
+
+/* ==== tabs.css ==== */
+/* =====================================================================
+   Plumage v4 — onglets Carnet, Progrès, Réglages, À propos en style « Stories ».
+   Chargé en dernier. Tout est préfixé par la vue pour ne rien toucher ailleurs.
+   ===================================================================== */
+
+/* ---------- Commun ---------- */
+:is(.view.carnet,.view.progress,.view.settings,.view.about){padding-bottom:28px}
+:is(.view.carnet,.view.progress,.view.settings,.view.about) .head{display:flex;align-items:flex-end;gap:12px;margin:6px 0 4px}
+:is(.view.carnet,.view.progress,.view.settings,.view.about) .ptitle,
+.view.about .head h1{flex:1;min-width:0;margin:0;font:400 42px/1 var(--f-display);letter-spacing:-.01em}
+.view.about .head{align-items:center}
+.view.about .head h1{font-size:32px;line-height:1.05;text-wrap:balance}
+:is(.view.carnet,.view.progress,.view.settings,.view.about) .icon-btn{width:40px;height:40px;flex:none;border-radius:50%;border:0;background:var(--card-2);color:#fff}
+:is(.view.carnet,.view.progress,.view.settings,.view.about) .sec{display:flex;align-items:baseline;gap:8px;margin:30px 2px 10px;padding:0;border:0;
+  font:400 26px/1.05 var(--f-display);letter-spacing:0;text-transform:none;color:#fff}
+:is(.view.carnet,.view.progress,.view.settings,.view.about) .sec > .i{display:none}
+:is(.view.carnet,.view.progress,.view.settings,.view.about) .sec .more{margin-left:auto;font:600 13px/1 var(--f-ui);letter-spacing:0;text-transform:none;color:var(--acc)}
+:is(.view.carnet,.view.progress,.view.settings,.view.about) .btn.ghost{border:0;background:var(--card-3);color:#fff;box-shadow:none}
+:is(.view.carnet,.view.progress,.view.settings,.view.about) .btn.primary{background:#fff;color:#000;box-shadow:none}
+
+/* pastilles arrondies, la sélectionnée en blanc */
+:is(.view.carnet,.view.settings) .opt-btn{height:36px;padding:0 14px;gap:6px;border-radius:99px;border:0;background:var(--card-2);box-shadow:none;
+  font:600 13.5px/1 var(--f-ui);color:rgba(255,255,255,.78)}
+:is(.view.carnet,.view.settings) .opt-btn .i{width:16px;height:16px;color:inherit}
+:is(.view.carnet,.view.settings) .opt-btn.on{background:#fff;color:#000;border:0;box-shadow:none}
+:is(.view.carnet,.view.settings) .opt-btn.on .i{color:#000}
+:is(.view.carnet,.view.settings) .row{gap:6px;margin:0 calc(-1 * var(--gutter-r)) 0 calc(-1 * var(--gutter-l));padding:2px var(--gutter-r) 4px var(--gutter-l);
+  -webkit-mask-image:none;mask-image:none}
+
+/* ---------- Carnet ---------- */
+.view.carnet .counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:16px 0 0}
+.view.carnet .counts span{display:flex;flex-direction:column;gap:4px;min-width:0;padding:11px 10px 10px;border-radius:var(--r-md);background:var(--card);
+  font:600 11.5px/1.15 var(--f-ui);color:var(--muted);white-space:normal}
+.view.carnet .counts b{font:400 30px/1 var(--f-display);color:#fff}
+.view.carnet .search{height:48px;margin-top:14px;border:0;border-radius:var(--r-md);background:var(--card)}
+.view.carnet .search input{font:500 16px var(--f-ui)}
+.view.carnet .cfilt{margin-top:12px}
+.view.carnet .cgrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 8px;margin-top:16px}
+.view.carnet .ctile{align-items:stretch;gap:0;text-align:left}
+.view.carnet .ctile .av{display:block;width:100%;max-width:none;aspect-ratio:4/5;padding:0;border-radius:var(--r-md);background:var(--card-2);overflow:hidden;box-shadow:none}
+.view.carnet .ctile .av::before,.view.carnet .ctile .av::after{display:none}
+.view.carnet .ctile .av img{display:block;width:100%;height:100%;border:0;border-radius:0;object-fit:cover;background:var(--card-2);transition:transform .3s var(--ease)}
+.view.carnet .ctile:active .av img{transform:scale(1.04)}
+.view.carnet .ctile .noimg{display:grid;place-items:center;width:100%;height:100%;color:rgba(255,255,255,.22)}
+.view.carnet .ctile .noimg .i{width:26px;height:26px}
+.view.carnet .ctile .fld{top:6px;right:6px;bottom:auto;width:24px;height:24px;border:0;background:var(--glass);color:#fff;
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.view.carnet .ctile b{margin-top:7px;font:600 13px/1.2 var(--f-ui);color:#fff}
+.view.carnet .ctile .stars{margin-top:4px;gap:1px;color:var(--acc)}
+.view.carnet .ctile .stars .i{width:11px;height:11px}
+.view.carnet .ctile .stars .off{color:rgba(255,255,255,.2)}
+.view.carnet .cexpl{display:flex;align-items:flex-start;gap:6px;margin:22px 2px 0;font:500 12.5px/1.4 var(--f-ui);color:var(--faint)}
+.view.carnet .cexpl .i{flex:none;margin-top:1px;color:var(--acc)}
+.view.carnet .empty{border:0;background:var(--card);border-radius:var(--r-lg)}
+.view.carnet .empty b{font:400 28px/1.05 var(--f-display)}
+@media (min-width:560px){.view.carnet .cgrid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+/* ---------- Progrès ---------- */
+.view.progress{--cyan:#fff}
+.view.progress .psum{margin-top:12px;padding:0;border:0;background:none;border-radius:0}
+.view.progress .psh{align-items:flex-end;gap:16px}
+.view.progress .lring{display:flex;flex-direction:column;justify-content:flex-end;width:auto;height:auto;flex:none}
+.view.progress .lring small{font:600 13px/1 var(--f-ui);color:var(--acc)}
+.view.progress .lring b{position:static;display:block;margin-top:2px;font:400 104px/.8 var(--f-display);letter-spacing:-.04em;color:#fff}
+.view.progress .pst{flex:1;min-width:0;padding-bottom:4px}
+.view.progress .pst h2{margin:0;font:400 30px/1 var(--f-display);letter-spacing:0}
+.view.progress .pst p{margin:6px 0 0;font:500 13px/1.35 var(--f-ui);color:var(--muted)}
+.view.progress .lbar{display:block;height:4px;margin-top:10px;border-radius:2px;background:rgba(255,255,255,.18);overflow:hidden}
+.view.progress .lbar i{display:block;height:100%;border-radius:2px;background:#fff}
+.view.progress .pnums{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:22px}
+.view.progress .pnums > div{align-items:flex-start;padding:14px 14px 12px;border-radius:var(--r-lg);text-align:left;
+  background:var(--glass);border:1px solid var(--glass-b);-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3)}
+.view.progress .pnums b{gap:5px;font:400 44px/1 var(--f-display);color:#fff}
+.view.progress .pnums b .i{width:20px;height:20px;color:var(--acc)}
+.view.progress .pnums b i{font-size:24px;color:rgba(255,255,255,.55)}
+.view.progress .pnums small{margin-top:6px;font:600 12.5px/1.2 var(--f-ui);color:var(--muted)}
+.view.progress .pgoal{margin-top:16px;padding:14px;border-radius:var(--r-lg);background:var(--card);font:600 13px/1 var(--f-ui)}
+.view.progress .pgoal .lab .i{color:var(--acc)}
+.view.progress .pgoal .bar{height:4px;background:rgba(255,255,255,.18)}
+.view.progress .pgoal .bar i{background:var(--acc)}
+.view.progress .pact{gap:8px;margin-top:10px}
+.view.progress .pact .btn{height:50px;border-radius:var(--r-md);font:700 15px/1 var(--f-ui)}
+.view.progress .pact .btn:first-child{background:#fff;color:#000;border:0}
+.view.progress .pact .btn.warm .pn{background:var(--acc);color:#000}
+
+/* sections repliables : cartes sobres, sans pastille colorée */
+.view.progress details.pv{margin-top:8px;border:0;border-radius:var(--r-lg);background:var(--card)}
+.view.progress details.pv:first-of-type{margin-top:26px}
+.view.progress details.pv > summary{gap:14px;padding:16px}
+.view.progress .pvi,.view.progress details.pv[data-k] .pvi{width:auto;height:auto;border-radius:0;background:none;color:var(--acc)}
+.view.progress .pvi .i{width:20px;height:20px}
+.view.progress .pvt{gap:4px}
+.view.progress .pvt b{font:400 24px/1 var(--f-display);letter-spacing:0}
+.view.progress .pvt small{font:500 13px/1.3 var(--f-ui)}
+.view.progress .pvc{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--card-2);color:#fff}
+.view.progress .pvc .i{width:16px;height:16px}
+.view.progress .pvb{padding:0 16px 16px}
+.view.progress .pvb .sec{margin:22px 0 10px;font-size:21px}
+.view.progress .pvb > .sec:first-child{margin-top:4px}
+.view.progress .pvb .card{padding:14px;border:0;border-radius:var(--r-md);background:var(--card-2)}
+.view.progress .grid2{gap:8px}
+.view.progress .stat{border:0;border-radius:var(--r-md);background:var(--card-2)}
+.view.progress .stat small{font:600 12px/1.2 var(--f-ui)}
+.view.progress .stat small .i{color:var(--acc)}
+.view.progress .stat b{margin-top:10px;font:400 34px/1 var(--f-display)}
+.view.progress .note{margin:12px 2px 0;font-size:12.5px;line-height:1.45;color:var(--faint)}
+.view.progress .heat i{border-radius:3px;background:rgba(255,255,255,.07)}
+.view.progress .heat i.today{outline-color:#fff}
+.view.progress .chart text{fill:var(--muted);font:600 10px var(--f-ui)}
+.view.progress .hbar{font:500 13px/1.2 var(--f-ui)}
+.view.progress .hbar .t .i{color:var(--acc)}
+.view.progress .hbar .b{height:6px;border-radius:3px;background:rgba(255,255,255,.1)}
+.view.progress .hbar .b i{border-radius:3px;background:#fff}
+.view.progress .hbar .v{font:700 13px var(--f-ui)}
+.view.progress .hbar.fam{grid-template-columns:minmax(0,1fr) 64px 38px auto}
+.view.progress .hbar.fam .chip{height:28px;padding:0 10px;border:0;background:var(--acc);color:#000}
+.view.progress .pconf .conf{border:0;background:var(--card-2);border-radius:var(--r-md)}
+.view.progress .pconf .conf img{border-radius:10px}
+.view.progress .pconf .vs{font:400 18px/1 var(--f-display);color:var(--muted);letter-spacing:0}
+.view.progress .pvb .group{border:0;background:var(--card-2);border-radius:var(--r-md)}
+.view.progress .pvb .set{border-top:1px solid var(--line)}
+.view.progress .pvb .set:first-child{border-top:0}
+.view.progress .badges{gap:8px}
+.view.progress .bdg{border:0;border-radius:var(--r-md);background:var(--card-2)}
+.view.progress .bdg .md{background:var(--acc);color:#000}
+.view.progress .bdg.off .md{background:rgba(255,255,255,.06);color:var(--faint)}
+.view.progress .bdg b{font:600 12.5px/1.15 var(--f-ui)}
+
+/* ---------- Réglages : listes groupées façon iOS ---------- */
+.view.settings .head + .sec{margin-top:22px}
+.view.settings .group{margin-top:0;border:0;border-radius:var(--r-lg);background:var(--card);box-shadow:none}
+.view.settings .group .set{position:relative;min-height:56px;padding:12px 16px;border-top:0}
+.view.settings .group .set + .set::before{content:"";position:absolute;top:0;left:16px;right:0;height:1px;background:var(--line)}
+.view.settings .group .set[style*="border-top:0"]::before{display:none}
+.view.settings .set .lab b{font:600 15.5px/1.25 var(--f-ui)}
+.view.settings .set .lab small{margin-top:2px;font:500 13px/1.35 var(--f-ui);color:var(--muted)}
+.view.settings .set .lab small a{color:var(--acc)}
+.view.settings .set > .i{flex:none;color:var(--acc)}
+.view.settings .set .btn{flex:none;height:36px;padding:0 13px;border-radius:99px;font:700 13px/1 var(--f-ui)}
+.view.settings .set .btn .i{width:16px;height:16px}
+.view.settings .set .btn.primary{height:48px;border-radius:var(--r-md);font-size:15px}
+.view.settings .set input[type=text],.view.settings .set input[type=time],.view.settings .set input[type=password]{flex:none;width:132px;height:38px;border:0;border-radius:var(--r-sm);
+  background:var(--card-3);color:#fff;font:600 15px var(--f-ui)}
+.view.settings .set input:focus{outline:2px solid var(--acc);outline-offset:0}
+.view.settings .switch{width:51px;height:31px;background:rgba(255,255,255,.16)}
+.view.settings .switch::after{top:2px;left:2px;width:27px;height:27px;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+.view.settings .switch.on{background:var(--acc)}
+.view.settings .switch.on::after{transform:translateX(20px)}
+.view.settings .seg{display:flex;width:100%;gap:2px;padding:3px;border:0;border-radius:var(--r-sm);background:var(--card-3)}
+.view.settings .seg button{flex:1;min-width:0;height:32px;padding:0 6px;border-radius:9px;font:600 13px/1 var(--f-ui);color:rgba(255,255,255,.7);white-space:nowrap}
+.view.settings .seg button.on{background:#fff;color:#000}
+.view.settings .stepper button{width:36px;height:36px;border:0;border-radius:50%;background:var(--card-3)}
+.view.settings .stepper output{min-width:34px;font:400 26px/1 var(--f-display)}
+.view.settings .mst .th{border-radius:var(--r-sm)}
+.view.settings .mst button.on .th{border-color:var(--acc);box-shadow:none}
+.view.settings .set.link{min-height:60px;color:#fff}
+.view.settings .set.link > .i:first-child{color:var(--acc)}
+.view.settings .set.link > .i:last-child{color:var(--faint)}
+.view.settings .group[style*="margin-top"]{margin-top:12px!important}
+.view.settings .muted{color:var(--muted)}
+.view.settings .foot{margin:18px 4px 0;font:500 12px/1.5 var(--f-ui);color:var(--faint)}
+.view.settings .vfoot{margin-top:24px;color:var(--muted)}
+.view.settings .vfoot b{color:#fff}
+.view.settings .lnk{color:var(--acc)}
+
+/* ---------- À propos ---------- */
+.view.about .prose{padding:18px;border:0;border-radius:var(--r-lg);background:var(--card)}
+.view.about .prose .lead2{font:400 24px/1.15 var(--f-display);color:#fff}
+.view.about .prose h3{margin:22px 0 6px;font:700 15px/1.2 var(--f-ui);letter-spacing:0;text-transform:none;color:var(--acc)}
+.view.about .prose li{color:rgba(255,255,255,.86)}
+.view.about .prose li::marker{color:var(--faint)}
+.view.about .srcs{gap:0;border-radius:var(--r-lg);background:var(--card);overflow:hidden}
+.view.about .src{position:relative;padding:14px 16px;border:0;border-radius:0;background:none}
+.view.about .src + .src::before{content:"";position:absolute;top:0;left:16px;right:0;height:1px;background:var(--line)}
+.view.about .src .sh b{font:600 15.5px/1.25 var(--f-ui)}
+.view.about .src .sh a{width:30px;height:30px;border-radius:50%;background:var(--card-3);color:#fff}
+.view.about .src p{color:rgba(255,255,255,.82)}
+.view.about .src small{color:var(--faint)}
+
+/* ==== autres.css ==== */
+/* =====================================================================
+   Plumage v4 « Stories » — écrans et fenêtres secondaires.
+   Sur mesure, fiche espèce et fenêtres, parcours guidés, défi, duel en direct,
+   classement, Piaf en main, Préparer une sortie, chargement / erreur, Géo.
+   Tout est préfixé : rien ici ne touche l'accueil, le quiz, Carnet, Progrès ou Réglages.
+   ===================================================================== */
+
+/* ---------- En-têtes des écrans plein écran ---------- */
+:is(.view.builder,.view.trip,.view.hand,.view.live,.view.top,.view.paths,.view.path) .head{gap:12px;margin:2px 0 14px}
+:is(.view.builder,.view.trip,.view.hand,.view.live,.view.top,.view.paths,.view.path) .head h1{margin:0;font:400 34px/1 var(--f-display);letter-spacing:-.01em}
+:is(.view.builder,.view.trip,.view.hand,.view.live,.view.top,.view.paths,.view.path) .head :is(p,small){display:block;margin-top:5px;font:500 13.5px/1.3 var(--f-ui);color:var(--muted)}
+:is(.view.builder,.view.trip,.view.hand,.view.live,.view.top,.view.paths,.view.path) .head > .icon-btn{flex:none;width:40px;height:40px;border-radius:50%;border:0;background:var(--card-2)}
+
+/* ---------- Libellés : plus de capitales espacées ---------- */
+:is(.view.builder,.view.trip,.view.hand,.view.live,.view.top,#layer) .opt-h{margin:0 0 10px;font:600 14px/1.1 var(--f-ui);letter-spacing:0;text-transform:none;color:#fff}
+:is(.view.builder,.view.trip,.view.hand,.view.live,.view.top,#layer) .opt-h .i{color:var(--acc)}
+:is(.view.builder,.view.trip,.view.hand,.view.live,.view.top,#layer) .opt-h .val{font:500 13px/1 var(--f-ui);color:var(--muted)}
+:is(.view.live,.view.top,#layer) .fld span{font:600 14px/1.1 var(--f-ui);letter-spacing:0;text-transform:none;color:#fff}
+:is(.view.live,.view.top,#layer) .fld input,#layer textarea,#layer input[type=text],#layer input:not([type]){border:0;border-radius:var(--r-sm);background:var(--card-2);color:#fff}
+:is(.view.live,.view.top,#layer) .fld input:focus,#layer textarea:focus{outline:1.5px solid rgba(255,255,255,.4);outline-offset:0}
+.view.hand .hset .tx,#layer .hstrat small,.view .hform-ends{font:600 13px/1.1 var(--f-ui);letter-spacing:0;text-transform:none}
+#layer .idmine b{font-size:12.5px;letter-spacing:0;text-transform:none;color:var(--acc)}
+
+/* ---------- Options : pastilles arrondies, sélection blanche ---------- */
+:is(.view.builder,.view.trip,.view.hand,.view.live,.view.top,#layer) .opt-btn{border:0;border-radius:99px;background:var(--card-2);color:rgba(255,255,255,.78);box-shadow:none}
+:is(.view.builder,.view.trip,.view.hand,.view.live,.view.top,#layer) .opt-btn .i{color:inherit}
+:is(.view.builder,.view.trip,.view.hand,.view.live,.view.top,#layer) .opt-btn.on{background:#fff;color:#000;box-shadow:none}
+:is(.view.builder,.view.trip,.view.hand,.view.live,.view.top,#layer) .opt-btn.on .i{color:#000}
+#layer .fsec .opt-btn{background:var(--card-3)}
+#layer .fsec .opt-btn.on{background:#fff}
+.view.hand .hset .opt-btn{border-radius:var(--r-sm)}
+.view.hand .hset .opt-btn.on small{color:rgba(0,0,0,.6)}
+:is(.view.builder,.view.trip,.view.hand,.view.live,.view.top,#layer) .seg{gap:2px;padding:3px;border:0;border-radius:99px;background:var(--card-2)}
+:is(.view.builder,.view.trip,.view.hand,.view.live,.view.top,#layer) .seg button{border-radius:99px;font:700 12.5px/1 var(--f-ui);letter-spacing:0;color:var(--muted)}
+:is(.view.builder,.view.trip,.view.hand,.view.live,.view.top,#layer) .seg button.on{background:#fff;color:#000}
+#layer .fsec .seg{background:var(--card-3)}
+:is(.view.builder,#layer) .stepper button{width:44px;height:44px;border:0;border-radius:50%;background:var(--card-2)}
+:is(.view.builder,#layer) .stepper output{font:400 28px/1 var(--f-display)}
+
+/* ---------- Sur mesure ---------- */
+.view.builder .recipes{gap:8px}
+.view.builder .recipe{gap:11px;min-height:72px;padding:12px;border:0;border-radius:var(--r-lg);background:var(--card)}
+.view.builder .recipe .ic{width:40px;height:40px;border-radius:50%;background:var(--card-2);color:#fff}
+.view.builder .recipe .ic .i{width:20px;height:20px}
+.view.builder .recipe b{font:700 14.5px/1.15 var(--f-ui)}
+.view.builder .recipe small{font-size:12px;color:var(--muted)}
+.view.builder .recipe:active{background:var(--card-2)}
+.view.builder details.bset{margin-top:16px;border:0;border-radius:var(--r-xl);background:var(--card)}
+.view.builder details.bset > summary{padding:14px 16px}
+.view.builder details.bset[open] > summary{border-bottom:1px solid var(--line)}
+.view.builder details.bset .pvi{width:40px;height:40px;border-radius:50%;background:var(--acc);color:#000}
+.view.builder details.bset .pvt b{font:400 24px/1 var(--f-display)}
+.view.builder details.bset > .opt{padding:16px 16px 0;margin:0}
+.view.builder details.bset > .launch{margin:22px 16px 16px}
+.view.builder .launch .btn.ghost{width:54px;padding:0;flex:none;border-radius:var(--r-md)}
+.view.builder .selfam .chip{border-radius:99px}
+
+/* ---------- Fenêtres : fiche espèce, nouveautés, idées, partage, sauvegarde, duels ---------- */
+#layer .panel{background:var(--card);border:0;border-radius:26px 26px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.5)}
+#layer .panel.tour{border-radius:var(--r-xl)}
+#layer .panel .close{width:36px;height:36px;border:0;border-radius:50%;background:var(--glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+#layer .panel h2{font:400 34px/1.02 var(--f-display);letter-spacing:-.01em}
+#layer .panel .eyebrow{font:700 13.5px/1.2 var(--f-ui);letter-spacing:0;text-transform:none;color:var(--acc)}
+#layer .panel .eyebrow .i{color:var(--acc)}
+#layer .panel .sec{margin:26px 0 10px;font:400 28px/1 var(--f-display)}
+#layer .panel .sec > .i{display:none}
+#layer .panel .muted{color:var(--muted)}
+
+/* fiche espèce */
+#layer .gallery{background:#111}
+#layer .gdots i{background:rgba(255,255,255,.3);border-radius:99px}
+#layer .gdots i.on{background:#fff}
+#layer .ftitle{padding-top:14px}
+#layer .ftitle h2{font-size:38px}
+#layer .ftitle .latin{margin-top:4px;font-size:23px;color:var(--muted)}
+#layer .ftitle .chips{gap:6px;margin-top:12px}
+#layer .chip{height:30px;padding:0 11px;border-radius:99px;border:0;background:var(--card-2);color:#fff;font:600 12.5px/1 var(--f-ui)}
+#layer .chip.ord{color:var(--muted)}
+#layer .chip .i{color:var(--acc)}
+#layer .decode{gap:6px}
+#layer .dchip{border:0;border-radius:99px;padding:7px 12px;background:var(--card-2);color:var(--muted)}
+#layer .dchip .latin{color:#fff}
+#layer .fsec{margin-top:12px;padding:16px;border:0;border-radius:var(--r-lg);background:var(--card-2)}
+#layer .fsec h3{flex-wrap:wrap;margin:0 0 12px;font:400 24px/1.05 var(--f-display);letter-spacing:0;text-transform:none;color:#fff}
+#layer .fsec h3 > .i{width:18px;height:18px;color:var(--acc)}
+#layer .fsec h3 .seg{margin-left:auto}
+#layer .mynote{border:0;border-radius:var(--r-sm);background:var(--card-3);color:#fff;font:500 15px/1.45 var(--f-ui)}
+#layer .mynote:focus{outline:1.5px solid rgba(255,255,255,.4);outline-offset:0}
+#layer .stats4 div{border-radius:var(--r-sm);background:var(--card-3)}
+#layer .stats4 b{font:400 30px/1 var(--f-display)}
+#layer .mi{border:0;border-radius:99px;background:var(--card-3)}
+#layer .mi.ok{background:color-mix(in srgb,var(--good) 18%,transparent)}
+#layer .mtodo{color:var(--muted)}
+#layer .pheno i{background:rgba(255,255,255,.32);border-radius:4px 4px 2px 2px;opacity:1}
+#layer .pheno .now i{background:var(--acc)}
+#layer .pheno span{color:var(--faint)}
+#layer .pheno .now span{color:var(--acc)}
+#layer .tilemap{border-radius:var(--r-sm)}
+#layer .slist{gap:6px}
+#layer .srow{border:0;border-radius:var(--r-md);background:var(--card-3)}
+#layer .srow .pl{border-radius:50%;background:#fff;color:#000}
+#layer .srow.playing{box-shadow:inset 0 0 0 1.5px var(--acc)}
+#layer .srow.playing .pl{background:var(--acc)}
+#layer .srow .icon-btn{border:0;border-radius:50%;background:rgba(255,255,255,.08)}
+#layer .srow .tx .src{border-radius:99px}
+#layer #fwiki p{font-size:15px;line-height:1.55;color:rgba(255,255,255,.86)}
+#layer #fwiki a{color:var(--acc)}
+#layer :is(.why,.tipbox,.lsec){background:var(--card-3);border:0;border-radius:var(--r-md)}
+#layer .why.neu{background:var(--card-3)}
+#layer .simil img{border-radius:var(--r-md)}
+#layer .simil b{margin-top:6px;font:600 12.5px/1.2 var(--f-ui)}
+#layer .links a{height:40px;padding:0 14px;border:0;border-radius:99px;background:var(--card-3);font-weight:600}
+#layer .links a .i{color:var(--muted)}
+#layer .hist .fieldok{color:var(--good-ink)}
+
+/* nouveautés, idées, partage, sauvegarde */
+#layer .news-it{border:0;border-radius:var(--r-lg);background:var(--card-2);padding:14px}
+#layer .news-it .ic{border-radius:50%;background:var(--card-3);color:var(--acc)}
+#layer .news-it b{font:700 15.5px/1.2 var(--f-ui)}
+#layer .idmine div{border:0;background:var(--card-2)}
+#layer .ccode{border:0;border-radius:var(--r-md);background:var(--card-2);color:#fff}
+#layer .qrbox{border-radius:var(--r-lg)}
+#layer .btn.ghost{border:0;background:var(--card-2)}
+#layer .inqic{border-radius:50%;background:var(--acc);color:#000}
+
+/* duels : choix et listes */
+#layer .livecta,#layer .livecta.defic{margin:10px 0 0;padding:14px;border:0;border-radius:var(--r-lg);background:var(--card-2)}
+#layer .livecta .ic,#layer .livecta.defic .ic{border-radius:50%;background:var(--acc);color:#000}
+#layer .livecta > .i,#layer .livecta.defic > .i{color:#fff}
+#layer .conf{padding:10px;border:0;border-radius:var(--r-md);background:var(--card-2)}
+#layer .conf img{border-radius:50%}
+#layer .conf .vs{font:400 15px/1 var(--f-display);color:var(--acc)}
+#layer .conf .tx{font:600 14px/1.25 var(--f-ui)}
+#layer .pitem{padding:13px 14px;border:0;border-radius:var(--r-md);background:var(--card-2)}
+#layer .pitem.on{background:#fff;color:#000}
+#layer .pitem.on :is(small,.muted){color:rgba(0,0,0,.6)}
+#layer .search{border:0;border-radius:99px;background:var(--card-2)}
+
+/* fiche âge (Piaf en main) : la fenêtre passe au noir, les planches gardent leur papier */
+#layer .hpanel .ftitle .eyebrow{color:var(--acc)}
+#layer .hstrat div,#layer .hextra{border:0;border-radius:var(--r-lg);background:var(--card-2)}
+#layer .hstrat small{color:var(--muted)}
+#layer .hcmp figcaption{font:600 13.5px var(--f-ui);color:#fff}
+
+/* ---------- Parcours guidés ---------- */
+.view.paths .plist2{gap:10px}
+.view.paths .pathc{padding:14px;border:0;border-radius:var(--r-lg);background:var(--card)}
+.view.paths .pathc .ic{width:48px;height:48px;border-radius:50%;background:var(--card-2);color:#fff}
+.view.paths .pathc b{font:700 16.5px/1.15 var(--f-ui)}
+.view.paths .pathc .pn{font:400 22px/1 var(--f-display);color:#fff}
+.view.paths .pbar{height:4px;background:rgba(255,255,255,.14)}
+.view.paths .pbar i{background:var(--acc)}
+.view.path .trail::before{background:rgba(255,255,255,.1)}
+.view.path .tnode{border:0;border-radius:var(--r-lg);background:var(--card)}
+.view.path .tnode .num{border:0;background:var(--card-2);color:var(--muted);font:400 22px/1 var(--f-display)}
+.view.path .trail li.done .num{background:var(--good);color:#04170E}
+.view.path .trail li.on .tnode{border:0;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.28)}
+.view.path .trail li.on:not(.done) .num{border:0;background:var(--acc);color:#000}
+.view.path .tnode b{font:700 15.5px/1.2 var(--f-ui)}
+.view.path .pstars{color:var(--acc)}
+.view.path .spch{border:0;background:var(--card-2)}
+.view.path .tbody .btn.primary{background:#fff;color:#000}
+
+/* ---------- Duel en direct et défi à distance ---------- */
+.view.live .lhero{border:0;border-radius:var(--r-lg);background:var(--card)}
+.view.live .lhero .vs{border-radius:50%;background:var(--acc);color:#000}
+.view.live .lhero p{color:rgba(255,255,255,.8)}
+.view.live .notice{border:0}
+.view.live .sec{margin-top:28px}
+.view.live .card{border:0;border-radius:var(--r-lg);background:var(--card)}
+.view.live .ljoin input{border:0;border-radius:var(--r-md);background:var(--card-2);color:#fff;font:400 30px/1 var(--f-display);letter-spacing:.12em}
+.view.live .ljoin input::placeholder{letter-spacing:0;text-transform:none;font:500 16px/1 var(--f-ui);color:var(--faint)}
+.view.live .ljoin input:focus{outline:1.5px solid rgba(255,255,255,.4)}
+.view.live .lcard{border:0;border-radius:var(--r-xl);background:var(--card)}
+.view.live .lcard h2{font:400 34px/1.05 var(--f-display)}
+.view.live .lcode{border:0;border-radius:var(--r-md);background:var(--card-2);font:400 52px/1 var(--f-display);letter-spacing:.12em}
+.view.live .lplayers .av{background:#fff;color:#000;font:400 28px/1 var(--f-display)}
+.view.live .lplayers .pl.me .av{background:var(--acc);color:#000}
+.view.live .lplayers .pl.wait .av{background:var(--card-2);border:1.5px dashed var(--line-2);color:var(--muted)}
+.view.live .lbig{border-radius:50%;background:var(--card-2);color:#fff}
+.view.live .lend.win .lbig{background:var(--acc);color:#000}
+.view.live .lend.lose .lbig,.view.live .lbig.dchal{background:var(--card-2);color:#fff}
+.view.live .toplist li{border:0;background:var(--card)}
+
+/* ---------- Classement ---------- */
+.view.top .topcard{border:0;border-radius:var(--r-lg);background:var(--card)}
+.view.top .topcard .ic{border-radius:50%;background:var(--acc);color:#000}
+.view.top .topcard > .i{color:#fff}
+.view.top .card{border:0;border-radius:var(--r-lg);background:var(--card)}
+.view.top .lvb,.view.live .lvb{border-radius:50%;background:var(--acc);color:#000;font:400 24px/1 var(--f-display)}
+.view.top .toplist li{border:0;border-radius:var(--r-md);background:var(--card)}
+.view.top .toplist li.me{background:var(--card-2);box-shadow:inset 0 0 0 1.5px var(--acc)}
+.view.top .toplist .rk{border-radius:50%;background:var(--card-2);color:var(--muted)}
+.view.top .toplist li.p1 .rk{background:var(--acc);color:#000}
+.view.top .toplist li.p2 .rk{background:#fff;color:#000}
+.view.top .toplist li.p3 .rk{background:var(--card-3);color:#fff}
+.view.top .toplist .xp{color:#fff}
+.view.top .toplist .nm b small{color:var(--acc)}
+
+/* ---------- Piaf en main (les planches .hplate gardent leur papier) ---------- */
+.view.hand .hmix{border:0;border-radius:var(--r-lg);background:var(--card)}
+.view.hand .hmix .ic{border-radius:50%;background:var(--acc);color:#000}
+.view.hand .hmix > .i{color:#fff}
+.view.hand .hset{border:0;border-radius:var(--r-lg);background:var(--card)}
+.view.hand .hset .tx{color:#fff}
+.view.hand .hset .tx .i{color:var(--acc)}
+.view.hand .hspb{border:0;border-radius:var(--r-lg);background:var(--card)}
+.view.hand .hspb b{font:700 14px/1.2 var(--f-ui)}
+.view.hand :is(.hcard,.hspc){border:0;background:var(--card)}
+.view.hand .hspc .eyebrow{color:var(--acc)}
+.view.hand .hhero p{color:rgba(255,255,255,.75)}
+.view.hand .tile .ic{background:#fff;color:#000}
+
+/* ---------- Préparer une sortie ---------- */
+.view.trip .sec{margin-top:26px}
+.view.trip .mrow .opt-btn{border-radius:99px}
+.view.trip .tsum{color:var(--muted)}
+.view.trip .dot{background:var(--good);box-shadow:none}
+.view.trip .tacts .btn.ghost{border:0;background:var(--card-2)}
+.view.trip .tl{display:flex;flex-direction:column;gap:6px}
+.view.trip :is(.trow,.crow){padding:8px 12px 8px 8px;border:0;border-radius:var(--r-md);background:var(--card)}
+.view.trip :is(.trow,.crow) img{border-radius:12px}
+.view.trip :is(.trow,.crow) .tx b{font:700 15px/1.2 var(--f-ui)}
+.view.trip .fq{height:4px;background:rgba(255,255,255,.14)}
+.view.trip .fq i{background:#fff}
+.view.trip .empty{border:0;background:var(--card)}
+.view.trip .search{border:0;border-radius:99px;background:var(--card-2)}
+.view.trip .note{color:var(--faint)}
+
+/* ---------- Chargement et erreur ---------- */
+.view.loading .lens span,.view.loading .lens span:nth-child(2),.view.loading .lens span:nth-child(3){border:1.5px solid rgba(255,206,0,.55)}
+.view.loading .lens .i{color:var(--acc)}
+.view.loading b{margin-top:24px;font:400 34px/1.05 var(--f-display);text-wrap:balance}
+.view.loading small{margin-top:8px;font:500 14.5px/1.4 var(--f-ui);color:var(--muted);text-wrap:balance}
+.view.loading .btn{border-radius:var(--r-md)}
+.view.loading .btn.ghost{border:0;background:var(--card-2)}
+.view.loading > div{padding:0 8px}
+
+/* ---------- Géo : harmonisation ---------- */
+.gstrip figure{border-radius:var(--r-lg)}
+.gstrip .k{border-radius:50%;background:rgba(0,0,0,.55);font:700 12.5px/1 var(--f-ui)}
+.gstrip figcaption{background:linear-gradient(180deg,transparent,rgba(0,0,0,.85))}
+.gmap{border:0;border-radius:var(--r-lg)}
+.gmap .leaflet-control-attribution{background:rgba(0,0,0,.55)!important}
+
+/* ---------- Retouches ---------- */
+#layer .srow .icon-btn{color:#fff}
+#layer .srow .msono{border-radius:var(--r-sm);background:#111}
+#layer .ccin{border:0;border-radius:var(--r-md);background:var(--card-2)}
+#layer .ccin:focus{outline:1.5px solid rgba(255,255,255,.4);outline-offset:0;border:0}
+.view.top .lvb,.view.live .lvb{font:800 18px/1 var(--f-ui)}
+
+/* ==== grand.css ==== */
+
+/* ==== anim.css ==== */
 
 </style>
 </head>
@@ -3877,7 +4321,7 @@ async function buildQ(ses, spec) {
   if (spec.kind === "root") return buildRoot(ses);
   if (spec.kind === "hand") return buildHand(ses, spec);
   if (spec.bonusRare) return buildRare(ses);
-  const c = ses.cfg;
+  const c = ses.cfg, age = spec.age === undefined ? c.age : spec.age;
   const q = {
     kind: "taxon", t: spec.t, stim: spec.stim || "photo", level: spec.level || c.target || "species",
     format: spec.format || c.format || "qcm", k: spec.k || c.k || S.set.k, diff: spec.diff || c.diff || S.set.diff,
@@ -3891,15 +4335,15 @@ async function buildQ(ses, spec) {
     if (r && mastery(r).photos >= 2 && !(r.fk || []).length && Math.random() < .7) { q.stim = "field"; q.transfer = true; }
   }
   if (q.stim === "son") { q.snd = await soundFor(q.t, ses.zone); if (!q.snd) q.stim = "photo"; }
-  if (c.age && (q.stim === "photo" || q.stim === "field" || q.stim === "soncho")) {
-    q.photo = await agePhoto(q.t, ses.zone, c.age);
-    if (!q.photo) return null;
+  if (age && (q.stim === "photo" || q.stim === "field" || q.stim === "soncho")) {
+    q.photo = await agePhoto(q.t, ses.zone, age).catch(() => null);
+    if (!q.photo && ses.kind !== "path") return null;   /* parcours : pas de jeune trouvé → photo normale */
     if (q.stim === "photo") q.stim = "field";
   }
   /* « De saison » : photo prise à cette période de l'année (pas de plumage nuptial en novembre) */
   const trM = c.trip ? (S.trips || []).find(x => x.id === c.trip)?.m : 0;
   const mon = c.freq === "season" ? seasonMonths() : trM ? [((trM + 10) % 12) + 1, trM, (trM % 12) + 1] : null;
-  if (mon && !c.age && (q.stim === "photo" || q.stim === "field") && navigator.onLine !== false) {
+  if (mon && !age && (q.stim === "photo" || q.stim === "field") && navigator.onLine !== false) {
     const ph = await fieldPhoto(q.t, ses.zone, mon).catch(() => null);
     if (ph) { q.photo = ph; q.stim = "field"; q.season = true; }
   }
@@ -3921,9 +4365,9 @@ async function buildQ(ses, spec) {
     else q.format = "audio";
   }
   if (!q.choices && (q.format === "qcm" || q.format === "tiles")) q.choices = await makeChoices(ses, q);
-  if (c.age && q.format === "tiles" && q.choices) {
+  if (age && q.format === "tiles" && q.choices) {
     /* Vignettes : chaque choix montre aussi un oiseau de la bonne classe d'âge */
-    const phs = await Promise.all(q.choices.map(ch => ch.t ? agePhoto(ch.t, ses.zone, c.age).catch(() => null) : null));
+    const phs = await Promise.all(q.choices.map(ch => ch.t ? agePhoto(ch.t, ses.zone, age).catch(() => null) : null));
     if (phs.every(Boolean)) q.choices = q.choices.map((ch, i) => ({ ...ch, t: { ...ch.t, img: { ...(ch.t.img || {}), sq: phs[i].md, md: phs[i].md } } }));
     else q.format = "qcm";
   }
@@ -7027,7 +7471,10 @@ async function stepTaxa(P, i) {
 const pathCfg = (P, i) => {
   const c = { kind: "path", title: `${P.n} · ${P.steps[i].n}`, icon: P.ic, path: P.id, step: i, zone: { k: "fr", id: 6753, name: "France" }, len: PLEN, names: S.set.names };
   const T = P.id === "grand" ? GTOURS[P.steps[i].tour] : null;
-  if (T) Object.assign(c, { title: `Étape ${i + 1} · ${P.steps[i].n}`, stim: T.stim, k: T.k || 4, format: T.format || "", timer: T.timer || 0 });
+  if (T) {
+    const st = P.steps[i], up = st.kind === "boss" ? 2 : st.kind === "rev" ? 1 : 0;   /* plus dur aux révisions et au bilan du chapitre */
+    Object.assign(c, { title: `Étape ${i + 1} · ${st.n}`, stim: T.stim, k: Math.min(6, (T.k || 4) + up), timer: T.timer || 0, leurres: !!T.leurres || st.kind === "boss", type: T.type || 0, juv: T.juv || 0 });
+  }
   return c;
 };
 /* Le plan : chaque espèce de l'étape au moins une fois, une de l'étape d'avant ; les choix viennent d'abord de l'étape */
@@ -7041,11 +7488,25 @@ async function preparePath(ses) {
   ses.pool = { list: all, byId: new Map(all.map(t => [t.id, t])) };
   const extra = PLEN - cur.length - (prev.length ? 1 : 0);
   const targets = shuffle([...cur, ...shuffle(cur).slice(0, Math.max(0, extra)), ...(prev.length ? [pick(prev)] : [])]).slice(0, PLEN);
+  /* Leurres : les choix viennent aussi du reste du chapitre, en priorité même genre puis même famille */
+  let leur = [];
+  if (c.leurres && P.id === "grand") {
+    const s0 = P.steps[c.step], bi = P.steps.findIndex(x => x.ch === s0.ch && x.kind === "boss" && x.tour === s0.tour);
+    leur = bi >= 0 && bi !== c.step ? (await stepTaxa(P, bi).catch(() => null)) || [] : [];
+    leur.forEach(t => lexAdd(t));
+    for (const t of leur) if (!ses.pool.byId.has(t.id)) { ses.pool.list.push(t); ses.pool.byId.set(t.id, t); }
+  }
+  const gen = t => String(t.sci || "").split(" ")[0];
+  const near = (t, x) => (gen(x) === gen(t) ? 2 : 0) + (fam(x) && fam(x) === fam(t) ? 1 : 0) + Math.random() * .9;
   ses.plan = targets.map(t => {
-    const others = [...shuffle(cur.filter(x => x.id !== t.id)), ...shuffle(prev.filter(x => x.id !== t.id))].slice(0, Math.max(1, (c.k || 4) - 1));
+    const want = Math.max(1, (c.k || 4) - 1);
+    const pool = [...new Map([...cur, ...prev, ...leur].filter(x => x.id !== t.id).map(x => [x.id, x])).values()];
+    const others = c.leurres ? pool.sort((x, y) => near(t, y) - near(t, x)).slice(0, want)
+      : [...shuffle(cur.filter(x => x.id !== t.id)), ...shuffle(prev.filter(x => x.id !== t.id))].slice(0, want);
     const stim = pick(c.stim && c.stim.length ? c.stim : P.stim);
-    if (c.format === "type") return { t, stim, format: "type" };
-    return { t, stim, pair: shuffle([t, ...others]), k: others.length + 1 };
+    const age = (stim === "photo" || stim === "field") && Math.random() < (c.juv || 0) ? "juv" : "";
+    if (stim !== "soncho" && (c.format === "type" || Math.random() < (c.type || 0))) return { t, stim, format: "type", age };
+    return { t, stim, age, pair: shuffle([t, ...others]), k: others.length + 1 };
   });
   ses.len = ses.plan.length;
   ses.title = c.title;
@@ -7166,20 +7627,20 @@ const GCH = [
     { n: "Raretés d'automne", sp: [["Phylloscopus inornatus", "Pouillot à grands sourcils"], ["Bombycilla garrulus", "Jaseur boréal"], ["Anthus richardi", "Pipit de Richard"], ["Lanius excubitor", "Pie-grièche grise"], ["Calidris pugnax", "Combattant varié"]] }
   ] }
 ];
-/* Les 12 tours : même chemin, de plus en plus dur */
+/* Les 12 tours : chaque tour garde tout ce qui précède et ajoute une difficulté (cumulatif, mélangé) */
 const GTOURS = [
   { n: "Photos", d: "3 choix", stim: ["photo"], k: 3 },
   { n: "Photos", d: "4 choix", stim: ["photo"], k: 4 },
-  { n: "Photos de terrain", d: "comme dehors", stim: ["field"], k: 4 },
-  { n: "Chants", d: "à l'oreille", stim: ["son"], k: 4 },
-  { n: "Noms latins", d: "latin → français", stim: ["la"], k: 4 },
-  { n: "Français → latin", d: "le nom savant", stim: ["fr"], k: 4 },
-  { n: "Écrire", d: "tape le nom", stim: ["photo"], format: "type" },
-  { n: "Chrono", d: "10 secondes", stim: ["photo", "field"], k: 4, timer: 10 },
-  { n: "Lequel chante ?", d: "4 chants", stim: ["soncho"], k: 4 },
-  { n: "Terrain et chants", d: "mélangés", stim: ["field", "son"], k: 4 },
-  { n: "Écrire à l'oreille", d: "tape le nom", stim: ["son"], format: "type" },
-  { n: "Expert", d: "tout mélangé, chrono", stim: ["photo", "field", "son", "la"], k: 4, timer: 10 }
+  { n: "+ Terrain et leurres", d: "photos de terrain, des oiseaux qui se ressemblent", stim: ["photo", "field"], k: 4, leurres: 1 },
+  { n: "+ Chants", d: "5 choix, les chants arrivent", stim: ["photo", "field", "son"], k: 5, leurres: 1 },
+  { n: "+ Noms latins", d: "latin ↔ français", stim: ["photo", "field", "son", "la", "fr"], k: 5, leurres: 1 },
+  { n: "+ Lequel chante ?", d: "4 chants à comparer", stim: ["photo", "field", "son", "la", "fr", "soncho"], k: 5, leurres: 1 },
+  { n: "+ Écrire", d: "6 choix, et parfois tu tapes le nom", stim: ["photo", "field", "son", "la", "fr", "soncho"], k: 6, leurres: 1, type: .2 },
+  { n: "+ Jeunes et femelles", d: "les plumages qui piègent", stim: ["photo", "field", "son", "la", "fr", "soncho"], k: 6, leurres: 1, type: .25, juv: .25 },
+  { n: "+ Plus d'écrit", d: "un tiers à taper, chants compris", stim: ["field", "field", "son", "son", "la", "fr", "soncho"], k: 6, leurres: 1, type: .35, juv: .3 },
+  { n: "+ Chrono", d: "10 secondes par question", stim: ["field", "son", "la", "fr", "soncho"], k: 6, leurres: 1, type: .3, juv: .3, timer: 10 },
+  { n: "+ Moitié à l'écrit", d: "jeunes, leurres, chrono", stim: ["field", "son", "son", "la", "fr", "soncho"], k: 6, leurres: 1, type: .5, juv: .4, timer: 10 },
+  { n: "Expert", d: "tout, tout le temps", stim: ["field", "son", "son", "la", "fr", "soncho"], k: 6, leurres: 1, type: .6, juv: .5, timer: 10 }
 ];
 /* Un tour : étapes d'apprentissage, révision toutes les 2 étapes, bilan de chapitre */
 const GBASE = (() => {
@@ -7225,7 +7686,7 @@ function grandHtml() {
   return `<section class="view grand">
   <header class="ghead"><button class="icon-btn" data-act="home" aria-label="Retour">${ic("x")}</button><h1>Ton parcours</h1><span class="gcount">${done} / ${GRAND.steps.length}</span></header>
   <div class="gtours">${GTOURS.map((t, k) => `<button class="${k === ti ? "on" : ""}" data-act="gtour" data-t="${k}" ${k > curT ? "disabled" : ""}>${k > curT ? ic("lock", "xs") : ""}Tour ${k + 1}</button>`).join("")}</div>
-  <p class="gtour-d"><b>Tour ${ti + 1} · ${esc(T.n)}</b> ${esc(T.d)}. ${PASS} bonnes réponses sur ${PLEN} pour avancer.</p>
+  <p class="gtour-d"><b>Tour ${ti + 1} · ${esc(T.n)}</b> ${esc(T.d)}. Chaque tour garde tout ce qui précède. Dans un chapitre : un choix de plus aux révisions, deux au bilan. ${PASS} bonnes réponses sur ${PLEN} pour avancer.</p>
   <div class="gchs">${GCH.map((_, ci) => chHtml(ti, ci, nx)).join("")}</div>
   <button class="glink" data-act="daily">${ic("shuffle", "xs")}Série du jour classique : 12 questions mélangées</button>
 </section>`;
@@ -8566,6 +9027,10 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-10.4", n: "4.1", items: [
+    { ic: "trophy", t: "Un parcours qui monte en difficulté", d: "Chaque tour garde tout ce qui précède et ajoute une difficulté : leurres, chants, latin, écrire le nom, jeunes et femelles, chrono… Plus de choix aux révisions et au bilan." },
+    { ic: "frame", t: "Tout l'appli au nouveau look", d: "Carnet, Progrès, Réglages, Sur mesure, fiches, duels : même style partout. Sur iPhone, l'en-tête passe sous l'encoche." }
+  ] },
   { v: "2026-11-10.3", n: "4.0", items: [
     { ic: "frame", t: "La photo d'abord", d: "L'oiseau du jour en plein écran, des réponses en verre, ton score en grand avec les photos de la série." },
     { ic: "map", t: "Le grand parcours", d: "« Lancer la série du jour » ouvre ton parcours : 13 chapitres du jardin aux raretés, 12 tours de plus en plus durs (972 étapes)." }
@@ -8932,17 +9397,19 @@ function carnetList() {
 function carnetGrid() {
   const list = carnetList();
   if (!list.length) return `<div class="empty">${ic("book")}<b>${Object.keys(S.sp).length ? "Rien ici" : "Ton carnet est vide"}</b><p>${Object.keys(S.sp).length ? "Change de filtre ou de recherche." : "Chaque oiseau croisé en quiz s'ajoute ici, avec sa fiche et ton niveau."}</p>${Object.keys(S.sp).length ? "" : `<button class="btn primary" data-act="daily">${ic("play")}Série du jour</button>`}</div>`;
-  return `<div class="cgrid">${list.map(({ id, r }) => `<button class="ctile" data-act="fiche" data-id="${id}"><span class="av" style="--p:${(stars(r) / 3 * 100).toFixed(0)}"><img src="${esc(r.img || r.md)}" alt="" loading="lazy">${FIELD.ids.has(id) || r.nobs > 0 ? `<span class="fld" title="Vue sur le terrain">${ic("eye", "xs")}</span>` : ""}</span><b>${esc(r.fr || r.sci)}</b>${starsHtml(stars(r))}</button>`).join("")}</div>`;
+  return `<div class="cgrid">${list.map(({ id, r }) => `<button class="ctile" data-act="fiche" data-id="${id}"><span class="av" style="--p:${(stars(r) / 3 * 100).toFixed(0)}">${r.img || r.md ? `<img src="${esc(r.img || r.md)}" alt="" loading="lazy">` : `<span class="noimg">${ic("book")}</span>`}${FIELD.ids.has(id) || r.nobs > 0 ? `<span class="fld" title="Vue sur le terrain">${ic("eye", "xs")}</span>` : ""}</span><b>${esc(r.fr || r.sci || "Espèce")}</b>${starsHtml(stars(r))}</button>`).join("")}</div>`;
 }
 VIEWS.carnet = () => {
   const recs = Object.values(S.sp).filter(r => r.n > 0 || r.nobs > 0);
   const master = recs.filter(r => stars(r) === 3).length, seenN = Object.entries(S.sp).filter(([id, r]) => r.nobs > 0 || FIELD.ids.has(+id)).length;
   const filt = [["all", "Toutes"], ["due", "À revoir"], ["weak", "Fragiles"], ["master", "Maîtrisées"], ["field", "Observées"]];
   return `<section class="view carnet">
-  <div class="head"><div style="flex:1"><h1 style="font:700 24px/1.1 var(--f-display);margin:0">Carnet</h1><div class="counts"><span><b>${recs.length}</b> espèces</span><span><b>${master}</b> maîtrisées</span><span><b>${seenN}</b> observées</span><span><b>${dueList().length}</b> à revoir</span></div><small class="cexpl">${ic("star", "xs")}Maîtrisée = reconnue sur 3 photos différentes, dont 1 de terrain, sur 3 jours.</small></div>${recs.length ? `<button class="icon-btn" data-act="csv" aria-label="Exporter le carnet">${ic("down")}</button>` : ""}</div>
-  <div class="search" style="margin-top:14px">${ic("search")}<input id="csearch" type="search" placeholder="Chercher une espèce" value="${esc(CARNET.q)}" aria-label="Chercher"></div>
-  <div class="row" style="margin-top:10px">${filt.map(([k, l]) => `<button class="opt-btn mini ${CARNET.f === k ? "on" : ""}" data-act="cfilt" data-f="${k}">${l}</button>`).join("")}</div>
+  <div class="head"><h1 class="ptitle">Carnet</h1>${recs.length ? `<button class="icon-btn" data-act="csv" aria-label="Exporter le carnet">${ic("down")}</button>` : ""}</div>
+  <div class="counts"><span><b>${recs.length}</b> espèce${recs.length > 1 ? "s" : ""}</span><span><b>${master}</b> maîtrisée${master > 1 ? "s" : ""}</span><span><b>${seenN}</b> observée${seenN > 1 ? "s" : ""}</span><span><b>${dueList().length}</b> à revoir</span></div>
+  <div class="search">${ic("search")}<input id="csearch" type="search" placeholder="Chercher une espèce" value="${esc(CARNET.q)}" aria-label="Chercher"></div>
+  <div class="row cfilt">${filt.map(([k, l]) => `<button class="opt-btn mini ${CARNET.f === k ? "on" : ""}" data-act="cfilt" data-f="${k}">${l}</button>`).join("")}</div>
   <div id="cgrid">${carnetGrid()}</div>
+  <small class="cexpl">${ic("star", "xs")}Maîtrisée = reconnue sur 3 photos différentes, dont 1 de terrain, sur 3 jours.</small>
 </section>`;
 };
 
@@ -8975,7 +9442,7 @@ function chartHtml() {
   <div style="display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:4px"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--gold);margin-right:6px"></i>XP du jour</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--cyan);margin-right:6px"></i>Taux de réussite</span></div>`;
 }
 VIEWS.progress = () => {
-  const L = level(), C = 2 * Math.PI * 40, st = liveStreak();
+  const L = level(), st = liveStreak();
   const recs = Object.values(S.sp).filter(r => r.n > 0);
   const master = recs.filter(r => stars(r) === 3).length, due = dueList().length;
   const tot = Object.values(S.stats).reduce((a, s) => ({ n: a.n + s.n, ok: a.ok + s.ok }), { n: 0, ok: 0 });
@@ -8996,9 +9463,10 @@ VIEWS.progress = () => {
   /* Un bloc repliable : titre, une ligne de résumé, le détail au toucher */
   const box = (k, icon, title, sum, body, def) => `<details class="pv"${(pv[k] ?? def) ? " open" : ""} data-k="${k}"><summary data-act="pvt"><span class="pvi">${ic(icon)}</span><span class="pvt"><b>${title}</b><small>${sum}</small></span><span class="pvc">${ic("chev")}</span></summary><div class="pvb">${body}</div></details>`;
   return `<section class="view progress">
+  <div class="head"><h1 class="ptitle">Progrès</h1></div>
   <div class="psum">
-    <div class="psh"><div class="lring"><svg viewBox="0 0 96 96" aria-hidden="true"><circle class="track" cx="48" cy="48" r="40"/><circle class="prog" cx="48" cy="48" r="40" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - L.p)).toFixed(1)}"/></svg><b>${L.n}</b></div>
-      <div class="pst"><h2>${esc(L.rank)}</h2><p>${fmt(S.xp)} XP · encore ${fmt(L.need - L.cur)} pour le niveau ${L.n + 1}</p></div></div>
+    <div class="psh"><div class="lring"><small>Niveau</small><b>${L.n}</b></div>
+      <div class="pst"><h2>${esc(L.rank)}</h2><p>${fmt(S.xp)} XP · encore ${fmt(L.need - L.cur)} pour le niveau ${L.n + 1}</p><span class="lbar"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span></div></div>
     <div class="pnums">
       <div><b>${ic("flame")}${st}</b><small>jour${st > 1 ? "s" : ""} d'affilée</small></div>
       <div><b>${recs.length}</b><small>espèce${recs.length > 1 ? "s" : ""}</small></div>
@@ -9030,7 +9498,7 @@ VIEWS.progress = () => {
 const seg = (k, opts) => `<div class="seg">${opts.map(([v, l]) => `<button class="${String(S.set[k]) === String(v) ? "on" : ""}" data-act="set" data-k="${k}" data-v="${v}">${l}</button>`).join("")}</div>`;
 const sw = k => `<button class="switch ${S.set[k] ? "on" : ""}" data-act="toggle" data-k="${k}" role="switch" aria-checked="${S.set[k] ? "true" : "false"}" aria-label="${k}"></button>`;
 VIEWS.settings = () => `<section class="view settings">
-  <div class="head"><div><h1 style="font:700 24px/1.1 var(--f-display);margin:0">Réglages</h1></div></div>
+  <div class="head"><h1 class="ptitle">Réglages</h1></div>
   <div class="sec">${ic("pin")}Ma zone<span class="more">${esc(zoneLabel(S.set.zone))}</span></div>
   <div class="row">${zoneChips(S.set.zone, "szone")}</div>
   <div class="sec">${ic("eye")}Questions</div>
@@ -9990,6 +10458,8 @@ function init() {
   loadTaxo().catch(() => {});
 }
 init();
+
+/* ---- anim.js ---- */
 
 </script>
 </body>

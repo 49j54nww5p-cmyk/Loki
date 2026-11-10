@@ -243,7 +243,7 @@ async function buildQ(ses, spec) {
   if (spec.kind === "root") return buildRoot(ses);
   if (spec.kind === "hand") return buildHand(ses, spec);
   if (spec.bonusRare) return buildRare(ses);
-  const c = ses.cfg;
+  const c = ses.cfg, age = spec.age === undefined ? c.age : spec.age;
   const q = {
     kind: "taxon", t: spec.t, stim: spec.stim || "photo", level: spec.level || c.target || "species",
     format: spec.format || c.format || "qcm", k: spec.k || c.k || S.set.k, diff: spec.diff || c.diff || S.set.diff,
@@ -257,15 +257,15 @@ async function buildQ(ses, spec) {
     if (r && mastery(r).photos >= 2 && !(r.fk || []).length && Math.random() < .7) { q.stim = "field"; q.transfer = true; }
   }
   if (q.stim === "son") { q.snd = await soundFor(q.t, ses.zone); if (!q.snd) q.stim = "photo"; }
-  if (c.age && (q.stim === "photo" || q.stim === "field" || q.stim === "soncho")) {
-    q.photo = await agePhoto(q.t, ses.zone, c.age);
-    if (!q.photo) return null;
+  if (age && (q.stim === "photo" || q.stim === "field" || q.stim === "soncho")) {
+    q.photo = await agePhoto(q.t, ses.zone, age).catch(() => null);
+    if (!q.photo && ses.kind !== "path") return null;   /* parcours : pas de jeune trouvé → photo normale */
     if (q.stim === "photo") q.stim = "field";
   }
   /* « De saison » : photo prise à cette période de l'année (pas de plumage nuptial en novembre) */
   const trM = c.trip ? (S.trips || []).find(x => x.id === c.trip)?.m : 0;
   const mon = c.freq === "season" ? seasonMonths() : trM ? [((trM + 10) % 12) + 1, trM, (trM % 12) + 1] : null;
-  if (mon && !c.age && (q.stim === "photo" || q.stim === "field") && navigator.onLine !== false) {
+  if (mon && !age && (q.stim === "photo" || q.stim === "field") && navigator.onLine !== false) {
     const ph = await fieldPhoto(q.t, ses.zone, mon).catch(() => null);
     if (ph) { q.photo = ph; q.stim = "field"; q.season = true; }
   }
@@ -287,9 +287,9 @@ async function buildQ(ses, spec) {
     else q.format = "audio";
   }
   if (!q.choices && (q.format === "qcm" || q.format === "tiles")) q.choices = await makeChoices(ses, q);
-  if (c.age && q.format === "tiles" && q.choices) {
+  if (age && q.format === "tiles" && q.choices) {
     /* Vignettes : chaque choix montre aussi un oiseau de la bonne classe d'âge */
-    const phs = await Promise.all(q.choices.map(ch => ch.t ? agePhoto(ch.t, ses.zone, c.age).catch(() => null) : null));
+    const phs = await Promise.all(q.choices.map(ch => ch.t ? agePhoto(ch.t, ses.zone, age).catch(() => null) : null));
     if (phs.every(Boolean)) q.choices = q.choices.map((ch, i) => ({ ...ch, t: { ...ch.t, img: { ...(ch.t.img || {}), sq: phs[i].md, md: phs[i].md } } }));
     else q.format = "qcm";
   }

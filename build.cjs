@@ -6,8 +6,8 @@ const sharp = require("sharp");
 const ROOT = __dirname, SRC = path.join(ROOT, "src"), DIST = process.env.OUT ? path.resolve(process.env.OUT) : path.join(ROOT, "dist");
 fs.mkdirSync(DIST, { recursive: true });
 
-const css = fs.readFileSync(path.join(SRC, "styles.css"), "utf8") + "\n/* ==== look.css : refonte v3 ==== */\n" + fs.readFileSync(path.join(SRC, "look.css"), "utf8") + "\n/* ==== stories.css : v4 ==== */\n" + fs.readFileSync(path.join(SRC, "stories.css"), "utf8");
-const js = ["data.js", "core.js", "engine.js", "hand.js", "sosies.js", "net.js", "partage.js", "defi.js", "parcours.js", "grand.js", "terrain.js", "cloud.js", "semaine.js", "idees.js", "ui.js"].map(f => `/* ---- ${f} ---- */\n` + fs.readFileSync(path.join(SRC, f), "utf8")).join("\n");
+const css = fs.readFileSync(path.join(SRC, "styles.css"), "utf8") + "\n/* ==== look.css : refonte v3 ==== */\n" + fs.readFileSync(path.join(SRC, "look.css"), "utf8") + "\n/* ==== stories.css : v4 ==== */\n" + fs.readFileSync(path.join(SRC, "stories.css"), "utf8") + "\n/* ==== tabs.css ==== */\n" + fs.readFileSync(path.join(SRC, "tabs.css"), "utf8") + "\n/* ==== autres.css ==== */\n" + fs.readFileSync(path.join(SRC, "autres.css"), "utf8") + "\n/* ==== grand.css ==== */\n" + fs.readFileSync(path.join(SRC, "grand.css"), "utf8") + "\n/* ==== anim.css ==== */\n" + fs.readFileSync(path.join(SRC, "anim.css"), "utf8");
+const js = ["data.js", "core.js", "engine.js", "hand.js", "sosies.js", "net.js", "partage.js", "defi.js", "parcours.js", "grand.js", "terrain.js", "cloud.js", "semaine.js", "idees.js", "ui.js", "anim.js"].map(f => `/* ---- ${f} ---- */\n` + fs.readFileSync(path.join(SRC, f), "utf8")).join("\n");
 const html = fs.readFileSync(path.join(SRC, "shell.html"), "utf8")
   .replace("/*__CSS__*/", () => css)
   .replace("/*__JS__*/", () => js);

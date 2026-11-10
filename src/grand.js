@@ -61,20 +61,20 @@ const GCH = [
     { n: "Raretés d'automne", sp: [["Phylloscopus inornatus", "Pouillot à grands sourcils"], ["Bombycilla garrulus", "Jaseur boréal"], ["Anthus richardi", "Pipit de Richard"], ["Lanius excubitor", "Pie-grièche grise"], ["Calidris pugnax", "Combattant varié"]] }
   ] }
 ];
-/* Les 12 tours : même chemin, de plus en plus dur */
+/* Les 12 tours : chaque tour garde tout ce qui précède et ajoute une difficulté (cumulatif, mélangé) */
 const GTOURS = [
   { n: "Photos", d: "3 choix", stim: ["photo"], k: 3 },
   { n: "Photos", d: "4 choix", stim: ["photo"], k: 4 },
-  { n: "Photos de terrain", d: "comme dehors", stim: ["field"], k: 4 },
-  { n: "Chants", d: "à l'oreille", stim: ["son"], k: 4 },
-  { n: "Noms latins", d: "latin → français", stim: ["la"], k: 4 },
-  { n: "Français → latin", d: "le nom savant", stim: ["fr"], k: 4 },
-  { n: "Écrire", d: "tape le nom", stim: ["photo"], format: "type" },
-  { n: "Chrono", d: "10 secondes", stim: ["photo", "field"], k: 4, timer: 10 },
-  { n: "Lequel chante ?", d: "4 chants", stim: ["soncho"], k: 4 },
-  { n: "Terrain et chants", d: "mélangés", stim: ["field", "son"], k: 4 },
-  { n: "Écrire à l'oreille", d: "tape le nom", stim: ["son"], format: "type" },
-  { n: "Expert", d: "tout mélangé, chrono", stim: ["photo", "field", "son", "la"], k: 4, timer: 10 }
+  { n: "+ Terrain et leurres", d: "photos de terrain, des oiseaux qui se ressemblent", stim: ["photo", "field"], k: 4, leurres: 1 },
+  { n: "+ Chants", d: "5 choix, les chants arrivent", stim: ["photo", "field", "son"], k: 5, leurres: 1 },
+  { n: "+ Noms latins", d: "latin ↔ français", stim: ["photo", "field", "son", "la", "fr"], k: 5, leurres: 1 },
+  { n: "+ Lequel chante ?", d: "4 chants à comparer", stim: ["photo", "field", "son", "la", "fr", "soncho"], k: 5, leurres: 1 },
+  { n: "+ Écrire", d: "6 choix, et parfois tu tapes le nom", stim: ["photo", "field", "son", "la", "fr", "soncho"], k: 6, leurres: 1, type: .2 },
+  { n: "+ Jeunes et femelles", d: "les plumages qui piègent", stim: ["photo", "field", "son", "la", "fr", "soncho"], k: 6, leurres: 1, type: .25, juv: .25 },
+  { n: "+ Plus d'écrit", d: "un tiers à taper, chants compris", stim: ["field", "field", "son", "son", "la", "fr", "soncho"], k: 6, leurres: 1, type: .35, juv: .3 },
+  { n: "+ Chrono", d: "10 secondes par question", stim: ["field", "son", "la", "fr", "soncho"], k: 6, leurres: 1, type: .3, juv: .3, timer: 10 },
+  { n: "+ Moitié à l'écrit", d: "jeunes, leurres, chrono", stim: ["field", "son", "son", "la", "fr", "soncho"], k: 6, leurres: 1, type: .5, juv: .4, timer: 10 },
+  { n: "Expert", d: "tout, tout le temps", stim: ["field", "son", "son", "la", "fr", "soncho"], k: 6, leurres: 1, type: .6, juv: .5, timer: 10 }
 ];
 /* Un tour : étapes d'apprentissage, révision toutes les 2 étapes, bilan de chapitre */
 const GBASE = (() => {
@@ -120,7 +120,7 @@ function grandHtml() {
   return `<section class="view grand">
   <header class="ghead"><button class="icon-btn" data-act="home" aria-label="Retour">${ic("x")}</button><h1>Ton parcours</h1><span class="gcount">${done} / ${GRAND.steps.length}</span></header>
   <div class="gtours">${GTOURS.map((t, k) => `<button class="${k === ti ? "on" : ""}" data-act="gtour" data-t="${k}" ${k > curT ? "disabled" : ""}>${k > curT ? ic("lock", "xs") : ""}Tour ${k + 1}</button>`).join("")}</div>
-  <p class="gtour-d"><b>Tour ${ti + 1} · ${esc(T.n)}</b> ${esc(T.d)}. ${PASS} bonnes réponses sur ${PLEN} pour avancer.</p>
+  <p class="gtour-d"><b>Tour ${ti + 1} · ${esc(T.n)}</b> ${esc(T.d)}. Chaque tour garde tout ce qui précède. Dans un chapitre : un choix de plus aux révisions, deux au bilan. ${PASS} bonnes réponses sur ${PLEN} pour avancer.</p>
   <div class="gchs">${GCH.map((_, ci) => chHtml(ti, ci, nx)).join("")}</div>
   <button class="glink" data-act="daily">${ic("shuffle", "xs")}Série du jour classique : 12 questions mélangées</button>
 </section>`;

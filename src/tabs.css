@@ -1,0 +1,178 @@
+/* =====================================================================
+   Plumage v4 — onglets Carnet, Progrès, Réglages, À propos en style « Stories ».
+   Chargé en dernier. Tout est préfixé par la vue pour ne rien toucher ailleurs.
+   ===================================================================== */
+
+/* ---------- Commun ---------- */
+:is(.view.carnet,.view.progress,.view.settings,.view.about){padding-bottom:28px}
+:is(.view.carnet,.view.progress,.view.settings,.view.about) .head{display:flex;align-items:flex-end;gap:12px;margin:6px 0 4px}
+:is(.view.carnet,.view.progress,.view.settings,.view.about) .ptitle,
+.view.about .head h1{flex:1;min-width:0;margin:0;font:400 42px/1 var(--f-display);letter-spacing:-.01em}
+.view.about .head{align-items:center}
+.view.about .head h1{font-size:32px;line-height:1.05;text-wrap:balance}
+:is(.view.carnet,.view.progress,.view.settings,.view.about) .icon-btn{width:40px;height:40px;flex:none;border-radius:50%;border:0;background:var(--card-2);color:#fff}
+:is(.view.carnet,.view.progress,.view.settings,.view.about) .sec{display:flex;align-items:baseline;gap:8px;margin:30px 2px 10px;padding:0;border:0;
+  font:400 26px/1.05 var(--f-display);letter-spacing:0;text-transform:none;color:#fff}
+:is(.view.carnet,.view.progress,.view.settings,.view.about) .sec > .i{display:none}
+:is(.view.carnet,.view.progress,.view.settings,.view.about) .sec .more{margin-left:auto;font:600 13px/1 var(--f-ui);letter-spacing:0;text-transform:none;color:var(--acc)}
+:is(.view.carnet,.view.progress,.view.settings,.view.about) .btn.ghost{border:0;background:var(--card-3);color:#fff;box-shadow:none}
+:is(.view.carnet,.view.progress,.view.settings,.view.about) .btn.primary{background:#fff;color:#000;box-shadow:none}
+
+/* pastilles arrondies, la sélectionnée en blanc */
+:is(.view.carnet,.view.settings) .opt-btn{height:36px;padding:0 14px;gap:6px;border-radius:99px;border:0;background:var(--card-2);box-shadow:none;
+  font:600 13.5px/1 var(--f-ui);color:rgba(255,255,255,.78)}
+:is(.view.carnet,.view.settings) .opt-btn .i{width:16px;height:16px;color:inherit}
+:is(.view.carnet,.view.settings) .opt-btn.on{background:#fff;color:#000;border:0;box-shadow:none}
+:is(.view.carnet,.view.settings) .opt-btn.on .i{color:#000}
+:is(.view.carnet,.view.settings) .row{gap:6px;margin:0 calc(-1 * var(--gutter-r)) 0 calc(-1 * var(--gutter-l));padding:2px var(--gutter-r) 4px var(--gutter-l);
+  -webkit-mask-image:none;mask-image:none}
+
+/* ---------- Carnet ---------- */
+.view.carnet .counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:16px 0 0}
+.view.carnet .counts span{display:flex;flex-direction:column;gap:4px;min-width:0;padding:11px 10px 10px;border-radius:var(--r-md);background:var(--card);
+  font:600 11.5px/1.15 var(--f-ui);color:var(--muted);white-space:normal}
+.view.carnet .counts b{font:400 30px/1 var(--f-display);color:#fff}
+.view.carnet .search{height:48px;margin-top:14px;border:0;border-radius:var(--r-md);background:var(--card)}
+.view.carnet .search input{font:500 16px var(--f-ui)}
+.view.carnet .cfilt{margin-top:12px}
+.view.carnet .cgrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 8px;margin-top:16px}
+.view.carnet .ctile{align-items:stretch;gap:0;text-align:left}
+.view.carnet .ctile .av{display:block;width:100%;max-width:none;aspect-ratio:4/5;padding:0;border-radius:var(--r-md);background:var(--card-2);overflow:hidden;box-shadow:none}
+.view.carnet .ctile .av::before,.view.carnet .ctile .av::after{display:none}
+.view.carnet .ctile .av img{display:block;width:100%;height:100%;border:0;border-radius:0;object-fit:cover;background:var(--card-2);transition:transform .3s var(--ease)}
+.view.carnet .ctile:active .av img{transform:scale(1.04)}
+.view.carnet .ctile .noimg{display:grid;place-items:center;width:100%;height:100%;color:rgba(255,255,255,.22)}
+.view.carnet .ctile .noimg .i{width:26px;height:26px}
+.view.carnet .ctile .fld{top:6px;right:6px;bottom:auto;width:24px;height:24px;border:0;background:var(--glass);color:#fff;
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.view.carnet .ctile b{margin-top:7px;font:600 13px/1.2 var(--f-ui);color:#fff}
+.view.carnet .ctile .stars{margin-top:4px;gap:1px;color:var(--acc)}
+.view.carnet .ctile .stars .i{width:11px;height:11px}
+.view.carnet .ctile .stars .off{color:rgba(255,255,255,.2)}
+.view.carnet .cexpl{display:flex;align-items:flex-start;gap:6px;margin:22px 2px 0;font:500 12.5px/1.4 var(--f-ui);color:var(--faint)}
+.view.carnet .cexpl .i{flex:none;margin-top:1px;color:var(--acc)}
+.view.carnet .empty{border:0;background:var(--card);border-radius:var(--r-lg)}
+.view.carnet .empty b{font:400 28px/1.05 var(--f-display)}
+@media (min-width:560px){.view.carnet .cgrid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+/* ---------- Progrès ---------- */
+.view.progress{--cyan:#fff}
+.view.progress .psum{margin-top:12px;padding:0;border:0;background:none;border-radius:0}
+.view.progress .psh{align-items:flex-end;gap:16px}
+.view.progress .lring{display:flex;flex-direction:column;justify-content:flex-end;width:auto;height:auto;flex:none}
+.view.progress .lring small{font:600 13px/1 var(--f-ui);color:var(--acc)}
+.view.progress .lring b{position:static;display:block;margin-top:2px;font:400 104px/.8 var(--f-display);letter-spacing:-.04em;color:#fff}
+.view.progress .pst{flex:1;min-width:0;padding-bottom:4px}
+.view.progress .pst h2{margin:0;font:400 30px/1 var(--f-display);letter-spacing:0}
+.view.progress .pst p{margin:6px 0 0;font:500 13px/1.35 var(--f-ui);color:var(--muted)}
+.view.progress .lbar{display:block;height:4px;margin-top:10px;border-radius:2px;background:rgba(255,255,255,.18);overflow:hidden}
+.view.progress .lbar i{display:block;height:100%;border-radius:2px;background:#fff}
+.view.progress .pnums{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:22px}
+.view.progress .pnums > div{align-items:flex-start;padding:14px 14px 12px;border-radius:var(--r-lg);text-align:left;
+  background:var(--glass);border:1px solid var(--glass-b);-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3)}
+.view.progress .pnums b{gap:5px;font:400 44px/1 var(--f-display);color:#fff}
+.view.progress .pnums b .i{width:20px;height:20px;color:var(--acc)}
+.view.progress .pnums b i{font-size:24px;color:rgba(255,255,255,.55)}
+.view.progress .pnums small{margin-top:6px;font:600 12.5px/1.2 var(--f-ui);color:var(--muted)}
+.view.progress .pgoal{margin-top:16px;padding:14px;border-radius:var(--r-lg);background:var(--card);font:600 13px/1 var(--f-ui)}
+.view.progress .pgoal .lab .i{color:var(--acc)}
+.view.progress .pgoal .bar{height:4px;background:rgba(255,255,255,.18)}
+.view.progress .pgoal .bar i{background:var(--acc)}
+.view.progress .pact{gap:8px;margin-top:10px}
+.view.progress .pact .btn{height:50px;border-radius:var(--r-md);font:700 15px/1 var(--f-ui)}
+.view.progress .pact .btn:first-child{background:#fff;color:#000;border:0}
+.view.progress .pact .btn.warm .pn{background:var(--acc);color:#000}
+
+/* sections repliables : cartes sobres, sans pastille colorée */
+.view.progress details.pv{margin-top:8px;border:0;border-radius:var(--r-lg);background:var(--card)}
+.view.progress details.pv:first-of-type{margin-top:26px}
+.view.progress details.pv > summary{gap:14px;padding:16px}
+.view.progress .pvi,.view.progress details.pv[data-k] .pvi{width:auto;height:auto;border-radius:0;background:none;color:var(--acc)}
+.view.progress .pvi .i{width:20px;height:20px}
+.view.progress .pvt{gap:4px}
+.view.progress .pvt b{font:400 24px/1 var(--f-display);letter-spacing:0}
+.view.progress .pvt small{font:500 13px/1.3 var(--f-ui)}
+.view.progress .pvc{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:var(--card-2);color:#fff}
+.view.progress .pvc .i{width:16px;height:16px}
+.view.progress .pvb{padding:0 16px 16px}
+.view.progress .pvb .sec{margin:22px 0 10px;font-size:21px}
+.view.progress .pvb > .sec:first-child{margin-top:4px}
+.view.progress .pvb .card{padding:14px;border:0;border-radius:var(--r-md);background:var(--card-2)}
+.view.progress .grid2{gap:8px}
+.view.progress .stat{border:0;border-radius:var(--r-md);background:var(--card-2)}
+.view.progress .stat small{font:600 12px/1.2 var(--f-ui)}
+.view.progress .stat small .i{color:var(--acc)}
+.view.progress .stat b{margin-top:10px;font:400 34px/1 var(--f-display)}
+.view.progress .note{margin:12px 2px 0;font-size:12.5px;line-height:1.45;color:var(--faint)}
+.view.progress .heat i{border-radius:3px;background:rgba(255,255,255,.07)}
+.view.progress .heat i.today{outline-color:#fff}
+.view.progress .chart text{fill:var(--muted);font:600 10px var(--f-ui)}
+.view.progress .hbar{font:500 13px/1.2 var(--f-ui)}
+.view.progress .hbar .t .i{color:var(--acc)}
+.view.progress .hbar .b{height:6px;border-radius:3px;background:rgba(255,255,255,.1)}
+.view.progress .hbar .b i{border-radius:3px;background:#fff}
+.view.progress .hbar .v{font:700 13px var(--f-ui)}
+.view.progress .hbar.fam{grid-template-columns:minmax(0,1fr) 64px 38px auto}
+.view.progress .hbar.fam .chip{height:28px;padding:0 10px;border:0;background:var(--acc);color:#000}
+.view.progress .pconf .conf{border:0;background:var(--card-2);border-radius:var(--r-md)}
+.view.progress .pconf .conf img{border-radius:10px}
+.view.progress .pconf .vs{font:400 18px/1 var(--f-display);color:var(--muted);letter-spacing:0}
+.view.progress .pvb .group{border:0;background:var(--card-2);border-radius:var(--r-md)}
+.view.progress .pvb .set{border-top:1px solid var(--line)}
+.view.progress .pvb .set:first-child{border-top:0}
+.view.progress .badges{gap:8px}
+.view.progress .bdg{border:0;border-radius:var(--r-md);background:var(--card-2)}
+.view.progress .bdg .md{background:var(--acc);color:#000}
+.view.progress .bdg.off .md{background:rgba(255,255,255,.06);color:var(--faint)}
+.view.progress .bdg b{font:600 12.5px/1.15 var(--f-ui)}
+
+/* ---------- Réglages : listes groupées façon iOS ---------- */
+.view.settings .head + .sec{margin-top:22px}
+.view.settings .group{margin-top:0;border:0;border-radius:var(--r-lg);background:var(--card);box-shadow:none}
+.view.settings .group .set{position:relative;min-height:56px;padding:12px 16px;border-top:0}
+.view.settings .group .set + .set::before{content:"";position:absolute;top:0;left:16px;right:0;height:1px;background:var(--line)}
+.view.settings .group .set[style*="border-top:0"]::before{display:none}
+.view.settings .set .lab b{font:600 15.5px/1.25 var(--f-ui)}
+.view.settings .set .lab small{margin-top:2px;font:500 13px/1.35 var(--f-ui);color:var(--muted)}
+.view.settings .set .lab small a{color:var(--acc)}
+.view.settings .set > .i{flex:none;color:var(--acc)}
+.view.settings .set .btn{flex:none;height:36px;padding:0 13px;border-radius:99px;font:700 13px/1 var(--f-ui)}
+.view.settings .set .btn .i{width:16px;height:16px}
+.view.settings .set .btn.primary{height:48px;border-radius:var(--r-md);font-size:15px}
+.view.settings .set input[type=text],.view.settings .set input[type=time],.view.settings .set input[type=password]{flex:none;width:132px;height:38px;border:0;border-radius:var(--r-sm);
+  background:var(--card-3);color:#fff;font:600 15px var(--f-ui)}
+.view.settings .set input:focus{outline:2px solid var(--acc);outline-offset:0}
+.view.settings .switch{width:51px;height:31px;background:rgba(255,255,255,.16)}
+.view.settings .switch::after{top:2px;left:2px;width:27px;height:27px;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+.view.settings .switch.on{background:var(--acc)}
+.view.settings .switch.on::after{transform:translateX(20px)}
+.view.settings .seg{display:flex;width:100%;gap:2px;padding:3px;border:0;border-radius:var(--r-sm);background:var(--card-3)}
+.view.settings .seg button{flex:1;min-width:0;height:32px;padding:0 6px;border-radius:9px;font:600 13px/1 var(--f-ui);color:rgba(255,255,255,.7);white-space:nowrap}
+.view.settings .seg button.on{background:#fff;color:#000}
+.view.settings .stepper button{width:36px;height:36px;border:0;border-radius:50%;background:var(--card-3)}
+.view.settings .stepper output{min-width:34px;font:400 26px/1 var(--f-display)}
+.view.settings .mst .th{border-radius:var(--r-sm)}
+.view.settings .mst button.on .th{border-color:var(--acc);box-shadow:none}
+.view.settings .set.link{min-height:60px;color:#fff}
+.view.settings .set.link > .i:first-child{color:var(--acc)}
+.view.settings .set.link > .i:last-child{color:var(--faint)}
+.view.settings .group[style*="margin-top"]{margin-top:12px!important}
+.view.settings .muted{color:var(--muted)}
+.view.settings .foot{margin:18px 4px 0;font:500 12px/1.5 var(--f-ui);color:var(--faint)}
+.view.settings .vfoot{margin-top:24px;color:var(--muted)}
+.view.settings .vfoot b{color:#fff}
+.view.settings .lnk{color:var(--acc)}
+
+/* ---------- À propos ---------- */
+.view.about .prose{padding:18px;border:0;border-radius:var(--r-lg);background:var(--card)}
+.view.about .prose .lead2{font:400 24px/1.15 var(--f-display);color:#fff}
+.view.about .prose h3{margin:22px 0 6px;font:700 15px/1.2 var(--f-ui);letter-spacing:0;text-transform:none;color:var(--acc)}
+.view.about .prose li{color:rgba(255,255,255,.86)}
+.view.about .prose li::marker{color:var(--faint)}
+.view.about .srcs{gap:0;border-radius:var(--r-lg);background:var(--card);overflow:hidden}
+.view.about .src{position:relative;padding:14px 16px;border:0;border-radius:0;background:none}
+.view.about .src + .src::before{content:"";position:absolute;top:0;left:16px;right:0;height:1px;background:var(--line)}
+.view.about .src .sh b{font:600 15.5px/1.25 var(--f-ui)}
+.view.about .src .sh a{width:30px;height:30px;border-radius:50%;background:var(--card-3);color:#fff}
+.view.about .src p{color:rgba(255,255,255,.82)}
+.view.about .src small{color:var(--faint)}

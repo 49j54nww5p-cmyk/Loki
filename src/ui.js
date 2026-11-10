@@ -988,6 +988,10 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-10.4", n: "4.1", items: [
+    { ic: "trophy", t: "Un parcours qui monte en difficulté", d: "Chaque tour garde tout ce qui précède et ajoute une difficulté : leurres, chants, latin, écrire le nom, jeunes et femelles, chrono… Plus de choix aux révisions et au bilan." },
+    { ic: "frame", t: "Tout l'appli au nouveau look", d: "Carnet, Progrès, Réglages, Sur mesure, fiches, duels : même style partout. Sur iPhone, l'en-tête passe sous l'encoche." }
+  ] },
   { v: "2026-11-10.3", n: "4.0", items: [
     { ic: "frame", t: "La photo d'abord", d: "L'oiseau du jour en plein écran, des réponses en verre, ton score en grand avec les photos de la série." },
     { ic: "map", t: "Le grand parcours", d: "« Lancer la série du jour » ouvre ton parcours : 13 chapitres du jardin aux raretés, 12 tours de plus en plus durs (972 étapes)." }
@@ -1354,17 +1358,19 @@ function carnetList() {
 function carnetGrid() {
   const list = carnetList();
   if (!list.length) return `<div class="empty">${ic("book")}<b>${Object.keys(S.sp).length ? "Rien ici" : "Ton carnet est vide"}</b><p>${Object.keys(S.sp).length ? "Change de filtre ou de recherche." : "Chaque oiseau croisé en quiz s'ajoute ici, avec sa fiche et ton niveau."}</p>${Object.keys(S.sp).length ? "" : `<button class="btn primary" data-act="daily">${ic("play")}Série du jour</button>`}</div>`;
-  return `<div class="cgrid">${list.map(({ id, r }) => `<button class="ctile" data-act="fiche" data-id="${id}"><span class="av" style="--p:${(stars(r) / 3 * 100).toFixed(0)}"><img src="${esc(r.img || r.md)}" alt="" loading="lazy">${FIELD.ids.has(id) || r.nobs > 0 ? `<span class="fld" title="Vue sur le terrain">${ic("eye", "xs")}</span>` : ""}</span><b>${esc(r.fr || r.sci)}</b>${starsHtml(stars(r))}</button>`).join("")}</div>`;
+  return `<div class="cgrid">${list.map(({ id, r }) => `<button class="ctile" data-act="fiche" data-id="${id}"><span class="av" style="--p:${(stars(r) / 3 * 100).toFixed(0)}">${r.img || r.md ? `<img src="${esc(r.img || r.md)}" alt="" loading="lazy">` : `<span class="noimg">${ic("book")}</span>`}${FIELD.ids.has(id) || r.nobs > 0 ? `<span class="fld" title="Vue sur le terrain">${ic("eye", "xs")}</span>` : ""}</span><b>${esc(r.fr || r.sci || "Espèce")}</b>${starsHtml(stars(r))}</button>`).join("")}</div>`;
 }
 VIEWS.carnet = () => {
   const recs = Object.values(S.sp).filter(r => r.n > 0 || r.nobs > 0);
   const master = recs.filter(r => stars(r) === 3).length, seenN = Object.entries(S.sp).filter(([id, r]) => r.nobs > 0 || FIELD.ids.has(+id)).length;
   const filt = [["all", "Toutes"], ["due", "À revoir"], ["weak", "Fragiles"], ["master", "Maîtrisées"], ["field", "Observées"]];
   return `<section class="view carnet">
-  <div class="head"><div style="flex:1"><h1 style="font:700 24px/1.1 var(--f-display);margin:0">Carnet</h1><div class="counts"><span><b>${recs.length}</b> espèces</span><span><b>${master}</b> maîtrisées</span><span><b>${seenN}</b> observées</span><span><b>${dueList().length}</b> à revoir</span></div><small class="cexpl">${ic("star", "xs")}Maîtrisée = reconnue sur 3 photos différentes, dont 1 de terrain, sur 3 jours.</small></div>${recs.length ? `<button class="icon-btn" data-act="csv" aria-label="Exporter le carnet">${ic("down")}</button>` : ""}</div>
-  <div class="search" style="margin-top:14px">${ic("search")}<input id="csearch" type="search" placeholder="Chercher une espèce" value="${esc(CARNET.q)}" aria-label="Chercher"></div>
-  <div class="row" style="margin-top:10px">${filt.map(([k, l]) => `<button class="opt-btn mini ${CARNET.f === k ? "on" : ""}" data-act="cfilt" data-f="${k}">${l}</button>`).join("")}</div>
+  <div class="head"><h1 class="ptitle">Carnet</h1>${recs.length ? `<button class="icon-btn" data-act="csv" aria-label="Exporter le carnet">${ic("down")}</button>` : ""}</div>
+  <div class="counts"><span><b>${recs.length}</b> espèce${recs.length > 1 ? "s" : ""}</span><span><b>${master}</b> maîtrisée${master > 1 ? "s" : ""}</span><span><b>${seenN}</b> observée${seenN > 1 ? "s" : ""}</span><span><b>${dueList().length}</b> à revoir</span></div>
+  <div class="search">${ic("search")}<input id="csearch" type="search" placeholder="Chercher une espèce" value="${esc(CARNET.q)}" aria-label="Chercher"></div>
+  <div class="row cfilt">${filt.map(([k, l]) => `<button class="opt-btn mini ${CARNET.f === k ? "on" : ""}" data-act="cfilt" data-f="${k}">${l}</button>`).join("")}</div>
   <div id="cgrid">${carnetGrid()}</div>
+  <small class="cexpl">${ic("star", "xs")}Maîtrisée = reconnue sur 3 photos différentes, dont 1 de terrain, sur 3 jours.</small>
 </section>`;
 };
 
@@ -1397,7 +1403,7 @@ function chartHtml() {
   <div style="display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:4px"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--gold);margin-right:6px"></i>XP du jour</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--cyan);margin-right:6px"></i>Taux de réussite</span></div>`;
 }
 VIEWS.progress = () => {
-  const L = level(), C = 2 * Math.PI * 40, st = liveStreak();
+  const L = level(), st = liveStreak();
   const recs = Object.values(S.sp).filter(r => r.n > 0);
   const master = recs.filter(r => stars(r) === 3).length, due = dueList().length;
   const tot = Object.values(S.stats).reduce((a, s) => ({ n: a.n + s.n, ok: a.ok + s.ok }), { n: 0, ok: 0 });
@@ -1418,9 +1424,10 @@ VIEWS.progress = () => {
   /* Un bloc repliable : titre, une ligne de résumé, le détail au toucher */
   const box = (k, icon, title, sum, body, def) => `<details class="pv"${(pv[k] ?? def) ? " open" : ""} data-k="${k}"><summary data-act="pvt"><span class="pvi">${ic(icon)}</span><span class="pvt"><b>${title}</b><small>${sum}</small></span><span class="pvc">${ic("chev")}</span></summary><div class="pvb">${body}</div></details>`;
   return `<section class="view progress">
+  <div class="head"><h1 class="ptitle">Progrès</h1></div>
   <div class="psum">
-    <div class="psh"><div class="lring"><svg viewBox="0 0 96 96" aria-hidden="true"><circle class="track" cx="48" cy="48" r="40"/><circle class="prog" cx="48" cy="48" r="40" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - L.p)).toFixed(1)}"/></svg><b>${L.n}</b></div>
-      <div class="pst"><h2>${esc(L.rank)}</h2><p>${fmt(S.xp)} XP · encore ${fmt(L.need - L.cur)} pour le niveau ${L.n + 1}</p></div></div>
+    <div class="psh"><div class="lring"><small>Niveau</small><b>${L.n}</b></div>
+      <div class="pst"><h2>${esc(L.rank)}</h2><p>${fmt(S.xp)} XP · encore ${fmt(L.need - L.cur)} pour le niveau ${L.n + 1}</p><span class="lbar"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span></div></div>
     <div class="pnums">
       <div><b>${ic("flame")}${st}</b><small>jour${st > 1 ? "s" : ""} d'affilée</small></div>
       <div><b>${recs.length}</b><small>espèce${recs.length > 1 ? "s" : ""}</small></div>
@@ -1452,7 +1459,7 @@ VIEWS.progress = () => {
 const seg = (k, opts) => `<div class="seg">${opts.map(([v, l]) => `<button class="${String(S.set[k]) === String(v) ? "on" : ""}" data-act="set" data-k="${k}" data-v="${v}">${l}</button>`).join("")}</div>`;
 const sw = k => `<button class="switch ${S.set[k] ? "on" : ""}" data-act="toggle" data-k="${k}" role="switch" aria-checked="${S.set[k] ? "true" : "false"}" aria-label="${k}"></button>`;
 VIEWS.settings = () => `<section class="view settings">
-  <div class="head"><div><h1 style="font:700 24px/1.1 var(--f-display);margin:0">Réglages</h1></div></div>
+  <div class="head"><h1 class="ptitle">Réglages</h1></div>
   <div class="sec">${ic("pin")}Ma zone<span class="more">${esc(zoneLabel(S.set.zone))}</span></div>
   <div class="row">${zoneChips(S.set.zone, "szone")}</div>
   <div class="sec">${ic("eye")}Questions</div>

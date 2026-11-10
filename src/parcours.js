@@ -60,7 +60,10 @@ async function stepTaxa(P, i) {
 const pathCfg = (P, i) => {
   const c = { kind: "path", title: `${P.n} · ${P.steps[i].n}`, icon: P.ic, path: P.id, step: i, zone: { k: "fr", id: 6753, name: "France" }, len: PLEN, names: S.set.names };
   const T = P.id === "grand" ? GTOURS[P.steps[i].tour] : null;
-  if (T) Object.assign(c, { title: `Étape ${i + 1} · ${P.steps[i].n}`, stim: T.stim, k: T.k || 4, format: T.format || "", timer: T.timer || 0 });
+  if (T) {
+    const st = P.steps[i], up = st.kind === "boss" ? 2 : st.kind === "rev" ? 1 : 0;   /* plus dur aux révisions et au bilan du chapitre */
+    Object.assign(c, { title: `Étape ${i + 1} · ${st.n}`, stim: T.stim, k: Math.min(6, (T.k || 4) + up), timer: T.timer || 0, leurres: !!T.leurres || st.kind === "boss", type: T.type || 0, juv: T.juv || 0 });
+  }
   return c;
 };
 /* Le plan : chaque espèce de l'étape au moins une fois, une de l'étape d'avant ; les choix viennent d'abord de l'étape */
@@ -74,11 +77,25 @@ async function preparePath(ses) {
   ses.pool = { list: all, byId: new Map(all.map(t => [t.id, t])) };
   const extra = PLEN - cur.length - (prev.length ? 1 : 0);
   const targets = shuffle([...cur, ...shuffle(cur).slice(0, Math.max(0, extra)), ...(prev.length ? [pick(prev)] : [])]).slice(0, PLEN);
+  /* Leurres : les choix viennent aussi du reste du chapitre, en priorité même genre puis même famille */
+  let leur = [];
+  if (c.leurres && P.id === "grand") {
+    const s0 = P.steps[c.step], bi = P.steps.findIndex(x => x.ch === s0.ch && x.kind === "boss" && x.tour === s0.tour);
+    leur = bi >= 0 && bi !== c.step ? (await stepTaxa(P, bi).catch(() => null)) || [] : [];
+    leur.forEach(t => lexAdd(t));
+    for (const t of leur) if (!ses.pool.byId.has(t.id)) { ses.pool.list.push(t); ses.pool.byId.set(t.id, t); }
+  }
+  const gen = t => String(t.sci || "").split(" ")[0];
+  const near = (t, x) => (gen(x) === gen(t) ? 2 : 0) + (fam(x) && fam(x) === fam(t) ? 1 : 0) + Math.random() * .9;
   ses.plan = targets.map(t => {
-    const others = [...shuffle(cur.filter(x => x.id !== t.id)), ...shuffle(prev.filter(x => x.id !== t.id))].slice(0, Math.max(1, (c.k || 4) - 1));
+    const want = Math.max(1, (c.k || 4) - 1);
+    const pool = [...new Map([...cur, ...prev, ...leur].filter(x => x.id !== t.id).map(x => [x.id, x])).values()];
+    const others = c.leurres ? pool.sort((x, y) => near(t, y) - near(t, x)).slice(0, want)
+      : [...shuffle(cur.filter(x => x.id !== t.id)), ...shuffle(prev.filter(x => x.id !== t.id))].slice(0, want);
     const stim = pick(c.stim && c.stim.length ? c.stim : P.stim);
-    if (c.format === "type") return { t, stim, format: "type" };
-    return { t, stim, pair: shuffle([t, ...others]), k: others.length + 1 };
+    const age = (stim === "photo" || stim === "field") && Math.random() < (c.juv || 0) ? "juv" : "";
+    if (stim !== "soncho" && (c.format === "type" || Math.random() < (c.type || 0))) return { t, stim, format: "type", age };
+    return { t, stim, age, pair: shuffle([t, ...others]), k: others.length + 1 };
   });
   ses.len = ses.plan.length;
   ses.title = c.title;

@@ -1,0 +1,38 @@
+/* ---------- Boutique ---------- */
+.hud .pill.pl{border:0;background:none;color:inherit;cursor:pointer}
+.hud .pill.pl .i{color:var(--acc)}
+.view.shop{padding-bottom:110px}
+.shead{display:flex;padding-top:8px}
+.shead .icon-btn{width:40px;height:40px;border-radius:50%;border:0;background:var(--card-2);color:var(--text)}
+.stitle{margin:18px 0 4px;font:400 52px/1 var(--f-display);letter-spacing:-.01em}
+.sbal{margin:6px 0 22px}
+.sbal-n{display:flex;align-items:center;gap:10px}
+.sbal-n .i{width:34px;height:34px;color:var(--acc)}
+.sbal-n b{font:400 64px/1 var(--f-display);font-variant-numeric:tabular-nums}
+.sbal small{display:block;margin-top:6px;font:500 13px/1.35 var(--f-ui);color:var(--muted)}
+.ssec{margin:18px 0 10px;font:400 26px/1 var(--f-display)}
+.sgrid{display:grid;gap:10px}
+.sitem{display:flex;align-items:center;gap:12px;min-width:0;padding:14px;border-radius:var(--r-lg,20px)}
+.sitem.on{border-color:var(--acc)}
+.sitem.pop{animation:spop .5s var(--spring,cubic-bezier(.3,1.5,.5,1))}
+@keyframes spop{0%{transform:scale(1)}35%{transform:scale(1.04)}100%{transform:scale(1)}}
+.sic{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.08);color:var(--acc)}
+.sic .i{width:22px;height:22px}
+.sdot{flex:none;width:44px;height:44px;border-radius:50%;border:3px solid rgba(255,255,255,.18)}
+.stx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.stx b{font:700 15.5px/1.2 var(--f-ui)}
+.stx small{font:500 12.5px/1.35 var(--f-ui);color:var(--muted)}
+.stx em{font:600 12px/1 var(--f-ui);font-style:normal;color:var(--acc-ink)}
+.sbuy{flex:none;display:inline-flex;align-items:center;gap:5px;min-width:76px;justify-content:center;height:40px;padding:0 14px;border:0;border-radius:999px;background:#fff;color:#000;font:700 14.5px/1 var(--f-ui);cursor:pointer}
+.sbuy .i{width:15px;height:15px}
+.sbuy:disabled{background:rgba(255,255,255,.12);color:rgba(255,255,255,.45);cursor:default}
+.sbuy.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35)}
+.sbuy.ghost:disabled{border-color:var(--acc);color:var(--acc);background:transparent}
+.pshop{display:flex;align-items:center;gap:12px;width:100%;margin:12px 0 4px;padding:12px 14px;border-radius:var(--r-lg,20px);color:var(--text);text-align:left;cursor:pointer}
+.pshop > .i{color:var(--muted)}
+/* Parcours : passer une étape */
+.gskip{display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:6px 11px;border:0;border-radius:999px;background:#fff;color:#000;font:700 12.5px/1 var(--f-ui);cursor:pointer}
+/* Coffres : ligne bonus et coffre rare */
+.gprize-x{display:inline-flex;align-items:center;gap:6px;margin:0 0 6px;font:700 15px/1.2 var(--f-ui);color:#fff}
+.gprize-rare{display:block;margin-top:8px;font:700 13px/1 var(--f-ui);color:#FFCE00}
+.gprize.rare .gprize-card{border-color:#FFCE00;border-width:2px;background:#1A1500}

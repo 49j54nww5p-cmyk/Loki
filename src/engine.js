@@ -556,7 +556,7 @@ function xpFor(ses, q, res, ms) {
   const lm = { species: 1, genus: .9, family: .85, order: .65 }[q.level] || 1;
   const dm = { facile: .8, moyen: 1, expert: 1.3 }[q.diff] || 1;
   x *= fm * sm * lm * dm;
-  x *= Math.max(.3, 1 - .3 * (q.hintsUsed || 0));
+  x *= Math.max(.3, 1 - .3 * Math.max(0, (q.hintsUsed || 0) - (q.freeHints || 0)));  /* indices de la boutique : sans pénalité */
   if (ms < 4000) x += 2;
   x += Math.min(10, ses.combo);
   if (q.bonus) x *= 2;

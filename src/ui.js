@@ -988,6 +988,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-10.6", n: "4.3", items: [
+    { ic: "trophy", t: "Gros coffres et boutique", d: "Coffres à partir de 500 XP (et des rares, doublés). Tu gagnes des plumes en jouant : jokers, indices, passer une étape, couleurs de l'appli." }
+  ] },
   { v: "2026-11-10.5", n: "4.2", items: [
     { ic: "map", t: "1000 étapes et des coffres", d: "4 nouveaux chapitres (oiseaux de nuit, Corse, migrateurs, outre-mer) et un coffre à ouvrir à la fin de chaque chapitre." },
     { ic: "bird", t: "Pictos maison et pages animées", d: "De nouvelles icônes dessinées pour Plumage ; les chiffres comptent, les vignettes arrivent, les fenêtres rebondissent." }

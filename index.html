@@ -2629,6 +2629,46 @@ details.pv[open] .bdg:not(.off) .md{animation:pop .55s var(--spring) backwards;a
 .navind.on{opacity:1}
 body.inquiz .navind{opacity:0}
 
+/* ==== boutique.css ==== */
+/* ---------- Boutique ---------- */
+.hud .pill.pl{border:0;background:none;color:inherit;cursor:pointer}
+.hud .pill.pl .i{color:var(--acc)}
+.view.shop{padding-bottom:110px}
+.shead{display:flex;padding-top:8px}
+.shead .icon-btn{width:40px;height:40px;border-radius:50%;border:0;background:var(--card-2);color:var(--text)}
+.stitle{margin:18px 0 4px;font:400 52px/1 var(--f-display);letter-spacing:-.01em}
+.sbal{margin:6px 0 22px}
+.sbal-n{display:flex;align-items:center;gap:10px}
+.sbal-n .i{width:34px;height:34px;color:var(--acc)}
+.sbal-n b{font:400 64px/1 var(--f-display);font-variant-numeric:tabular-nums}
+.sbal small{display:block;margin-top:6px;font:500 13px/1.35 var(--f-ui);color:var(--muted)}
+.ssec{margin:18px 0 10px;font:400 26px/1 var(--f-display)}
+.sgrid{display:grid;gap:10px}
+.sitem{display:flex;align-items:center;gap:12px;min-width:0;padding:14px;border-radius:var(--r-lg,20px)}
+.sitem.on{border-color:var(--acc)}
+.sitem.pop{animation:spop .5s var(--spring,cubic-bezier(.3,1.5,.5,1))}
+@keyframes spop{0%{transform:scale(1)}35%{transform:scale(1.04)}100%{transform:scale(1)}}
+.sic{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.08);color:var(--acc)}
+.sic .i{width:22px;height:22px}
+.sdot{flex:none;width:44px;height:44px;border-radius:50%;border:3px solid rgba(255,255,255,.18)}
+.stx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.stx b{font:700 15.5px/1.2 var(--f-ui)}
+.stx small{font:500 12.5px/1.35 var(--f-ui);color:var(--muted)}
+.stx em{font:600 12px/1 var(--f-ui);font-style:normal;color:var(--acc-ink)}
+.sbuy{flex:none;display:inline-flex;align-items:center;gap:5px;min-width:76px;justify-content:center;height:40px;padding:0 14px;border:0;border-radius:999px;background:#fff;color:#000;font:700 14.5px/1 var(--f-ui);cursor:pointer}
+.sbuy .i{width:15px;height:15px}
+.sbuy:disabled{background:rgba(255,255,255,.12);color:rgba(255,255,255,.45);cursor:default}
+.sbuy.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35)}
+.sbuy.ghost:disabled{border-color:var(--acc);color:var(--acc);background:transparent}
+.pshop{display:flex;align-items:center;gap:12px;width:100%;margin:12px 0 4px;padding:12px 14px;border-radius:var(--r-lg,20px);color:var(--text);text-align:left;cursor:pointer}
+.pshop > .i{color:var(--muted)}
+/* Parcours : passer une étape */
+.gskip{display:inline-flex;align-items:center;gap:5px;margin-top:6px;padding:6px 11px;border:0;border-radius:999px;background:#fff;color:#000;font:700 12.5px/1 var(--f-ui);cursor:pointer}
+/* Coffres : ligne bonus et coffre rare */
+.gprize-x{display:inline-flex;align-items:center;gap:6px;margin:0 0 6px;font:700 15px/1.2 var(--f-ui);color:#fff}
+.gprize-rare{display:block;margin-top:8px;font:700 13px/1 var(--f-ui);color:#FFCE00}
+.gprize.rare .gprize-card{border-color:#FFCE00;border-width:2px;background:#1A1500}
+
 </style>
 </head>
 <body>
@@ -4816,7 +4856,7 @@ function xpFor(ses, q, res, ms) {
   const lm = { species: 1, genus: .9, family: .85, order: .65 }[q.level] || 1;
   const dm = { facile: .8, moyen: 1, expert: 1.3 }[q.diff] || 1;
   x *= fm * sm * lm * dm;
-  x *= Math.max(.3, 1 - .3 * (q.hintsUsed || 0));
+  x *= Math.max(.3, 1 - .3 * Math.max(0, (q.hintsUsed || 0) - (q.freeHints || 0)));  /* indices de la boutique : sans pénalité */
   if (ms < 4000) x += 2;
   x += Math.min(10, ses.combo);
   if (q.bonus) x *= 2;
@@ -7888,12 +7928,18 @@ const gKey = (ti, ci) => `${GCH[ci].k}.${ti}`;
 const gIdx = (ti, ci) => GBASE.map((s, k) => s.ch === ci ? ti * GPT + k : -1).filter(k => k >= 0);
 const gFull = (ti, ci) => gIdx(ti, ci).every(i => stepStars("grand", i) > 0);
 const gOpened = (ti, ci) => !!(pathSt("grand").c || {})[gKey(ti, ci)];
-/* La récompense : un joker de flamme un coffre sur trois (s'il en reste de la place), sinon de l'XP qui grimpe avec les tours */
+/* La récompense : 500 XP au 1er chapitre, +100 par chapitre, × (1 + 0,5 × tour) ; 1 coffre sur 5 « rare » (doré, double) ;
+   un coffre sur trois ajoute un joker de flamme (s'il reste de la place) ou des plumes */
+const gRare = (ti, ci) => (ti * 7 + ci * 3 + 2) % 5 === 0;
 function gPrize(ti, ci) {
-  const n = ti * GCH.length + ci;
-  if (n % 3 === 2 && (S.streak.jokers || 0) < 3) return { kind: "joker", v: 1, t: "+1 joker de flamme", d: "Un jour raté ne cassera pas ta série." };
-  const xp = 60 + 20 * ti + (n % 3 === 2 ? 40 : 0);
-  return { kind: "xp", v: xp, t: `+${xp} XP`, d: `Bonus du chapitre « ${GCH[ci].n} ».` };
+  const n = ti * GCH.length + ci, rare = gRare(ti, ci), m = rare ? 2 : 1;
+  const xp = Math.round((500 + 100 * ci) * (1 + 0.5 * ti)) * m;
+  const pz = { kind: "xp", v: xp, rare, joker: 0, pl: 0, t: `+${fmt(xp)} XP`, d: `Bonus du chapitre « ${GCH[ci].n} ».` };
+  if (n % 3 === 2) {
+    if ((S.streak.jokers || 0) < 3) { pz.joker = 1; pz.x = "+1 joker de flamme"; }
+    else { pz.pl = (40 + 20 * ti) * m; pz.x = `+${pz.pl} plumes bonus`; }
+  }
+  return pz;
 }
 const CHEST = `<svg class="chest" viewBox="0 0 64 56" aria-hidden="true">
   <g class="lid"><path d="M8 24V16a14 10 0 0 1 14-10h20a14 10 0 0 1 14 10v8z" fill="#FFCE00"/><path d="M8 24V16a14 10 0 0 1 14-10h20a14 10 0 0 1 14 10v8z" fill="none" stroke="#7A5A00" stroke-width="3"/><path d="M24 6v18M40 6v18" stroke="#B89400" stroke-width="5"/></g>
@@ -7909,7 +7955,9 @@ async function gChestOpen(el) {
   if (!gFull(ti, ci) || gOpened(ti, ci)) return;
   const pz = gPrize(ti, ci), st = (S.paths = S.paths || {}).grand = S.paths.grand || { s: {} };
   (st.c = st.c || {})[gKey(ti, ci)] = 1;   /* enregistré avant l'animation : une seule récompense, même en tapant deux fois */
-  if (pz.kind === "joker") S.streak.jokers = (S.streak.jokers || 0) + 1; else addXp(pz.v);
+  addXp(pz.v);
+  if (pz.joker) S.streak.jokers = (S.streak.jokers || 0) + 1;
+  if (pz.pl) S.plumes = (S.plumes || 0) + pz.pl;
   save(true);
   try { sfx.lvl(); } catch (e) { /* son facultatif */ }
   const node = el.closest(".k-chest, .gchest-bar") || el;
@@ -7917,10 +7965,10 @@ async function gChestOpen(el) {
   const calm = S.set.calm || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
   await new Promise(r => setTimeout(r, calm ? 50 : 900));
   const box = document.createElement("div");
-  box.className = "gprize"; box.setAttribute("role", "dialog");
+  box.className = "gprize" + (pz.rare ? " rare" : ""); box.setAttribute("role", "dialog");
   box.innerHTML = `<div class="gprize-card"><div class="gprize-ch">${CHEST}<i class="rays"></i></div>
-    <small>Coffre · ${esc(GCH[ci].n)} · tour ${ti + 1}</small><h2>${esc(pz.t)}</h2><p>${esc(pz.d)}</p>
-    <button class="btn primary wide gprize-ok">${pz.kind === "joker" ? ic("flame") : ic("spark")}Récupérer</button></div>`;
+    <small>Coffre · ${esc(GCH[ci].n)} · tour ${ti + 1}</small>${pz.rare ? `<span class="gprize-rare">Coffre rare · double</span>` : ""}<h2>${esc(pz.t)}</h2>${pz.x ? `<p class="gprize-x">${pz.joker ? ic("flame", "xs") : ic("feather", "xs")}${esc(pz.x)}</p>` : ""}<p>${esc(pz.d)}</p>
+    <button class="btn primary wide gprize-ok">${ic("spark")}Récupérer</button></div>`;
   document.body.appendChild(box);
   requestAnimationFrame(() => box.classList.add("on"));
   const close = () => { box.remove(); if (VIEW === "grand") rerender(); };
@@ -9299,6 +9347,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-10.6", n: "4.3", items: [
+    { ic: "trophy", t: "Gros coffres et boutique", d: "Coffres à partir de 500 XP (et des rares, doublés). Tu gagnes des plumes en jouant : jokers, indices, passer une étape, couleurs de l'appli." }
+  ] },
   { v: "2026-11-10.5", n: "4.2", items: [
     { ic: "map", t: "1000 étapes et des coffres", d: "4 nouveaux chapitres (oiseaux de nuit, Corse, migrateurs, outre-mer) et un coffre à ouvrir à la fin de chaque chapitre." },
     { ic: "bird", t: "Pictos maison et pages animées", d: "De nouvelles icônes dessinées pour Plumage ; les chiffres comptent, les vignettes arrivent, les fenêtres rebondissent." }
@@ -10734,6 +10785,136 @@ function init() {
   loadTaxo().catch(() => {});
 }
 init();
+
+/* ---- boutique.js ---- */
+/* ---------- La boutique : une monnaie dépensable (les plumes), à côté des XP qui restent le niveau ---------- */
+(() => {
+  const sp = document.querySelector("symbol#i-flame")?.parentNode;
+  if (sp && !document.getElementById("i-feather")) sp.insertAdjacentHTML("beforeend",
+    `<symbol id="i-feather" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" d="M20 4c-6.5.3-11.8 4.6-12.8 11.2L7 18h2.8C16.4 17 20.4 11.3 20 4zM4 21l9.5-10.5M9 14.5h4.2M11 11.5h4.8"/></symbol>`);
+})();
+S.plumes = S.plumes || 0; S.plumesR = S.plumesR || 0;
+S.freeHints = S.freeHints || 0; S.skips = S.skips || 0;
+S.accs = Array.isArray(S.accs) ? S.accs : ["jaune"];
+
+/* 1 plume pour 10 XP gagnés ; le reste est gardé pour la prochaine fois */
+const addXpBase = addXp;
+addXp = function (n) {
+  addXpBase(n);
+  if (!(n > 0)) return;
+  const t = (S.plumesR || 0) + n;
+  S.plumes = (S.plumes || 0) + Math.floor(t / 10); S.plumesR = t % 10;
+};
+
+/* Thèmes d'accent */
+const ACCS = [
+  { k: "jaune", n: "Jaune Plumage", d: "La couleur d'origine", c: "#FFCE00", c2: "#FFE27A" },
+  { k: "martin", n: "Martin-pêcheur", d: "Vert-bleu des berges", c: "#18C6B4", c2: "#7EE6DA" },
+  { k: "rouge", n: "Rougegorge", d: "Orange-rouge du jabot", c: "#FF6A3D", c2: "#FFA27F" },
+  { k: "mesange", n: "Mésange bleue", d: "Bleu de la calotte", c: "#4FA8FF", c2: "#A4D0FF" }
+];
+function applyAcc() {
+  const a = ACCS.find(x => x.k === S.set.acc) || ACCS[0], r = document.documentElement.style;
+  if (a.k === "jaune") ["--acc", "--acc-ink", "--acc-2", "--ter", "--pop"].forEach(v => r.removeProperty(v));
+  else { r.setProperty("--acc", a.c); r.setProperty("--acc-ink", a.c); r.setProperty("--acc-2", a.c2); r.setProperty("--ter", a.c); r.setProperty("--pop", a.c); }
+}
+applyAcc();
+
+const SHOP = [
+  { k: "joker", ic: "flame", n: "Joker de flamme", d: "Sauve ta série un jour raté.", p: 150, have: () => `${S.streak.jokers || 0}/3`, max: () => (S.streak.jokers || 0) >= 3,
+    buy: () => { S.streak.jokers = (S.streak.jokers || 0) + 1; } },
+  { k: "hints", ic: "bulb", n: "5 indices gratuits", d: "Des indices qui ne coûtent rien sur l'XP de la réponse.", p: 60, have: () => `${S.freeHints} en stock`,
+    buy: () => { S.freeHints += 5; } },
+  { k: "skip", ic: "arrow", n: "Passer une étape", d: "Valide l'étape en cours du parcours avec 1 étoile.", p: 200, have: () => `${S.skips} en stock`,
+    buy: () => { S.skips++; } }
+];
+const plumesHtml = (n, cls = "") => `<span class="plumes ${cls}">${ic("feather")}<b data-pl>${fmt(n)}</b></span>`;
+
+VIEWS.shop = () => `<section class="view shop">
+  <header class="shead"><button class="icon-btn" data-act="shopback" aria-label="Retour">${ic("back")}</button></header>
+  <h1 class="stitle">Boutique</h1>
+  <div class="sbal"><span class="sbal-n">${ic("feather")}<b id="sbal">${fmt(S.plumes)}</b></span><small>plumes · 1 plume pour 10 XP gagnés, et des bonus dans les coffres</small></div>
+  <h2 class="ssec">Bonus</h2>
+  <div class="sgrid">${SHOP.map(it => { const full = it.max && it.max(), poor = S.plumes < it.p;
+    return `<div class="sitem glass" data-k="${it.k}"><span class="sic">${ic(it.ic)}</span><div class="stx"><b>${esc(it.n)}</b><small>${esc(it.d)}</small><em>${esc(it.have())}</em></div>
+      <button class="sbuy" data-act="shopbuy" data-k="${it.k}" ${full || poor ? "disabled" : ""}>${full ? "Max" : `${ic("feather", "xs")}${it.p}`}</button></div>`; }).join("")}</div>
+  <h2 class="ssec">Couleur de l'appli</h2>
+  <div class="sgrid">${ACCS.map(a => { const own = S.accs.includes(a.k), on = (S.set.acc || "jaune") === a.k;
+    return `<div class="sitem glass ${on ? "on" : ""}" data-k="acc-${a.k}"><span class="sdot" style="background:${a.c}"></span><div class="stx"><b>${esc(a.n)}</b><small>${esc(a.d)}</small></div>
+      ${own ? `<button class="sbuy ghost" data-act="shopacc" data-k="${a.k}" ${on ? "disabled" : ""}>${on ? "Active" : "Choisir"}</button>`
+        : `<button class="sbuy" data-act="shopbuy" data-k="acc-${a.k}" ${S.plumes < 300 ? "disabled" : ""}>${ic("feather", "xs")}300</button>`}</div>`; }).join("")}</div>
+</section>`;
+
+let SHOPFROM = "home";
+function shopBuy(k) {
+  const acc = k.startsWith("acc-") ? ACCS.find(a => "acc-" + a.k === k) : null, it = SHOP.find(x => x.k === k);
+  const price = acc ? 300 : it?.p;
+  if (!price || (!acc && !it)) return false;
+  if (S.plumes < price) { toast("Pas assez de plumes"); return false; }
+  if (it?.max && it.max()) return false;
+  if (acc && S.accs.includes(acc.k)) return false;
+  const from = S.plumes;
+  S.plumes -= price;
+  if (acc) { S.accs.push(acc.k); S.set.acc = acc.k; applyAcc(); } else it.buy();
+  save(true);
+  const card = document.querySelector(`.sitem[data-k="${k}"]`);
+  const calm = S.set.calm || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const done = () => { const y = window.scrollY; go("shop"); window.scrollTo(0, y); toast(acc ? `Couleur « ${acc.n} » activée` : `${it.n} : acheté`); };
+  if (calm || !card) { done(); return true; }
+  card.classList.add("pop");
+  const el = $("#sbal"), t0 = performance.now(), dur = 600;
+  const step = t => { const p = Math.min(1, (t - t0) / dur); if (el) el.textContent = fmt(Math.round(from - price * (1 - Math.pow(1 - p, 3)))); if (p < 1) requestAnimationFrame(step); else setTimeout(done, 120); };
+  requestAnimationFrame(step);
+  return true;
+}
+Object.assign(ACT, {
+  shop: () => { if (VIEW !== "shop") SHOPFROM = VIEW || "home"; go("shop"); },
+  shopback: () => go(SHOPFROM === "shop" ? "home" : SHOPFROM),
+  shopbuy: el => shopBuy(el.dataset.k),
+  shopacc: el => { if (!S.accs.includes(el.dataset.k)) return; S.set.acc = el.dataset.k; applyAcc(); save(true); const y = window.scrollY; go("shop"); window.scrollTo(0, y); },
+  /* Indices : un indice gratuit en stock est consommé d'abord, sans pénalité d'XP */
+  hint: (orig => el => {
+    const q = SES?.q, can = q && !q.done && q.hints && q.hintsUsed < q.hints.length;
+    orig(el);
+    if (can && S.freeHints > 0) { S.freeHints--; q.freeHints = (q.freeHints || 0) + 1; save(); }
+  })(ACT.hint),
+  /* Passer une étape : valide l'étape en cours avec 1 étoile */
+  gskip: el => {
+    const i = +el.dataset.i;
+    if (!(S.skips > 0) || stepStars("grand", i) > 0 || !stepOpen(GRAND, i)) return;
+    const st = (S.paths = S.paths || {}).grand = S.paths.grand || { s: {} };
+    st.s[i] = 1; S.skips--; save(true);
+    toast("Étape passée · 1 étoile"); rerender();
+  }
+});
+
+/* En-tête de l'accueil : la pastille de plumes à côté des XP */
+function homePlumes() {
+  const xp = document.querySelector(".view.home .hud .pill.xp");
+  if (xp && !document.querySelector(".hud .pill.pl")) xp.insertAdjacentHTML("afterend", `<button class="pill pl" data-act="shop" title="Boutique" aria-label="Boutique, ${S.plumes} plumes">${ic("feather")}<span>${fmt(S.plumes)}</span></button>`);
+}
+const homeMountBase = MOUNT.home;
+MOUNT.home = (...a) => { homePlumes(); return homeMountBase ? homeMountBase(...a) : undefined; };
+homePlumes();   /* le premier accueil est affiché avant le chargement de ce fichier */
+/* Progrès : une carte vers la boutique */
+const progMountBase = MOUNT.progress;
+MOUNT.progress = (...a) => {
+  const head = document.querySelector(".view.progress .psum");
+  if (head && !document.querySelector(".pshop")) head.insertAdjacentHTML("afterend", `<button class="pshop glass" data-act="shop"><span class="sic">${ic("feather")}</span><span class="stx"><b>Boutique</b><small>${fmt(S.plumes)} plumes à dépenser</small></span>${ic("chev")}</button>`);
+  return progMountBase ? progMountBase(...a) : undefined;
+};
+/* Parcours : sur le nœud verrouillé qui suit l'étape en cours, un bouton « Passer » si on en a */
+const grandMountBase = MOUNT.grand;
+MOUNT.grand = (...a) => {
+  const r = grandMountBase ? grandMountBase(...a) : undefined;
+  if (S.skips > 0) {
+    const here = document.querySelector(".groad li.here"), nxt = here?.nextElementSibling;
+    const i = +(here?.querySelector("[data-act=gstep]")?.dataset.i);
+    if (nxt && nxt.classList.contains("lock") && !nxt.classList.contains("k-chest") && i >= 0)
+      nxt.querySelector(".glab")?.insertAdjacentHTML("beforeend", `<button class="gskip" data-act="gskip" data-i="${i}">${ic("arrow", "xs")}Passer l'étape en cours (${S.skips})</button>`);
+  }
+  return r;
+};
 
 /* ---- anim.js ---- */
 /* ============================================================

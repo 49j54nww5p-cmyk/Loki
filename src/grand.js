@@ -140,12 +140,18 @@ const gKey = (ti, ci) => `${GCH[ci].k}.${ti}`;
 const gIdx = (ti, ci) => GBASE.map((s, k) => s.ch === ci ? ti * GPT + k : -1).filter(k => k >= 0);
 const gFull = (ti, ci) => gIdx(ti, ci).every(i => stepStars("grand", i) > 0);
 const gOpened = (ti, ci) => !!(pathSt("grand").c || {})[gKey(ti, ci)];
-/* La récompense : un joker de flamme un coffre sur trois (s'il en reste de la place), sinon de l'XP qui grimpe avec les tours */
+/* La récompense : 500 XP au 1er chapitre, +100 par chapitre, × (1 + 0,5 × tour) ; 1 coffre sur 5 « rare » (doré, double) ;
+   un coffre sur trois ajoute un joker de flamme (s'il reste de la place) ou des plumes */
+const gRare = (ti, ci) => (ti * 7 + ci * 3 + 2) % 5 === 0;
 function gPrize(ti, ci) {
-  const n = ti * GCH.length + ci;
-  if (n % 3 === 2 && (S.streak.jokers || 0) < 3) return { kind: "joker", v: 1, t: "+1 joker de flamme", d: "Un jour raté ne cassera pas ta série." };
-  const xp = 60 + 20 * ti + (n % 3 === 2 ? 40 : 0);
-  return { kind: "xp", v: xp, t: `+${xp} XP`, d: `Bonus du chapitre « ${GCH[ci].n} ».` };
+  const n = ti * GCH.length + ci, rare = gRare(ti, ci), m = rare ? 2 : 1;
+  const xp = Math.round((500 + 100 * ci) * (1 + 0.5 * ti)) * m;
+  const pz = { kind: "xp", v: xp, rare, joker: 0, pl: 0, t: `+${fmt(xp)} XP`, d: `Bonus du chapitre « ${GCH[ci].n} ».` };
+  if (n % 3 === 2) {
+    if ((S.streak.jokers || 0) < 3) { pz.joker = 1; pz.x = "+1 joker de flamme"; }
+    else { pz.pl = (40 + 20 * ti) * m; pz.x = `+${pz.pl} plumes bonus`; }
+  }
+  return pz;
 }
 const CHEST = `<svg class="chest" viewBox="0 0 64 56" aria-hidden="true">
   <g class="lid"><path d="M8 24V16a14 10 0 0 1 14-10h20a14 10 0 0 1 14 10v8z" fill="#FFCE00"/><path d="M8 24V16a14 10 0 0 1 14-10h20a14 10 0 0 1 14 10v8z" fill="none" stroke="#7A5A00" stroke-width="3"/><path d="M24 6v18M40 6v18" stroke="#B89400" stroke-width="5"/></g>
@@ -161,7 +167,9 @@ async function gChestOpen(el) {
   if (!gFull(ti, ci) || gOpened(ti, ci)) return;
   const pz = gPrize(ti, ci), st = (S.paths = S.paths || {}).grand = S.paths.grand || { s: {} };
   (st.c = st.c || {})[gKey(ti, ci)] = 1;   /* enregistré avant l'animation : une seule récompense, même en tapant deux fois */
-  if (pz.kind === "joker") S.streak.jokers = (S.streak.jokers || 0) + 1; else addXp(pz.v);
+  addXp(pz.v);
+  if (pz.joker) S.streak.jokers = (S.streak.jokers || 0) + 1;
+  if (pz.pl) S.plumes = (S.plumes || 0) + pz.pl;
   save(true);
   try { sfx.lvl(); } catch (e) { /* son facultatif */ }
   const node = el.closest(".k-chest, .gchest-bar") || el;
@@ -169,10 +177,10 @@ async function gChestOpen(el) {
   const calm = S.set.calm || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
   await new Promise(r => setTimeout(r, calm ? 50 : 900));
   const box = document.createElement("div");
-  box.className = "gprize"; box.setAttribute("role", "dialog");
+  box.className = "gprize" + (pz.rare ? " rare" : ""); box.setAttribute("role", "dialog");
   box.innerHTML = `<div class="gprize-card"><div class="gprize-ch">${CHEST}<i class="rays"></i></div>
-    <small>Coffre · ${esc(GCH[ci].n)} · tour ${ti + 1}</small><h2>${esc(pz.t)}</h2><p>${esc(pz.d)}</p>
-    <button class="btn primary wide gprize-ok">${pz.kind === "joker" ? ic("flame") : ic("spark")}Récupérer</button></div>`;
+    <small>Coffre · ${esc(GCH[ci].n)} · tour ${ti + 1}</small>${pz.rare ? `<span class="gprize-rare">Coffre rare · double</span>` : ""}<h2>${esc(pz.t)}</h2>${pz.x ? `<p class="gprize-x">${pz.joker ? ic("flame", "xs") : ic("feather", "xs")}${esc(pz.x)}</p>` : ""}<p>${esc(pz.d)}</p>
+    <button class="btn primary wide gprize-ok">${ic("spark")}Récupérer</button></div>`;
   document.body.appendChild(box);
   requestAnimationFrame(() => box.classList.add("on"));
   const close = () => { box.remove(); if (VIEW === "grand") rerender(); };

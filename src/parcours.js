@@ -51,13 +51,18 @@ const stepOpen = (P, i) => i === 0 || stepStars(P.id, i - 1) > 0;
 const pathDone = P => P.steps.filter((_, i) => stepStars(P.id, i) > 0).length;
 const pathNext = P => { const i = P.steps.findIndex((_, k) => !stepStars(P.id, k)); return i < 0 ? -1 : i; };
 async function stepTaxa(P, i) {
-  return cached(`path1:${P.id}:${i}`, 30 * DAY, async () => {
+  return cached(`path2:${hashStr(P.steps[i].sp.map(x => x[0]).join(","))}`, 30 * DAY, async () => {
     const out = [];
     for (const [sci, fr] of P.steps[i].sp) { const t = await resolveTaxon(sci, fr).catch(() => null); if (t) out.push({ ...t, fr: t.fr || fr }); }
     return out.length >= 3 ? out : null;
   });
 }
-const pathCfg = (P, i) => ({ kind: "path", title: `${P.n} · ${P.steps[i].n}`, icon: P.ic, path: P.id, step: i, zone: { k: "fr", id: 6753, name: "France" }, len: PLEN, names: S.set.names });
+const pathCfg = (P, i) => {
+  const c = { kind: "path", title: `${P.n} · ${P.steps[i].n}`, icon: P.ic, path: P.id, step: i, zone: { k: "fr", id: 6753, name: "France" }, len: PLEN, names: S.set.names };
+  const T = P.id === "grand" ? GTOURS[P.steps[i].tour] : null;
+  if (T) Object.assign(c, { title: `Étape ${i + 1} · ${P.steps[i].n}`, stim: T.stim, k: T.k || 4, format: T.format || "", timer: T.timer || 0 });
+  return c;
+};
 /* Le plan : chaque espèce de l'étape au moins une fois, une de l'étape d'avant ; les choix viennent d'abord de l'étape */
 async function preparePath(ses) {
   const c = ses.cfg, P = PATHI[c.path];
@@ -70,8 +75,10 @@ async function preparePath(ses) {
   const extra = PLEN - cur.length - (prev.length ? 1 : 0);
   const targets = shuffle([...cur, ...shuffle(cur).slice(0, Math.max(0, extra)), ...(prev.length ? [pick(prev)] : [])]).slice(0, PLEN);
   ses.plan = targets.map(t => {
-    const others = [...shuffle(cur.filter(x => x.id !== t.id)), ...shuffle(prev.filter(x => x.id !== t.id))].slice(0, 3);
-    return { t, stim: pick(P.stim), pair: shuffle([t, ...others]), k: others.length + 1 };
+    const others = [...shuffle(cur.filter(x => x.id !== t.id)), ...shuffle(prev.filter(x => x.id !== t.id))].slice(0, Math.max(1, (c.k || 4) - 1));
+    const stim = pick(c.stim && c.stim.length ? c.stim : P.stim);
+    if (c.format === "type") return { t, stim, format: "type" };
+    return { t, stim, pair: shuffle([t, ...others]), k: others.length + 1 };
   });
   ses.len = ses.plan.length;
   ses.title = c.title;
@@ -88,6 +95,7 @@ function pathSettle(ses, n, ok, aborted) {
   const first = !st.s[c.step];
   if ((st.s[c.step] || 0) < stars) st.s[c.step] = stars;
   if (first) { count("pathsteps"); addXp(30); ses.xp += 30; }
+  if (P.id === "grand") { if (!today().serie) { addXp(50); ses.xp += 50; } today().serie = 1; }
   if (pathDone(P) === P.steps.length && first) { count("paths"); ses.pathDoneNow = true; }
 }
 

@@ -30,6 +30,19 @@ const CT = { html: "text/html", js: "application/javascript", css: "text/css", w
   await p.reload(); await p.waitForSelector(".view.home");
   await p.evaluate(() => { try { closeLayer(); } catch (e) {} });
   if (want("home")) { await p.waitForSelector(".hero-ph.on", { timeout: 20000 }).catch(() => console.log("pas de photo du jour")); await p.waitForTimeout(1500); await shot("home"); await shot("home-full", true); }
+  if (want("grand")) {
+    await p.evaluate(() => { S.paths = { ...(S.paths || {}), grand: { s: { 0: 3, 1: 2, 2: 3 } } }; save(true); });
+    await p.click("[data-act=chemin]"); await p.waitForSelector(".view.grand .groad li.here");
+    await p.waitForTimeout(4000); await p.evaluate(() => window.scrollTo(0, 0)); await shot("grand");
+    await p.evaluate(() => document.querySelector(".groad li.here").scrollIntoView({ block: "center" })); await shot("grand2");
+    await p.click(".groad li.here [data-act=gstep]"); await p.waitForSelector(".shot.loaded", { timeout: 30000 }).catch(() => {}); await shot("gquiz");
+    await p.evaluate(() => { ACT.quit && ACT.quit(); }); await p.evaluate(() => go("home")); await p.waitForSelector(".view.home");
+  }
+  for (const t of ["carnet", "progress", "settings"]) if (want(t)) {
+    await p.evaluate(() => { for (const id of [12716, 13094, 7044, 4956, 13858, 9083, 14850, 2548, 10069, 14886]) { const r = rec({ id, sci: "", fr: "" }); r.n = 4; r.ok = 3; r.last = dayKey(); } save(true); }).catch(() => {});
+    await p.click(`#nav [data-tab=${t}]`); await p.waitForSelector(`.view.${t}`); await p.waitForTimeout(2500); await shot(t); await shot(t + "-full", true);
+    await p.click("#nav [data-tab=home]"); await p.waitForSelector(".view.home");
+  }
   const ready = () => p.waitForFunction(() => typeof SES !== "undefined" && SES && SES.q && !SES.q.done && document.querySelector(".view.quiz #answers [data-k], .view.quiz #ans"), null, { timeout: 40000 });
   if (want("quiz") || want("fb") || want("fbbad") || want("result")) {
     await p.evaluate(() => { LASTCFG = { ...modeCfg("photo"), len: 6 }; startSession(LASTCFG); });

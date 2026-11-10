@@ -12,7 +12,7 @@ function go(v, data) {
   document.body.classList.remove("gfull");
   const from = VIEW;
   VIEW = v; VDATA = data;
-  document.body.classList.toggle("inquiz", ["quiz", "loading", "result", "error", "builder", "trip", "hand", "handsp", "live", "defi", "paths", "path"].includes(v));
+  document.body.classList.toggle("inquiz", ["quiz", "loading", "result", "error", "builder", "trip", "hand", "handsp", "live", "defi", "paths", "path", "grand"].includes(v));
   const tabv = v === "about" ? "settings" : v;
   $$("#nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === tabv));
   if (v !== "quiz") setAmbient(null);
@@ -161,25 +161,20 @@ VIEWS.home = () => {
     <div class="pill flame ${st ? "" : "cold"} ${hot ? "hot" : ""}" title="Jours d'affilée">${ic("flame")}<span>${st}</span></div>
     <button class="pill xp" data-act="tab" data-tab="top" title="Classement">${ic("spark")}<span>${fmt(S.xp)}</span></button>
   </header>
-  <div class="hero ${done ? "done" : ""}">
-    <button class="hero-ph" id="otd" data-act="otd" aria-label="Oiseau du jour" disabled><img alt=""><span class="hero-cap"><small>Oiseau du jour</small><b></b></span></button>
-    <div class="hero-body">
-      <div class="hero-top"><span class="hero-date">${esc(dateFr())}</span><span class="hero-zone">${ic("pin", "xs")}${esc(zoneLabel(S.set.zone))}</span>
-        <span class="mix" aria-hidden="true"><span>${ic("frame")}</span><span>${ic("wave")}</span><span>${ic("quill")}</span><span>${ic("tree")}</span><span>${ic("duel")}</span></span></div>
-      <h1>${done ? "Série bouclée" : "Série du jour"}</h1>
-      <p class="sub">${done ? "Rejoue quand tu veux, ou change de mode." : "12 questions, environ 4 minutes."}</p>
-      <button class="hero-go" data-act="daily" aria-label="Lancer la série du jour">${ic(done ? "replay" : "play")}<span>${done ? "Rejouer" : "Jouer"}</span></button>
+  <div class="story ${done ? "done" : ""}">
+    <button class="story-ph" id="otd" data-act="otd" aria-label="Oiseau du jour" disabled><img alt=""></button>
+    <div class="story-low">
+      <span class="k" id="otdK">${done ? "Série bouclée, rejoue quand tu veux" : `${esc(dateFr())} · ${esc(zoneLabel(S.set.zone))}`}</span>
+      <h1 id="otdName">Série du jour</h1><em class="latin" id="otdLa"></em>
+      <div class="schips">
+        <button class="glass" data-act="mini">${ic("bolt", "xs")}Mini</button>
+        <button class="glass ${due ? "due" : ""}" data-act="review">${ic("replay", "xs")}${due ? due + " à revoir" : "Révisions"}</button>
+        <button class="glass" data-act="mode" data-mode="perso">${ic("sliders", "xs")}Sur mesure</button>
+      </div>
+      <button class="hero-go" data-act="chemin" aria-label="Lancer la série du jour">${ic(done ? "replay" : "play")}<span>${done ? "Rejouer la série du jour" : "Lancer la série du jour"}</span></button>
     </div>
     <div class="goal" title="Objectif du jour"><i style="width:${(goal * 100).toFixed(0)}%"></i></div>
   </div>
-  <div class="quick">
-    <button class="qbtn" data-act="mini"><span class="ic">${ic("bolt")}</span><span><b>Mini-série</b><small>3 questions, 1 min</small></span></button>
-    <button class="qbtn due ${due ? "" : "zero"}" data-act="review"><span class="ic">${ic("replay")}</span><span><b>${due ? due + " à revoir" : "Révisions"}</b><small>${due ? "Répétition espacée" : "Rien à revoir"}</small></span></button>
-  </div>
-  <button class="perso-cta" data-act="mode" data-mode="perso">
-    <span class="tx"><b>Sur mesure</b><small>Une recette en un geste, ou tout régler toi-même</small></span>
-    <span class="go">${ic("arrow")}</span>
-  </button>
   ${weekCard()}
   ${pathHomeCard()}
   ${S.favs.length ? `<div class="favs top" aria-label="Mes quiz">${S.favs.map((f, i) => `<button class="fav" data-act="fav" data-i="${i}">${ic("star")}${esc(f.title)}</button>`).join("")}</div>` : ""}
@@ -206,7 +201,10 @@ MOUNT.home = async () => {
     if (!b) return;
     /* l'oiseau du jour fait l'affiche : photo moyenne d'abord (rapide), puis la grande */
     const im = b.querySelector("img"), big = sizeUrl(t.img.md, "large");
-    b.querySelector("b").textContent = nameFr(t);
+    const nm = $("#otdName"), la = $("#otdLa"), k = $("#otdK");
+    if (nm) { nm.textContent = nameFr(t); nm.classList.add("in"); }
+    if (la) la.textContent = t.fr ? t.sci : "";
+    if (k && !S.days[dayKey()]?.serie) k.textContent = "Oiseau du jour";
     im.onload = () => { b.classList.add("on"); b.disabled = false; if (im.src !== big && !navigator.connection?.saveData) { const hi = new Image(); hi.onload = () => { if (im.isConnected) im.src = big; }; hi.src = big; } };
     im.src = t.img.md;
   } catch (e) { /* hors ligne : l'affiche reste en aplats */ }
@@ -964,13 +962,14 @@ VIEWS.result = ({ ses, n, ok, badges, msgs }) => {
     <div class="val"><b>${ok}<span style="font-size:24px;color:var(--muted)">/${n}</span></b><small>${esc(ses.title || "")}</small></div></div>
   <h1>${title}</h1>${PP && ses.pathStars ? `<div class="rstars">${starsRow(ses.pathStars)}</div>` : ""}<div class="lead">${esc(lead)}</div>
   ${msgs.map(m => `<div class="chip warn" style="margin-top:12px">${ic("shield")}${esc(m)}</div>`).join("")}
+  ${ses.results.some(r => r.ph) ? `<div class="rgrid">${ses.results.map((r, i) => r.ph ? `<span class="${r.ok ? "ok" : r.part ? "part" : "ko"}" style="--i:${i};background-image:url('${esc(r.ph)}')"></span>` : "").join("")}</div>` : ""}
   <div class="trio"><div class="xp"><b>+${fmt(ses.xp)}</b><small>XP</small></div><div><b>×${ses.maxCombo}</b><small>meilleur combo</small></div>${ses.kind === "hand" ? `<div><b>${Math.round(p * 100)} %</b><small>réussite</small></div>` : `<div><b>${ses.newSp.length}</b><small>nouvelle${ses.newSp.length > 1 ? "s" : ""}</small></div>`}</div>
   <button class="lvlbar" data-act="tab" data-tab="progress"><span class="badge">${L.n}</span><span class="meta"><b>${esc(L.rank)}</b><small>${fmt(L.cur)} / ${fmt(L.need)} XP</small><span class="bar"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span></span></button>
   ${badges.length ? `<div class="sec" style="justify-content:center">${ic("trophy")}Badge${badges.length > 1 ? "s" : ""} débloqué${badges.length > 1 ? "s" : ""}</div><div class="newbadges">${badges.map(b => `<span class="chip warn">${ic(b.ic)}${esc(b.n)}</span>`).join("")}</div>` : ""}
   ${ses.kind === "hand" && ses.hmiss?.length ? `<div class="sec" style="justify-content:center">${ic("replay")}Fiches à revoir</div><div class="missed">${[...new Set(ses.hmiss)].slice(0, 8).map(id => `<button class="mchip" data-act="hsp" data-sp="${id}">${featherPair(HSPI[id])}${esc(HSPI[id].fr)}</button>`).join("")}</div>` : ""}
   ${confs.length ? `<div class="sec" style="justify-content:center">${ic("duel")}Envie de t'entraîner ?</div><p class="muted" style="margin:-4px 0 10px;font-size:13px">Si tu veux : un petit duel sur les oiseaux que tu as confondus.</p><div class="drills">${confs.map(([a, b]) => { const A = taxonById(a), B = taxonById(b); if (!A || !B) return ""; const m = sosVis(A.sci, B.sci)?.v.m; return `<button class="conf drill" data-act="duelgo" data-ids="${a},${b}"><img src="${esc(imgOf(A))}" alt=""><span class="vs">VS</span><img src="${esc(imgOf(B))}" alt=""><span class="tx">${esc(nameFr(A))}<small>${esc(nameFr(B))}</small>${m ? `<em>${esc(m)}</em>` : ""}</span><span class="go">Duel${ic("arrow", "xs")}</span></button>`; }).join("")}</div>` : ""}
   ${missed.length ? `<div class="sec" style="justify-content:center">${ic("replay")}À revoir</div><div class="missed">${missed.map(t => `<button class="mchip" data-act="fiche" data-id="${t.id}"><img src="${esc(imgOf(t))}" alt="">${esc(nameFr(t))}</button>`).join("")}</div>` : ""}
-  ${PP ? `<div class="actions"><button class="btn ghost" data-act="path" data-p="${PP.id}">${ic("map")}Parcours</button>${pnext >= 0 ? `<button class="btn primary" data-act="pgo" data-p="${PP.id}" data-i="${pnext}">${ic("play")}Étape suivante</button>` : `<button class="btn primary" data-act="again">${ic("replay")}${ses.pathStars ? "Refaire" : "Recommencer"}</button>`}</div>` : `<div class="actions">${ses.kind === "hand" ? `<button class="btn ghost" data-act="hhub">${ic("back")}Piaf en main</button>` : `<button class="btn ghost" data-act="home">${ic("back")}Accueil</button>`}${shareable(ses.cfg) ? `<button class="btn ghost sq" data-act="qshare" aria-label="Partager ce quiz">${ic("ext")}</button>` : ""}<button class="btn primary" data-act="again">${ic("replay")}Rejouer</button></div>`}
+  ${PP ? `<div class="actions"><button class="btn ghost" ${PP.id === "grand" ? `data-act="chemin"` : `data-act="path" data-p="${PP.id}"`}>${ic("map")}Parcours</button>${pnext >= 0 ? `<button class="btn primary" data-act="pgo" data-p="${PP.id}" data-i="${pnext}">${ic("play")}Étape suivante</button>` : `<button class="btn primary" data-act="again">${ic("replay")}${ses.pathStars ? "Refaire" : "Recommencer"}</button>`}</div>` : `<div class="actions">${ses.kind === "hand" ? `<button class="btn ghost" data-act="hhub">${ic("back")}Piaf en main</button>` : `<button class="btn ghost" data-act="home">${ic("back")}Accueil</button>`}${shareable(ses.cfg) ? `<button class="btn ghost sq" data-act="qshare" aria-label="Partager ce quiz">${ic("ext")}</button>` : ""}<button class="btn primary" data-act="again">${ic("replay")}Rejouer</button></div>`}
 </section>`;
 };
 MOUNT.result = () => {
@@ -989,6 +988,10 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-10.3", n: "4.0", items: [
+    { ic: "frame", t: "La photo d'abord", d: "L'oiseau du jour en plein écran, des réponses en verre, ton score en grand avec les photos de la série." },
+    { ic: "map", t: "Le grand parcours", d: "« Lancer la série du jour » ouvre ton parcours : 13 chapitres du jardin aux raretés, 12 tours de plus en plus durs (972 étapes)." }
+  ] },
   { v: "2026-11-10.2", n: "3.1", items: [
     { ic: "bird", t: "Ouverture", d: "Un oiseau traverse l'écran au lancement ; ton niveau prend la place du titre. Accueil plus court : tous les modes en une grille." }
   ] },
@@ -1084,6 +1087,8 @@ VIEWS.live = () => liveViewHtml();
 MOUNT.live = () => liveMount();
 VIEWS.defi = () => defiViewHtml();
 MOUNT.defi = () => defiMount();
+VIEWS.grand = () => grandHtml();
+MOUNT.grand = () => grandMount();
 VIEWS.paths = () => pathsListHtml();
 VIEWS.path = () => pathHtml();
 MOUNT.path = () => pathMount();
@@ -2142,6 +2147,10 @@ const ACT = {
   dagain: () => { defiNew(); defiPrepare(); },
   dback: () => { defiNew(); go("defi"); },
   dquit: () => { clearTimeout(DEFI.tmr); DEFI.load++; DEFI.st = ""; go("home"); },
+  chemin: () => { GV.tour = -1; GV.ch = -1; go("grand"); },
+  gch: el => { const c = +el.dataset.c; GV.ch = GV.ch === c ? -2 : c; rerender(); },
+  gtour: el => { GV.tour = +el.dataset.t; GV.ch = -1; go("grand"); },
+  gstep: el => { const i = +el.dataset.i; if (!stepOpen(GRAND, i)) return; PATHV.id = "grand"; LASTCFG = pathCfg(GRAND, i); startSession(LASTCFG); },
   paths: () => go("paths"),
   path: el => { PATHV.id = el.dataset.p; PATHV.open = -1; go("path"); },
   pstep: el => { const i = +el.dataset.i, P = PATHI[PATHV.id], cur = PATHV.open === -1 ? pathNext(P) : PATHV.open; PATHV.open = cur === i ? -2 : i; go("path"); },
@@ -2335,6 +2344,15 @@ function introSplash() {
   setTimeout(close, 2300);
   INTRO.wait = 2000 + 2300;
 }
+/* Téléphone qui rame : on mesure les images par seconde au lancement, et on allège si besoin */
+function liteCheck() {
+  try {
+    if ((navigator.hardwareConcurrency || 8) <= 2 || (navigator.deviceMemory || 8) <= 2) { document.body.classList.add("lite"); return; }
+    let n = 0; const t0 = performance.now();
+    const f = () => { n++; if (performance.now() - t0 < 1500) requestAnimationFrame(f); else if (n / 1.5 < 40) document.body.classList.add("lite"); };
+    requestAnimationFrame(f);
+  } catch (e) { /* rien */ }
+}
 /* Tout bouton touché lâche une petite onde à l'endroit du doigt */
 function tapRipple(e) {
   if (S.set.calm) return;
@@ -2379,6 +2397,7 @@ function init() {
   if ("serviceWorker" in navigator && location.hostname !== "plumage.test" && (location.protocol === "https:" || location.hostname === "localhost")) navigator.serviceWorker.register("sw.js").catch(() => {});
   if (S.set.calm) document.body.classList.add("calm");
   introSplash();
+  liteCheck();
   document.addEventListener("pointerdown", tapRipple, { passive: true });
   document.addEventListener("click", onClick);
   document.addEventListener("keydown", onKey);

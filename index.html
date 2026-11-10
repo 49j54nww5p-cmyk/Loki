@@ -5,7 +5,7 @@
 <title>Plumage</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="Quiz d'oiseaux personnalisé : photos, chants, noms latins et familles, en direct d'iNaturalist.">
-<meta name="theme-color" content="#121A15">
+<meta name="theme-color" content="#0B0B0B">
 <meta name="color-scheme" content="dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -15,8 +15,8 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://api.inaturalist.org">
-<link rel="preload" href="fonts/bricolage-text.woff" as="font" type="font/woff" crossorigin>
-<link rel="preload" href="fonts/bricolage-display.woff" as="font" type="font/woff" crossorigin>
+<link rel="preload" href="fonts/figtree.woff" as="font" type="font/woff" crossorigin>
+<link rel="preload" href="fonts/instrument-serif.woff" as="font" type="font/woff" crossorigin>
 <script>document.documentElement.dataset.season="automne";document.documentElement.dataset.theme="nuit";</script>
 <style>
 /* Concept : « lentille de nuit » — une seule colonne d'appli, la photo de l'oiseau
@@ -1379,8 +1379,6 @@ details.bset > .launch{margin:20px 14px 14px}
    couleurs. Cette feuille vient après styles.css (mise en page d'origine,
    passée « à jetons » par tools/retoken.py) et porte toute la nouvelle peau.
    ===================================================================== */
-@font-face{font-family:"Bricolage";font-style:normal;font-weight:400 700;font-display:swap;src:url(fonts/bricolage-text.woff) format("woff")}
-@font-face{font-family:"Bricolage Display";font-style:normal;font-weight:600 800;font-stretch:75% 90%;font-display:swap;src:url(fonts/bricolage-display.woff) format("woff")}
 @font-face{font-family:"Instrument Serif";font-style:italic;font-weight:400;font-display:swap;src:url(fonts/instrument-serif-italic.woff) format("woff")}
 
 /* ---------- Jetons fixes ---------- */
@@ -1777,6 +1775,233 @@ body.calm *,body.calm *::before,body.calm *::after{animation-duration:.01ms!impo
 /* onglets du bas : l'icône active saute */
 .nav button.on span{animation:slideR .3s var(--ease)}
 @media (prefers-reduced-motion:reduce){.intro{display:none}}
+
+
+/* ==== stories.css : v4 ==== */
+/* =====================================================================
+   Plumage v4 — « Stories » : la photo d'abord, plein écran.
+   Noir profond, verre dépoli, un seul accent jaune, titres en Instrument Serif,
+   texte en Figtree. Vient après look.css.
+   ===================================================================== */
+@font-face{font-family:"Figtree";font-style:normal;font-weight:300 900;font-display:swap;src:url(fonts/figtree.woff) format("woff")}
+@font-face{font-family:"Instrument Serif";font-style:normal;font-weight:400;font-display:swap;src:url(fonts/instrument-serif.woff) format("woff")}
+
+html:root[data-season][data-theme]{
+  color-scheme:dark;
+  --bg:#0B0B0B; --bg-2:#111; --card:#161616; --card-2:#1E1E1E; --card-3:#262626;
+  --text:#FFFFFF; --muted:rgba(255,255,255,.66); --faint:rgba(255,255,255,.42);
+  --line:rgba(255,255,255,.10); --line-2:rgba(255,255,255,.2);
+  --acc:#FFCE00; --acc-ink:#FFCE00; --on-acc:#000; --acc-2:#FFE27A;
+  --cta:#FFFFFF; --on-cta:#000; --sec:#FFFFFF; --on-sec:#000; --ter:#FFCE00; --on-ter:#000; --pop:#FFCE00;
+  --good:#5BE38B; --good-ink:#7BEBA2; --on-good:#04170E; --bad:#FF5C6C; --bad-ink:#FF8C97;
+  --gold:#FFCE00; --gold-ink:#FFDD4D; --on-gold:#000; --orange:#FF9A3C; --orange-ink:#FFB070;
+  --lilac:#B9A4FF; --lilac-ink:#CDBEFF; --rose:#FF7FAE; --rose-ink:#FF9FC2; --teal:#4FD6C7; --teal-ink:#7AE3D7;
+  --f-display:"Instrument Serif",Georgia,serif; --f-ui:"Figtree",system-ui,-apple-system,sans-serif;
+  --glass:rgba(255,255,255,.14); --glass-b:rgba(255,255,255,.16);
+  --r-xl:22px; --r-lg:18px; --r-md:16px; --r-sm:12px; --r-xs:8px;
+  --sh-1:none; --sh-2:0 10px 30px rgba(0,0,0,.5); --sh-3:0 18px 50px rgba(0,0,0,.6);
+}
+html,body{background:#0B0B0B}
+body{font-family:var(--f-ui);font-synthesis:none}
+.sky::after{display:none}
+.glass,.story .schips button{background:var(--glass);border:1px solid var(--glass-b);-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3)}
+
+/* ---------- Titres : sérif fin, grand ---------- */
+.sec{border-top:0;padding-top:0;margin:30px 0 12px;font:400 34px/1 var(--f-display);letter-spacing:-.01em}
+.hlvl .meta b,.brand{font:400 26px/1 var(--f-display);letter-spacing:0}
+.hlvl .badge{background:var(--acc);color:#000;box-shadow:none;font:800 17px/1 var(--f-ui);width:36px;height:36px}
+.hlvl .bar{height:4px;max-width:140px;background:rgba(255,255,255,.25)}
+.hlvl .bar i{background:#fff}
+.hud .pill{font:700 15px/1 var(--f-ui);text-shadow:0 1px 6px rgba(0,0,0,.6)}
+.hud .pill .i{width:17px;height:17px}
+.brand .mark{background:var(--acc);border-radius:50%}
+.brand .mark .i{color:#000}
+
+/* ---------- Accueil : une story plein écran ---------- */
+.home{position:relative}
+.home > .hud{position:absolute;z-index:3;top:0;left:0;right:0;margin:0;padding:8px 0 0}
+.story{position:relative;display:flex;flex-direction:column;justify-content:flex-end;
+  height:calc(100svh - 78px - env(safe-area-inset-bottom, 0px));min-height:560px;
+  margin:calc(-12px - env(safe-area-inset-top, 0px)) calc(-1 * var(--gutter-r)) 0 calc(-1 * var(--gutter-l));
+  padding:0 var(--gutter-r) 26px var(--gutter-l);overflow:hidden;isolation:isolate;background:#151515}
+.story-ph{position:absolute;inset:0;z-index:-2;display:block;width:100%;background:#151515}
+.story-ph img{width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.08);transition:opacity .8s var(--ease),transform 6s var(--ease)}
+.story-ph.on img{opacity:1;transform:scale(1)}
+.story::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(0,0,0,.55) 0%,rgba(0,0,0,0) 18%,rgba(0,0,0,0) 42%,rgba(0,0,0,.6) 66%,rgba(0,0,0,.92) 100%)}
+.story .k{display:block;font:700 13.5px/1.2 var(--f-ui);color:var(--acc)}
+.story h1{margin:6px 0 0;font:400 52px/.95 var(--f-display);letter-spacing:-.01em;text-wrap:balance}
+.story h1.in{animation:trUp .6s var(--ease) both}
+.story .latin{display:block;margin-top:4px;font-size:22px;color:rgba(255,255,255,.78)}
+.schips{display:flex;gap:8px;margin-top:18px}
+.schips button{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;height:46px;border-radius:var(--r-md);font:700 13.5px/1 var(--f-ui);color:#fff;white-space:nowrap}
+.schips button.due{border-color:var(--acc);color:var(--acc)}
+.hero-go{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:58px;margin-top:12px;border-radius:var(--r-md);
+  background:#fff;color:#000;font:800 17px/1 var(--f-ui);letter-spacing:0;position:relative;overflow:hidden}
+.hero-go .i{width:20px;height:20px}
+.hero-go::after{background:linear-gradient(100deg,transparent,rgba(255,206,0,.35),transparent)}
+.story .goal{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.18)}
+.story .goal i{display:block;height:100%;background:var(--acc)}
+
+/* sous l'affiche */
+.weekc,.pathhome,.lastp,.notice,.livecta,.livecta.defic,.fav{background:var(--card);border:0;border-radius:var(--r-lg)}
+.weekc{margin-top:18px}
+.weekc .ic,.pathhome .ic,.notice .ic,.livecta .ic,.livecta.defic .ic,.lastp .ic{background:var(--acc);color:#000;border-radius:50%}
+.weekc b,.pathhome b,.livecta b,.lastp b{font:600 17px/1.15 var(--f-ui)}
+.mgrid{gap:16px 4px}
+.mtile .ic{width:58px;height:58px;border-radius:50%;background:var(--card-2);color:#fff;border:1px solid var(--line)}
+.mtile.g0 .ic,.mtile.g1 .ic,.mtile.g2 .ic{background:var(--card-2);color:#fff}
+.mtile.g0 .ic .i{color:var(--acc)}
+.mtile b{font:600 12.5px/1.15 var(--f-ui);color:var(--muted)}
+.mtile:active .ic{border-radius:50%}
+
+/* barre d'onglets : discrète, posée sur le noir */
+.nav{background:rgba(11,11,11,.86);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-top:1px solid var(--line)}
+.nav button{color:rgba(255,255,255,.5);font:600 11.5px/1 var(--f-ui)}
+.nav button.on{color:#fff}
+.nav button.on .i{background:none;color:var(--acc);padding:4px 16px}
+
+/* ---------- Ouverture ---------- */
+.intro{background:#0B0B0B}
+.intro .flyer{fill:var(--acc)}
+.intro .iname{font:400 84px/1 var(--f-display);letter-spacing:-.01em}
+.intro .iname::after{background:var(--acc)}
+
+/* ---------- Quiz ---------- */
+.qbar{position:relative;z-index:3;height:auto;flex-wrap:wrap;gap:10px 12px}
+.qbar .icon-btn{width:36px;height:36px;border-radius:50%;border:0;background:var(--glass);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.dots{order:-1;flex:1 1 100%;gap:4px}
+.dots i{height:3px;border-radius:2px;background:rgba(255,255,255,.28)}
+.dots i.cur{background:#fff}
+.combo{margin-left:auto;font:700 15px/1 var(--f-ui)}
+.counter{font:600 14px/1 var(--f-ui)}
+.shot{margin-top:-6px;max-height:none;height:min(44vh,400px);aspect-ratio:auto;background:#111}
+.shot .main{object-fit:cover}
+.shot .ret{display:none}
+.shot .zb{background:var(--glass)}
+.prompt{margin:18px 0 10px}
+.prompt .q{font:400 34px/1 var(--f-display);letter-spacing:-.005em}
+.hintbtn{border:1px solid var(--glass-b);background:var(--glass);color:#fff;font:600 13px/1 var(--f-ui)}
+.answers{gap:8px;border-top:0}
+.choice{min-height:58px;padding:11px 16px;border-radius:var(--r-md);background:var(--glass);border:1px solid var(--glass-b);
+  -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+.choice:active{padding-left:16px;transform:scale(.98)}
+.choice .k{display:none}
+.choice .lbl{flex-direction:row;align-items:baseline;flex-wrap:wrap;gap:2px 10px}
+.choice .lbl b{font:700 17px/1.2 var(--f-ui)}
+.choice .lbl .latin{font-size:17px;color:rgba(255,255,255,.62)}
+.choice .lbl .latin.solo{font-size:24px;color:#fff}
+.choice.ok{background:var(--good);border-color:var(--good);color:#04170E;padding-left:16px}
+.choice.ok .lbl .latin{color:rgba(4,23,14,.7)}
+.choice.bad{background:var(--bad);border-color:var(--bad);color:#1A0509;padding-left:16px}
+.choice.bad .lbl .latin{color:rgba(26,5,9,.7)}
+.tchoice{border-radius:var(--r-md)}
+.namecard,.sound{background:var(--card);border:0;border-radius:var(--r-xl)}
+.namecard .big{font:400 46px/1 var(--f-display)}
+.namecard .big.latin{font-size:48px}
+.typer input{border:1px solid var(--glass-b);background:var(--glass);border-radius:var(--r-md)}
+.playbig,.achoice .pl{background:#fff;color:#000}
+
+/* ---------- Correction ---------- */
+.fb{border-radius:26px 26px 0 0;background:#111;border-top:0;box-shadow:0 -10px 40px rgba(0,0,0,.5)}
+.verdict b{font:400 42px/1 var(--f-display);letter-spacing:-.005em}
+.verdict .vi{width:42px;height:42px}
+.verdict .gain{font:800 17px/1 var(--f-ui);color:var(--acc)}
+.spcard .t b{font:700 19px/1.2 var(--f-ui)}
+.spcard .t .latin{font-size:19px}
+.spcard img{width:70px;height:70px;border-radius:14px}
+.lsec,.why,.tipbox{background:#1B1B1B;border:0;border-radius:var(--r-md)}
+.lh{color:var(--acc)}
+.fb .btn.next{height:58px;border-radius:var(--r-md);background:#fff;color:#000;font:800 17px/1 var(--f-ui)}
+.compare figure{border-radius:12px}
+
+/* ---------- Bilan ---------- */
+.result{text-align:left}
+.score{width:auto;height:auto;margin:20px 0 0}
+.score svg{display:none}
+.score .val{position:static;display:block}
+.score .val b{font:400 150px/.8 var(--f-display);letter-spacing:-.04em}
+.score .val b span{font-size:56px!important;color:rgba(255,255,255,.55)!important}
+.score .val small{margin:12px 0 0;max-width:none;font:600 14px/1.2 var(--f-ui);color:var(--acc)}
+.result h1{margin:18px 0 6px;font:400 44px/1 var(--f-display)}
+.result .lead{font-size:15px}
+.rgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-top:18px}
+.rgrid span{position:relative;aspect-ratio:1;border-radius:10px;background:#1B1B1B center/cover;animation:pop .45s var(--spring) both}
+.rgrid span::after{content:"";position:absolute;right:3px;bottom:3px;width:14px;height:14px;border-radius:50%;background:var(--good)}
+.rgrid span.ko::after{background:var(--bad)}
+.rgrid span.part::after{background:var(--gold)}
+.rgrid span:nth-child(n){animation-delay:calc(.5s + var(--i, 0) * 40ms)}
+.trio div{background:var(--glass);border:1px solid var(--glass-b);border-radius:var(--r-md)}
+.trio b{font:400 38px/1 var(--f-display)}
+.result .sec{justify-content:flex-start;font-size:28px}
+.actions .btn.primary,.btn.primary{background:#fff;color:#000}
+.btn.ghost{border:1px solid var(--glass-b);background:var(--glass)}
+.lvlbar{background:var(--card);border-radius:var(--r-lg)}
+.lvlbar .badge{background:var(--acc);color:#000;border-radius:50%}
+.lvlbar .bar i,.bar i{background:#fff}
+.conf.drill .go{background:#fff;color:#000}
+
+/* ---------- Ailleurs : cartes et panneaux ---------- */
+.card,.panel{background:var(--card);border-color:transparent}
+.panel{border-top:0;border-radius:26px 26px 0 0}
+.chip{border-radius:99px;border:1px solid var(--line-2)}
+.chip.fam{color:#fff;border-color:var(--line-2)}
+.chip.ord{color:rgba(255,255,255,.7);border-color:var(--line)}
+.chip.warn{color:var(--acc);border-color:color-mix(in srgb,var(--acc) 50%,transparent)}
+.toast{background:#fff;color:#000}
+
+/* ---------- Animations allégées automatiquement ---------- */
+body.lite *,body.lite *::before,body.lite *::after{animation-duration:.01ms!important;animation-delay:0s!important;transition-duration:.12s!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+body.lite .glass,body.lite .choice{background:#1F1F1F}
+.story{height:calc(100svh - 64px - env(safe-area-inset-bottom, 0px))}
+
+/* ---------- Le grand parcours ---------- */
+.grand{padding-bottom:30px}
+.ghead{display:flex;align-items:center;gap:12px;margin:2px 0 14px}
+.ghead .icon-btn{width:36px;height:36px;border-radius:50%;border:0;background:var(--card-2)}
+.ghead h1{margin:0;font:400 34px/1 var(--f-display)}
+.gcount{margin-left:auto;font:700 13px/1 var(--f-ui);color:var(--muted)}
+.gtours{display:flex;gap:6px;overflow-x:auto;margin:0 calc(-1 * var(--gutter-r)) 0 calc(-1 * var(--gutter-l));padding:0 var(--gutter-r) 4px var(--gutter-l);scrollbar-width:none}
+.gtours::-webkit-scrollbar{display:none}
+.gtours button{flex:none;display:flex;align-items:center;gap:4px;height:34px;padding:0 13px;border-radius:99px;background:var(--card-2);font:700 13px/1 var(--f-ui);color:var(--muted)}
+.gtours button.on{background:#fff;color:#000}
+.gtours button[disabled]{opacity:.4}
+.gtour-d{margin:12px 0 14px;font-size:14px;color:var(--muted)}
+.gtour-d b{color:#fff}
+.gchs{display:flex;flex-direction:column;gap:12px}
+.gch{border-radius:var(--r-lg);background:var(--card);overflow:hidden;animation:cas .45s var(--ease) both}
+.gch:nth-child(2){animation-delay:.04s}.gch:nth-child(3){animation-delay:.08s}.gch:nth-child(4){animation-delay:.12s}.gch:nth-child(n+5){animation-delay:.16s}
+.gcov{position:relative;display:flex;align-items:flex-end;width:100%;height:118px;padding:14px 16px;text-align:left;background:#1B1B1B center/cover;isolation:isolate}
+.gcov::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(0,0,0,.82),rgba(0,0,0,.15))}
+.gcov small{display:block;font:600 12.5px/1 var(--f-ui);color:rgba(255,255,255,.8)}
+.gcov b{display:block;margin-top:4px;font:400 30px/1 var(--f-display)}
+.gst{margin-left:auto;display:grid;place-items:center;width:38px;height:38px;border-radius:50%}
+.gch.cur .gst{background:var(--acc);color:#000}
+.gch.full .gst{background:var(--good);color:#04170E}
+.gch.cur{outline:2px solid var(--acc);outline-offset:-2px}
+.gch.lock .gcov{filter:grayscale(1) brightness(.45)}
+.gch.lock .gst{color:#fff}
+.groad{list-style:none;margin:0;padding:18px 16px 8px}
+.groad li{display:flex;align-items:center;gap:14px;min-height:84px;padding-left:calc(var(--x) * 46px)}
+.gnode{flex:none;display:grid;place-items:center;width:62px;height:58px;border-radius:50%;font:800 18px/1 var(--f-ui);
+  background:#2A2A2A;color:rgba(255,255,255,.55);box-shadow:0 5px 0 #1A1A1A!important;transition:transform .2s var(--spring)}
+.gnode:active{transform:translateY(4px);box-shadow:0 1px 0 #1A1A1A!important}
+.groad li.done .gnode{background:var(--good);color:#04170E;box-shadow:0 5px 0 #2E9C58!important}
+.groad li.here .gnode{width:72px;height:66px;background:var(--acc);color:#000;box-shadow:0 6px 0 #B89400!important;animation:pulseN 1.8s ease-in-out infinite}
+@keyframes pulseN{0%,100%{outline:0 solid rgba(255,206,0,.35)}50%{outline:9px solid rgba(255,206,0,.18)}}
+.groad li.k-boss .gnode{border-radius:18px}
+.groad li.lock .gnode{opacity:.55}
+.glab b{display:block;font:700 15px/1.2 var(--f-ui)}
+.glab small{font:600 12px/1 var(--f-ui);color:var(--muted)}
+.groad li.here .glab b{color:var(--acc)}
+.glink{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:18px;padding:14px;border-radius:var(--r-md);background:var(--card);font:600 13.5px/1.2 var(--f-ui);color:var(--muted)}
+.groad li{flex-wrap:nowrap;justify-content:flex-start;text-align:left}
+.glab{min-width:0;flex:1}
+/* rien ne doit dépasser en largeur (sinon le téléphone dézoome et la barre d'onglets sort de l'écran) */
+html,body{overflow-x:hidden;max-width:100%}
+.nav{box-sizing:border-box;max-width:min(540px,100%)}
+.nav button{min-width:0}
+.nav button .i{padding:4px 12px}
 
 </style>
 </head>
@@ -3033,6 +3258,8 @@ async function refPhoto(t) {
   if (!list.length && t.img) list = [{ lg: sizeUrl(t.img.md, "large"), md: t.img.md, attr: t.img.attr, lic: t.img.lic }];
   if (!list.length) return null;
   const r = S.sp[t.id], seen = new Set(r?.ps || []), won = new Set([...(r?.pk || []), ...(r?.fk || [])]);
+  const lic = list.filter(p => p.lic);   /* photos sous licence libre d'abord (pas de « tous droits réservés ») */
+  if (lic.length) list = lic;
   const cands = list.slice(0, 30).filter(p => p.lg !== LASTPH.get(t.id));
   const unseen = cands.filter(p => !seen.has(photoKey(p.lg || p.md))), notWon = cands.filter(p => !won.has(photoKey(p.lg || p.md)));
   const pool = unseen.length ? unseen : notWon.length ? notWon : cands;
@@ -4018,7 +4245,7 @@ function settle(res) {
   } else if (q.kind === "geo") { bump("geo", ok); if (ok) count("geook"); }
   else if (q.kind === "root") { bump("root", ok); if (ok) count("rootok"); }
   else if (q.kind === "hand") { bump("hand", ok); if (ok) count("handok"); handRecord(q, ok); if (!ok && q.sp) (ses.hmiss || (ses.hmiss = [])).push(q.sp); }
-  ses.results.push({ ok, part: !!res.partial, xp: gain, id: q.t?.id || null, kind: q.kind });
+  ses.results.push({ ok, part: !!res.partial, xp: gain, id: q.t?.id || null, kind: q.kind, ph: (q.photo && q.photo.md) || (q.t && q.t.img && q.t.img.md) || "" });
   const L = level();
   if (L.n > (ses.lvlNow || ses.lvl0)) {
     ses.lvlNow = L.n;
@@ -6791,13 +7018,18 @@ const stepOpen = (P, i) => i === 0 || stepStars(P.id, i - 1) > 0;
 const pathDone = P => P.steps.filter((_, i) => stepStars(P.id, i) > 0).length;
 const pathNext = P => { const i = P.steps.findIndex((_, k) => !stepStars(P.id, k)); return i < 0 ? -1 : i; };
 async function stepTaxa(P, i) {
-  return cached(`path1:${P.id}:${i}`, 30 * DAY, async () => {
+  return cached(`path2:${hashStr(P.steps[i].sp.map(x => x[0]).join(","))}`, 30 * DAY, async () => {
     const out = [];
     for (const [sci, fr] of P.steps[i].sp) { const t = await resolveTaxon(sci, fr).catch(() => null); if (t) out.push({ ...t, fr: t.fr || fr }); }
     return out.length >= 3 ? out : null;
   });
 }
-const pathCfg = (P, i) => ({ kind: "path", title: `${P.n} · ${P.steps[i].n}`, icon: P.ic, path: P.id, step: i, zone: { k: "fr", id: 6753, name: "France" }, len: PLEN, names: S.set.names });
+const pathCfg = (P, i) => {
+  const c = { kind: "path", title: `${P.n} · ${P.steps[i].n}`, icon: P.ic, path: P.id, step: i, zone: { k: "fr", id: 6753, name: "France" }, len: PLEN, names: S.set.names };
+  const T = P.id === "grand" ? GTOURS[P.steps[i].tour] : null;
+  if (T) Object.assign(c, { title: `Étape ${i + 1} · ${P.steps[i].n}`, stim: T.stim, k: T.k || 4, format: T.format || "", timer: T.timer || 0 });
+  return c;
+};
 /* Le plan : chaque espèce de l'étape au moins une fois, une de l'étape d'avant ; les choix viennent d'abord de l'étape */
 async function preparePath(ses) {
   const c = ses.cfg, P = PATHI[c.path];
@@ -6810,8 +7042,10 @@ async function preparePath(ses) {
   const extra = PLEN - cur.length - (prev.length ? 1 : 0);
   const targets = shuffle([...cur, ...shuffle(cur).slice(0, Math.max(0, extra)), ...(prev.length ? [pick(prev)] : [])]).slice(0, PLEN);
   ses.plan = targets.map(t => {
-    const others = [...shuffle(cur.filter(x => x.id !== t.id)), ...shuffle(prev.filter(x => x.id !== t.id))].slice(0, 3);
-    return { t, stim: pick(P.stim), pair: shuffle([t, ...others]), k: others.length + 1 };
+    const others = [...shuffle(cur.filter(x => x.id !== t.id)), ...shuffle(prev.filter(x => x.id !== t.id))].slice(0, Math.max(1, (c.k || 4) - 1));
+    const stim = pick(c.stim && c.stim.length ? c.stim : P.stim);
+    if (c.format === "type") return { t, stim, format: "type" };
+    return { t, stim, pair: shuffle([t, ...others]), k: others.length + 1 };
   });
   ses.len = ses.plan.length;
   ses.title = c.title;
@@ -6828,6 +7062,7 @@ function pathSettle(ses, n, ok, aborted) {
   const first = !st.s[c.step];
   if ((st.s[c.step] || 0) < stars) st.s[c.step] = stars;
   if (first) { count("pathsteps"); addXp(30); ses.xp += 30; }
+  if (P.id === "grand") { if (!today().serie) { addXp(50); ses.xp += 50; } today().serie = 1; }
   if (pathDone(P) === P.steps.length && first) { count("paths"); ses.pathDoneNow = true; }
 }
 
@@ -6865,6 +7100,143 @@ function pathHomeCard() {
   if (!started.length) return "";
   const P = started.find(x => x.id === S.lastPath) || started[0], i = pathNext(P), d = pathDone(P), n = P.steps.length;
   return `<button class="pathhome" data-act="pgo" data-p="${P.id}" data-i="${i}" style="--c:${P.c}"><span class="ic">${ic(P.ic)}</span><span class="tx"><small>Ton parcours · étape ${i + 1}/${n}</small><b>${esc(P.steps[i].n)}</b><span class="pbar"><i style="width:${(100 * d / n).toFixed(0)}%"></i></span></span>${ic("play")}</button>`;
+}
+
+/* ---- grand.js ---- */
+/* ============================================================
+   Plumage — le grand parcours (« Lancer la série du jour »)
+   13 chapitres rangés logiquement (jardin → forêt → champs → villes → eaux douces →
+   roselières → limicoles → laridés → mer → rapaces → montagne → Sud → raretés).
+   Chaque chapitre : des étapes de 4-5 espèces, une révision toutes les 2 étapes,
+   un bilan de chapitre. Le tout est rejoué en 12 tours de plus en plus durs
+   (photos, terrain, chants, latin, écrire, chrono…) : 1 020 étapes.
+   ============================================================ */
+const PS = id => PATHI[id].steps;
+const GCH = [
+  { k: "jardin", n: "Le jardin", steps: PS("jardin") },
+  { k: "foret", n: "La forêt", steps: [
+    { n: "Les pics", sp: [["Dryocopus martius", "Pic noir"], ["Dendrocoptes medius", "Pic mar"], ["Dryobates minor", "Pic épeichette"], ["Jynx torquilla", "Torcol fourmilier"]] },
+    { n: "Grives et merles", sp: [["Turdus philomelos", "Grive musicienne"], ["Turdus viscivorus", "Grive draine"], ["Turdus iliacus", "Grive mauvis"], ["Turdus pilaris", "Grive litorne"], ["Turdus torquatus", "Merle à plastron"]] },
+    { n: "Roitelets et pouillots", sp: [["Regulus regulus", "Roitelet huppé"], ["Regulus ignicapilla", "Roitelet à triple bandeau"], ["Phylloscopus trochilus", "Pouillot fitis"], ["Phylloscopus sibilatrix", "Pouillot siffleur"], ["Phylloscopus bonelli", "Pouillot de Bonelli"]] },
+    { n: "Les mésanges des bois", sp: [["Periparus ater", "Mésange noire"], ["Lophophanes cristatus", "Mésange huppée"], ["Poecile palustris", "Mésange nonnette"], ["Poecile montanus", "Mésange boréale"], ["Certhia familiaris", "Grimpereau des bois"]] },
+    { n: "Gros becs", sp: [["Coccothraustes coccothraustes", "Grosbec casse-noyaux"], ["Pyrrhula pyrrhula", "Bouvreuil pivoine"], ["Spinus spinus", "Tarin des aulnes"], ["Loxia curvirostra", "Bec-croisé des sapins"], ["Fringilla montifringilla", "Pinson du Nord"]] },
+    { n: "Les voix de la forêt", sp: [["Oriolus oriolus", "Loriot d'Europe"], ["Cuculus canorus", "Coucou gris"], ["Columba oenas", "Pigeon colombin"], ["Scolopax rusticola", "Bécasse des bois"], ["Ficedula hypoleuca", "Gobemouche noir"]] }
+  ] },
+  { k: "champs", n: "Champs et haies", steps: [
+    { n: "Alouettes et pipits", sp: [["Alauda arvensis", "Alouette des champs"], ["Lullula arborea", "Alouette lulu"], ["Galerida cristata", "Cochevis huppé"], ["Anthus pratensis", "Pipit farlouse"], ["Anthus trivialis", "Pipit des arbres"]] },
+    { n: "Les bruants", sp: [["Emberiza citrinella", "Bruant jaune"], ["Emberiza cirlus", "Bruant zizi"], ["Emberiza calandra", "Bruant proyer"], ["Emberiza schoeniclus", "Bruant des roseaux"], ["Emberiza hortulana", "Bruant ortolan"]] },
+    { n: "Fauvettes et pies-grièches", sp: [["Curruca communis", "Fauvette grisette"], ["Curruca undata", "Fauvette pitchou"], ["Sylvia borin", "Fauvette des jardins"], ["Lanius collurio", "Pie-grièche écorcheur"], ["Lanius senator", "Pie-grièche à tête rousse"]] },
+    { n: "Tariers et traquets", sp: [["Saxicola rubicola", "Tarier pâtre"], ["Saxicola rubetra", "Tarier des prés"], ["Oenanthe oenanthe", "Traquet motteux"], ["Phoenicurus phoenicurus", "Rougequeue à front blanc"], ["Linaria cannabina", "Linotte mélodieuse"]] },
+    { n: "Les oiseaux des plaines", sp: [["Phasianus colchicus", "Faisan de Colchide"], ["Perdix perdix", "Perdrix grise"], ["Alectoris rufa", "Perdrix rouge"], ["Coturnix coturnix", "Caille des blés"], ["Upupa epops", "Huppe fasciée"]] }
+  ] },
+  { k: "villes", n: "Villes et ciel", steps: [
+    { n: "Hirondelles et martinets", sp: [["Hirundo rustica", "Hirondelle rustique"], ["Delichon urbicum", "Hirondelle de fenêtre"], ["Riparia riparia", "Hirondelle de rivage"], ["Apus apus", "Martinet noir"], ["Tachymarptis melba", "Martinet à ventre blanc"]] },
+    { n: "Les corvidés", sp: [["Corvus frugilegus", "Corbeau freux"], ["Corvus corax", "Grand Corbeau"], ["Corvus corone", "Corneille noire"], ["Coloeus monedula", "Choucas des tours"], ["Pica pica", "Pie bavarde"]] },
+    { n: "Pigeons et tourterelles", sp: [["Columba livia", "Pigeon biset"], ["Columba palumbus", "Pigeon ramier"], ["Columba oenas", "Pigeon colombin"], ["Streptopelia decaocto", "Tourterelle turque"], ["Streptopelia turtur", "Tourterelle des bois"]] }
+  ] },
+  { k: "eaux", n: "Étangs et canards", steps: PS("eaux") },
+  { k: "roseaux", n: "Hérons et roselières", steps: [
+    { n: "Les hérons", sp: [["Ardea cinerea", "Héron cendré"], ["Ardea purpurea", "Héron pourpré"], ["Egretta garzetta", "Aigrette garzette"], ["Ardea alba", "Grande Aigrette"], ["Bubulcus ibis", "Héron garde-bœufs"]] },
+    { n: "Les hérons discrets", sp: [["Nycticorax nycticorax", "Bihoreau gris"], ["Ardeola ralloides", "Crabier chevelu"], ["Ixobrychus minutus", "Blongios nain"], ["Botaurus stellaris", "Butor étoilé"]] },
+    { n: "Les grands échassiers", sp: [["Ciconia ciconia", "Cigogne blanche"], ["Platalea leucorodia", "Spatule blanche"], ["Grus grus", "Grue cendrée"], ["Phoenicopterus roseus", "Flamant rose"], ["Threskiornis aethiopicus", "Ibis sacré"]] },
+    { n: "Les voix des roseaux", sp: [["Acrocephalus scirpaceus", "Rousserolle effarvatte"], ["Acrocephalus arundinaceus", "Rousserolle turdoïde"], ["Acrocephalus schoenobaenus", "Phragmite des joncs"], ["Cettia cetti", "Bouscarle de Cetti"], ["Cisticola juncidis", "Cisticole des joncs"]] },
+    { n: "Les bijoux du marais", sp: [["Rallus aquaticus", "Râle d'eau"], ["Alcedo atthis", "Martin-pêcheur d'Europe"], ["Panurus biarmicus", "Panure à moustaches"], ["Luscinia svecica", "Gorgebleue à miroir"], ["Remiz pendulinus", "Rémiz penduline"]] }
+  ] },
+  { k: "limicoles", n: "Les limicoles", steps: PS("limicoles") },
+  { k: "larides", n: "Mouettes, goélands, sternes", steps: PS("larides") },
+  { k: "mer", n: "Mer et côtes", steps: [
+    { n: "Les oiseaux du large", sp: [["Morus bassanus", "Fou de Bassan"], ["Puffinus puffinus", "Puffin des Anglais"], ["Fulmarus glacialis", "Fulmar boréal"], ["Hydrobates pelagicus", "Océanite tempête"], ["Stercorarius skua", "Grand Labbe"]] },
+    { n: "Pingouins et plongeons", sp: [["Alca torda", "Pingouin torda"], ["Uria aalge", "Guillemot de Troïl"], ["Fratercula arctica", "Macareux moine"], ["Gavia stellata", "Plongeon catmarin"], ["Gavia immer", "Plongeon imbrin"]] },
+    { n: "Cormorans et canards marins", sp: [["Gulosus aristotelis", "Cormoran huppé"], ["Phalacrocorax carbo", "Grand Cormoran"], ["Melanitta nigra", "Macreuse noire"], ["Somateria mollissima", "Eider à duvet"], ["Clangula hyemalis", "Harelde boréale"]] },
+    { n: "Rochers et dunes", sp: [["Anthus petrosus", "Pipit maritime"], ["Pyrrhocorax pyrrhocorax", "Crave à bec rouge"], ["Calidris maritima", "Bécasseau violet"], ["Plectrophenax nivalis", "Bruant des neiges"], ["Eremophila alpestris", "Alouette haussecol"]] }
+  ] },
+  { k: "rapaces", n: "Les rapaces", steps: [...PS("rapaces"),
+    { n: "Aigles et vautours", sp: [["Aquila chrysaetos", "Aigle royal"], ["Hieraaetus pennatus", "Aigle botté"], ["Gyps fulvus", "Vautour fauve"], ["Neophron percnopterus", "Vautour percnoptère"], ["Haliaeetus albicilla", "Pygargue à queue blanche"]] }
+  ] },
+  { k: "montagne", n: "La montagne", steps: [
+    { n: "Les sommets", sp: [["Tichodroma muraria", "Tichodrome échelette"], ["Pyrrhocorax graculus", "Chocard à bec jaune"], ["Montifringilla nivalis", "Niverolle alpine"], ["Prunella collaris", "Accenteur alpin"], ["Lagopus muta", "Lagopède alpin"]] },
+    { n: "Les forêts d'altitude", sp: [["Nucifraga caryocatactes", "Cassenoix moucheté"], ["Tetrao urogallus", "Grand Tétras"], ["Lyrurus tetrix", "Tétras lyre"], ["Glaucidium passerinum", "Chevêchette d'Europe"], ["Aegolius funereus", "Chouette de Tengmalm"]] },
+    { n: "Torrents et falaises", sp: [["Cinclus cinclus", "Cincle plongeur"], ["Motacilla cinerea", "Bergeronnette des ruisseaux"], ["Monticola saxatilis", "Monticole de roche"], ["Ptyonoprogne rupestris", "Hirondelle de rochers"], ["Anthus spinoletta", "Pipit spioncelle"]] }
+  ] },
+  { k: "sud", n: "Le Sud", steps: [
+    { n: "La garrigue", sp: [["Curruca melanocephala", "Fauvette mélanocéphale"], ["Curruca cantillans", "Fauvette passerinette"], ["Monticola solitarius", "Monticole bleu"], ["Oenanthe hispanica", "Traquet oreillard"], ["Emberiza cia", "Bruant fou"]] },
+    { n: "Les couleurs du Sud", sp: [["Merops apiaster", "Guêpier d'Europe"], ["Coracias garrulus", "Rollier d'Europe"], ["Clamator glandarius", "Coucou geai"], ["Caprimulgus europaeus", "Engoulevent d'Europe"], ["Burhinus oedicnemus", "Œdicnème criard"]] }
+  ] },
+  { k: "rares", n: "Les visiteurs rares", steps: [
+    { n: "Raretés d'automne", sp: [["Phylloscopus inornatus", "Pouillot à grands sourcils"], ["Bombycilla garrulus", "Jaseur boréal"], ["Anthus richardi", "Pipit de Richard"], ["Lanius excubitor", "Pie-grièche grise"], ["Calidris pugnax", "Combattant varié"]] }
+  ] }
+];
+/* Les 12 tours : même chemin, de plus en plus dur */
+const GTOURS = [
+  { n: "Photos", d: "3 choix", stim: ["photo"], k: 3 },
+  { n: "Photos", d: "4 choix", stim: ["photo"], k: 4 },
+  { n: "Photos de terrain", d: "comme dehors", stim: ["field"], k: 4 },
+  { n: "Chants", d: "à l'oreille", stim: ["son"], k: 4 },
+  { n: "Noms latins", d: "latin → français", stim: ["la"], k: 4 },
+  { n: "Français → latin", d: "le nom savant", stim: ["fr"], k: 4 },
+  { n: "Écrire", d: "tape le nom", stim: ["photo"], format: "type" },
+  { n: "Chrono", d: "10 secondes", stim: ["photo", "field"], k: 4, timer: 10 },
+  { n: "Lequel chante ?", d: "4 chants", stim: ["soncho"], k: 4 },
+  { n: "Terrain et chants", d: "mélangés", stim: ["field", "son"], k: 4 },
+  { n: "Écrire à l'oreille", d: "tape le nom", stim: ["son"], format: "type" },
+  { n: "Expert", d: "tout mélangé, chrono", stim: ["photo", "field", "son", "la"], k: 4, timer: 10 }
+];
+/* Un tour : étapes d'apprentissage, révision toutes les 2 étapes, bilan de chapitre */
+const GBASE = (() => {
+  const out = [];
+  GCH.forEach((ch, ci) => {
+    const L = ch.steps.length;
+    ch.steps.forEach((st, si) => {
+      out.push({ n: st.n, sp: st.sp, ch: ci, kind: "learn" });
+      if (L > 2 && si % 2 === 1 && si < L - 1) out.push({ n: "Révision", sp: [...ch.steps[si - 1].sp, ...st.sp], ch: ci, kind: "rev" });
+    });
+    if (L > 1) out.push({ n: `Bilan : ${ch.n}`, sp: ch.steps.flatMap(s => s.sp), ch: ci, kind: "boss" });
+  });
+  return out;
+})();
+const GRAND = { id: "grand", n: "Le grand parcours", d: "Toute la France, chapitre par chapitre", ic: "bird", c: "#FFCE00", stim: ["photo"],
+  steps: GTOURS.flatMap((T, ti) => GBASE.map(s => ({ ...s, tour: ti }))) };
+PATHI.grand = GRAND;
+const GPT = GBASE.length;   // étapes par tour
+const gStep = i => GRAND.steps[i];
+const gNext = () => pathNext(GRAND);
+
+/* ---------- L'écran du parcours ---------- */
+const GV = { tour: -1, ch: -1 };
+function chHtml(ti, ci, nx) {
+  const idx = GBASE.map((s, k) => s.ch === ci ? ti * GPT + k : -1).filter(k => k >= 0);
+  const done = idx.filter(i => stepStars("grand", i) > 0).length, open = stepOpen(GRAND, idx[0]);
+  const cur = idx.includes(nx), exp = GV.ch === ci || (GV.ch === -1 && cur);
+  const ch = GCH[ci], cover = ch.steps[0].sp[0];
+  return `<div class="gch ${open ? "" : "lock"} ${cur ? "cur" : ""} ${done === idx.length ? "full" : ""}">
+    <button class="gcov" data-act="gch" data-c="${ci}" data-sci="${esc(cover[0])}" ${open ? "" : "disabled"}>
+      <span class="gtx"><small>Chapitre ${ci + 1} · ${done}/${idx.length}</small><b>${esc(ch.n)}</b></span>
+      <span class="gst">${open ? (done === idx.length ? ic("check") : cur ? ic("play") : "") : ic("lock")}</span></button>
+    ${exp && open ? `<ol class="groad">${idx.map((i, k) => { const st = stepStars("grand", i), ok = stepOpen(GRAND, i), s = gStep(i), here = i === nx;
+      return `<li class="${st ? "done" : ""} ${ok ? "" : "lock"} ${here ? "here" : ""} k-${s.kind}" style="--x:${[0, 1, 2, 1][k % 4]}">
+        <button class="gnode" data-act="gstep" data-i="${i}" ${ok ? "" : "disabled"} aria-label="Étape ${i + 1}">${st ? ic("check") : here ? ic("play") : s.kind === "boss" ? ic("trophy") : s.kind === "rev" ? ic("replay") : ok ? i + 1 : ic("lock")}</button>
+        <span class="glab"><b>${esc(s.n)}</b><small>Étape ${i + 1}${st ? " · " + "★".repeat(st) : ""}</small></span></li>`; }).join("")}</ol>` : ""}
+  </div>`;
+}
+function grandHtml() {
+  const nx = gNext(), curT = nx < 0 ? GTOURS.length - 1 : Math.floor(nx / GPT);
+  const ti = GV.tour >= 0 ? Math.min(GV.tour, curT) : curT, T = GTOURS[ti];
+  const done = GRAND.steps.filter((_, i) => stepStars("grand", i) > 0).length;
+  return `<section class="view grand">
+  <header class="ghead"><button class="icon-btn" data-act="home" aria-label="Retour">${ic("x")}</button><h1>Ton parcours</h1><span class="gcount">${done} / ${GRAND.steps.length}</span></header>
+  <div class="gtours">${GTOURS.map((t, k) => `<button class="${k === ti ? "on" : ""}" data-act="gtour" data-t="${k}" ${k > curT ? "disabled" : ""}>${k > curT ? ic("lock", "xs") : ""}Tour ${k + 1}</button>`).join("")}</div>
+  <p class="gtour-d"><b>Tour ${ti + 1} · ${esc(T.n)}</b> ${esc(T.d)}. ${PASS} bonnes réponses sur ${PLEN} pour avancer.</p>
+  <div class="gchs">${GCH.map((_, ci) => chHtml(ti, ci, nx)).join("")}</div>
+  <button class="glink" data-act="daily">${ic("shuffle", "xs")}Série du jour classique : 12 questions mélangées</button>
+</section>`;
+}
+async function grandMount() {
+  const here = $(".groad li.here");
+  if (here) setTimeout(() => here.scrollIntoView({ block: "center", behavior: "smooth" }), 250);
+  for (const b of $$(".gcov[data-sci]")) {
+    const ch = GCH[+b.dataset.c], sp = ch.steps[0].sp[0];
+    resolveTaxon(sp[0], sp[1]).then(t => { if (t?.img?.md && b.isConnected) { b.style.backgroundImage = `url("${t.img.md}")`; b.classList.add("ph"); } }).catch(() => {});
+  }
 }
 
 /* ---- terrain.js ---- */
@@ -7218,7 +7590,7 @@ function go(v, data) {
   document.body.classList.remove("gfull");
   const from = VIEW;
   VIEW = v; VDATA = data;
-  document.body.classList.toggle("inquiz", ["quiz", "loading", "result", "error", "builder", "trip", "hand", "handsp", "live", "defi", "paths", "path"].includes(v));
+  document.body.classList.toggle("inquiz", ["quiz", "loading", "result", "error", "builder", "trip", "hand", "handsp", "live", "defi", "paths", "path", "grand"].includes(v));
   const tabv = v === "about" ? "settings" : v;
   $$("#nav button").forEach(b => b.classList.toggle("on", b.dataset.tab === tabv));
   if (v !== "quiz") setAmbient(null);
@@ -7367,25 +7739,20 @@ VIEWS.home = () => {
     <div class="pill flame ${st ? "" : "cold"} ${hot ? "hot" : ""}" title="Jours d'affilée">${ic("flame")}<span>${st}</span></div>
     <button class="pill xp" data-act="tab" data-tab="top" title="Classement">${ic("spark")}<span>${fmt(S.xp)}</span></button>
   </header>
-  <div class="hero ${done ? "done" : ""}">
-    <button class="hero-ph" id="otd" data-act="otd" aria-label="Oiseau du jour" disabled><img alt=""><span class="hero-cap"><small>Oiseau du jour</small><b></b></span></button>
-    <div class="hero-body">
-      <div class="hero-top"><span class="hero-date">${esc(dateFr())}</span><span class="hero-zone">${ic("pin", "xs")}${esc(zoneLabel(S.set.zone))}</span>
-        <span class="mix" aria-hidden="true"><span>${ic("frame")}</span><span>${ic("wave")}</span><span>${ic("quill")}</span><span>${ic("tree")}</span><span>${ic("duel")}</span></span></div>
-      <h1>${done ? "Série bouclée" : "Série du jour"}</h1>
-      <p class="sub">${done ? "Rejoue quand tu veux, ou change de mode." : "12 questions, environ 4 minutes."}</p>
-      <button class="hero-go" data-act="daily" aria-label="Lancer la série du jour">${ic(done ? "replay" : "play")}<span>${done ? "Rejouer" : "Jouer"}</span></button>
+  <div class="story ${done ? "done" : ""}">
+    <button class="story-ph" id="otd" data-act="otd" aria-label="Oiseau du jour" disabled><img alt=""></button>
+    <div class="story-low">
+      <span class="k" id="otdK">${done ? "Série bouclée, rejoue quand tu veux" : `${esc(dateFr())} · ${esc(zoneLabel(S.set.zone))}`}</span>
+      <h1 id="otdName">Série du jour</h1><em class="latin" id="otdLa"></em>
+      <div class="schips">
+        <button class="glass" data-act="mini">${ic("bolt", "xs")}Mini</button>
+        <button class="glass ${due ? "due" : ""}" data-act="review">${ic("replay", "xs")}${due ? due + " à revoir" : "Révisions"}</button>
+        <button class="glass" data-act="mode" data-mode="perso">${ic("sliders", "xs")}Sur mesure</button>
+      </div>
+      <button class="hero-go" data-act="chemin" aria-label="Lancer la série du jour">${ic(done ? "replay" : "play")}<span>${done ? "Rejouer la série du jour" : "Lancer la série du jour"}</span></button>
     </div>
     <div class="goal" title="Objectif du jour"><i style="width:${(goal * 100).toFixed(0)}%"></i></div>
   </div>
-  <div class="quick">
-    <button class="qbtn" data-act="mini"><span class="ic">${ic("bolt")}</span><span><b>Mini-série</b><small>3 questions, 1 min</small></span></button>
-    <button class="qbtn due ${due ? "" : "zero"}" data-act="review"><span class="ic">${ic("replay")}</span><span><b>${due ? due + " à revoir" : "Révisions"}</b><small>${due ? "Répétition espacée" : "Rien à revoir"}</small></span></button>
-  </div>
-  <button class="perso-cta" data-act="mode" data-mode="perso">
-    <span class="tx"><b>Sur mesure</b><small>Une recette en un geste, ou tout régler toi-même</small></span>
-    <span class="go">${ic("arrow")}</span>
-  </button>
   ${weekCard()}
   ${pathHomeCard()}
   ${S.favs.length ? `<div class="favs top" aria-label="Mes quiz">${S.favs.map((f, i) => `<button class="fav" data-act="fav" data-i="${i}">${ic("star")}${esc(f.title)}</button>`).join("")}</div>` : ""}
@@ -7412,7 +7779,10 @@ MOUNT.home = async () => {
     if (!b) return;
     /* l'oiseau du jour fait l'affiche : photo moyenne d'abord (rapide), puis la grande */
     const im = b.querySelector("img"), big = sizeUrl(t.img.md, "large");
-    b.querySelector("b").textContent = nameFr(t);
+    const nm = $("#otdName"), la = $("#otdLa"), k = $("#otdK");
+    if (nm) { nm.textContent = nameFr(t); nm.classList.add("in"); }
+    if (la) la.textContent = t.fr ? t.sci : "";
+    if (k && !S.days[dayKey()]?.serie) k.textContent = "Oiseau du jour";
     im.onload = () => { b.classList.add("on"); b.disabled = false; if (im.src !== big && !navigator.connection?.saveData) { const hi = new Image(); hi.onload = () => { if (im.isConnected) im.src = big; }; hi.src = big; } };
     im.src = t.img.md;
   } catch (e) { /* hors ligne : l'affiche reste en aplats */ }
@@ -8170,13 +8540,14 @@ VIEWS.result = ({ ses, n, ok, badges, msgs }) => {
     <div class="val"><b>${ok}<span style="font-size:24px;color:var(--muted)">/${n}</span></b><small>${esc(ses.title || "")}</small></div></div>
   <h1>${title}</h1>${PP && ses.pathStars ? `<div class="rstars">${starsRow(ses.pathStars)}</div>` : ""}<div class="lead">${esc(lead)}</div>
   ${msgs.map(m => `<div class="chip warn" style="margin-top:12px">${ic("shield")}${esc(m)}</div>`).join("")}
+  ${ses.results.some(r => r.ph) ? `<div class="rgrid">${ses.results.map((r, i) => r.ph ? `<span class="${r.ok ? "ok" : r.part ? "part" : "ko"}" style="--i:${i};background-image:url('${esc(r.ph)}')"></span>` : "").join("")}</div>` : ""}
   <div class="trio"><div class="xp"><b>+${fmt(ses.xp)}</b><small>XP</small></div><div><b>×${ses.maxCombo}</b><small>meilleur combo</small></div>${ses.kind === "hand" ? `<div><b>${Math.round(p * 100)} %</b><small>réussite</small></div>` : `<div><b>${ses.newSp.length}</b><small>nouvelle${ses.newSp.length > 1 ? "s" : ""}</small></div>`}</div>
   <button class="lvlbar" data-act="tab" data-tab="progress"><span class="badge">${L.n}</span><span class="meta"><b>${esc(L.rank)}</b><small>${fmt(L.cur)} / ${fmt(L.need)} XP</small><span class="bar"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span></span></button>
   ${badges.length ? `<div class="sec" style="justify-content:center">${ic("trophy")}Badge${badges.length > 1 ? "s" : ""} débloqué${badges.length > 1 ? "s" : ""}</div><div class="newbadges">${badges.map(b => `<span class="chip warn">${ic(b.ic)}${esc(b.n)}</span>`).join("")}</div>` : ""}
   ${ses.kind === "hand" && ses.hmiss?.length ? `<div class="sec" style="justify-content:center">${ic("replay")}Fiches à revoir</div><div class="missed">${[...new Set(ses.hmiss)].slice(0, 8).map(id => `<button class="mchip" data-act="hsp" data-sp="${id}">${featherPair(HSPI[id])}${esc(HSPI[id].fr)}</button>`).join("")}</div>` : ""}
   ${confs.length ? `<div class="sec" style="justify-content:center">${ic("duel")}Envie de t'entraîner ?</div><p class="muted" style="margin:-4px 0 10px;font-size:13px">Si tu veux : un petit duel sur les oiseaux que tu as confondus.</p><div class="drills">${confs.map(([a, b]) => { const A = taxonById(a), B = taxonById(b); if (!A || !B) return ""; const m = sosVis(A.sci, B.sci)?.v.m; return `<button class="conf drill" data-act="duelgo" data-ids="${a},${b}"><img src="${esc(imgOf(A))}" alt=""><span class="vs">VS</span><img src="${esc(imgOf(B))}" alt=""><span class="tx">${esc(nameFr(A))}<small>${esc(nameFr(B))}</small>${m ? `<em>${esc(m)}</em>` : ""}</span><span class="go">Duel${ic("arrow", "xs")}</span></button>`; }).join("")}</div>` : ""}
   ${missed.length ? `<div class="sec" style="justify-content:center">${ic("replay")}À revoir</div><div class="missed">${missed.map(t => `<button class="mchip" data-act="fiche" data-id="${t.id}"><img src="${esc(imgOf(t))}" alt="">${esc(nameFr(t))}</button>`).join("")}</div>` : ""}
-  ${PP ? `<div class="actions"><button class="btn ghost" data-act="path" data-p="${PP.id}">${ic("map")}Parcours</button>${pnext >= 0 ? `<button class="btn primary" data-act="pgo" data-p="${PP.id}" data-i="${pnext}">${ic("play")}Étape suivante</button>` : `<button class="btn primary" data-act="again">${ic("replay")}${ses.pathStars ? "Refaire" : "Recommencer"}</button>`}</div>` : `<div class="actions">${ses.kind === "hand" ? `<button class="btn ghost" data-act="hhub">${ic("back")}Piaf en main</button>` : `<button class="btn ghost" data-act="home">${ic("back")}Accueil</button>`}${shareable(ses.cfg) ? `<button class="btn ghost sq" data-act="qshare" aria-label="Partager ce quiz">${ic("ext")}</button>` : ""}<button class="btn primary" data-act="again">${ic("replay")}Rejouer</button></div>`}
+  ${PP ? `<div class="actions"><button class="btn ghost" ${PP.id === "grand" ? `data-act="chemin"` : `data-act="path" data-p="${PP.id}"`}>${ic("map")}Parcours</button>${pnext >= 0 ? `<button class="btn primary" data-act="pgo" data-p="${PP.id}" data-i="${pnext}">${ic("play")}Étape suivante</button>` : `<button class="btn primary" data-act="again">${ic("replay")}${ses.pathStars ? "Refaire" : "Recommencer"}</button>`}</div>` : `<div class="actions">${ses.kind === "hand" ? `<button class="btn ghost" data-act="hhub">${ic("back")}Piaf en main</button>` : `<button class="btn ghost" data-act="home">${ic("back")}Accueil</button>`}${shareable(ses.cfg) ? `<button class="btn ghost sq" data-act="qshare" aria-label="Partager ce quiz">${ic("ext")}</button>` : ""}<button class="btn primary" data-act="again">${ic("replay")}Rejouer</button></div>`}
 </section>`;
 };
 MOUNT.result = () => {
@@ -8195,6 +8566,10 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-10.3", n: "4.0", items: [
+    { ic: "frame", t: "La photo d'abord", d: "L'oiseau du jour en plein écran, des réponses en verre, ton score en grand avec les photos de la série." },
+    { ic: "map", t: "Le grand parcours", d: "« Lancer la série du jour » ouvre ton parcours : 13 chapitres du jardin aux raretés, 12 tours de plus en plus durs (972 étapes)." }
+  ] },
   { v: "2026-11-10.2", n: "3.1", items: [
     { ic: "bird", t: "Ouverture", d: "Un oiseau traverse l'écran au lancement ; ton niveau prend la place du titre. Accueil plus court : tous les modes en une grille." }
   ] },
@@ -8290,6 +8665,8 @@ VIEWS.live = () => liveViewHtml();
 MOUNT.live = () => liveMount();
 VIEWS.defi = () => defiViewHtml();
 MOUNT.defi = () => defiMount();
+VIEWS.grand = () => grandHtml();
+MOUNT.grand = () => grandMount();
 VIEWS.paths = () => pathsListHtml();
 VIEWS.path = () => pathHtml();
 MOUNT.path = () => pathMount();
@@ -9348,6 +9725,10 @@ const ACT = {
   dagain: () => { defiNew(); defiPrepare(); },
   dback: () => { defiNew(); go("defi"); },
   dquit: () => { clearTimeout(DEFI.tmr); DEFI.load++; DEFI.st = ""; go("home"); },
+  chemin: () => { GV.tour = -1; GV.ch = -1; go("grand"); },
+  gch: el => { const c = +el.dataset.c; GV.ch = GV.ch === c ? -2 : c; rerender(); },
+  gtour: el => { GV.tour = +el.dataset.t; GV.ch = -1; go("grand"); },
+  gstep: el => { const i = +el.dataset.i; if (!stepOpen(GRAND, i)) return; PATHV.id = "grand"; LASTCFG = pathCfg(GRAND, i); startSession(LASTCFG); },
   paths: () => go("paths"),
   path: el => { PATHV.id = el.dataset.p; PATHV.open = -1; go("path"); },
   pstep: el => { const i = +el.dataset.i, P = PATHI[PATHV.id], cur = PATHV.open === -1 ? pathNext(P) : PATHV.open; PATHV.open = cur === i ? -2 : i; go("path"); },
@@ -9541,6 +9922,15 @@ function introSplash() {
   setTimeout(close, 2300);
   INTRO.wait = 2000 + 2300;
 }
+/* Téléphone qui rame : on mesure les images par seconde au lancement, et on allège si besoin */
+function liteCheck() {
+  try {
+    if ((navigator.hardwareConcurrency || 8) <= 2 || (navigator.deviceMemory || 8) <= 2) { document.body.classList.add("lite"); return; }
+    let n = 0; const t0 = performance.now();
+    const f = () => { n++; if (performance.now() - t0 < 1500) requestAnimationFrame(f); else if (n / 1.5 < 40) document.body.classList.add("lite"); };
+    requestAnimationFrame(f);
+  } catch (e) { /* rien */ }
+}
 /* Tout bouton touché lâche une petite onde à l'endroit du doigt */
 function tapRipple(e) {
   if (S.set.calm) return;
@@ -9585,6 +9975,7 @@ function init() {
   if ("serviceWorker" in navigator && location.hostname !== "plumage.test" && (location.protocol === "https:" || location.hostname === "localhost")) navigator.serviceWorker.register("sw.js").catch(() => {});
   if (S.set.calm) document.body.classList.add("calm");
   introSplash();
+  liteCheck();
   document.addEventListener("pointerdown", tapRipple, { passive: true });
   document.addEventListener("click", onClick);
   document.addEventListener("keydown", onKey);

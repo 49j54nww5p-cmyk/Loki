@@ -611,7 +611,7 @@ function settle(res) {
   } else if (q.kind === "geo") { bump("geo", ok); if (ok) count("geook"); }
   else if (q.kind === "root") { bump("root", ok); if (ok) count("rootok"); }
   else if (q.kind === "hand") { bump("hand", ok); if (ok) count("handok"); handRecord(q, ok); if (!ok && q.sp) (ses.hmiss || (ses.hmiss = [])).push(q.sp); }
-  ses.results.push({ ok, part: !!res.partial, xp: gain, id: q.t?.id || null, kind: q.kind });
+  ses.results.push({ ok, part: !!res.partial, xp: gain, id: q.t?.id || null, kind: q.kind, ph: (q.photo && q.photo.md) || (q.t && q.t.img && q.t.img.md) || "" });
   const L = level();
   if (L.n > (ses.lvlNow || ses.lvl0)) {
     ses.lvlNow = L.n;

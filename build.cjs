@@ -6,8 +6,8 @@ const sharp = require("sharp");
 const ROOT = __dirname, SRC = path.join(ROOT, "src"), DIST = process.env.OUT ? path.resolve(process.env.OUT) : path.join(ROOT, "dist");
 fs.mkdirSync(DIST, { recursive: true });
 
-const css = fs.readFileSync(path.join(SRC, "styles.css"), "utf8") + "\n/* ==== look.css : refonte v3 ==== */\n" + fs.readFileSync(path.join(SRC, "look.css"), "utf8");
-const js = ["data.js", "core.js", "engine.js", "hand.js", "sosies.js", "net.js", "partage.js", "defi.js", "parcours.js", "terrain.js", "cloud.js", "semaine.js", "idees.js", "ui.js"].map(f => `/* ---- ${f} ---- */\n` + fs.readFileSync(path.join(SRC, f), "utf8")).join("\n");
+const css = fs.readFileSync(path.join(SRC, "styles.css"), "utf8") + "\n/* ==== look.css : refonte v3 ==== */\n" + fs.readFileSync(path.join(SRC, "look.css"), "utf8") + "\n/* ==== stories.css : v4 ==== */\n" + fs.readFileSync(path.join(SRC, "stories.css"), "utf8");
+const js = ["data.js", "core.js", "engine.js", "hand.js", "sosies.js", "net.js", "partage.js", "defi.js", "parcours.js", "grand.js", "terrain.js", "cloud.js", "semaine.js", "idees.js", "ui.js"].map(f => `/* ---- ${f} ---- */\n` + fs.readFileSync(path.join(SRC, f), "utf8")).join("\n");
 const html = fs.readFileSync(path.join(SRC, "shell.html"), "utf8")
   .replace("/*__CSS__*/", () => css)
   .replace("/*__JS__*/", () => js);
@@ -21,13 +21,13 @@ const bird = "M3 15.5c1.8.2 3.3-.3 4.6-1.4 1.5-1.3 2.6-3.7 5.6-4.4 2.4-.6 4.3.2 
 /* Icône : l'oiseau à l'encre sur l'orange de l'appli */
 const icon = rx => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
 <defs><clipPath id="c"><rect width="512" height="512" rx="${rx}"/></clipPath></defs>
-<g clip-path="url(#c)"><rect width="512" height="512" fill="#FF7A3C"/>
-<path transform="translate(40 2) scale(18)" fill="#121A15" fill-rule="evenodd" d="${bird}"/></g></svg>`;
+<g clip-path="url(#c)"><rect width="512" height="512" fill="#FFCE00"/>
+<path transform="translate(40 2) scale(18)" fill="#0B0B0B" fill-rule="evenodd" d="${bird}"/></g></svg>`;
 fs.writeFileSync(path.join(DIST, "icon.svg"), icon(112));
 
 const manifest = {
   name: "Plumage", short_name: "Plumage", description: "Quiz d'oiseaux : photos, chants, latin et familles, en direct d'iNaturalist.",
-  start_url: "./", scope: "./", display: "standalone", orientation: "portrait", background_color: "#121A15", theme_color: "#121A15", lang: "fr",
+  start_url: "./", scope: "./", display: "standalone", orientation: "portrait", background_color: "#0B0B0B", theme_color: "#0B0B0B", lang: "fr",
   icons: [
     { src: "icon-192.png", sizes: "192x192", type: "image/png" },
     { src: "icon-512.png", sizes: "512x512", type: "image/png" },

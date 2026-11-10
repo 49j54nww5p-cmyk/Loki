@@ -510,6 +510,8 @@ async function refPhoto(t) {
   if (!list.length && t.img) list = [{ lg: sizeUrl(t.img.md, "large"), md: t.img.md, attr: t.img.attr, lic: t.img.lic }];
   if (!list.length) return null;
   const r = S.sp[t.id], seen = new Set(r?.ps || []), won = new Set([...(r?.pk || []), ...(r?.fk || [])]);
+  const lic = list.filter(p => p.lic);   /* photos sous licence libre d'abord (pas de « tous droits réservés ») */
+  if (lic.length) list = lic;
   const cands = list.slice(0, 30).filter(p => p.lg !== LASTPH.get(t.id));
   const unseen = cands.filter(p => !seen.has(photoKey(p.lg || p.md))), notWon = cands.filter(p => !won.has(photoKey(p.lg || p.md)));
   const pool = unseen.length ? unseen : notWon.length ? notWon : cands;

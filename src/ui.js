@@ -10,6 +10,7 @@ function go(v, data) {
   if (VIEW === "quiz" && v !== "quiz") { sndStop(); clearQTimer(); hideFeedback(); }
   closeViewer(true);
   document.body.classList.remove("gfull");
+  const from = VIEW;
   VIEW = v; VDATA = data;
   document.body.classList.toggle("inquiz", ["quiz", "loading", "result", "error", "builder", "trip", "hand", "handsp", "live", "defi", "paths", "path"].includes(v));
   const tabv = v === "about" ? "settings" : v;
@@ -18,6 +19,7 @@ function go(v, data) {
   if (v !== "result" && v !== "quiz" && v !== "live" && v !== "defi") stopFx();
   const app = $("#app");
   app.classList.remove("waiting");
+  app.dataset.tr = trKind(from, v);
   app.innerHTML = (VIEWS[v] || VIEWS.home)(data);
   window.scrollTo(0, 0);
   if (MOUNT[v]) MOUNT[v](data);
@@ -149,7 +151,7 @@ async function backupNow() {
 function markBackup() { S.bk = { ...(S.bk || {}), last: Date.now() }; save(true); $$(".notice.bk").forEach(x => x.remove()); const l = $("#bklast"); if (l) l.textContent = "Dernière : " + ago(S.bk.last) + "."; }
 VIEWS.home = () => {
   const L = level(), st = liveStreak(), d = S.days[dayKey()], done = !!d?.serie, due = dueList().length;
-  const goal = done ? 1 : clamp((d?.xp || 0) / (S.set.goal || 150), 0, 1), C = 2 * Math.PI * 66;
+  const goal = done ? 1 : clamp((d?.xp || 0) / (S.set.goal || 150), 0, 1);
   const last = (S.hist || [])[0];
   const hot = !playedToday() && new Date().getHours() >= 17;
   return `<section class="view home">
@@ -158,35 +160,33 @@ VIEWS.home = () => {
     <div class="pill flame ${st ? "" : "cold"} ${hot ? "hot" : ""}" title="Jours d'affilée">${ic("flame")}<span>${st}</span></div>
     <button class="pill xp" data-act="tab" data-tab="top" title="Classement">${ic("spark")}<span>${fmt(S.xp)}</span></button>
   </header>
-  <div class="hero">
-    <div class="bgimg" id="heroBg"><img alt=""></div>
-    <div class="hero-top"><span class="eyebrow">Série du jour</span><span class="hero-date">${esc(dateFr())}</span></div>
-    <div class="orb-wrap"><button class="orb ${done ? "done" : ""}" data-act="daily" aria-label="Lancer la série du jour">
-      <svg class="ring" viewBox="0 0 148 148" aria-hidden="true"><circle class="track" cx="74" cy="74" r="66"/><circle class="prog" cx="74" cy="74" r="66" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - goal)).toFixed(1)}"/></svg>
-      <span class="core">${ic(done ? "check" : "play")}</span></button></div>
-    <h1>${done ? "Série bouclée !" : "12 questions, sans chrono"}</h1>
-    <div class="sub">${done ? "Rejoue quand tu veux, ou change de mode." : `Environ 4 min · photos, chants, latin, familles · ${esc(zoneLabel(S.set.zone))}`}</div>
-    <div class="mix" aria-hidden="true"><span>${ic("frame")}</span><span>${ic("wave")}</span><span>${ic("quill")}</span><span>${ic("tree")}</span><span>${ic("duel")}</span></div>
-    <button class="otd" id="otd" data-act="otd" hidden><img alt=""><span><small>Oiseau du jour</small><b></b></span>${ic("arrow")}</button>
+  <div class="hero ${done ? "done" : ""}">
+    <button class="hero-ph" id="otd" data-act="otd" aria-label="Oiseau du jour" disabled><img alt=""><span class="hero-cap"><small>Oiseau du jour</small><b></b></span></button>
+    <div class="hero-body">
+      <div class="hero-top"><span class="hero-date">${esc(dateFr())}</span><span class="hero-zone">${ic("pin", "xs")}${esc(zoneLabel(S.set.zone))}</span>
+        <span class="mix" aria-hidden="true"><span>${ic("frame")}</span><span>${ic("wave")}</span><span>${ic("quill")}</span><span>${ic("tree")}</span><span>${ic("duel")}</span></span></div>
+      <h1>${done ? "Série bouclée" : "Série du jour"}</h1>
+      <p class="sub">${done ? "Rejoue quand tu veux, ou change de mode." : "12 questions, environ 4 minutes."}</p>
+      <button class="hero-go" data-act="daily" aria-label="Lancer la série du jour">${ic(done ? "replay" : "play")}<span>${done ? "Rejouer" : "Jouer"}</span></button>
+    </div>
+    <div class="goal" title="Objectif du jour"><i style="width:${(goal * 100).toFixed(0)}%"></i></div>
   </div>
-  <button class="perso-cta" data-act="mode" data-mode="perso">
-    <span class="ic">${ic("sliders")}</span>
-    <span class="tx"><b>Sur mesure</b><small>Une recette en un geste, ou tout régler toi-même</small>
-      <span class="pills"><span>${ic("spark", "xs")}10 recettes</span><span>${ic("pin", "xs")}Lieu</span><span>${ic("tree", "xs")}Familles</span><span>${ic("wave", "xs")}Chants</span><span>${ic("clock", "xs")}Chrono</span></span></span>
-    <span class="go">${ic("arrow")}</span>
-  </button>
-  ${pathHomeCard()}
-  ${weekCard()}
-  ${S.favs.length ? `<div class="favs top" aria-label="Mes quiz">${S.favs.map((f, i) => `<button class="fav" data-act="fav" data-i="${i}">${ic("star")}${esc(f.title)}</button>`).join("")}</div>` : ""}
-  ${installCard()}${backupCard()}
   <div class="quick">
     <button class="qbtn" data-act="mini"><span class="ic">${ic("bolt")}</span><span><b>Mini-série</b><small>3 questions, 1 min</small></span></button>
     <button class="qbtn due ${due ? "" : "zero"}" data-act="review"><span class="ic">${ic("replay")}</span><span><b>${due ? due + " à revoir" : "Révisions"}</b><small>${due ? "Répétition espacée" : "Rien à revoir"}</small></span></button>
   </div>
-  ${last ? `<button class="lastp" data-act="histplay" data-i="0"><span class="ic">${ic(last.cfg?.icon || "replay")}</span><span class="tx"><small>Dernière partie · ${esc(ago(last.t))}</small><b>${esc(last.title || "Partie")}</b><span>${last.ok}/${last.n} bonnes réponses · +${fmt(last.xp)} XP</span></span><span class="go">${ic("replay")}Rejouer</span></button>` : ""}
+  <button class="perso-cta" data-act="mode" data-mode="perso">
+    <span class="tx"><b>Sur mesure</b><small>Une recette en un geste, ou tout régler toi-même</small></span>
+    <span class="go">${ic("arrow")}</span>
+  </button>
+  ${weekCard()}
+  ${pathHomeCard()}
+  ${S.favs.length ? `<div class="favs top" aria-label="Mes quiz">${S.favs.map((f, i) => `<button class="fav" data-act="fav" data-i="${i}">${ic("star")}${esc(f.title)}</button>`).join("")}</div>` : ""}
+  ${installCard()}${backupCard()}
+  ${last ? `<button class="lastp" data-act="histplay" data-i="0"><span class="ic">${ic(last.cfg?.icon || "replay")}</span><span class="tx"><small>Dernière partie, ${esc(ago(last.t))}</small><b>${esc(last.title || "Partie")}</b><span>${last.ok}/${last.n} bonnes réponses, +${fmt(last.xp)} XP</span></span><span class="go">${ic("replay")}Rejouer</span></button>` : ""}
   <button class="lvlbar" data-act="tab" data-tab="progress"><span class="badge">${L.n}</span><span class="meta"><b>${esc(L.rank)}</b><small>${fmt(L.cur)} / ${fmt(L.need)} XP</small><span class="bar"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span></span></button>
   ${MODEGROUPS.map(([g, icn, ks], gi) => `<div class="sec">${ic(icn)}${g}</div>
-  <div class="tiles">${ks.map(k => MODES.find(m => m.k === k)).filter(Boolean).map((m, i) => `<button class="tile" style="--c:${m.c};animation-delay:${(gi * 4 + i) * 35}ms" data-act="mode" data-mode="${m.k}"><span class="ic">${ic(m.ic)}</span><span><b>${m.n}</b><small>${m.d}</small></span></button>`).join("")}</div>`).join("")}
+  <div class="tiles g${gi}">${ks.map(k => MODES.find(m => m.k === k)).filter(Boolean).map(m => `<button class="tile" style="--c:${m.c}" data-act="mode" data-mode="${m.k}"><span class="ic">${ic(m.ic)}</span><span><b>${m.n}</b><small>${m.d}</small></span></button>`).join("")}</div>`).join("")}
 </section>`;
 };
 MOUNT.home = async () => {
@@ -198,12 +198,12 @@ MOUNT.home = async () => {
     const t = OTD = top[hashStr(dayKey() + zoneKey(S.set.zone)) % top.length];
     const b = $("#otd");
     if (!b) return;
-    b.querySelector("img").src = t.img.sq;
+    /* l'oiseau du jour fait l'affiche : photo moyenne d'abord (rapide), puis la grande */
+    const im = b.querySelector("img"), big = sizeUrl(t.img.md, "large");
     b.querySelector("b").textContent = nameFr(t);
-    b.hidden = false;
-    const bg = $("#heroBg");
-    if (bg) { const im = bg.querySelector("img"); im.onload = () => bg.classList.add("on"); im.src = t.img.md; }
-  } catch (e) { /* hors ligne */ }
+    im.onload = () => { b.classList.add("on"); b.disabled = false; if (im.src !== big && !navigator.connection?.saveData) { const hi = new Image(); hi.onload = () => { if (im.isConnected) im.src = big; }; hi.src = big; } };
+    im.src = t.img.md;
+  } catch (e) { /* hors ligne : l'affiche reste en aplats */ }
 };
 
 /* ---------- Chargement & erreurs ---------- */
@@ -983,6 +983,10 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-10.1", n: "3.0", items: [
+    { ic: "spark", t: "Nouveau look", d: "L'oiseau du jour fait l'affiche, grandes lettres, accueil deux fois plus court." },
+    { ic: "bolt", t: "Ça bouge", d: "Chaque page, chaque bouton, chaque réponse a son animation. Trop ? Réglages, mode calme." }
+  ] },
   { v: "2026-11-06.1", n: "2.8", items: [
     { ic: "cal", t: "« De saison » pour de vrai", d: "Les photos viennent d'observations faites à cette période de l'année, près de chez toi : en novembre, des bécasseaux en plumage d'hiver, pas en nuptial." }
   ] },
@@ -2217,6 +2221,7 @@ function onClick(e) {
   const el = e.target.closest("[data-act]");
   if (el) {
     if (el.disabled) return;
+    try { if (navigator.vibrate && !S.set.calm) navigator.vibrate(8); } catch (err) { /* pas de vibreur */ }
     const f = ACT[el.dataset.act];
     if (f) { e.preventDefault(); f(el, e); }
     return;
@@ -2306,6 +2311,18 @@ function restoreFrom(o) {
   return true;
 }
 
+/* ---------- Transitions : chaque changement d'écran a son mouvement ---------- */
+const TABS = ["home", "carnet", "progress", "settings"];
+function trKind(a, b) {
+  const i = TABS.indexOf(a === "about" ? "settings" : a), j = TABS.indexOf(b === "about" ? "settings" : b);
+  if (a === b) return b === "quiz" ? "next" : "none";
+  if (i >= 0 && j >= 0) return j > i ? "left" : "right";
+  if (b === "quiz") return "zoom";
+  if (b === "result") return "rise";
+  if (b === "home") return "down";
+  if (b === "loading") return "fade";
+  return "up";
+}
 /* ---------- Démarrage ---------- */
 /* Liens reçus : #duel=CODE (duel en direct), #q=… (quiz partagé) */
 function openLinkHash() {

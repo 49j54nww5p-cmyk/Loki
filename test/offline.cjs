@@ -36,7 +36,7 @@ const path = require("path");
     if (img !== 40) fail("photo du pack hors ligne : " + img);
     const miss = await p.evaluate(() => new Promise(res => { const i = new Image(); i.onload = () => res("chargée"); i.onerror = () => res("absente"); i.src = "https://static.inaturalist.org/photos/999/large.jpg"; }));
     if (miss !== "absente") fail("photo hors pack : " + miss);
-    const font = await p.evaluate(async () => { await document.fonts.ready; return document.fonts.check("16px Figtree"); });
+    const font = await p.evaluate(async () => { await document.fonts.ready; return document.fonts.check("16px Bricolage"); });
     console.log("hors ligne : coquille", shell, "fichiers, appli ouverte sans réseau, photo du pack ok, police", font ? "ok" : "absente");
     await ctx.setOffline(false);
 

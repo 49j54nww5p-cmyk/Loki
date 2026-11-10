@@ -156,7 +156,8 @@ VIEWS.home = () => {
   const hot = !playedToday() && new Date().getHours() >= 17;
   return `<section class="view home">
   <header class="hud">
-    <div class="brand"><span class="mark">${ic("bird")}</span>Plumage</div>
+    ${INTRO.brand ? `<div class="brand" id="brand"><span class="mark">${ic("bird")}</span><span class="bname">Plumage</span></div>` : ""}
+    <button class="hlvl ${INTRO.brand ? "wait" : ""}" id="hlvl" data-act="tab" data-tab="progress" aria-label="Niveau ${L.n}, ${esc(L.rank)}"><span class="badge">${L.n}</span><span class="meta"><b>${esc(L.rank)}</b><span class="bar"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span></span></button>
     <div class="pill flame ${st ? "" : "cold"} ${hot ? "hot" : ""}" title="Jours d'affilée">${ic("flame")}<span>${st}</span></div>
     <button class="pill xp" data-act="tab" data-tab="top" title="Classement">${ic("spark")}<span>${fmt(S.xp)}</span></button>
   </header>
@@ -184,12 +185,17 @@ VIEWS.home = () => {
   ${S.favs.length ? `<div class="favs top" aria-label="Mes quiz">${S.favs.map((f, i) => `<button class="fav" data-act="fav" data-i="${i}">${ic("star")}${esc(f.title)}</button>`).join("")}</div>` : ""}
   ${installCard()}${backupCard()}
   ${last ? `<button class="lastp" data-act="histplay" data-i="0"><span class="ic">${ic(last.cfg?.icon || "replay")}</span><span class="tx"><small>Dernière partie, ${esc(ago(last.t))}</small><b>${esc(last.title || "Partie")}</b><span>${last.ok}/${last.n} bonnes réponses, +${fmt(last.xp)} XP</span></span><span class="go">${ic("replay")}Rejouer</span></button>` : ""}
-  <button class="lvlbar" data-act="tab" data-tab="progress"><span class="badge">${L.n}</span><span class="meta"><b>${esc(L.rank)}</b><small>${fmt(L.cur)} / ${fmt(L.need)} XP</small><span class="bar"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span></span></button>
-  ${MODEGROUPS.map(([g, icn, ks], gi) => `<div class="sec">${ic(icn)}${g}</div>
-  <div class="tiles g${gi}">${ks.map(k => MODES.find(m => m.k === k)).filter(Boolean).map(m => `<button class="tile" style="--c:${m.c}" data-act="mode" data-mode="${m.k}"><span class="ic">${ic(m.ic)}</span><span><b>${m.n}</b><small>${m.d}</small></span></button>`).join("")}</div>`).join("")}
+  <div class="sec">${ic("grid")}Tous les modes</div>
+  <div class="mgrid">${MODEGROUPS.map(([g, icn, ks], gi) => ks.map(k => MODES.find(m => m.k === k)).filter(Boolean).map((m, i) => `<button class="mtile g${gi}" data-act="mode" data-mode="${m.k}" title="${esc(m.d)}" style="--d:${(gi * 4 + i) * 40}ms"><span class="ic">${ic(m.ic)}</span><b>${m.n}</b></button>`).join("")).join("")}</div>
 </section>`;
 };
 MOUNT.home = async () => {
+  if (INTRO.brand) setTimeout(() => {
+    INTRO.brand = false;
+    const b = $("#brand"), l = $("#hlvl");
+    if (b) { b.classList.add("bye"); setTimeout(() => b.remove(), 450); }
+    if (l) l.classList.remove("wait");
+  }, INTRO.wait);
   try {
     const pool = await getPool({ zone: S.set.zone, freq: "common", size: 150 });
     if (VIEW !== "home") return;
@@ -983,6 +989,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-10.2", n: "3.1", items: [
+    { ic: "bird", t: "Ouverture", d: "Un oiseau traverse l'écran au lancement ; ton niveau prend la place du titre. Accueil plus court : tous les modes en une grille." }
+  ] },
   { v: "2026-11-10.1", n: "3.0", items: [
     { ic: "spark", t: "Nouveau look", d: "L'oiseau du jour fait l'affiche, grandes lettres, accueil deux fois plus court." },
     { ic: "bolt", t: "Ça bouge", d: "Chaque page, chaque bouton, chaque réponse a son animation. Trop ? Réglages, mode calme." }
@@ -2311,6 +2320,35 @@ function restoreFrom(o) {
   return true;
 }
 
+/* ---------- Ouverture : un oiseau traverse, le nom apparaît (une fois par lancement, touchable pour passer) ---------- */
+const INTRO = { brand: true, wait: 2000 };
+function introSplash() {
+  if (navigator.webdriver || S.set.calm || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) { INTRO.wait = 1200; return; }
+  const el = document.createElement("div");
+  el.className = "intro"; el.setAttribute("aria-hidden", "true");
+  el.innerHTML = `<svg class="flyer" viewBox="0 0 120 60"><g class="body"><path class="wing up" d="M52 30 C 44 10, 30 4, 14 6 C 28 14, 38 24, 46 32 Z"/><path d="M18 34 C 30 30, 46 26, 60 27 C 70 22, 82 20, 90 24 L 102 22 L 94 28 C 92 38, 80 44, 66 43 C 52 42, 38 40, 18 34 Z"/><circle class="eye" cx="88" cy="26" r="1.8"/><path class="wing dn" d="M56 32 C 50 44, 40 52, 26 54 C 38 46, 46 38, 50 31 Z"/></g></svg>
+  <div class="iname">${[..."Plumage"].map((c, i) => `<span style="--i:${i}">${c}</span>`).join("")}</div><small>Touche pour passer</small>`;
+  document.body.appendChild(el);
+  let gone = false;
+  const close = () => { if (gone) return; gone = true; el.classList.add("out"); setTimeout(() => el.remove(), 500); };
+  el.addEventListener("pointerdown", close);
+  setTimeout(close, 2300);
+  INTRO.wait = 2000 + 2300;
+}
+/* Tout bouton touché lâche une petite onde à l'endroit du doigt */
+function tapRipple(e) {
+  if (S.set.calm) return;
+  const b = e.target.closest("button,.btn,[data-act]");
+  if (!b || b.disabled) return;
+  const r = b.getBoundingClientRect(), d = Math.max(r.width, r.height) * 2.2;
+  const w = document.createElement("span");
+  w.className = "tapw";
+  w.style.cssText = `width:${d}px;height:${d}px;left:${e.clientX - r.left - d / 2}px;top:${e.clientY - r.top - d / 2}px`;
+  if (getComputedStyle(b).position === "static") b.style.position = "relative";
+  b.classList.add("tapc"); b.appendChild(w);
+  setTimeout(() => w.remove(), 600);
+}
+
 /* ---------- Transitions : chaque changement d'écran a son mouvement ---------- */
 const TABS = ["home", "carnet", "progress", "settings"];
 function trKind(a, b) {
@@ -2340,6 +2378,8 @@ function init() {
   /* Service worker : l'appli s'ouvre sans réseau (pas pendant les tests automatiques, qui simulent le réseau) */
   if ("serviceWorker" in navigator && location.hostname !== "plumage.test" && (location.protocol === "https:" || location.hostname === "localhost")) navigator.serviceWorker.register("sw.js").catch(() => {});
   if (S.set.calm) document.body.classList.add("calm");
+  introSplash();
+  document.addEventListener("pointerdown", tapRipple, { passive: true });
   document.addEventListener("click", onClick);
   document.addEventListener("keydown", onKey);
   document.addEventListener("submit", onSubmit);

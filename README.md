@@ -39,6 +39,7 @@ Sur iPhone : ouvre le lien dans Safari, bouton Partager, puis « Sur l'écran d'
 
 Le numéro de version s'affiche en bas des Réglages ; « Nouveautés » liste toutes les versions.
 
+- **3.1** (10 novembre 2026) : ouverture animée (un oiseau traverse, le nom apparaît), niveau en haut de l'accueil, tous les modes en une grille, onde au toucher
 - **3.0** (10 novembre 2026) : nouveau look (typo Bricolage Grotesque, l'oiseau du jour fait l'affiche, accueil plus court) et animations partout (pages, boutons, réponses, bilan) ; le mode calme les coupe
 - **2.8** (6 novembre 2026) : « De saison » et « Préparer une sortie » montrent des photos prises à cette période de l'année dans la zone (plumage de saison), et écartent les données isolées
 - **2.7** (5 novembre 2026) : plus de variété dans les séries (pas de doublon, plus d'oiseaux nouveaux, photos de terrain sous licence libre quand les photos de référence sont épuisées)

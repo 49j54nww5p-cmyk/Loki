@@ -338,3 +338,68 @@ button:active,.btn:active{transform:scale(.95)}
 #app:not([data-tr=none]) .hero h1{animation:slideR .5s var(--ease) .15s both}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;transition-duration:.01ms!important}}
 body.calm *,body.calm *::before,body.calm *::after{animation-duration:.01ms!important;animation-delay:0s!important;transition-duration:.01ms!important}
+
+/* ---------- v3.1 : ouverture, niveau en tête, grille des modes, plus de peps ---------- */
+/* Ouverture */
+.intro{position:fixed;inset:0;z-index:200;display:grid;place-items:center;align-content:center;gap:10px;background:var(--bg);overflow:hidden;transition:opacity .45s var(--ease),transform .45s var(--ease)}
+.intro.out{opacity:0;transform:scale(1.06);pointer-events:none}
+.intro .flyer{position:absolute;top:34%;left:0;width:120px;height:60px;fill:var(--cta);animation:fly 1.7s cubic-bezier(.45,.05,.55,.95) both}
+.intro .flyer .eye{fill:var(--bg)}
+.intro .wing{transform-box:fill-box;animation:flap .22s ease-in-out infinite alternate}
+.intro .wing.up{transform-origin:100% 100%}
+.intro .wing.dn{transform-origin:100% 0}
+@keyframes flap{to{transform:scaleY(-.35)}}
+@keyframes fly{0%{transform:translate(-140px,90px) rotate(-12deg)}45%{transform:translate(calc(50vw - 60px),10px) rotate(-4deg)}100%{transform:translate(calc(100vw + 40px),-120px) rotate(-16deg)}}
+.intro .iname{display:flex;font:800 74px/1 var(--f-display);font-stretch:condensed;letter-spacing:-.03em;color:var(--text)}
+.intro .iname span{display:inline-block;animation:letter .55s var(--spring) both;animation-delay:calc(.55s + var(--i) * 55ms)}
+@keyframes letter{from{opacity:0;transform:translateY(40px) rotate(8deg) scale(.6)}}
+.intro .iname::after{content:"";align-self:flex-end;width:13px;height:13px;margin:0 0 12px 4px;border-radius:50%;background:var(--cta);animation:pop .5s var(--spring) 1.05s both}
+.intro small{font-size:13px;color:var(--faint);animation:lookIn .4s 1.4s both}
+
+/* En-tête : le titre laisse la place au niveau */
+.hud{position:relative;min-height:44px}
+.brand{transition:opacity .35s var(--ease),transform .4s var(--ease)}
+.brand.bye{opacity:0;transform:translateY(-14px) scale(.92)}
+.hlvl{flex:1;min-width:0;display:flex;align-items:center;gap:10px;margin-right:6px;text-align:left;transition:opacity .45s var(--ease) .1s,transform .5s var(--spring) .1s}
+.hlvl.wait{position:absolute;left:0;opacity:0;transform:translateY(16px);pointer-events:none}
+.hlvl .badge{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:50%;font:800 22px/1 var(--f-display);background:var(--cta);color:var(--on-cta);box-shadow:0 0 0 4px color-mix(in srgb,var(--cta) 22%,transparent)}
+.hlvl .meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.hlvl .meta b{font:800 22px/1 var(--f-display);font-stretch:condensed;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hlvl .bar{height:6px;margin:0;max-width:170px}
+.hlvl .bar i{background:var(--cta)}
+.hlvl:not(.wait) .bar i{animation:barIn 1.1s var(--ease) .3s both}
+@keyframes barIn{from{width:0!important}}
+.hud .pill{flex:none}
+
+/* Tous les modes : une grille compacte */
+.mgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 6px;margin-top:14px}
+.mtile{display:flex;flex-direction:column;align-items:center;gap:7px;padding:2px 0;text-align:center;animation:pop .5s var(--spring) both;animation-delay:var(--d)}
+.mtile .ic{display:grid;place-items:center;width:56px;height:56px;border-radius:18px;background:var(--cta);color:var(--on-cta);transition:transform .3s var(--spring),border-radius .3s var(--ease)}
+.mtile.g1 .ic{background:var(--sec);color:var(--on-sec)}
+.mtile.g2 .ic{background:var(--ter);color:var(--on-ter)}
+.mtile .ic .i{width:26px;height:26px}
+.mtile b{font:600 12.5px/1.15 var(--f-ui)}
+.mtile:active{transform:none}
+.mtile:active .ic{transform:scale(.86) rotate(-8deg);border-radius:50%}
+.home .sec{margin-top:24px}
+
+/* Onde au toucher */
+.tapc{overflow:hidden;isolation:isolate}
+.tapw{position:absolute;z-index:-0;border-radius:50%;pointer-events:none;background:currentColor;opacity:.22;transform:scale(0);animation:tapw .6s var(--ease) forwards}
+@keyframes tapw{to{transform:scale(1);opacity:0}}
+.mtile.tapc,.hlvl.tapc,.nav button.tapc{overflow:visible}
+.mtile .tapw,.nav .tapw{display:none}
+
+/* Peps : le bouton Jouer brille, la flamme vit, le score compte */
+.hero-go{position:relative;overflow:hidden}
+.hero-go::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:40%;background:linear-gradient(100deg,transparent,color-mix(in srgb,var(--cta) 45%,transparent),transparent);transform:skewX(-18deg);animation:shine 3.2s ease-in-out 1.5s infinite}
+@keyframes shine{0%{left:-60%}35%,100%{left:130%}}
+.pill.flame:not(.cold) .i{animation:flick 1.8s ease-in-out infinite}
+.qbtn:active,.perso-cta:active,.weekc:active,.pathhome:active,.lastp:active{transform:scale(.96)}
+.result .score{animation:pop .8s var(--spring) both}
+.choice:nth-child(1){animation-delay:0ms}.choice:nth-child(2){animation-delay:55ms}.choice:nth-child(3){animation-delay:110ms}.choice:nth-child(4){animation-delay:165ms}.choice:nth-child(5){animation-delay:220ms}
+.fb.show.ok .verdict b{animation:slideR .4s var(--ease) .1s both,okRow .5s var(--ease) .5s}
+.fb.show.bad .verdict b{animation:slideR .4s var(--ease) .1s both,shake .45s var(--ease) .5s}
+/* onglets du bas : l'icône active saute */
+.nav button.on span{animation:slideR .3s var(--ease)}
+@media (prefers-reduced-motion:reduce){.intro{display:none}}

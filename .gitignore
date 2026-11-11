@@ -3,3 +3,6 @@ test/shots/
 test/gfonts/
 node_modules/
 .DS_Store
+test/gfonts
+test/vendor
+*.orig

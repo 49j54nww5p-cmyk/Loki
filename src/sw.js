@@ -10,11 +10,12 @@ self.addEventListener("fetch", e => {
   if (r.method !== "GET") return;
   const u = new URL(r.url);
   /* Huginn (dossier huginn/) : appli à part, jamais servie ni mise en cache par Plumage */
-  if (u.origin === self.location.origin && u.pathname.includes("/huginn/")) return;
+  if (u.origin === self.location.origin && (u.pathname.includes("/huginn/") || u.pathname.includes("/admin/"))) return; /* admin : appli à part aussi */
   if (u.origin === self.location.origin) {
     /* la page : le réseau d'abord (mises à jour), le cache si pas de réseau ou réseau trop lent */
     if (r.mode === "navigate" || u.pathname.endsWith("/index.html")) {
-      const net = fetch(r).then(res => { if (res.ok) { const cp = res.clone(); caches.open(V).then(c => c.put("index.html", cp)); } return res; });
+      const root = /\/(index\.html)?$/.test(u.pathname) && !u.pathname.includes("/admin/");
+      const net = fetch(r).then(res => { if (res.ok && root) { const cp = res.clone(); caches.open(V).then(c => c.put("index.html", cp)); } return res; });
       e.respondWith(timeout(net, 4000).catch(() => caches.match("index.html", { ignoreSearch: true }).then(m => m || net)));
       return;
     }

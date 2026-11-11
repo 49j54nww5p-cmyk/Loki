@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0E100F">
+<title>Plumage · Admin</title>
+<style>
+@font-face{font-family:"Figtree";font-weight:300 900;font-display:swap;src:url(../fonts/figtree.woff) format("woff")}
+@font-face{font-family:"Instrument Serif";font-style:italic;font-display:swap;src:url(../fonts/instrument-serif-italic.woff) format("woff")}
+@font-face{font-family:"Instrument Serif";font-display:swap;src:url(../fonts/instrument-serif.woff) format("woff")}
+:root{--bg:#0E100F;--card:#171a18;--card2:#202421;--text:#EDEFEA;--muted:#A3A8A1;--faint:#6d736c;--line:rgba(237,239,234,.12);--gold:#FFCB5C;--on-gold:#1A0C02;--bad:#FF5C7A;--good:#3BE59D;--r:14px}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 Figtree,system-ui,sans-serif;-webkit-text-size-adjust:100%}
+body{padding:0 max(16px,env(safe-area-inset-left)) 90px;max-width:760px;margin:0 auto}
+h1{font:italic 400 34px/1 "Instrument Serif",Georgia,serif;margin:22px 0 2px}
+h1 b{color:var(--gold);font-weight:400}
+h2{font:italic 400 24px/1.1 "Instrument Serif",Georgia,serif;margin:26px 0 10px}
+.sub{color:var(--muted);font-size:13px;margin:0 0 14px}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
+.who{font-size:12px;color:var(--faint);text-align:right}
+button{font:inherit;cursor:pointer;border:0;border-radius:999px;padding:9px 16px;background:var(--card2);color:var(--text)}
+button.pri{background:var(--gold);color:var(--on-gold);font-weight:700}
+button.del{background:transparent;color:var(--bad);border:1px solid color-mix(in srgb,var(--bad) 40%,transparent);padding:5px 11px;font-size:13px}
+button:disabled{opacity:.5}
+nav{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line);display:flex;justify-content:center;padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:5}
+nav button{flex:1;max-width:130px;background:none;color:var(--muted);font-size:12px;padding:8px 2px;border-radius:10px}
+nav button.on{color:var(--gold);background:var(--card)}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:600px){.grid{grid-template-columns:repeat(4,1fr)}}
+.kpi{background:var(--card);border-radius:var(--r);padding:12px 14px}
+.kpi small{display:block;color:var(--muted);font-size:12px}
+.kpi b{font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.kpi.ac b{color:var(--gold)}
+.card{background:var(--card);border-radius:var(--r);padding:12px 14px;margin-bottom:10px}
+.bars{display:flex;flex-direction:column;gap:6px}
+.bar{display:grid;grid-template-columns:62px 1fr 34px;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.bar i{display:block;height:14px;border-radius:4px;background:var(--gold);min-width:2px}
+.bar span:last-child{text-align:right;color:var(--text);font-variant-numeric:tabular-nums}
+table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+th{text-align:left;font-weight:600;color:var(--muted);padding:8px 6px;border-bottom:1px solid var(--line);white-space:nowrap;cursor:pointer;user-select:none}
+th.on{color:var(--gold)}
+td{padding:8px 6px;border-bottom:1px solid var(--line)}
+td.n,th.n{text-align:right}
+.tw{overflow-x:auto;background:var(--card);border-radius:var(--r);padding:2px 8px}
+.nm{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.id{color:var(--faint);font-size:11px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.li{padding:10px 0;border-bottom:1px solid var(--line)}
+.li:last-child{border:0}
+.tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;background:var(--card2);color:var(--gold);margin-right:6px}
+.meta{font-size:12px;color:var(--faint);margin-top:4px}
+.txt{white-space:pre-wrap;word-break:break-word;margin-top:6px}
+.rank{display:grid;grid-template-columns:24px 1fr auto;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+.rank:last-child{border:0}.rank b{color:var(--gold)}
+.empty{color:var(--faint);font-size:13px;padding:6px 0}
+.login{min-height:80vh;display:flex;flex-direction:column;justify-content:center;gap:14px}
+.err{color:var(--bad);font-size:13px}
+.demo{background:var(--gold);color:var(--on-gold);font-size:12px;font-weight:700;text-align:center;padding:4px;margin:0 calc(-1*max(16px,env(safe-area-inset-left)))}
+.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--card2);padding:10px 16px;border-radius:999px;font-size:13px;z-index:9}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+"use strict";
+const DB = "https://project-2af97840-c7b8-4ccd-949-default-rtdb.europe-west1.firebasedatabase.app";
+const OWNER = "loulou33gaming@gmail.com";
+const FBCFG = { apiKey: "AIzaSyDRy69FxnWvnAnctKm6cb5_Pp7iTteKJ7Q", authDomain: "project-2af97840-c7b8-4ccd-949.firebaseapp.com", databaseURL: DB };
+const DEMO = new URLSearchParams(location.search).has("demo");
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmt = n => (+n || 0).toLocaleString("fr-FR");
+const H = 3600e3, D = 24 * H;
+function ago(t) {
+  if (!t) return "—";
+  const d = Date.now() - t;
+  if (d < H) return Math.max(1, Math.round(d / 60e3)) + " min";
+  if (d < D) return Math.round(d / H) + " h";
+  if (d < 60 * D) return Math.round(d / D) + " j";
+  return new Date(t).toLocaleDateString("fr-FR");
+}
+function toast(m) { const e = document.createElement("div"); e.className = "toast"; e.textContent = m; document.body.append(e); setTimeout(() => e.remove(), 2200); }
+
+/* ---------- Accès aux données ---------- */
+let DENY = "", USER = null, DATA = null, VIEW = "home", SORT = { k: "last", d: -1 };
+async function token() { return USER.getIdToken(); }
+async function req(method, path, query) {
+  if (DEMO) { if (method === "DELETE") { const p = path.split("/"); let o = DATA; for (const k of p.slice(0, -1)) o = o?.[k]; if (o) delete o[p[p.length - 1]]; } return null; }
+  const q = new URLSearchParams({ ...(query || {}), auth: await token() });
+  const r = await fetch(`${DB}/${path}.json?${q}`, { method, cache: "no-store" });
+  if (!r.ok) throw new Error(path + " : " + r.status + (r.status === 401 ? " (règles non publiées ?)" : ""));
+  return r.json();
+}
+async function load() {
+  if (DEMO) { DATA = DATA || fake(); return; }
+  const get = (p, q) => req("GET", p, q).catch(e => { console.warn(e); return { __err: e.message }; });
+  const [users, top, weekly, duels, ideas] = await Promise.all([get("users"), get("top"), get("weekly"), get("duels"), get("ideas")]);
+  DATA = { users, top, weekly, duels, ideas };
+}
+const obj = o => (o && typeof o === "object" && !o.__err ? o : {});
+const errs = () => Object.entries(DATA || {}).filter(([, v]) => v && v.__err).map(([k, v]) => v.__err);
+
+/* ---------- Données factices (?demo=1) ---------- */
+function fake() {
+  let s = 7; const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const names = ["Mésange", "Héron_33", "Loulou", "Busard", "PiafDu17", "Grèbe", "Lanton.birder", "Sterne", "Bécasseau", "Rougegorge", "Martin", "Pic vert", "Spatule", "Avocette"];
+  const now = Date.now(), users = {}, top = {}, wk = {}, week = "2026-W46";
+  for (let i = 0; i < 64; i++) {
+    const uid = "u" + (1e6 + i * 7919).toString(36) + "x" + i;
+    const lv = Math.max(1, Math.round(Math.pow(rnd(), 2.2) * 60) + 1), xp = Math.round(lv * lv * 38 + rnd() * 200);
+    const first = now - rnd() * 120 * D, last = first + rnd() * (now - first);
+    users[uid] = { lv, xp, best: Math.round(rnd() * lv * 1.5), n: Math.round(lv * (2 + rnd() * 6)), last, first, v: rnd() > .3 ? "3.12" : "3.11" };
+    if (i < names.length) { top[uid] = { n: names[i], xp, t: last }; wk[uid] = { n: names[i], xp: Math.round(rnd() * 900), t: last }; }
+  }
+  return {
+    users, top, weekly: { [week]: wk, "2026-W45": { a: { n: "Grèbe", xp: 1200, t: now - 8 * D } } },
+    duels: { K7QF: { t: now - 3 * 60e3, host: { n: "Héron_33" }, guest: { n: "Sterne" }, st: "play" }, B2XM: { t: now - 40 * 60e3, host: { n: "Busard" } } },
+    ideas: {
+      a1: { k: "bug", txt: "Le chant du pouillot ne se lance pas sur iPhone en mode silencieux.", c: "", v: "3.12", t: now - 5 * H },
+      a2: { k: "idee", txt: "Un mode « limicoles » avec les plumages d'hiver, ce serait top pour le Bassin !", c: "@spatule", v: "3.12", t: now - 2 * D },
+      a3: { k: "espece", txt: "Ajouter la Gorgebleue à miroir.", c: "", v: "3.11", t: now - 9 * D }
+    }
+  };
+}
+
+/* ---------- Calculs ---------- */
+function players() {
+  const u = obj(DATA.users), t = obj(DATA.top), ids = new Set([...Object.keys(u), ...Object.keys(t)]);
+  return [...ids].map(id => {
+    const a = u[id] || {}, b = t[id] || {};
+    return { id, name: b.n || "", lv: +a.lv || 0, xp: Math.max(+a.xp || 0, +b.xp || 0), best: +a.best || 0, n: +a.n || 0, last: Math.max(+a.last || 0, +b.t || 0), first: +a.first || 0, v: a.v || "", inTop: !!t[id] };
+  });
+}
+function curWeek() {
+  const w = obj(DATA.weekly), ks = Object.keys(w).sort();
+  return ks.length ? [ks[ks.length - 1], obj(w[ks[ks.length - 1]])] : ["", {}];
+}
+
+/* ---------- Écrans ---------- */
+const V = {
+  home() {
+    const P = players(), now = Date.now(), act = d => P.filter(p => p.last && now - p.last < d).length;
+    const L = P.filter(p => p.lv), avg = L.length ? L.reduce((s, p) => s + p.lv, 0) / L.length : 0;
+    const B = [[1, 5], [6, 10], [11, 20], [21, 30], [31, 40], [41, 60], [61, 80], [81, 999]].map(([a, b]) => ({ l: b > 900 ? a + "+" : a + "–" + b, c: L.filter(p => p.lv >= a && p.lv <= b).length }));
+    const mx = Math.max(1, ...B.map(b => b.c)), parts = P.reduce((s, p) => s + p.n, 0);
+    const vers = {}; P.forEach(p => p.v && (vers[p.v] = (vers[p.v] || 0) + 1));
+    return `<h2>Vue d'ensemble</h2>
+    <div class="grid">
+      <div class="kpi ac"><small>Joueurs</small><b>${fmt(P.length)}</b></div>
+      <div class="kpi"><small>Actifs 24 h</small><b>${fmt(act(D))}</b></div>
+      <div class="kpi"><small>Actifs 7 j</small><b>${fmt(act(7 * D))}</b></div>
+      <div class="kpi"><small>Actifs 30 j</small><b>${fmt(act(30 * D))}</b></div>
+      <div class="kpi"><small>Niveau moyen</small><b>${avg.toFixed(1).replace(".", ",")}</b></div>
+      <div class="kpi"><small>Parties jouées</small><b>${fmt(parts)}</b></div>
+      <div class="kpi"><small>Au classement</small><b>${fmt(P.filter(p => p.inTop).length)}</b></div>
+      <div class="kpi"><small>Nouveaux 7 j</small><b>${fmt(P.filter(p => p.first && now - p.first < 7 * D).length)}</b></div>
+    </div>
+    <h2>Niveaux</h2>
+    <div class="card bars">${B.map(b => `<div class="bar"><span>niv. ${b.l}</span><span><i style="width:${(b.c / mx * 100).toFixed(1)}%"></i></span><span>${b.c}</span></div>`).join("")}</div>
+    <h2>Versions</h2>
+    <div class="card">${Object.entries(vers).sort((a, b) => b[1] - a[1]).map(([v, c]) => `<div class="row li"><span>v${esc(v)}</span><b>${c}</b></div>`).join("") || `<div class="empty">Aucune donnée users/ pour l'instant.</div>`}</div>`;
+  },
+  players() {
+    const P = players(), { k, d } = SORT;
+    P.sort((a, b) => (typeof a[k] === "string" ? a[k].localeCompare(b[k]) : a[k] - b[k]) * d);
+    const th = (key, l, n) => `<th class="${n ? "n " : ""}${k === key ? "on" : ""}" data-sort="${key}">${l}${k === key ? (d > 0 ? " ↑" : " ↓") : ""}</th>`;
+    return `<h2>Joueurs <span class="sub">(${P.length})</span></h2>
+    <div class="tw"><table><thead><tr>${th("name", "Pseudo")}${th("lv", "Niv.", 1)}${th("xp", "XP", 1)}${th("last", "Vu", 1)}${th("n", "Parties", 1)}</tr></thead><tbody>
+    ${P.map(p => `<tr><td class="nm">${p.name ? esc(p.name) : `<span class="id">${esc(p.id.slice(0, 8))}…</span>`}</td><td class="n">${p.lv || "—"}</td><td class="n">${fmt(p.xp)}</td><td class="n">${ago(p.last)}</td><td class="n">${p.n || "—"}</td></tr>`).join("")}
+    </tbody></table></div>`;
+  },
+  records() {
+    const P = players(), [wk, W] = curWeek();
+    const list = (arr, f) => arr.length ? arr.map((p, i) => `<div class="rank"><b>${i + 1}</b><span class="nm">${p.name ? esc(p.name) : `<span class="id">${esc(p.id.slice(0, 8))}…</span>`}</span><span>${f(p)}</span></div>`).join("") : `<div class="empty">Rien pour l'instant.</div>`;
+    const wl = Object.entries(W).map(([id, e]) => ({ id, name: e.n || "", xp: +e.xp || 0 })).sort((a, b) => b.xp - a.xp).slice(0, 10);
+    return `<h2>Top XP</h2><div class="card">${list([...P].sort((a, b) => b.xp - a.xp).slice(0, 10), p => fmt(p.xp) + " XP")}</div>
+    <h2>Meilleures séries</h2><div class="card">${list(P.filter(p => p.best).sort((a, b) => b.best - a.best).slice(0, 10), p => p.best + " j")}</div>
+    <h2>Hebdo <span class="sub">${esc(wk)}</span></h2><div class="card">${list(wl, p => fmt(p.xp) + " XP")}</div>`;
+  },
+  ideas() {
+    const I = Object.entries(obj(DATA.ideas)).sort((a, b) => (+b[1].t || 0) - (+a[1].t || 0));
+    const D2 = Object.entries(obj(DATA.duels)).sort((a, b) => (+b[1].t || 0) - (+a[1].t || 0));
+    const nm = x => x && typeof x === "object" ? x.n || x.name || "" : "";
+    return `<h2>Idées reçues <span class="sub">(${I.length})</span></h2>
+    <div class="card">${I.map(([id, e]) => `<div class="li"><div class="row"><span><span class="tag">${esc(e.k || "?")}</span><span class="meta">v${esc(e.v || "?")} · ${ago(+e.t)}</span></span><button class="del" data-del="ideas/${esc(id)}">Supprimer</button></div><div class="txt">${esc(e.txt)}</div>${e.c ? `<div class="meta">Contact : ${esc(e.c)}</div>` : ""}</div>`).join("") || `<div class="empty">Aucune idée.</div>`}</div>
+    <h2>Duels <span class="sub">(${D2.length})</span></h2>
+    <div class="card">${D2.map(([code, e]) => `<div class="row li"><span><b>${esc(code)}</b> <span class="meta">${esc([nm(e.host), nm(e.guest)].filter(Boolean).join(" vs ") || "")}</span></span><span class="meta">${e.st ? esc(e.st) + " · " : ""}${ago(+e.t)}</span></div>`).join("") || `<div class="empty">Aucun duel en cours.</div>`}</div>`;
+  },
+  mod() {
+    const T = Object.entries(obj(DATA.top)).sort((a, b) => (+b[1].xp || 0) - (+a[1].xp || 0));
+    return `<h2>Modération</h2><p class="sub">Retirer une entrée du classement (top/). Le joueur garde sa progression ; il réapparaîtra s'il republie son XP.</p>
+    <div class="card">${T.map(([id, e]) => `<div class="row li"><span><b>${esc(e.n || "?")}</b><div class="meta">${fmt(e.xp)} XP · ${ago(+e.t)} · <span class="id">${esc(id.slice(0, 10))}</span></div></span><button class="del" data-del="top/${esc(id)}">Retirer</button></div>`).join("") || `<div class="empty">Classement vide.</div>`}</div>`;
+  }
+};
+const TABS = [["home", "Aperçu"], ["players", "Joueurs"], ["records", "Records"], ["ideas", "Idées"], ["mod", "Modération"]];
+
+function render() {
+  const e = errs();
+  $("#app").innerHTML = `${DEMO ? `<div class="demo">MODE DÉMO · données factices</div>` : ""}
+  <div class="top"><h1>Plumage <b>admin</b></h1><div class="who">${esc(DEMO ? "démo" : USER.email)}<br><button id="reload" style="margin-top:6px;padding:5px 12px;font-size:12px">Actualiser</button></div></div>
+  ${e.length ? `<p class="err">${e.map(esc).join("<br>")}</p>` : ""}
+  ${V[VIEW]()}
+  <nav>${TABS.map(([k, l]) => `<button data-v="${k}" class="${k === VIEW ? "on" : ""}">${l}</button>`).join("")}</nav>`;
+}
+document.addEventListener("click", async ev => {
+  const t = ev.target.closest("button,th"); if (!t) return;
+  if (t.dataset.v) { VIEW = t.dataset.v; history.replaceState(null, "", "#" + VIEW + (DEMO ? "" : "")); render(); scrollTo(0, 0); }
+  else if (t.dataset.sort) { const k = t.dataset.sort; SORT = { k, d: SORT.k === k ? -SORT.d : (k === "name" ? 1 : -1) }; render(); }
+  else if (t.dataset.del) {
+    if (!confirm("Supprimer " + t.dataset.del + " ?")) return;
+    t.disabled = true;
+    try { await req("DELETE", t.dataset.del); if (!DEMO) await load(); toast("Supprimé"); render(); } catch (e) { t.disabled = false; toast("Échec : " + e.message); }
+  }
+  else if (t.id === "reload") { t.disabled = true; await load(); render(); toast("À jour"); }
+  else if (t.id === "go") signIn();
+  else if (t.id === "out") { await firebase.auth().signOut(); }
+});
+
+/* ---------- Connexion ---------- */
+function loginScreen(msg) {
+  $("#app").innerHTML = `<div class="login"><h1>Plumage <b>admin</b></h1><p class="sub">Espace réservé au propriétaire de l'appli.</p>
+  <div><button class="pri" id="go">Se connecter avec Google</button></div>${msg ? `<p class="err">${esc(msg)}</p>` : ""}
+  ${USER ? `<div><button id="out">Changer de compte</button></div>` : ""}</div>`;
+}
+async function signIn() {
+  try { await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+  catch (e) { loginScreen(e.code === "auth/unauthorized-domain" ? "Domaine non autorisé dans la console Firebase." : e.message); }
+}
+async function boot() {
+  const v = location.hash.slice(1); if (V[v]) VIEW = v;
+  if (DEMO) { await load(); render(); return; }
+  if (!window.firebase) { loginScreen("Impossible de charger Firebase (réseau ?)."); return; }
+  firebase.initializeApp(FBCFG);
+  firebase.auth().onAuthStateChanged(async u => {
+    USER = u;
+    if (!u) { const m = DENY; DENY = ""; return loginScreen(m); }
+    if (u.email !== OWNER || !u.emailVerified) { DENY = "Accès refusé pour " + u.email + "."; await firebase.auth().signOut(); USER = null; return; }
+    $("#app").innerHTML = `<p class="sub" style="margin-top:40px">Chargement…</p>`;
+    try { await load(); render(); } catch (e) { loginScreen(e.message); }
+  });
+}
+function start() { boot(); }
+addEventListener("hashchange", () => { const v = location.hash.slice(1); if (V[v] && DATA && v !== VIEW) { VIEW = v; render(); } });
+if (DEMO) start();
+else {
+  const s = src => new Promise((ok, ko) => { const e = document.createElement("script"); e.src = src; e.onload = ok; e.onerror = ko; document.head.append(e); });
+  s("https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js").then(() => s("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js")).then(start, start);
+}
+</script>
+</body>
+</html>

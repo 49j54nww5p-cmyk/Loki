@@ -340,6 +340,10 @@ img.sc.xc{filter:invert(1) hue-rotate(180deg) saturate(2.2) brightness(.95) cont
 .dchip{display:inline-flex;align-items:baseline;gap:6px;padding:6px 10px;border-radius:var(--r-sm);background:color-mix(in srgb,var(--lilac) 9%,transparent);border:1px solid color-mix(in srgb,var(--lilac) 24%,transparent);font-size:13.5px}
 .dchip .latin{font-size:16px;color:var(--lilac-ink)}
 .dnote{margin-top:6px;font-size:13px;color:var(--muted)}
+.pcred{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11.5px;color:var(--muted);opacity:.85}
+.pcred span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pcred a,.gallery figcaption a{color:inherit;text-decoration:underline}
+.gallery figcaption{pointer-events:none}.gallery figcaption a{pointer-events:auto}
+.legal h3{margin-top:14px}.legal .todo{background:#ffe08a;color:#3a2a00;padding:0 4px;border-radius:4px;font-weight:700}
 .note-own{margin-top:10px;padding:9px 12px;border-radius:var(--r-sm);background:color-mix(in srgb,var(--gold) 7%,transparent);border:1px solid color-mix(in srgb,var(--gold) 22%,transparent);font-size:13.5px;color:var(--gold-ink)}
 .compare{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 .compare figure{margin:0;position:relative;border-radius:var(--r-sm);overflow:hidden;aspect-ratio:4/3;background:var(--card-2)}

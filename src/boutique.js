@@ -22,8 +22,14 @@ const ACCS = [
   { k: "jaune", n: "Jaune Plumage", d: "La couleur d'origine", c: "#FFCE00", c2: "#FFE27A" },
   { k: "martin", n: "Martin-pêcheur", d: "Vert-bleu des berges", c: "#18C6B4", c2: "#7EE6DA" },
   { k: "rouge", n: "Rougegorge", d: "Orange-rouge du jabot", c: "#FF6A3D", c2: "#FFA27F" },
-  { k: "mesange", n: "Mésange bleue", d: "Bleu de la calotte", c: "#4FA8FF", c2: "#A4D0FF" }
+  { k: "mesange", n: "Mésange bleue", d: "Bleu de la calotte", c: "#4FA8FF", c2: "#A4D0FF" },
+  /* Couleurs de saison : achetables seulement pendant leur saison (mois 1-12), gardées ensuite */
+  { k: "bruyere", n: "Bruyère d'automne", d: "Violet des landes · sept. à nov.", c: "#C46BD8", c2: "#E2AEEC", m: [9, 10, 11] },
+  { k: "givre", n: "Givre d'hiver", d: "Bleu glacé · déc. à févr.", c: "#9FE3FF", c2: "#D4F3FF", m: [12, 1, 2] },
+  { k: "aubepine", n: "Aubépine", d: "Rose de printemps · mars à mai", c: "#FF8FB8", c2: "#FFC4DA", m: [3, 4, 5] },
+  { k: "loriot", n: "Loriot d'été", d: "Or chaud · juin à août", c: "#FFB21E", c2: "#FFD480", m: [6, 7, 8] }
 ];
+const inSeason = a => !a.m || a.m.includes(new Date().getMonth() + 1);
 function applyAcc() {
   const a = ACCS.find(x => x.k === S.set.acc) || ACCS[0], r = document.documentElement.style;
   if (a.k === "jaune") ["--acc", "--acc-ink", "--acc-2", "--ter", "--pop"].forEach(v => r.removeProperty(v));
@@ -46,9 +52,10 @@ VIEWS.shop = () => `<section class="view shop">
   <div class="sgrid">${SHOP.map(it => { const full = it.max && it.max(), poor = S.plumes < it.p;
     return `<div class="sitem glass" data-k="${it.k}"><span class="sic">${ic(it.ic)}</span><div class="stx"><b>${esc(it.n)}</b><small>${esc(it.d)}</small><em>${esc(it.have())}</em></div>
       <button class="sbuy" data-act="shopbuy" data-k="${it.k}" ${full || poor ? "disabled" : ""}>${full ? "Max" : `${ic("feather", "xs")}${it.p}`}</button></div>`; }).join("")}</div>
+  ${cosmHtml()}
   <h2 class="ssec">Couleur de l'appli</h2>
-  <div class="sgrid">${ACCS.map(a => { const own = S.accs.includes(a.k), on = (S.set.acc || "jaune") === a.k;
-    return `<div class="sitem glass ${on ? "on" : ""}" data-k="acc-${a.k}"><span class="sdot" style="background:${a.c}"></span><div class="stx"><b>${esc(a.n)}</b><small>${esc(a.d)}</small></div>
+  <div class="sgrid">${ACCS.filter(a => inSeason(a) || S.accs.includes(a.k)).map(a => { const own = S.accs.includes(a.k), on = (S.set.acc || "jaune") === a.k;
+    return `<div class="sitem glass ${on ? "on" : ""}" data-k="acc-${a.k}"><span class="sdot" style="background:${a.c}"></span><div class="stx"><b>${esc(a.n)}</b><small>${esc(a.d)}</small>${a.m ? `<em>Saison</em>` : ""}</div>
       ${own ? `<button class="sbuy ghost" data-act="shopacc" data-k="${a.k}" ${on ? "disabled" : ""}>${on ? "Active" : "Choisir"}</button>`
         : `<button class="sbuy" data-act="shopbuy" data-k="acc-${a.k}" ${S.plumes < 300 ? "disabled" : ""}>${ic("feather", "xs")}300</button>`}</div>`; }).join("")}</div>
 </section>`;
@@ -60,7 +67,7 @@ function shopBuy(k) {
   if (!price || (!acc && !it)) return false;
   if (S.plumes < price) { toast("Pas assez de plumes"); return false; }
   if (it?.max && it.max()) return false;
-  if (acc && S.accs.includes(acc.k)) return false;
+  if (acc && (S.accs.includes(acc.k) || !inSeason(acc))) return false;
   const from = S.plumes;
   S.plumes -= price;
   if (acc) { S.accs.push(acc.k); S.set.acc = acc.k; applyAcc(); } else it.buy();
@@ -123,3 +130,104 @@ MOUNT.grand = (...a) => {
   }
   return r;
 };
+
+/* ---------- Cosmétiques et défi (aucun ne facilite les réponses) ---------- */
+S.cos = Array.isArray(S.cos) ? S.cos : [];
+const COSM = [
+  /* Cadres du badge de niveau : se débloquent par palier, puis s'achètent */
+  { k: "fr-bronze", g: "frame", n: "Cadre Bronze", d: "Anneau cuivré autour du niveau", p: 200, lv: 10, sw: "linear-gradient(135deg,#C9773A,#F3B27A,#8A4A1E)" },
+  { k: "fr-argent", g: "frame", n: "Cadre Argent", d: "Anneau d'argent poli", p: 400, lv: 30, sw: "linear-gradient(135deg,#9AA6B2,#F4F7FA,#6B7783)" },
+  { k: "fr-or", g: "frame", n: "Cadre Or", d: "Anneau d'or qui scintille", p: 800, lv: 60, sw: "conic-gradient(from 0deg,#FFCE00,#FFF4B0,#C99A00,#FFE27A,#FFCE00)" },
+  /* Sons de bonne réponse */
+  { k: "snd-carillon", g: "snd", n: "Carillon", d: "Trois notes de cloche claires", p: 250, ic: "wave" },
+  { k: "snd-pic", g: "snd", n: "Tambour du pic", d: "Un roulement sec sur le bois", p: 250, ic: "wave" },
+  { k: "snd-mesange", g: "snd", n: "Sifflet de mésange", d: "« Ti-tu, ti-tu » en sourdine", p: 250, ic: "wave" },
+  /* Effet visuel */
+  { k: "fx-plumes", g: "fx", n: "Pluie de plumes", d: "Des plumes s'envolent à chaque bonne réponse", p: 350, ic: "feather" }
+];
+const OKSND = {
+  "snd-carillon": () => [1047, 1319, 1568].forEach((f, i) => tone(f, i * .08, .45, "sine", .07)),
+  "snd-pic": () => [0, .06, .11, .15, .19, .22].forEach(t => tone(1900, t, .035, "square", .035, 900)),
+  "snd-mesange": () => { tone(4200, 0, .11, "sine", .05, 3900); tone(3100, .14, .13, "sine", .05, 3000); tone(4200, .32, .11, "sine", .05, 3900); tone(3100, .46, .13, "sine", .05, 3000); }
+};
+const cosOwn = k => S.cos.includes(k);
+const cosOn = it => it.g === "fx" ? !!S.set.pluie : (it.g === "frame" ? S.set.frame : S.set.okson) === it.k;
+function applyFrame() {
+  const h = document.documentElement;
+  COSM.filter(c => c.g === "frame").forEach(c => h.classList.toggle(c.k, S.set.frame === c.k));
+}
+applyFrame();
+
+/* Son de réussite : remplace les deux notes d'origine, la vibration reste */
+const sfxOkBase = sfx.ok;
+sfx.ok = function () {
+  const f = OKSND[S.set.okson];
+  if (f && S.set.sfx) { f(); buzz(12); } else sfxOkBase();
+  if (S.set.pluie) featherRain();
+};
+function featherRain(n = 14) {
+  if (S.set.calm || document.body.classList.contains("lite") || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
+  const box = document.createElement("div"); box.className = "frain"; box.setAttribute("aria-hidden", "true");
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement("i");
+    s.innerHTML = ic("feather");
+    s.style.cssText = `--x:${(Math.random() * 100).toFixed(1)}%;--dx:${((Math.random() - .5) * 120).toFixed(0)}px;--r:${((Math.random() - .5) * 140).toFixed(0)}deg;--d:${(Math.random() * 260).toFixed(0)}ms;--s:${(.7 + Math.random() * .7).toFixed(2)}`;
+    box.appendChild(s);
+  }
+  document.body.appendChild(box);
+  setTimeout(() => box.remove(), 1800);
+}
+
+/* Défi expert du jour : payant, saisie libre, 10 s par question, XP doublée. Plus dur, pas plus facile. */
+const DEFI_P = 30;
+const defiDone = () => S.defiX === dayKey();
+const xpForBase = xpFor;
+xpFor = function (ses, q, res, ms) { const x = xpForBase(ses, q, res, ms); return ses?.cfg?.expertX && res.ok ? x * 2 : x; };
+function defiStart() {
+  if (defiDone() || S.plumes < DEFI_P) return false;
+  S.plumes -= DEFI_P; S.defiX = dayKey(); save(true);
+  startSession({ kind: "quiz", expertX: true, title: "Défi expert du jour", icon: "bolt", zone: S.set.zone, freq: "common", size: 150,
+    stim: ["photo"], target: "species", names: S.set.names, format: "type", k: S.set.k, diff: "expert", len: 10, timer: 10 });
+  return true;
+}
+
+function cosmHtml() {
+  const L = level().n, row = it => {
+    const own = cosOwn(it.k), on = own && cosOn(it), lock = it.lv && L < it.lv;
+    const vis = it.g === "frame" ? `<span class="sframe ${it.k}" style="--sw:${it.sw}"><b>${L}</b></span>` : `<span class="sic">${ic(it.ic)}</span>`;
+    const btn = own ? `<button class="sbuy ghost" data-act="cosuse" data-k="${it.k}">${on ? (it.g === "fx" ? "Activé" : "Actif") : (it.g === "snd" ? "Choisir" : "Activer")}</button>`
+      : lock ? `<button class="sbuy" disabled>${ic("lock", "xs")}Niv. ${it.lv}</button>`
+      : `<button class="sbuy" data-act="cosbuy" data-k="${it.k}" ${S.plumes < it.p ? "disabled" : ""}>${ic("feather", "xs")}${it.p}</button>`;
+    return `<div class="sitem glass ${on ? "on" : ""}" data-k="${it.k}">${vis}<div class="stx"><b>${esc(it.n)}</b><small>${esc(it.d)}</small>${it.g === "snd" && own ? `<em data-act="costry" data-k="${it.k}" role="button">Écouter</em>` : ""}</div>${btn}</div>`;
+  }, grp = g => COSM.filter(c => c.g === g).map(row).join("");
+  const dd = defiDone();
+  return `<h2 class="ssec">Défi du jour</h2>
+  <div class="sgrid"><div class="sitem glass sdefi ${dd ? "done" : ""}" data-k="defi"><span class="sic">${ic("bolt")}</span><div class="stx"><b>Défi expert</b><small>10 oiseaux à écrire, 10 s chacun, niveau expert. XP doublée sur les bonnes réponses.</small><em>${dd ? "Fait aujourd'hui, reviens demain" : "Une fois par jour"}</em></div>
+    <button class="sbuy" data-act="shopdefi" ${dd || S.plumes < DEFI_P ? "disabled" : ""}>${dd ? "Fait" : `${ic("feather", "xs")}${DEFI_P}`}</button></div></div>
+  <h2 class="ssec">Cadres de niveau</h2><div class="sgrid">${grp("frame")}</div>
+  <h2 class="ssec">Sons et effets</h2><div class="sgrid">${grp("snd")}${grp("fx")}</div>`;
+}
+function cosBuy(k) {
+  const it = COSM.find(c => c.k === k);
+  if (!it || cosOwn(k) || (it.lv && level().n < it.lv)) return false;
+  if (S.plumes < it.p) { toast("Pas assez de plumes"); return false; }
+  S.plumes -= it.p; S.cos.push(k); cosUse(k, true); save(true);
+  const y = window.scrollY; go("shop"); window.scrollTo(0, y);
+  document.querySelector(`.sitem[data-k="${k}"]`)?.classList.add("pop");
+  toast(`${it.n} : acheté`);
+  return true;
+}
+function cosUse(k, force) {
+  const it = COSM.find(c => c.k === k); if (!it || !cosOwn(k)) return;
+  if (it.g === "frame") S.set.frame = S.set.frame === k && !force ? "" : k;
+  else if (it.g === "snd") { S.set.okson = S.set.okson === k && !force ? "" : k; if (S.set.okson && S.set.sfx) OKSND[k](); }
+  else S.set.pluie = force ? true : !S.set.pluie;
+  applyFrame();
+  if (it.g === "fx" && S.set.pluie) featherRain();
+}
+Object.assign(ACT, {
+  cosbuy: el => cosBuy(el.dataset.k),
+  cosuse: el => { cosUse(el.dataset.k); save(true); const y = window.scrollY; go("shop"); window.scrollTo(0, y); },
+  costry: el => { unlockAudio(); OKSND[el.dataset.k]?.(); },
+  shopdefi: () => { if (!defiStart()) toast(defiDone() ? "Défi déjà joué aujourd'hui" : "Pas assez de plumes"); }
+});

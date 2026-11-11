@@ -361,6 +361,10 @@ img.sc.xc{filter:invert(1) hue-rotate(180deg) saturate(2.2) brightness(.95) cont
 .dchip{display:inline-flex;align-items:baseline;gap:6px;padding:6px 10px;border-radius:var(--r-sm);background:color-mix(in srgb,var(--lilac) 9%,transparent);border:1px solid color-mix(in srgb,var(--lilac) 24%,transparent);font-size:13.5px}
 .dchip .latin{font-size:16px;color:var(--lilac-ink)}
 .dnote{margin-top:6px;font-size:13px;color:var(--muted)}
+.pcred{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11.5px;color:var(--muted);opacity:.85}
+.pcred span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pcred a,.gallery figcaption a{color:inherit;text-decoration:underline}
+.gallery figcaption{pointer-events:none}.gallery figcaption a{pointer-events:auto}
+.legal h3{margin-top:14px}.legal .todo{background:#ffe08a;color:#3a2a00;padding:0 4px;border-radius:4px;font-weight:700}
 .note-own{margin-top:10px;padding:9px 12px;border-radius:var(--r-sm);background:color-mix(in srgb,var(--gold) 7%,transparent);border:1px solid color-mix(in srgb,var(--gold) 22%,transparent);font-size:13.5px;color:var(--gold-ink)}
 .compare{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 .compare figure{margin:0;position:relative;border-radius:var(--r-sm);overflow:hidden;aspect-ratio:4/3;background:var(--card-2)}
@@ -2675,6 +2679,25 @@ body.inquiz .navind{opacity:0}
 .gprize-x{display:inline-flex;align-items:center;gap:6px;margin:0 0 6px;font:700 15px/1.2 var(--f-ui);color:#fff}
 .gprize-rare{display:block;margin-top:8px;font:700 13px/1 var(--f-ui);color:#FFCE00}
 .gprize.rare .gprize-card{border-color:#FFCE00;border-width:2px;background:#1A1500}
+/* Cadres de niveau : aperçu en boutique et badge du HUD */
+.sframe{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--sw);padding:4px}
+.sframe b{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:var(--acc);color:#000;font:800 15px/1 var(--f-ui)}
+.fr-bronze .hlvl .badge{box-shadow:0 0 0 3px #1a1a1a,0 0 0 6px #C9773A}
+.fr-argent .hlvl .badge{box-shadow:0 0 0 3px #1a1a1a,0 0 0 6px #DDE3EA,0 0 10px 2px rgba(221,227,234,.35)}
+.fr-or .hlvl .badge{box-shadow:0 0 0 3px #1a1a1a,0 0 0 6px #FFCE00,0 0 14px 3px rgba(255,206,0,.45);animation:frgold 2.8s ease-in-out infinite}
+@keyframes frgold{50%{box-shadow:0 0 0 3px #1a1a1a,0 0 0 6px #FFF0A0,0 0 20px 6px rgba(255,206,0,.6)}}
+.sframe.fr-or{animation:frspin 6s linear infinite}
+.sframe.fr-or b{animation:frspin 6s linear infinite reverse}
+@keyframes frspin{to{transform:rotate(360deg)}}
+.stx em[data-act]{cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.sdefi{border-color:color-mix(in srgb,var(--acc) 55%,transparent)}
+.sdefi.done{opacity:.7}
+/* Pluie de plumes */
+.frain{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
+.frain i{position:absolute;left:var(--x);bottom:-30px;color:var(--acc);transform:scale(var(--s));animation:frain 1.5s var(--d) cubic-bezier(.2,.7,.3,1) both}
+.frain .i{width:22px;height:22px}
+@keyframes frain{0%{opacity:0;transform:translate(0,0) rotate(0) scale(var(--s))}15%{opacity:1}100%{opacity:0;transform:translate(var(--dx),-70vh) rotate(var(--r)) scale(var(--s))}}
+body.calm .frain,.fr-or.calm .hlvl .badge{animation:none}
 
 /* ==== niveaux.css ==== */
 .titp .wheel{position:relative;height:260px;margin:14px 0;border-radius:18px;background:rgba(255,255,255,.04);overflow:hidden}
@@ -2709,6 +2732,108 @@ body.calm .voxbtn.on::after,body.calm .voxwave b{animation:none}
 body.voxon .view.quiz{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
 
 /* ==== video.css ==== */
+/* L'oiseau du jour en vidéo (src/video.js) */
+.vidc{margin:16px 16px 0;padding:0;border-radius:var(--r-xl,22px);background:var(--card,#16202a);overflow:hidden;animation:trUp .5s var(--ease,ease) both}
+.vid-box{position:relative;aspect-ratio:16/9;background:#05090c}
+.vid-box video{display:block;width:100%;height:100%;object-fit:cover;background:#05090c}
+.vid-tag{position:absolute;left:12px;top:12px;padding:5px 10px;border-radius:99px;background:rgba(0,0,0,.5);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);font:700 12px/1.2 var(--f-ui);color:var(--acc,#ffcb5c);letter-spacing:.01em}
+.vid-play,.vid-snd{position:absolute;display:grid;place-items:center;border:0;border-radius:50%;color:#fff;background:rgba(0,0,0,.5);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);cursor:pointer}
+.vid-snd{right:10px;bottom:10px;width:44px;height:44px}
+.vid-play{left:10px;bottom:10px;width:44px;height:44px}
+.vid-play .i,.vid-snd .i{width:22px;height:22px}
+/* pas de lecture auto (mouvement réduit, économie de données) : gros bouton lecture au centre */
+.vidc.still .vid-play{left:50%;top:50%;bottom:auto;width:68px;height:68px;transform:translate(-50%,-50%);background:rgba(0,0,0,.55)}
+.vidc.still .vid-play .i{width:30px;height:30px}
+.vid-snd[aria-pressed=true]{background:var(--acc,#ffcb5c);color:#111}
+.vidc figcaption{padding:12px 14px 14px}
+.vidc figcaption b{font:700 17px/1.25 var(--f-ui)}
+.vidc figcaption em{color:var(--muted,rgba(255,255,255,.6));font-size:14px}
+.vid-cr{display:block;margin-top:5px;font-size:12px;line-height:1.4;color:var(--muted,rgba(255,255,255,.6))}
+.vid-cr a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.vid-play:focus-visible,.vid-snd:focus-visible{outline:2px solid var(--acc,#ffcb5c);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.vidc{animation:none}}
+
+/* ==== pc.css ==== */
+/* ==== pc.css : écran large (≥ 1024px) — rien ne change en dessous ==== */
+@media (min-width:1024px){
+  :root{--side:232px;--gutter-l:32px;--gutter-r:32px}
+  html,body{overflow-x:hidden}
+  body{padding-left:var(--side)}
+  body.inquiz{padding-left:0}
+
+  /* ---- Navigation latérale ---- */
+  .nav{position:fixed;top:0;bottom:0;left:0;right:auto;transform:none;width:var(--side);max-width:none;margin:0;
+    flex-direction:column;justify-content:flex-start;align-items:stretch;gap:4px;padding:84px 16px 24px;
+    border-top:0;border-right:1px solid var(--line);border-radius:0;background:rgba(11,11,11,.92)}
+  .nav::before{content:"Plumage";position:absolute;top:26px;left:26px;font:400 34px/1 var(--f-display);color:#fff;letter-spacing:-.01em}
+  .nav button{flex:none;flex-direction:row;justify-content:flex-start;gap:12px;width:100%;padding:8px 10px;border-radius:14px;
+    font:600 15px/1 var(--f-ui);color:rgba(255,255,255,.6)}
+  .nav button .i{width:22px;height:22px;padding:6px}
+  .nav button:hover{background:rgba(255,255,255,.06);color:#fff}
+  .nav button.on{background:rgba(255,255,255,.08);color:#fff}
+  .nav button.on .i{padding:6px}
+  .navind{display:none}
+  body.inquiz .nav{transform:translateX(-110%);opacity:0;pointer-events:none}
+
+  /* ---- Contenu centré ---- */
+  #app{max-width:1180px;padding-inline:var(--gutter-l) var(--gutter-r);padding-block:28px 48px}
+  body.inquiz #app{max-width:1360px;padding-block:20px 24px}
+
+  /* ---- Accueil : story à gauche, modes à droite ---- */
+  .view.home{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);column-gap:36px;align-items:start}
+  .home > .hud{position:static;grid-column:1 / -1;padding:0;margin:0 0 18px}
+  .home > .story{grid-column:1;grid-row:2 / span 4;position:sticky;top:28px;margin:0;height:calc(100vh - 120px);min-height:520px;max-height:820px;border-radius:24px;padding:0 28px 28px}
+  .home > :not(.hud):not(.story){grid-column:2}
+  .home > .weekc{margin-top:0}
+  .home .mgrid{grid-template-columns:repeat(3,1fr);gap:22px 8px}
+  .home .story h1{font-size:64px}
+
+  /* ---- Quiz : photo grande à gauche, réponses à droite ---- */
+  .view.quiz{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(360px,1fr);column-gap:36px;align-items:start}
+  .view.quiz > *{grid-column:2}
+  .view.quiz > .qbar{grid-column:1 / -1}
+  .view.quiz > .stage{grid-column:1;grid-row:2 / span 6}
+  .view.quiz .shot{margin:0;height:calc(100vh - 120px);max-height:760px;border-radius:22px}
+  .view.quiz .prompt{margin-top:0}
+  .view.quiz .q{font-size:clamp(34px,2.6vw,44px)}
+
+  /* raccourcis clavier visibles */
+  #answers{counter-reset:k}
+  #answers [data-act=pick]{counter-increment:k;padding-right:52px}
+  #answers [data-act=pick]::after{content:counter(k);position:absolute;right:14px;top:50%;transform:translateY(-50%);
+    display:grid;place-items:center;width:26px;height:26px;border-radius:7px;border:1px solid rgba(255,255,255,.22);
+    font:700 12.5px/1 var(--f-ui);color:rgba(255,255,255,.6)}
+  #answers.locked [data-act=pick]::after{opacity:.4}
+  .fb .btn.next::after{content:"Entrée ↵";margin-left:12px;padding:4px 8px;border-radius:7px;border:1px solid rgba(0,0,0,.25);font:700 12px/1 var(--f-ui);opacity:.6}
+
+  /* ---- Correction : panneau ancré à droite au lieu d'une feuille du bas ---- */
+  .fb{left:auto;right:max(24px, calc((100vw - 1360px) / 2 + 32px));bottom:24px;width:max(360px, calc((min(100vw, 1360px) - 100px) / 2.5));max-height:calc(100vh - 48px);
+    border-radius:22px;transform:translateY(calc(100% + 40px))}
+  .fb.show{transform:none}
+  .fb .grab{display:none}
+  .fb .fbf{border-radius:0 0 22px 22px}
+
+  /* ---- Fenêtres : modales centrées ---- */
+  .layer{align-items:center;padding:32px}
+  .panel{width:min(640px,100%);max-height:calc(100vh - 64px);border-radius:24px}
+  .panel.tour{width:min(480px,100%)}
+
+  /* ---- Carnet en grille de cartes ---- */
+  .view.carnet .cgrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))!important;gap:20px 16px}
+
+  /* ---- Progrès / réglages : deux colonnes quand c'est possible ---- */
+  .view.settings,.view.progress{max-width:820px;margin-inline:auto}
+
+  /* ---- Grand parcours ---- */
+  .grand{max-width:820px;margin-inline:auto}
+  .gchs{display:grid;grid-template-columns:1fr;gap:16px}
+  .gcov{height:150px}
+  .groad{max-width:560px;margin-inline:auto}
+}
+@media (min-width:1024px) and (hover:none){
+  #answers [data-act=pick]::after,.fb .btn.next::after{display:none}
+  #answers [data-act=pick]{padding-right:16px}
+}
 
 </style>
 </head>
@@ -3944,7 +4069,23 @@ const pushU = (a, v, max = 12) => { a = a || []; if (v != null && v !== 0 && !a.
 let V2 = true;
 function photoObj(ph) {
   const base = ph.url || ph.medium_url || ph.square_url || "";
-  return { lg: ph.large_url || sizeUrl(base, "large"), md: ph.medium_url || sizeUrl(base, "medium"), attr: ph.attribution || "", lic: ph.license_code || "" };
+  return { lg: ph.large_url || sizeUrl(base, "large"), md: ph.medium_url || sizeUrl(base, "medium"), attr: ph.attribution || "", lic: ph.license_code || "", pid: ph.id || 0 };
+}
+/* Crédit lisible : « © auteur · CC BY-NC » à partir de l'attribution iNaturalist (ou d'une URL de licence xeno-canto) */
+function licName(l) {
+  l = String(l || "").toLowerCase();
+  if (!l) return "";
+  if (l.includes("publicdomain") || l === "cc0") return "CC0";
+  const m = l.match(/licenses\/([a-z-]+)\/([\d.]+)/);
+  if (m) return "CC " + m[1].toUpperCase() + " " + m[2];
+  if (/^cc-/.test(l)) return "CC " + l.slice(3).toUpperCase();
+  return "";
+}
+function credText(attr, lic) {
+  const a = String(attr || "");
+  let who = a.replace(/^\s*(\(c\)|©)\s*/i, "").replace(/,?\s*(some|all|no|certains|tous|aucun)[^(]*(\(.*\))?\s*$/i, "").replace(/\s*\((CC[^)]*)\)\s*$/i, "").trim();
+  const l = licName(lic) || (a.match(/\((CC[^)]*)\)/i)?.[1] || "").toUpperCase().replace("CC0", "CC0") || (/all rights|tous droits/i.test(a) ? "tous droits réservés" : "");
+  return [who ? "© " + who : "", l].filter(Boolean).join(" · ");
 }
 async function photosFor(ids) {
   const need = [...new Set(ids)].filter(id => id && !DET.has(id));
@@ -4066,7 +4207,7 @@ async function xcSound(t) {
     const ok = (d.recordings || []).filter(r => r.file && !(r.also || []).filter(Boolean).length && !badSnd(fix(r.file)));
     if (!ok.length) return null;
     const r = pick(ok.slice(0, 25));
-    return { url: fix(r.file), type: "audio/mpeg", attr: "© " + (r.rec || "") + " · xeno-canto", lic: r.lic || "", place: [r.loc, r.cnt].filter(Boolean).join(", "), date: r.date || "", uri: fix(r.url), agree: 9, src: "xeno-canto", kind: xcKind(r.type), sono: fix(r.sono?.full || r.sono?.large || r.sono?.med || "") };
+    return { url: fix(r.file), type: "audio/mpeg", attr: ["© " + (r.rec || ""), licName(r.lic), "xeno-canto"].filter(Boolean).join(" · "), lic: r.lic || "", place: [r.loc, r.cnt].filter(Boolean).join(", "), date: r.date || "", uri: fix(r.url), agree: 9, src: "xeno-canto", kind: xcKind(r.type), sono: fix(r.sono?.full || r.sono?.large || r.sono?.med || "") };
   } catch (e) { return null; }
 }
 /* Wikimedia Commons : enregistrements libres, servis avec CORS → spectrogramme calculable sur place */
@@ -4194,7 +4335,7 @@ async function xcList(t) {
   const d = await getJSON(url, { tries: 1, timeout: 12000 });
   const fix = u => u ? (u.startsWith("//") ? "https:" + u : u) : "";
   return (d.recordings || []).filter(r => r.file).sort((a, b) => String(a.q || "E").localeCompare(String(b.q || "E"))).slice(0, 6)
-    .map(r => ({ url: fix(r.file), kind: xcKind(r.type), place: [r.loc, r.cnt].filter(Boolean).join(", "), attr: r.rec ? "© " + r.rec + " · xeno-canto" : "xeno-canto", len: r.length || "", page: fix(r.url), q: r.q || "", src: "xeno-canto", sono: fix(r.sono?.full || r.sono?.large || r.sono?.med || "") }));
+    .map(r => ({ url: fix(r.file), kind: xcKind(r.type), place: [r.loc, r.cnt].filter(Boolean).join(", "), attr: [r.rec ? "© " + r.rec : "", licName(r.lic), "xeno-canto"].filter(Boolean).join(" · "), len: r.length || "", page: fix(r.url), q: r.q || "", src: "xeno-canto", sono: fix(r.sono?.full || r.sono?.large || r.sono?.med || "") }));
 }
 async function resolveTaxon(sci, fr) {
   return memo("res:" + sci, async () => {
@@ -7200,6 +7341,32 @@ function liveViewHtml() {
   return `<section class="view live"><div class="lcard"><div class="spin"></div></div></section>`;
 }
 
+/* ---------- Statistiques anonymes pour le propriétaire (users/{uid}) ----------
+   À chaque fin de partie, au plus une fois par minute : niveau, XP, meilleure série,
+   nombre de parties, première et dernière visite, version. Coupé par « Compter ma visite ». */
+let USR_T = 0;
+async function userPing() {
+  if (!netOn() || netLocal() || S.set.stats === false) return;
+  const now = Date.now();
+  S.ustat = S.ustat || { n: 0, first: now };
+  S.ustat.n = (S.ustat.n || 0) + 1;
+  if (now - USR_T < 60000) return;
+  USR_T = now;
+  try {
+    await fbToken();
+    if (!S.uid) return;
+    await netReq("PUT", "users/" + S.uid, { lv: level().n, xp: S.xp | 0, best: (S.streak && S.streak.best) | 0, n: S.ustat.n, last: now, first: S.ustat.first || now, v: typeof APP_VERSION !== "undefined" ? String(APP_VERSION) : "" });
+  } catch (e) { /* rien */ }
+}
+if (typeof endSession === "function") {
+  const _usrFin = endSession;
+  endSession = function (...a) {
+    const ses = SES, r = _usrFin.apply(this, a);
+    try { if (ses && ses.results && ses.results.length) userPing(); } catch (e) { /* rien */ }
+    return r;
+  };
+}
+
 /* ---- partage.js ---- */
 /* ============================================================
    Plumage — partager un quiz (lien et QR code) et recettes Sur mesure
@@ -8646,6 +8813,7 @@ MOUNT.home = async () => {
     if (k && !S.days[dayKey()]?.serie) k.textContent = "Oiseau du jour";
     im.onload = () => { b.classList.add("on"); b.disabled = false; if (im.src !== big && !navigator.connection?.saveData) { const hi = new Image(); hi.onload = () => { if (im.isConnected) im.src = big; }; hi.src = big; } };
     im.src = t.img.md;
+    if (typeof vidOtd === "function") vidOtd(t, top).catch(() => { });
   } catch (e) { /* hors ligne : l'affiche reste en aplats */ }
 };
 
@@ -8700,14 +8868,14 @@ function stageHtml(q) {
   if (q.stim === "fr") return `<div class="namecard"><div><span class="eyebrow">Nom français</span><div class="big">${esc(q.t.fr || q.t.sci)}</div></div></div>`;
   if (q.stim === "la") return `<div class="namecard"><div><span class="eyebrow">Nom latin</span><div class="big latin">${esc(q.t.sci)}</div></div></div>`;
   const p = q.photo || {};
-  return `<figure class="shot" id="shot" data-act="zoom" data-grp="q" data-src="${esc(p.lg || p.md)}" data-hd="${esc(hdOf(p.lg || p.md))}" data-attr="${esc(p.attr || "")}">
+  return `<figure class="shot" id="shot" data-act="zoom" data-grp="q" data-src="${esc(p.lg || p.md)}" data-hd="${esc(hdOf(p.lg || p.md))}">
     <img class="blur" src="${esc(p.md)}" alt="">
     <img class="main" id="mainImg" alt="Oiseau à identifier" draggable="false">
     <span class="ret tl"></span><span class="ret tr"></span><span class="ret bl"></span><span class="ret br"></span>
     <span class="zb">${ic("zoom")}</span>
     <div class="spinner"><div class="spin"></div></div>
     ${q.photo?.age ? `<span class="tag-field age">${ic("spark")}${AGEN[q.photo.age]}</span>` : q.stim === "field" ? `<span class="tag-field">${ic("eye")}Terrain</span>` : ""}${bonus}
-    ${q.stim === "soncho" ? `<figcaption class="credit" style="font-size:13px;font-weight:700;color:#fff">${esc(nameFr(q.t))}</figcaption>` : `<figcaption class="credit">${esc(p.attr || "")}</figcaption>`}
+    ${q.stim === "soncho" ? `<figcaption class="credit" style="font-size:13px;font-weight:700;color:#fff">${esc(nameFr(q.t))}</figcaption>` : ""}
   </figure>`;
 }
 function choiceLabel(c) {
@@ -8899,9 +9067,17 @@ function fbHtml(q, res, gain) {
   ${chosen ? compareHtml(t, chosen, q) + whyHtml(t, chosen, ses.kind !== "duel" && q.level === "species" && drillWorthy(t.id, chosen.id) > 0, q.stim === "son" || q.stim === "soncho") + decH : ""}
   ${(() => { if (chosen) { q.tipShown = true; return ""; } const other = q.pair ? q.pair.find(x => x.id !== t.id) : null; const h = other ? sosiesHtml(t, other, "ok") || (duelTip(t.sci, other.sci) ? `<div class="lsec tipbox">${tipHtml(t, other, "Comment les distinguer")}</div>` : "") : ""; if (h) q.tipShown = true; return h; })()}
   ${q.photo?.field && (q.photo.place || q.photo.date || q.photo.age) ? `<div class="dnote">${ic("pin", "xs")} ${q.photo.age ? `<b>${AGEN[q.photo.age]}</b> · ` : ""}${esc(q.photo.place || "")}${q.photo.date ? " · " + esc(dateLong(q.photo.date)) : ""}${q.photo.uri ? ` · <a href="${esc(q.photo.uri)}" target="_blank" rel="noopener">voir l'observation</a>` : ""}</div>` : ""}
+  ${q.photo && (q.stim === "photo" || q.stim === "field" || q.stim === "soncho") ? photoCred(q.photo, q.t) : ""}
   ${q.snd ? `<div class="dnote" style="display:flex;align-items:center;gap:8px">${ic("wave", "xs")}<span style="flex:1">${esc([q.snd.place, q.snd.attr].filter(Boolean).join(" · "))}</span><button class="chip warn" data-act="badsnd">${ic("x", "xs")}Mauvais son</button></div>` : ""}
   <div class="learn" id="learn" data-id="${t.id}"><div class="lsec"><div class="lh">${ic("book", "xs")}Pour la reconnaître</div><div class="lsk"></div><div class="lsk short"></div></div></div>
   ${next}`;
+}
+/* Crédit photo discret (après la réponse et sur les fiches) : © auteur · licence · lien vers la source */
+function photoSrc(p, t) { return p.uri || (p.pid ? "https://www.inaturalist.org/photos/" + p.pid : t ? "https://www.inaturalist.org/taxa/" + t.id : ""); }
+function photoCred(p, t) {
+  const c = credText(p.attr, p.lic), u = photoSrc(p, t);
+  if (!c && !u) return "";
+  return `<div class="pcred">${ic("eye", "xs")}<span>Photo ${esc(c || "iNaturalist")}${u ? ` · <a href="${esc(u)}" target="_blank" rel="noopener">${p.uri ? "voir l'observation" : "voir sur iNaturalist"}</a>` : ""}</span></div>`;
 }
 let LEARNSIM = [];
 let LEARNSND = [];
@@ -9428,6 +9604,12 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-11.3", n: "4.6", items: [
+    { ic: "bird", t: "L'oiseau du jour en vidéo", d: "Une courte vidéo sur l'accueil, avec son auteur et sa licence. Pas de lecture automatique en économie de données." },
+    { ic: "trophy", t: "Nouveautés en boutique", d: "Cadres de niveau, sons de réussite, pluie de plumes, couleurs de saison et un défi expert du jour à XP doublé." },
+    { ic: "eye", t: "Sur ordinateur", d: "Sur grand écran : menu à gauche, grande photo, réponses au clavier (1 à 6, Entrée)." },
+    { ic: "info", t: "Crédits et mentions légales", d: "Auteur et licence de chaque photo après ta réponse, et une page de mentions légales." }
+  ] },
   { v: "2026-11-11.2", n: "4.5", items: [
     { ic: "trophy", t: "100 niveaux, 100 oiseaux", d: "Chaque niveau porte un oiseau, du Moineau domestique aux raretés d'Ouessant. Un palier tous les 10 niveaux, et une roue dans les Réglages pour choisir ton titre parmi les oiseaux atteints. Au niveau 100 : titre libre." }
   ] },
@@ -9765,9 +9947,35 @@ const SOURCES = [
   ["GitHub Pages", "https://pages.github.com", "L'hébergement de l'appli.", "Voir la section confidentialité ci-dessus."]
 ];
 VIEWS.about = () => `<section class="view about">
-  <div class="head"><button class="icon-btn" data-act="tab" data-tab="settings" aria-label="Retour">${ic("back")}</button><h1 class="h1" style="flex:1">Confidentialité et sources</h1></div>
-  <div class="sec">${ic("shield")}Confidentialité</div>
-  <div class="card prose">
+  <div class="head"><button class="icon-btn" data-act="tab" data-tab="settings" aria-label="Retour">${ic("back")}</button><h1 class="h1" style="flex:1">Mentions légales et confidentialité</h1></div>
+  <div class="sec" id="legal">${ic("info")}Mentions légales</div>
+  <div class="card prose legal">
+    <p class="lead2">Plumage est un projet personnel, gratuit et non commercial : pas de publicité, rien à vendre.</p>
+    <h3>Éditeur</h3>
+    <ul><li>Pierre-Louis Martin, particulier, responsable de la publication.</li>
+    <li>Contact : <a href="https://github.com/49j54nww5p-cmyk/Loki/issues" target="_blank" rel="noopener">page du projet sur GitHub (onglet Issues)</a></li>
+    <li>Comme le permet la loi pour un éditeur non professionnel (LCEN, art. 6-III-2), son adresse postale est connue de l'hébergeur et n'est pas publiée ici.</li></ul>
+    <h3>Hébergeur</h3>
+    <ul><li>GitHub Pages, service de GitHub Inc., 88 Colin P. Kelly Jr St, San Francisco, CA 94107, États-Unis — <a href="https://github.com" target="_blank" rel="noopener">github.com</a>.</li></ul>
+    <h3>Tes données personnelles (RGPD)</h3>
+    <ul><li><b>Responsable du traitement</b> : l'éditeur ci-dessus.</li>
+    <li><b>Sur ton appareil</b> : progression, carnet, réglages et sauvegardes restent dans le stockage du navigateur. L'éditeur n'y a pas accès.</li>
+    <li><b>Firebase (Google, serveur en Belgique, europe-west1)</b> : seulement si tu utilises le classement, la sauvegarde en ligne ou les duels. L'appli reçoit alors un identifiant anonyme, sans nom ni e-mail ; sont enregistrés ton pseudo, ton XP, tes points de la semaine, les parties en cours et ta sauvegarde chiffrée. Base légale : ton choix d'utiliser ces fonctions (exécution du service demandé). Durée : tant que tu les utilises ; une partie de duel est effacée à la fin, ta ligne de classement l'est quand tu le désactives.</li>
+    <li><b>GoatCounter</b> : compteur de visites sans cookie ni identifiant (page vue, taille d'écran, site d'origine). Base légale : intérêt légitime à savoir si l'appli sert. Désactivable dans Réglages.</li>
+    <li><b>Hébergement et services interrogés</b> (GitHub, iNaturalist, Wikipédia, xeno-canto…) voient ton adresse IP comme toute page web. Certains sont aux États-Unis.</li>
+    <li>Aucun cookie publicitaire, aucune revente, aucun profilage.</li></ul>
+    <h3>Tes droits</h3>
+    <ul><li>Tu peux accéder à tes données, les corriger, les exporter ou les supprimer. Sur ton appareil : Réglages, « Tout effacer » (et désactiver le classement avant pour retirer ta ligne en ligne).</li>
+    <li>Pour toute demande, y compris sur ce qui est stocké en ligne, écris à l'adresse de contact ci-dessus en indiquant ton pseudo.</li>
+    <li>Si la réponse ne te convient pas, tu peux saisir la CNIL (<a href="https://www.cnil.fr/fr/plaintes" target="_blank" rel="noopener">cnil.fr</a>).</li></ul>
+    <h3>Contenus et licences</h3>
+    <ul><li><b>Photos et sons iNaturalist</b> : chaque média appartient à son auteur, sous la licence Creative Commons qu'il a choisie (souvent CC BY-NC). L'auteur, la licence et un lien vers la source sont indiqués sous chaque photo des fiches et après chaque réponse.</li>
+    <li><b>Textes Wikipédia</b> : licence CC BY-SA 4.0, avec lien vers l'article. <b>Médias Wikimedia Commons</b> : licence propre à chaque fichier, indiquée avec l'auteur.</li>
+    <li><b>Enregistrements xeno-canto</b> : licence Creative Commons propre à chaque enregistrement, indiquée avec le nom de l'enregistreur.</li>
+    <li>Le reste (code, textes et critères rédigés pour l'appli) : © Pierre-Louis Martin. Une erreur, un crédit manquant ou une demande de retrait ? Écris à l'adresse de contact.</li></ul>
+  </div>
+  <div class="sec">${ic("shield")}Confidentialité en détail</div>
+    <div class="card prose">
     <p class="lead2">Pas de compte, pas de publicité, pas de traceur. Ce que tu fais dans l'appli reste sur ton appareil, sauf un compteur de visites anonyme (désactivable).</p>
     <h3>Compteur de visites</h3>
     <ul><li>À l'ouverture et à chaque onglet, l'appli prévient GoatCounter (compteur libre, sans cookie) : la page, la taille d'écran et le site d'où tu viens. Aucun identifiant, rien sur ta progression.</li>
@@ -9968,7 +10176,7 @@ VIEWS.settings = () => `<section class="view settings">
   </div>
   ${packSettingsHtml()}
   <div class="group" style="margin-top:18px"><button class="set link" data-act="tour">${ic("info")}<span class="lab"><b>Revoir la présentation</b><small>Le tour de l'appli en 6 écrans.</small></span>${ic("arrow")}</button><button class="set link" data-act="ideas">${ic("bulb")}<span class="lab"><b>Boîte à idées</b><small>Une envie, un bug, un oiseau mal nommé : dis-le.</small></span>${ic("arrow")}</button><button class="set link" data-act="news">${ic("spark")}<span class="lab"><b>Nouveautés · v${esc(APP_VERSION)}</b><small>Toutes les versions et ce qu'elles ont apporté.</small></span>${ic("arrow")}</button></div>
-  <div class="group" style="margin-top:18px"><button class="set link" data-act="tab" data-tab="about">${ic("shield")}<span class="lab"><b>Confidentialité et sources</b><small>Ce qui reste sur ton téléphone, ce qui en sort, et d'où viennent les données.</small></span>${ic("arrow", "s")}</button></div>
+  <div class="group" style="margin-top:18px"><button class="set link" data-act="tab" data-tab="about">${ic("shield")}<span class="lab"><b>Mentions légales, confidentialité et sources</b><small>Qui édite l'appli, ce qui reste sur ton téléphone, ce qui en sort, et d'où viennent les données.</small></span>${ic("arrow", "s")}</button></div>
   <p class="foot vfoot"><b>Plumage v${esc(APP_VERSION)}</b> · ${esc(vDate(NEWS[0].v))} · <button class="lnk" data-act="news">toutes les versions</button></p>
   <p class="foot">Photos, sons et données : iNaturalist, Wikipédia, Wikimedia Commons et xeno-canto, avec l'auteur et la licence de chaque média. Ta progression reste sur cet appareil.</p>
 </section>`;
@@ -10052,7 +10260,7 @@ function openFiche(t) {
   const s = r ? stars(r) : 0;
   openLayer(`<div class="panel" role="dialog" aria-label="Fiche ${esc(nameFr(t))}">
   <button class="icon-btn close" data-act="close" aria-label="Fermer">${ic("x")}</button>
-  <div class="gallery" id="gal"><figure data-act="zoom" data-grp="fg" data-src="${esc(imgOf(t))}" data-cap="${esc(nameFr(t))}" data-sci="${esc(t.fr ? t.sci : "")}" data-attr="${esc(t.img?.attr || "")}"><img src="${esc(imgOf(t))}" alt="" data-fit draggable="false"><span class="zb">${ic("zoom")}</span><figcaption>${esc(t.img?.attr || "")}</figcaption></figure></div><div class="gdots" id="gdots"></div>
+  <div class="gallery" id="gal"><figure data-act="zoom" data-grp="fg" data-src="${esc(imgOf(t))}" data-cap="${esc(nameFr(t))}" data-sci="${esc(t.fr ? t.sci : "")}" data-attr="${esc(t.img?.attr || "")}"><img src="${esc(imgOf(t))}" alt="" data-fit draggable="false"><span class="zb">${ic("zoom")}</span><figcaption>${esc(credText(t.img?.attr, t.img?.lic))}</figcaption></figure></div><div class="gdots" id="gdots"></div>
   <div class="in">
     <div class="ftitle"><h2>${esc(nameFr(t))}</h2>${t.fr ? `<span class="latin">${esc(t.sci)}</span>` : ""}
       <div class="chips">${f ? `<span class="chip fam">${ic("tree")}${esc(famName(f))}${famVern(f) ? " · " + esc(famVern(f)) : ""}</span>` : ""}${o ? `<span class="chip ord">${esc(ordName(o))}</span>` : ""}${r?.n ? starsHtml(s) : ""}</div></div>
@@ -10084,7 +10292,7 @@ async function ficheFill(t) {
   photosFor([t.id]).then(([ph]) => {
     if (!alive() || !ph.length) return;
     const g = $("#gal");
-    g.innerHTML = ph.slice(0, 10).map((p, i) => `<figure data-act="zoom" data-grp="fg" data-src="${esc(p.lg || p.md)}" data-hd="${esc(hdOf(p.lg || p.md))}" data-cap="${esc(nameFr(t))}" data-sci="${esc(t.fr ? t.sci : "")}" data-attr="${esc(p.attr)}"><img src="${esc(p.lg || p.md)}" alt="" ${i ? 'loading="lazy" ' : ""}data-fit draggable="false"><span class="zb">${ic("zoom")}</span><figcaption>${esc(p.attr)}</figcaption></figure>`).join("");
+    g.innerHTML = ph.slice(0, 10).map((p, i) => `<figure data-act="zoom" data-grp="fg" data-src="${esc(p.lg || p.md)}" data-hd="${esc(hdOf(p.lg || p.md))}" data-cap="${esc(nameFr(t))}" data-sci="${esc(t.fr ? t.sci : "")}" data-attr="${esc(credText(p.attr, p.lic))}"><img src="${esc(p.lg || p.md)}" alt="" ${i ? 'loading="lazy" ' : ""}data-fit draggable="false"><span class="zb">${ic("zoom")}</span><figcaption>${esc(credText(p.attr, p.lic))}${photoSrc(p) ? ` · <a href="${esc(photoSrc(p))}" target="_blank" rel="noopener">source</a>` : ""}</figcaption></figure>`).join("");
     fitImgs(g);
     const dots = $("#gdots");
     dots.innerHTML = ph.slice(0, 10).map((_, i) => `<i class="${i ? "" : "on"}"></i>`).join("");
@@ -10700,6 +10908,7 @@ const ACT = {
 function onClick(e) {
   const mm = $("#mmenu");
   if (mm && !mm.hidden && !e.target.closest("#mmenu,[data-act=mapmenu]")) mm.hidden = true;
+  if (e.target.closest("figcaption a")) return;   /* lien de crédit dans une photo : ne pas ouvrir le zoom */
   const el = e.target.closest("[data-act]");
   if (el) {
     if (el.disabled) return;
@@ -10903,8 +11112,14 @@ const ACCS = [
   { k: "jaune", n: "Jaune Plumage", d: "La couleur d'origine", c: "#FFCE00", c2: "#FFE27A" },
   { k: "martin", n: "Martin-pêcheur", d: "Vert-bleu des berges", c: "#18C6B4", c2: "#7EE6DA" },
   { k: "rouge", n: "Rougegorge", d: "Orange-rouge du jabot", c: "#FF6A3D", c2: "#FFA27F" },
-  { k: "mesange", n: "Mésange bleue", d: "Bleu de la calotte", c: "#4FA8FF", c2: "#A4D0FF" }
+  { k: "mesange", n: "Mésange bleue", d: "Bleu de la calotte", c: "#4FA8FF", c2: "#A4D0FF" },
+  /* Couleurs de saison : achetables seulement pendant leur saison (mois 1-12), gardées ensuite */
+  { k: "bruyere", n: "Bruyère d'automne", d: "Violet des landes · sept. à nov.", c: "#C46BD8", c2: "#E2AEEC", m: [9, 10, 11] },
+  { k: "givre", n: "Givre d'hiver", d: "Bleu glacé · déc. à févr.", c: "#9FE3FF", c2: "#D4F3FF", m: [12, 1, 2] },
+  { k: "aubepine", n: "Aubépine", d: "Rose de printemps · mars à mai", c: "#FF8FB8", c2: "#FFC4DA", m: [3, 4, 5] },
+  { k: "loriot", n: "Loriot d'été", d: "Or chaud · juin à août", c: "#FFB21E", c2: "#FFD480", m: [6, 7, 8] }
 ];
+const inSeason = a => !a.m || a.m.includes(new Date().getMonth() + 1);
 function applyAcc() {
   const a = ACCS.find(x => x.k === S.set.acc) || ACCS[0], r = document.documentElement.style;
   if (a.k === "jaune") ["--acc", "--acc-ink", "--acc-2", "--ter", "--pop"].forEach(v => r.removeProperty(v));
@@ -10927,9 +11142,10 @@ VIEWS.shop = () => `<section class="view shop">
   <div class="sgrid">${SHOP.map(it => { const full = it.max && it.max(), poor = S.plumes < it.p;
     return `<div class="sitem glass" data-k="${it.k}"><span class="sic">${ic(it.ic)}</span><div class="stx"><b>${esc(it.n)}</b><small>${esc(it.d)}</small><em>${esc(it.have())}</em></div>
       <button class="sbuy" data-act="shopbuy" data-k="${it.k}" ${full || poor ? "disabled" : ""}>${full ? "Max" : `${ic("feather", "xs")}${it.p}`}</button></div>`; }).join("")}</div>
+  ${cosmHtml()}
   <h2 class="ssec">Couleur de l'appli</h2>
-  <div class="sgrid">${ACCS.map(a => { const own = S.accs.includes(a.k), on = (S.set.acc || "jaune") === a.k;
-    return `<div class="sitem glass ${on ? "on" : ""}" data-k="acc-${a.k}"><span class="sdot" style="background:${a.c}"></span><div class="stx"><b>${esc(a.n)}</b><small>${esc(a.d)}</small></div>
+  <div class="sgrid">${ACCS.filter(a => inSeason(a) || S.accs.includes(a.k)).map(a => { const own = S.accs.includes(a.k), on = (S.set.acc || "jaune") === a.k;
+    return `<div class="sitem glass ${on ? "on" : ""}" data-k="acc-${a.k}"><span class="sdot" style="background:${a.c}"></span><div class="stx"><b>${esc(a.n)}</b><small>${esc(a.d)}</small>${a.m ? `<em>Saison</em>` : ""}</div>
       ${own ? `<button class="sbuy ghost" data-act="shopacc" data-k="${a.k}" ${on ? "disabled" : ""}>${on ? "Active" : "Choisir"}</button>`
         : `<button class="sbuy" data-act="shopbuy" data-k="acc-${a.k}" ${S.plumes < 300 ? "disabled" : ""}>${ic("feather", "xs")}300</button>`}</div>`; }).join("")}</div>
 </section>`;
@@ -10941,7 +11157,7 @@ function shopBuy(k) {
   if (!price || (!acc && !it)) return false;
   if (S.plumes < price) { toast("Pas assez de plumes"); return false; }
   if (it?.max && it.max()) return false;
-  if (acc && S.accs.includes(acc.k)) return false;
+  if (acc && (S.accs.includes(acc.k) || !inSeason(acc))) return false;
   const from = S.plumes;
   S.plumes -= price;
   if (acc) { S.accs.push(acc.k); S.set.acc = acc.k; applyAcc(); } else it.buy();
@@ -11004,6 +11220,107 @@ MOUNT.grand = (...a) => {
   }
   return r;
 };
+
+/* ---------- Cosmétiques et défi (aucun ne facilite les réponses) ---------- */
+S.cos = Array.isArray(S.cos) ? S.cos : [];
+const COSM = [
+  /* Cadres du badge de niveau : se débloquent par palier, puis s'achètent */
+  { k: "fr-bronze", g: "frame", n: "Cadre Bronze", d: "Anneau cuivré autour du niveau", p: 200, lv: 10, sw: "linear-gradient(135deg,#C9773A,#F3B27A,#8A4A1E)" },
+  { k: "fr-argent", g: "frame", n: "Cadre Argent", d: "Anneau d'argent poli", p: 400, lv: 30, sw: "linear-gradient(135deg,#9AA6B2,#F4F7FA,#6B7783)" },
+  { k: "fr-or", g: "frame", n: "Cadre Or", d: "Anneau d'or qui scintille", p: 800, lv: 60, sw: "conic-gradient(from 0deg,#FFCE00,#FFF4B0,#C99A00,#FFE27A,#FFCE00)" },
+  /* Sons de bonne réponse */
+  { k: "snd-carillon", g: "snd", n: "Carillon", d: "Trois notes de cloche claires", p: 250, ic: "wave" },
+  { k: "snd-pic", g: "snd", n: "Tambour du pic", d: "Un roulement sec sur le bois", p: 250, ic: "wave" },
+  { k: "snd-mesange", g: "snd", n: "Sifflet de mésange", d: "« Ti-tu, ti-tu » en sourdine", p: 250, ic: "wave" },
+  /* Effet visuel */
+  { k: "fx-plumes", g: "fx", n: "Pluie de plumes", d: "Des plumes s'envolent à chaque bonne réponse", p: 350, ic: "feather" }
+];
+const OKSND = {
+  "snd-carillon": () => [1047, 1319, 1568].forEach((f, i) => tone(f, i * .08, .45, "sine", .07)),
+  "snd-pic": () => [0, .06, .11, .15, .19, .22].forEach(t => tone(1900, t, .035, "square", .035, 900)),
+  "snd-mesange": () => { tone(4200, 0, .11, "sine", .05, 3900); tone(3100, .14, .13, "sine", .05, 3000); tone(4200, .32, .11, "sine", .05, 3900); tone(3100, .46, .13, "sine", .05, 3000); }
+};
+const cosOwn = k => S.cos.includes(k);
+const cosOn = it => it.g === "fx" ? !!S.set.pluie : (it.g === "frame" ? S.set.frame : S.set.okson) === it.k;
+function applyFrame() {
+  const h = document.documentElement;
+  COSM.filter(c => c.g === "frame").forEach(c => h.classList.toggle(c.k, S.set.frame === c.k));
+}
+applyFrame();
+
+/* Son de réussite : remplace les deux notes d'origine, la vibration reste */
+const sfxOkBase = sfx.ok;
+sfx.ok = function () {
+  const f = OKSND[S.set.okson];
+  if (f && S.set.sfx) { f(); buzz(12); } else sfxOkBase();
+  if (S.set.pluie) featherRain();
+};
+function featherRain(n = 14) {
+  if (S.set.calm || document.body.classList.contains("lite") || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
+  const box = document.createElement("div"); box.className = "frain"; box.setAttribute("aria-hidden", "true");
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement("i");
+    s.innerHTML = ic("feather");
+    s.style.cssText = `--x:${(Math.random() * 100).toFixed(1)}%;--dx:${((Math.random() - .5) * 120).toFixed(0)}px;--r:${((Math.random() - .5) * 140).toFixed(0)}deg;--d:${(Math.random() * 260).toFixed(0)}ms;--s:${(.7 + Math.random() * .7).toFixed(2)}`;
+    box.appendChild(s);
+  }
+  document.body.appendChild(box);
+  setTimeout(() => box.remove(), 1800);
+}
+
+/* Défi expert du jour : payant, saisie libre, 10 s par question, XP doublée. Plus dur, pas plus facile. */
+const DEFI_P = 30;
+const defiDone = () => S.defiX === dayKey();
+const xpForBase = xpFor;
+xpFor = function (ses, q, res, ms) { const x = xpForBase(ses, q, res, ms); return ses?.cfg?.expertX && res.ok ? x * 2 : x; };
+function defiStart() {
+  if (defiDone() || S.plumes < DEFI_P) return false;
+  S.plumes -= DEFI_P; S.defiX = dayKey(); save(true);
+  startSession({ kind: "quiz", expertX: true, title: "Défi expert du jour", icon: "bolt", zone: S.set.zone, freq: "common", size: 150,
+    stim: ["photo"], target: "species", names: S.set.names, format: "type", k: S.set.k, diff: "expert", len: 10, timer: 10 });
+  return true;
+}
+
+function cosmHtml() {
+  const L = level().n, row = it => {
+    const own = cosOwn(it.k), on = own && cosOn(it), lock = it.lv && L < it.lv;
+    const vis = it.g === "frame" ? `<span class="sframe ${it.k}" style="--sw:${it.sw}"><b>${L}</b></span>` : `<span class="sic">${ic(it.ic)}</span>`;
+    const btn = own ? `<button class="sbuy ghost" data-act="cosuse" data-k="${it.k}">${on ? (it.g === "fx" ? "Activé" : "Actif") : (it.g === "snd" ? "Choisir" : "Activer")}</button>`
+      : lock ? `<button class="sbuy" disabled>${ic("lock", "xs")}Niv. ${it.lv}</button>`
+      : `<button class="sbuy" data-act="cosbuy" data-k="${it.k}" ${S.plumes < it.p ? "disabled" : ""}>${ic("feather", "xs")}${it.p}</button>`;
+    return `<div class="sitem glass ${on ? "on" : ""}" data-k="${it.k}">${vis}<div class="stx"><b>${esc(it.n)}</b><small>${esc(it.d)}</small>${it.g === "snd" && own ? `<em data-act="costry" data-k="${it.k}" role="button">Écouter</em>` : ""}</div>${btn}</div>`;
+  }, grp = g => COSM.filter(c => c.g === g).map(row).join("");
+  const dd = defiDone();
+  return `<h2 class="ssec">Défi du jour</h2>
+  <div class="sgrid"><div class="sitem glass sdefi ${dd ? "done" : ""}" data-k="defi"><span class="sic">${ic("bolt")}</span><div class="stx"><b>Défi expert</b><small>10 oiseaux à écrire, 10 s chacun, niveau expert. XP doublée sur les bonnes réponses.</small><em>${dd ? "Fait aujourd'hui, reviens demain" : "Une fois par jour"}</em></div>
+    <button class="sbuy" data-act="shopdefi" ${dd || S.plumes < DEFI_P ? "disabled" : ""}>${dd ? "Fait" : `${ic("feather", "xs")}${DEFI_P}`}</button></div></div>
+  <h2 class="ssec">Cadres de niveau</h2><div class="sgrid">${grp("frame")}</div>
+  <h2 class="ssec">Sons et effets</h2><div class="sgrid">${grp("snd")}${grp("fx")}</div>`;
+}
+function cosBuy(k) {
+  const it = COSM.find(c => c.k === k);
+  if (!it || cosOwn(k) || (it.lv && level().n < it.lv)) return false;
+  if (S.plumes < it.p) { toast("Pas assez de plumes"); return false; }
+  S.plumes -= it.p; S.cos.push(k); cosUse(k, true); save(true);
+  const y = window.scrollY; go("shop"); window.scrollTo(0, y);
+  document.querySelector(`.sitem[data-k="${k}"]`)?.classList.add("pop");
+  toast(`${it.n} : acheté`);
+  return true;
+}
+function cosUse(k, force) {
+  const it = COSM.find(c => c.k === k); if (!it || !cosOwn(k)) return;
+  if (it.g === "frame") S.set.frame = S.set.frame === k && !force ? "" : k;
+  else if (it.g === "snd") { S.set.okson = S.set.okson === k && !force ? "" : k; if (S.set.okson && S.set.sfx) OKSND[k](); }
+  else S.set.pluie = force ? true : !S.set.pluie;
+  applyFrame();
+  if (it.g === "fx" && S.set.pluie) featherRain();
+}
+Object.assign(ACT, {
+  cosbuy: el => cosBuy(el.dataset.k),
+  cosuse: el => { cosUse(el.dataset.k); save(true); const y = window.scrollY; go("shop"); window.scrollTo(0, y); },
+  costry: el => { unlockAudio(); OKSND[el.dataset.k]?.(); },
+  shopdefi: () => { if (!defiStart()) toast(defiDone() ? "Défi déjà joué aujourd'hui" : "Pas assez de plumes"); }
+});
 
 /* ---- niveaux.js ---- */
 /* ============================================================
@@ -11188,6 +11505,186 @@ function voxMount(q) {
 }
 
 /* ---- video.js ---- */
+/* ---------- L'oiseau du jour en vidéo ----------
+   Sources (appelées depuis le navigateur, sans clé, CORS « origin=* ») :
+   1. Wikidata, propriété P10 « vidéo » du taxon (trouvé par P225 = nom scientifique) : choix éditorial.
+   2. Recherche Wikimedia Commons : filetype:video intitle:"<nom scientifique>".
+   On ne lit jamais l'original (jusqu'à 300 Mo) : seulement les transcodages 480p/240p (webm VP9) et 360p (mov, iOS ancien).
+   Pas de vidéo trouvée : pas de carte (aucun repli factice). Voir NOTES.md. */
+const VID_API = "https://commons.wikimedia.org/w/api.php";
+const VID_WD = "https://www.wikidata.org/w/api.php";
+const VID_TTL = 7 * 864e5, VID_MISS_TTL = 2 * 864e5, VID_TRIES = 4, VID_MAX = 300;
+const VID_IC = {
+  on: `<svg class="i" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>`,
+  off: `<svg class="i" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>`,
+  play: `<svg class="i" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M8 5.5v13l11-6.5z"/></svg>`,
+  pause: `<svg class="i" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><rect x="6.5" y="5" width="4" height="14" rx="1"/><rect x="13.5" y="5" width="4" height="14" rx="1"/></svg>`
+};
+
+/* ---- cache local (best effort) ---- */
+function vidCacheGet(sci) {
+  try { const r = JSON.parse(localStorage.getItem("plumage.vid." + sci) || "null"); if (r && Date.now() - r.t < (r.v ? VID_TTL : VID_MISS_TTL)) return r; } catch (e) { }
+  return null;
+}
+function vidCacheSet(sci, v) { try { localStorage.setItem("plumage.vid." + sci, JSON.stringify({ t: Date.now(), v })); } catch (e) { } }
+
+async function vidJson(base, params, ms = 9000) {
+  const u = new URL(base);
+  Object.entries({ format: "json", formatversion: "2", origin: "*", ...params }).forEach(([k, v]) => u.searchParams.set(k, v));
+  const ac = new AbortController(), tm = setTimeout(() => ac.abort(), ms);
+  try { const r = await fetch(u, { signal: ac.signal }); if (!r.ok) throw new Error("HTTP " + r.status); return await r.json(); }
+  finally { clearTimeout(tm); }
+}
+const vidStrip = h => { const d = document.createElement("div"); d.innerHTML = String(h || ""); return (d.textContent || "").replace(/\s+/g, " ").trim(); };
+
+/* une page Commons (prop=videoinfo) -> vidéo exploitable ou null */
+function vidPick(page) {
+  const v = page?.videoinfo?.[0] || page?.imageinfo?.[0];
+  if (!v) return null;
+  if (!/^video\/|^application\/ogg/.test(v.mime || "")) return null;
+  const dur = +v.duration || 0;
+  if (dur && (dur < 3 || dur > VID_MAX)) return null;
+  const der = (v.derivatives || []).filter(d => d && d.src && /^video\//.test(d.type || ""));
+  const key = d => d.transcodekey || (d.src.match(/\.(\d+p\.[\w.]+)$/) || [])[1] || "";
+  const rank = ["480p.vp9.webm", "360p.vp9.webm", "240p.vp9.webm", "360p.webm", "480p.webm", "360p.mpeg4.mov"];
+  const srcs = der.filter(d => rank.includes(key(d))).sort((a, b) => rank.indexOf(key(a)) - rank.indexOf(key(b)))
+    .map(d => ({ src: d.src, type: d.type || "" }));
+  if (!srcs.length) return null; /* pas de transcodage léger : on ne charge pas un original de plusieurs dizaines de Mo */
+  const md = v.extmetadata || {};
+  const lic = vidStrip(md.LicenseShortName?.value);
+  if (!lic) return null; /* crédit + licence obligatoires */
+  return {
+    title: (page.title || "").replace(/^File:/, ""),
+    srcs,
+    poster: v.thumburl || "",
+    author: vidStrip(md.Artist?.value) || "Auteur inconnu",
+    license: lic,
+    licenseUrl: md.LicenseUrl?.value || "",
+    page: v.descriptionurl || "",
+    dur
+  };
+}
+const VID_PROPS = { prop: "videoinfo", viprop: "url|mime|size|derivatives|extmetadata", viextmetadatafilter: "Artist|LicenseShortName|LicenseUrl", viurlwidth: "640" };
+
+/* 1. Wikidata P10 : vidéo choisie pour le taxon */
+async function vidWikidata(sci) {
+  const s = await vidJson(VID_WD, { action: "query", list: "search", srsearch: `haswbstatement:"P225=${sci}"`, srlimit: "1", srprop: "" });
+  const qid = s?.query?.search?.[0]?.title;
+  if (!/^Q\d+$/.test(qid || "")) return null;
+  const e = await vidJson(VID_WD, { action: "wbgetclaims", entity: qid, property: "P10" });
+  const files = (e?.claims?.P10 || []).map(c => c?.mainsnak?.datavalue?.value).filter(x => typeof x === "string").slice(0, 5);
+  if (!files.length) return null;
+  const d = await vidJson(VID_API, { action: "query", titles: files.map(f => "File:" + f).join("|"), ...VID_PROPS });
+  for (const p of d?.query?.pages || []) { const v = vidPick(p); if (v) return { ...v, via: "Wikidata" }; }
+  return null;
+}
+/* 2. recherche Commons */
+async function vidCommons(sci) {
+  const d = await vidJson(VID_API, { action: "query", generator: "search", gsrsearch: `filetype:video intitle:"${sci}"`, gsrnamespace: "6", gsrlimit: "12", ...VID_PROPS });
+  const pages = (d?.query?.pages || []).slice().sort((a, b) => (a.index || 0) - (b.index || 0));
+  const ok = pages.map(vidPick).filter(Boolean);
+  /* les plans courts bouclent mieux */
+  ok.sort((a, b) => ((a.dur || 60) > 90) - ((b.dur || 60) > 90));
+  return ok[0] ? { ...ok[0], via: "Wikimedia Commons" } : null;
+}
+const VID_SOURCES = [vidWikidata, vidCommons];
+
+async function vidFind(t) {
+  const sci = t?.sci;
+  if (!sci) return null;
+  const c = vidCacheGet(sci);
+  if (c) return c.v;
+  let v = null, failed = false;
+  for (const src of VID_SOURCES) {
+    try { v = await src(sci); } catch (e) { failed = true; }
+    if (v) break;
+  }
+  if (v || !failed) vidCacheSet(sci, v); /* une panne réseau ne doit pas être mémorisée comme « pas de vidéo » */
+  return v;
+}
+
+/* lecture auto seulement si rien ne s'y oppose */
+function vidAutoOk() {
+  try { if (matchMedia("(prefers-reduced-motion: reduce)").matches) return false; } catch (e) { }
+  if (navigator.connection?.saveData) return false;
+  return true;
+}
+
+function vidCard(t, v, own) {
+  return `<figure class="vidc" id="vidc" aria-label="Vidéo : ${esc(nameFr(t))}">
+  <div class="vid-box">
+    <video id="vidv" muted loop playsinline webkit-playsinline preload="none" disablepictureinpicture ${v.poster ? `poster="${esc(v.poster)}"` : ""}>${v.srcs.map(s => `<source src="${esc(s.src)}" type="${esc(s.type)}">`).join("")}</video>
+    <span class="vid-tag">${own ? "L'oiseau du jour en vidéo" : "En vidéo aujourd'hui"}</span>
+    <button class="vid-play" data-act="vidplay" aria-label="Lire la vidéo">${VID_IC.play}</button>
+    <button class="vid-snd" data-act="vidsnd" aria-pressed="false" aria-label="Activer le son">${VID_IC.off}</button>
+  </div>
+  <figcaption><b>${esc(nameFr(t))}</b>${t.fr ? ` <em>${esc(t.sci)}</em>` : ""}
+    <small class="vid-cr">Vidéo : ${esc(v.author)} · ${v.licenseUrl ? `<a href="${esc(v.licenseUrl)}" target="_blank" rel="noopener">${esc(v.license)}</a>` : esc(v.license)} · ${v.page ? `<a href="${esc(v.page)}" target="_blank" rel="noopener">${esc(v.via)}</a>` : esc(v.via)}</small></figcaption>
+</figure>`;
+}
+
+const VIDST = { io: null, want: false };
+function vidState() {
+  const f = $("#vidc"), el = $("#vidv");
+  if (!f || !el) return;
+  const playing = !el.paused;
+  f.classList.toggle("playing", playing);
+  const p = f.querySelector(".vid-play");
+  if (p) { p.innerHTML = playing ? VID_IC.pause : VID_IC.play; p.setAttribute("aria-label", playing ? "Mettre en pause" : "Lire la vidéo"); }
+  const s = f.querySelector(".vid-snd");
+  if (s) { s.innerHTML = el.muted ? VID_IC.off : VID_IC.on; s.setAttribute("aria-pressed", String(!el.muted)); s.setAttribute("aria-label", el.muted ? "Activer le son" : "Couper le son"); }
+}
+function vidPlay(el) { const p = el.play(); if (p && p.catch) p.catch(() => vidState()); }
+
+/* t = oiseau du jour, pool = espèces candidates (même ordre pour tout le monde ce jour-là) */
+async function vidOtd(t, pool) {
+  const anchor = $(".view.home .story");
+  if (!anchor || $("#vidc")) return;
+  const seen = new Set([t.sci]), rest = [];
+  const start = hashStr("vid" + dayKey()) % Math.max(1, pool.length);
+  for (let i = 0; i < pool.length && rest.length < VID_TRIES - 1; i++) { const c = pool[(start + i) % pool.length]; if (c?.sci && !seen.has(c.sci)) { seen.add(c.sci); rest.push(c); } }
+  let got = null;
+  for (const c of [t, ...rest]) {
+    const v = await vidFind(c);
+    if (VIEW !== "home" || !anchor.isConnected) return;
+    if (v) { got = { t: c, v }; break; }
+  }
+  if (!got) return; /* aucune vidéo réelle : rien à afficher */
+  anchor.insertAdjacentHTML("afterend", vidCard(got.t, got.v, got.t === t));
+  const f = $("#vidc"), el = $("#vidv");
+  let fails = 0;
+  const srcN = el.querySelectorAll("source").length;
+  el.querySelectorAll("source").forEach(s => s.addEventListener("error", () => { if (++fails >= srcN) f.remove(); }));
+  el.addEventListener("error", () => f.remove());
+  ["play", "pause", "volumechange"].forEach(ev => el.addEventListener(ev, vidState));
+  VIDST.want = vidAutoOk();
+  f.classList.toggle("still", !VIDST.want);
+  if (VIDST.io) VIDST.io.disconnect();
+  if ("IntersectionObserver" in window) {
+    VIDST.io = new IntersectionObserver(es => es.forEach(e => {
+      if (!el.isConnected) return VIDST.io.disconnect();
+      if (e.isIntersecting && VIDST.want) { el.preload = "auto"; vidPlay(el); }
+      else if (!e.isIntersecting && !el.paused) el.pause();
+    }), { threshold: 0.35 });
+    VIDST.io.observe(f);
+  } else if (VIDST.want) { el.preload = "auto"; vidPlay(el); }
+  vidState();
+}
+document.addEventListener("visibilitychange", () => { const el = $("#vidv"); if (el && document.hidden && !el.paused) el.pause(); });
+
+Object.assign(ACT, {
+  vidplay: () => {
+    const el = $("#vidv"); if (!el) return;
+    if (el.paused) { VIDST.want = true; el.preload = "auto"; vidPlay(el); $("#vidc")?.classList.remove("still"); }
+    else { VIDST.want = false; el.pause(); }
+  },
+  vidsnd: () => {
+    const el = $("#vidv"); if (!el) return;
+    el.muted = !el.muted;
+    if (!el.muted && el.paused) { VIDST.want = true; el.preload = "auto"; vidPlay(el); $("#vidc")?.classList.remove("still"); }
+    vidState();
+  }
+});
 
 /* ---- stats.js ---- */
 /* ============================================================

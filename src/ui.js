@@ -207,6 +207,7 @@ MOUNT.home = async () => {
     if (k && !S.days[dayKey()]?.serie) k.textContent = "Oiseau du jour";
     im.onload = () => { b.classList.add("on"); b.disabled = false; if (im.src !== big && !navigator.connection?.saveData) { const hi = new Image(); hi.onload = () => { if (im.isConnected) im.src = big; }; hi.src = big; } };
     im.src = t.img.md;
+    if (typeof vidOtd === "function") vidOtd(t, top).catch(() => { });
   } catch (e) { /* hors ligne : l'affiche reste en aplats */ }
 };
 
@@ -261,14 +262,14 @@ function stageHtml(q) {
   if (q.stim === "fr") return `<div class="namecard"><div><span class="eyebrow">Nom français</span><div class="big">${esc(q.t.fr || q.t.sci)}</div></div></div>`;
   if (q.stim === "la") return `<div class="namecard"><div><span class="eyebrow">Nom latin</span><div class="big latin">${esc(q.t.sci)}</div></div></div>`;
   const p = q.photo || {};
-  return `<figure class="shot" id="shot" data-act="zoom" data-grp="q" data-src="${esc(p.lg || p.md)}" data-hd="${esc(hdOf(p.lg || p.md))}" data-attr="${esc(p.attr || "")}">
+  return `<figure class="shot" id="shot" data-act="zoom" data-grp="q" data-src="${esc(p.lg || p.md)}" data-hd="${esc(hdOf(p.lg || p.md))}">
     <img class="blur" src="${esc(p.md)}" alt="">
     <img class="main" id="mainImg" alt="Oiseau à identifier" draggable="false">
     <span class="ret tl"></span><span class="ret tr"></span><span class="ret bl"></span><span class="ret br"></span>
     <span class="zb">${ic("zoom")}</span>
     <div class="spinner"><div class="spin"></div></div>
     ${q.photo?.age ? `<span class="tag-field age">${ic("spark")}${AGEN[q.photo.age]}</span>` : q.stim === "field" ? `<span class="tag-field">${ic("eye")}Terrain</span>` : ""}${bonus}
-    ${q.stim === "soncho" ? `<figcaption class="credit" style="font-size:13px;font-weight:700;color:#fff">${esc(nameFr(q.t))}</figcaption>` : `<figcaption class="credit">${esc(p.attr || "")}</figcaption>`}
+    ${q.stim === "soncho" ? `<figcaption class="credit" style="font-size:13px;font-weight:700;color:#fff">${esc(nameFr(q.t))}</figcaption>` : ""}
   </figure>`;
 }
 function choiceLabel(c) {
@@ -460,9 +461,17 @@ function fbHtml(q, res, gain) {
   ${chosen ? compareHtml(t, chosen, q) + whyHtml(t, chosen, ses.kind !== "duel" && q.level === "species" && drillWorthy(t.id, chosen.id) > 0, q.stim === "son" || q.stim === "soncho") + decH : ""}
   ${(() => { if (chosen) { q.tipShown = true; return ""; } const other = q.pair ? q.pair.find(x => x.id !== t.id) : null; const h = other ? sosiesHtml(t, other, "ok") || (duelTip(t.sci, other.sci) ? `<div class="lsec tipbox">${tipHtml(t, other, "Comment les distinguer")}</div>` : "") : ""; if (h) q.tipShown = true; return h; })()}
   ${q.photo?.field && (q.photo.place || q.photo.date || q.photo.age) ? `<div class="dnote">${ic("pin", "xs")} ${q.photo.age ? `<b>${AGEN[q.photo.age]}</b> · ` : ""}${esc(q.photo.place || "")}${q.photo.date ? " · " + esc(dateLong(q.photo.date)) : ""}${q.photo.uri ? ` · <a href="${esc(q.photo.uri)}" target="_blank" rel="noopener">voir l'observation</a>` : ""}</div>` : ""}
+  ${q.photo && (q.stim === "photo" || q.stim === "field" || q.stim === "soncho") ? photoCred(q.photo, q.t) : ""}
   ${q.snd ? `<div class="dnote" style="display:flex;align-items:center;gap:8px">${ic("wave", "xs")}<span style="flex:1">${esc([q.snd.place, q.snd.attr].filter(Boolean).join(" · "))}</span><button class="chip warn" data-act="badsnd">${ic("x", "xs")}Mauvais son</button></div>` : ""}
   <div class="learn" id="learn" data-id="${t.id}"><div class="lsec"><div class="lh">${ic("book", "xs")}Pour la reconnaître</div><div class="lsk"></div><div class="lsk short"></div></div></div>
   ${next}`;
+}
+/* Crédit photo discret (après la réponse et sur les fiches) : © auteur · licence · lien vers la source */
+function photoSrc(p, t) { return p.uri || (p.pid ? "https://www.inaturalist.org/photos/" + p.pid : t ? "https://www.inaturalist.org/taxa/" + t.id : ""); }
+function photoCred(p, t) {
+  const c = credText(p.attr, p.lic), u = photoSrc(p, t);
+  if (!c && !u) return "";
+  return `<div class="pcred">${ic("eye", "xs")}<span>Photo ${esc(c || "iNaturalist")}${u ? ` · <a href="${esc(u)}" target="_blank" rel="noopener">${p.uri ? "voir l'observation" : "voir sur iNaturalist"}</a>` : ""}</span></div>`;
 }
 let LEARNSIM = [];
 let LEARNSND = [];
@@ -989,6 +998,12 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-11.3", n: "4.6", items: [
+    { ic: "bird", t: "L'oiseau du jour en vidéo", d: "Une courte vidéo sur l'accueil, avec son auteur et sa licence. Pas de lecture automatique en économie de données." },
+    { ic: "trophy", t: "Nouveautés en boutique", d: "Cadres de niveau, sons de réussite, pluie de plumes, couleurs de saison et un défi expert du jour à XP doublé." },
+    { ic: "eye", t: "Sur ordinateur", d: "Sur grand écran : menu à gauche, grande photo, réponses au clavier (1 à 6, Entrée)." },
+    { ic: "info", t: "Crédits et mentions légales", d: "Auteur et licence de chaque photo après ta réponse, et une page de mentions légales." }
+  ] },
   { v: "2026-11-11.2", n: "4.5", items: [
     { ic: "trophy", t: "100 niveaux, 100 oiseaux", d: "Chaque niveau porte un oiseau, du Moineau domestique aux raretés d'Ouessant. Un palier tous les 10 niveaux, et une roue dans les Réglages pour choisir ton titre parmi les oiseaux atteints. Au niveau 100 : titre libre." }
   ] },
@@ -1326,9 +1341,35 @@ const SOURCES = [
   ["GitHub Pages", "https://pages.github.com", "L'hébergement de l'appli.", "Voir la section confidentialité ci-dessus."]
 ];
 VIEWS.about = () => `<section class="view about">
-  <div class="head"><button class="icon-btn" data-act="tab" data-tab="settings" aria-label="Retour">${ic("back")}</button><h1 class="h1" style="flex:1">Confidentialité et sources</h1></div>
-  <div class="sec">${ic("shield")}Confidentialité</div>
-  <div class="card prose">
+  <div class="head"><button class="icon-btn" data-act="tab" data-tab="settings" aria-label="Retour">${ic("back")}</button><h1 class="h1" style="flex:1">Mentions légales et confidentialité</h1></div>
+  <div class="sec" id="legal">${ic("info")}Mentions légales</div>
+  <div class="card prose legal">
+    <p class="lead2">Plumage est un projet personnel, gratuit et non commercial : pas de publicité, rien à vendre.</p>
+    <h3>Éditeur</h3>
+    <ul><li>Pierre-Louis Martin, particulier, responsable de la publication.</li>
+    <li>Contact : <a href="https://github.com/49j54nww5p-cmyk/Loki/issues" target="_blank" rel="noopener">page du projet sur GitHub (onglet Issues)</a></li>
+    <li>Comme le permet la loi pour un éditeur non professionnel (LCEN, art. 6-III-2), son adresse postale est connue de l'hébergeur et n'est pas publiée ici.</li></ul>
+    <h3>Hébergeur</h3>
+    <ul><li>GitHub Pages, service de GitHub Inc., 88 Colin P. Kelly Jr St, San Francisco, CA 94107, États-Unis — <a href="https://github.com" target="_blank" rel="noopener">github.com</a>.</li></ul>
+    <h3>Tes données personnelles (RGPD)</h3>
+    <ul><li><b>Responsable du traitement</b> : l'éditeur ci-dessus.</li>
+    <li><b>Sur ton appareil</b> : progression, carnet, réglages et sauvegardes restent dans le stockage du navigateur. L'éditeur n'y a pas accès.</li>
+    <li><b>Firebase (Google, serveur en Belgique, europe-west1)</b> : seulement si tu utilises le classement, la sauvegarde en ligne ou les duels. L'appli reçoit alors un identifiant anonyme, sans nom ni e-mail ; sont enregistrés ton pseudo, ton XP, tes points de la semaine, les parties en cours et ta sauvegarde chiffrée. Base légale : ton choix d'utiliser ces fonctions (exécution du service demandé). Durée : tant que tu les utilises ; une partie de duel est effacée à la fin, ta ligne de classement l'est quand tu le désactives.</li>
+    <li><b>GoatCounter</b> : compteur de visites sans cookie ni identifiant (page vue, taille d'écran, site d'origine). Base légale : intérêt légitime à savoir si l'appli sert. Désactivable dans Réglages.</li>
+    <li><b>Hébergement et services interrogés</b> (GitHub, iNaturalist, Wikipédia, xeno-canto…) voient ton adresse IP comme toute page web. Certains sont aux États-Unis.</li>
+    <li>Aucun cookie publicitaire, aucune revente, aucun profilage.</li></ul>
+    <h3>Tes droits</h3>
+    <ul><li>Tu peux accéder à tes données, les corriger, les exporter ou les supprimer. Sur ton appareil : Réglages, « Tout effacer » (et désactiver le classement avant pour retirer ta ligne en ligne).</li>
+    <li>Pour toute demande, y compris sur ce qui est stocké en ligne, écris à l'adresse de contact ci-dessus en indiquant ton pseudo.</li>
+    <li>Si la réponse ne te convient pas, tu peux saisir la CNIL (<a href="https://www.cnil.fr/fr/plaintes" target="_blank" rel="noopener">cnil.fr</a>).</li></ul>
+    <h3>Contenus et licences</h3>
+    <ul><li><b>Photos et sons iNaturalist</b> : chaque média appartient à son auteur, sous la licence Creative Commons qu'il a choisie (souvent CC BY-NC). L'auteur, la licence et un lien vers la source sont indiqués sous chaque photo des fiches et après chaque réponse.</li>
+    <li><b>Textes Wikipédia</b> : licence CC BY-SA 4.0, avec lien vers l'article. <b>Médias Wikimedia Commons</b> : licence propre à chaque fichier, indiquée avec l'auteur.</li>
+    <li><b>Enregistrements xeno-canto</b> : licence Creative Commons propre à chaque enregistrement, indiquée avec le nom de l'enregistreur.</li>
+    <li>Le reste (code, textes et critères rédigés pour l'appli) : © Pierre-Louis Martin. Une erreur, un crédit manquant ou une demande de retrait ? Écris à l'adresse de contact.</li></ul>
+  </div>
+  <div class="sec">${ic("shield")}Confidentialité en détail</div>
+    <div class="card prose">
     <p class="lead2">Pas de compte, pas de publicité, pas de traceur. Ce que tu fais dans l'appli reste sur ton appareil, sauf un compteur de visites anonyme (désactivable).</p>
     <h3>Compteur de visites</h3>
     <ul><li>À l'ouverture et à chaque onglet, l'appli prévient GoatCounter (compteur libre, sans cookie) : la page, la taille d'écran et le site d'où tu viens. Aucun identifiant, rien sur ta progression.</li>
@@ -1529,7 +1570,7 @@ VIEWS.settings = () => `<section class="view settings">
   </div>
   ${packSettingsHtml()}
   <div class="group" style="margin-top:18px"><button class="set link" data-act="tour">${ic("info")}<span class="lab"><b>Revoir la présentation</b><small>Le tour de l'appli en 6 écrans.</small></span>${ic("arrow")}</button><button class="set link" data-act="ideas">${ic("bulb")}<span class="lab"><b>Boîte à idées</b><small>Une envie, un bug, un oiseau mal nommé : dis-le.</small></span>${ic("arrow")}</button><button class="set link" data-act="news">${ic("spark")}<span class="lab"><b>Nouveautés · v${esc(APP_VERSION)}</b><small>Toutes les versions et ce qu'elles ont apporté.</small></span>${ic("arrow")}</button></div>
-  <div class="group" style="margin-top:18px"><button class="set link" data-act="tab" data-tab="about">${ic("shield")}<span class="lab"><b>Confidentialité et sources</b><small>Ce qui reste sur ton téléphone, ce qui en sort, et d'où viennent les données.</small></span>${ic("arrow", "s")}</button></div>
+  <div class="group" style="margin-top:18px"><button class="set link" data-act="tab" data-tab="about">${ic("shield")}<span class="lab"><b>Mentions légales, confidentialité et sources</b><small>Qui édite l'appli, ce qui reste sur ton téléphone, ce qui en sort, et d'où viennent les données.</small></span>${ic("arrow", "s")}</button></div>
   <p class="foot vfoot"><b>Plumage v${esc(APP_VERSION)}</b> · ${esc(vDate(NEWS[0].v))} · <button class="lnk" data-act="news">toutes les versions</button></p>
   <p class="foot">Photos, sons et données : iNaturalist, Wikipédia, Wikimedia Commons et xeno-canto, avec l'auteur et la licence de chaque média. Ta progression reste sur cet appareil.</p>
 </section>`;
@@ -1613,7 +1654,7 @@ function openFiche(t) {
   const s = r ? stars(r) : 0;
   openLayer(`<div class="panel" role="dialog" aria-label="Fiche ${esc(nameFr(t))}">
   <button class="icon-btn close" data-act="close" aria-label="Fermer">${ic("x")}</button>
-  <div class="gallery" id="gal"><figure data-act="zoom" data-grp="fg" data-src="${esc(imgOf(t))}" data-cap="${esc(nameFr(t))}" data-sci="${esc(t.fr ? t.sci : "")}" data-attr="${esc(t.img?.attr || "")}"><img src="${esc(imgOf(t))}" alt="" data-fit draggable="false"><span class="zb">${ic("zoom")}</span><figcaption>${esc(t.img?.attr || "")}</figcaption></figure></div><div class="gdots" id="gdots"></div>
+  <div class="gallery" id="gal"><figure data-act="zoom" data-grp="fg" data-src="${esc(imgOf(t))}" data-cap="${esc(nameFr(t))}" data-sci="${esc(t.fr ? t.sci : "")}" data-attr="${esc(t.img?.attr || "")}"><img src="${esc(imgOf(t))}" alt="" data-fit draggable="false"><span class="zb">${ic("zoom")}</span><figcaption>${esc(credText(t.img?.attr, t.img?.lic))}</figcaption></figure></div><div class="gdots" id="gdots"></div>
   <div class="in">
     <div class="ftitle"><h2>${esc(nameFr(t))}</h2>${t.fr ? `<span class="latin">${esc(t.sci)}</span>` : ""}
       <div class="chips">${f ? `<span class="chip fam">${ic("tree")}${esc(famName(f))}${famVern(f) ? " · " + esc(famVern(f)) : ""}</span>` : ""}${o ? `<span class="chip ord">${esc(ordName(o))}</span>` : ""}${r?.n ? starsHtml(s) : ""}</div></div>
@@ -1645,7 +1686,7 @@ async function ficheFill(t) {
   photosFor([t.id]).then(([ph]) => {
     if (!alive() || !ph.length) return;
     const g = $("#gal");
-    g.innerHTML = ph.slice(0, 10).map((p, i) => `<figure data-act="zoom" data-grp="fg" data-src="${esc(p.lg || p.md)}" data-hd="${esc(hdOf(p.lg || p.md))}" data-cap="${esc(nameFr(t))}" data-sci="${esc(t.fr ? t.sci : "")}" data-attr="${esc(p.attr)}"><img src="${esc(p.lg || p.md)}" alt="" ${i ? 'loading="lazy" ' : ""}data-fit draggable="false"><span class="zb">${ic("zoom")}</span><figcaption>${esc(p.attr)}</figcaption></figure>`).join("");
+    g.innerHTML = ph.slice(0, 10).map((p, i) => `<figure data-act="zoom" data-grp="fg" data-src="${esc(p.lg || p.md)}" data-hd="${esc(hdOf(p.lg || p.md))}" data-cap="${esc(nameFr(t))}" data-sci="${esc(t.fr ? t.sci : "")}" data-attr="${esc(credText(p.attr, p.lic))}"><img src="${esc(p.lg || p.md)}" alt="" ${i ? 'loading="lazy" ' : ""}data-fit draggable="false"><span class="zb">${ic("zoom")}</span><figcaption>${esc(credText(p.attr, p.lic))}${photoSrc(p) ? ` · <a href="${esc(photoSrc(p))}" target="_blank" rel="noopener">source</a>` : ""}</figcaption></figure>`).join("");
     fitImgs(g);
     const dots = $("#gdots");
     dots.innerHTML = ph.slice(0, 10).map((_, i) => `<i class="${i ? "" : "on"}"></i>`).join("");
@@ -2261,6 +2302,7 @@ const ACT = {
 function onClick(e) {
   const mm = $("#mmenu");
   if (mm && !mm.hidden && !e.target.closest("#mmenu,[data-act=mapmenu]")) mm.hidden = true;
+  if (e.target.closest("figcaption a")) return;   /* lien de crédit dans une photo : ne pas ouvrir le zoom */
   const el = e.target.closest("[data-act]");
   if (el) {
     if (el.disabled) return;

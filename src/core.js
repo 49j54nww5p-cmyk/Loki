@@ -485,7 +485,23 @@ const pushU = (a, v, max = 12) => { a = a || []; if (v != null && v !== 0 && !a.
 let V2 = true;
 function photoObj(ph) {
   const base = ph.url || ph.medium_url || ph.square_url || "";
-  return { lg: ph.large_url || sizeUrl(base, "large"), md: ph.medium_url || sizeUrl(base, "medium"), attr: ph.attribution || "", lic: ph.license_code || "" };
+  return { lg: ph.large_url || sizeUrl(base, "large"), md: ph.medium_url || sizeUrl(base, "medium"), attr: ph.attribution || "", lic: ph.license_code || "", pid: ph.id || 0 };
+}
+/* Crédit lisible : « © auteur · CC BY-NC » à partir de l'attribution iNaturalist (ou d'une URL de licence xeno-canto) */
+function licName(l) {
+  l = String(l || "").toLowerCase();
+  if (!l) return "";
+  if (l.includes("publicdomain") || l === "cc0") return "CC0";
+  const m = l.match(/licenses\/([a-z-]+)\/([\d.]+)/);
+  if (m) return "CC " + m[1].toUpperCase() + " " + m[2];
+  if (/^cc-/.test(l)) return "CC " + l.slice(3).toUpperCase();
+  return "";
+}
+function credText(attr, lic) {
+  const a = String(attr || "");
+  let who = a.replace(/^\s*(\(c\)|©)\s*/i, "").replace(/,?\s*(some|all|no|certains|tous|aucun)[^(]*(\(.*\))?\s*$/i, "").replace(/\s*\((CC[^)]*)\)\s*$/i, "").trim();
+  const l = licName(lic) || (a.match(/\((CC[^)]*)\)/i)?.[1] || "").toUpperCase().replace("CC0", "CC0") || (/all rights|tous droits/i.test(a) ? "tous droits réservés" : "");
+  return [who ? "© " + who : "", l].filter(Boolean).join(" · ");
 }
 async function photosFor(ids) {
   const need = [...new Set(ids)].filter(id => id && !DET.has(id));
@@ -607,7 +623,7 @@ async function xcSound(t) {
     const ok = (d.recordings || []).filter(r => r.file && !(r.also || []).filter(Boolean).length && !badSnd(fix(r.file)));
     if (!ok.length) return null;
     const r = pick(ok.slice(0, 25));
-    return { url: fix(r.file), type: "audio/mpeg", attr: "© " + (r.rec || "") + " · xeno-canto", lic: r.lic || "", place: [r.loc, r.cnt].filter(Boolean).join(", "), date: r.date || "", uri: fix(r.url), agree: 9, src: "xeno-canto", kind: xcKind(r.type), sono: fix(r.sono?.full || r.sono?.large || r.sono?.med || "") };
+    return { url: fix(r.file), type: "audio/mpeg", attr: ["© " + (r.rec || ""), licName(r.lic), "xeno-canto"].filter(Boolean).join(" · "), lic: r.lic || "", place: [r.loc, r.cnt].filter(Boolean).join(", "), date: r.date || "", uri: fix(r.url), agree: 9, src: "xeno-canto", kind: xcKind(r.type), sono: fix(r.sono?.full || r.sono?.large || r.sono?.med || "") };
   } catch (e) { return null; }
 }
 /* Wikimedia Commons : enregistrements libres, servis avec CORS → spectrogramme calculable sur place */
@@ -735,7 +751,7 @@ async function xcList(t) {
   const d = await getJSON(url, { tries: 1, timeout: 12000 });
   const fix = u => u ? (u.startsWith("//") ? "https:" + u : u) : "";
   return (d.recordings || []).filter(r => r.file).sort((a, b) => String(a.q || "E").localeCompare(String(b.q || "E"))).slice(0, 6)
-    .map(r => ({ url: fix(r.file), kind: xcKind(r.type), place: [r.loc, r.cnt].filter(Boolean).join(", "), attr: r.rec ? "© " + r.rec + " · xeno-canto" : "xeno-canto", len: r.length || "", page: fix(r.url), q: r.q || "", src: "xeno-canto", sono: fix(r.sono?.full || r.sono?.large || r.sono?.med || "") }));
+    .map(r => ({ url: fix(r.file), kind: xcKind(r.type), place: [r.loc, r.cnt].filter(Boolean).join(", "), attr: [r.rec ? "© " + r.rec : "", licName(r.lic), "xeno-canto"].filter(Boolean).join(" · "), len: r.length || "", page: fix(r.url), q: r.q || "", src: "xeno-canto", sono: fix(r.sono?.full || r.sono?.large || r.sono?.med || "") }));
 }
 async function resolveTaxon(sci, fr) {
   return memo("res:" + sci, async () => {

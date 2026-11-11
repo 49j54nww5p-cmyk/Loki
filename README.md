@@ -39,6 +39,7 @@ Sur iPhone : ouvre le lien dans Safari, bouton Partager, puis « Sur l'écran d'
 
 Le numéro de version s'affiche en bas des Réglages ; « Nouveautés » liste toutes les versions.
 
+- **4.6** (11 novembre 2026) : vidéo de l'oiseau du jour, boutique (cadres, sons, pluie de plumes, couleurs de saison, défi expert), version ordinateur, crédits photo et mentions légales, appli admin
 - **4.5** (11 novembre 2026) : 100 niveaux nommés d'après des oiseaux (du plus commun au plus rare), paliers de 10, roue de titre, titre libre au niveau 100
 - **4.4** (11 novembre 2026) : classement en ligne (Firebase) et compteur de visites anonyme (désactivable)
 - **4.3** (10 novembre 2026) : coffres à partir de 500 XP (rares doublés), plumes gagnées en jouant et boutique (jokers, indices, passer une étape, couleurs)

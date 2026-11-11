@@ -9,7 +9,7 @@ const CT = { html: "text/html", js: "application/javascript", css: "text/css", w
 (async () => {
   fs.mkdirSync(OUT, { recursive: true });
   const b = await chromium.launch();
-  const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: DPR, isMobile: true, hasTouch: true, locale: "fr-FR", timezoneId: "Europe/Paris", colorScheme: "dark", ...(process.env.VIDEO ? { recordVideo: { dir: OUT, size: { width: 390, height: 844 } } } : {}) });
+  const ctx = await b.newContext({ viewport: { width: +(process.env.W || 390), height: +(process.env.H || 844) }, deviceScaleFactor: DPR, isMobile: +(process.env.W||390) < 1024, hasTouch: +(process.env.W||390) < 1024, locale: "fr-FR", timezoneId: "Europe/Paris", colorScheme: "dark", ...(process.env.VIDEO ? { recordVideo: { dir: OUT, size: { width: 390, height: 844 } } } : {}) });
   await ctx.route("https://plumage.test/**", route => {
     let f = new URL(route.request().url()).pathname; if (f === "/") f = "/index.html";
     const file = path.join(DIST, f);

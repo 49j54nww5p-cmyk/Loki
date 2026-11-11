@@ -1,0 +1,24 @@
+const { chromium } = require("playwright");
+const { handle } = require("./mock.cjs");
+const O = __dirname + "/../shots/";
+(async () => {
+  const b = await chromium.launch();
+  const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  await ctx.route("**/*", handle);
+  const p = await ctx.newPage(); p.on("pageerror", e => console.log("PAGE", e.message));
+  await p.goto("https://plumage.test/"); await p.waitForSelector(".view.home");
+  await p.evaluate(() => { try { closeLayer(); } catch (e) {} S.xp = lvlXp(34) + 50; S.plumes = 1240; S.cos = ["fr-bronze", "snd-carillon"]; S.set.frame = "fr-bronze"; S.set.okson = "snd-carillon"; S.accs = ["jaune", "martin"]; save(true); go("shop"); });
+  await p.waitForTimeout(500); await p.screenshot({ path: O + "boutique-1.png" });
+  await p.evaluate(() => window.scrollTo(0, 560)); await p.waitForTimeout(300); await p.screenshot({ path: O + "boutique-2.png" });
+  await p.evaluate(() => window.scrollTo(0, 99999)); await p.waitForTimeout(300); await p.screenshot({ path: O + "boutique-3.png" });
+  await p.evaluate(() => { S.xp = lvlXp(62); S.cos.push("fr-or"); S.set.frame = "fr-or"; applyFrame(); go("home"); });
+  await p.waitForTimeout(600); await p.screenshot({ path: O + "cadre-or-accueil.png", clip: { x: 0, y: 0, width: 390, height: 200 } });
+  await p.evaluate(() => { S.set.calm = false; document.body.classList.remove("lite", "calm"); featherRain(18); });
+  await p.waitForTimeout(650); await p.screenshot({ path: O + "pluie-plumes.png" });
+  await p.waitForTimeout(1500);
+  await p.evaluate(() => { S.set.acc = "bruyere"; S.accs.push("bruyere"); applyAcc(); go("shop"); window.scrollTo(0, 99999); });
+  await p.waitForTimeout(400); await p.screenshot({ path: O + "saison-bruyere.png" });
+  await p.evaluate(() => { S.defiX = dayKey(); go("shop"); window.scrollTo(0,0); });
+  await p.waitForTimeout(300); await p.screenshot({ path: O + "defi-fait.png" });
+  await b.close();
+})();

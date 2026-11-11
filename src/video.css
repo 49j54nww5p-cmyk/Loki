@@ -1,0 +1,20 @@
+/* L'oiseau du jour en vidéo (src/video.js) */
+.vidc{margin:16px 16px 0;padding:0;border-radius:var(--r-xl,22px);background:var(--card,#16202a);overflow:hidden;animation:trUp .5s var(--ease,ease) both}
+.vid-box{position:relative;aspect-ratio:16/9;background:#05090c}
+.vid-box video{display:block;width:100%;height:100%;object-fit:cover;background:#05090c}
+.vid-tag{position:absolute;left:12px;top:12px;padding:5px 10px;border-radius:99px;background:rgba(0,0,0,.5);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);font:700 12px/1.2 var(--f-ui);color:var(--acc,#ffcb5c);letter-spacing:.01em}
+.vid-play,.vid-snd{position:absolute;display:grid;place-items:center;border:0;border-radius:50%;color:#fff;background:rgba(0,0,0,.5);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);cursor:pointer}
+.vid-snd{right:10px;bottom:10px;width:44px;height:44px}
+.vid-play{left:10px;bottom:10px;width:44px;height:44px}
+.vid-play .i,.vid-snd .i{width:22px;height:22px}
+/* pas de lecture auto (mouvement réduit, économie de données) : gros bouton lecture au centre */
+.vidc.still .vid-play{left:50%;top:50%;bottom:auto;width:68px;height:68px;transform:translate(-50%,-50%);background:rgba(0,0,0,.55)}
+.vidc.still .vid-play .i{width:30px;height:30px}
+.vid-snd[aria-pressed=true]{background:var(--acc,#ffcb5c);color:#111}
+.vidc figcaption{padding:12px 14px 14px}
+.vidc figcaption b{font:700 17px/1.25 var(--f-ui)}
+.vidc figcaption em{color:var(--muted,rgba(255,255,255,.6));font-size:14px}
+.vid-cr{display:block;margin-top:5px;font-size:12px;line-height:1.4;color:var(--muted,rgba(255,255,255,.6))}
+.vid-cr a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.vid-play:focus-visible,.vid-snd:focus-visible{outline:2px solid var(--acc,#ffcb5c);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.vidc{animation:none}}

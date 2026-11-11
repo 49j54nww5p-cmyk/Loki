@@ -465,3 +465,29 @@ function liveViewHtml() {
   }
   return `<section class="view live"><div class="lcard"><div class="spin"></div></div></section>`;
 }
+
+/* ---------- Statistiques anonymes pour le propriétaire (users/{uid}) ----------
+   À chaque fin de partie, au plus une fois par minute : niveau, XP, meilleure série,
+   nombre de parties, première et dernière visite, version. Coupé par « Compter ma visite ». */
+let USR_T = 0;
+async function userPing() {
+  if (!netOn() || netLocal() || S.set.stats === false) return;
+  const now = Date.now();
+  S.ustat = S.ustat || { n: 0, first: now };
+  S.ustat.n = (S.ustat.n || 0) + 1;
+  if (now - USR_T < 60000) return;
+  USR_T = now;
+  try {
+    await fbToken();
+    if (!S.uid) return;
+    await netReq("PUT", "users/" + S.uid, { lv: level().n, xp: S.xp | 0, best: (S.streak && S.streak.best) | 0, n: S.ustat.n, last: now, first: S.ustat.first || now, v: typeof APP_VERSION !== "undefined" ? String(APP_VERSION) : "" });
+  } catch (e) { /* rien */ }
+}
+if (typeof endSession === "function") {
+  const _usrFin = endSession;
+  endSession = function (...a) {
+    const ses = SES, r = _usrFin.apply(this, a);
+    try { if (ses && ses.results && ses.results.length) userPing(); } catch (e) { /* rien */ }
+    return r;
+  };
+}

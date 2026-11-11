@@ -36,3 +36,22 @@
 .gprize-x{display:inline-flex;align-items:center;gap:6px;margin:0 0 6px;font:700 15px/1.2 var(--f-ui);color:#fff}
 .gprize-rare{display:block;margin-top:8px;font:700 13px/1 var(--f-ui);color:#FFCE00}
 .gprize.rare .gprize-card{border-color:#FFCE00;border-width:2px;background:#1A1500}
+/* Cadres de niveau : aperçu en boutique et badge du HUD */
+.sframe{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--sw);padding:4px}
+.sframe b{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:var(--acc);color:#000;font:800 15px/1 var(--f-ui)}
+.fr-bronze .hlvl .badge{box-shadow:0 0 0 3px #1a1a1a,0 0 0 6px #C9773A}
+.fr-argent .hlvl .badge{box-shadow:0 0 0 3px #1a1a1a,0 0 0 6px #DDE3EA,0 0 10px 2px rgba(221,227,234,.35)}
+.fr-or .hlvl .badge{box-shadow:0 0 0 3px #1a1a1a,0 0 0 6px #FFCE00,0 0 14px 3px rgba(255,206,0,.45);animation:frgold 2.8s ease-in-out infinite}
+@keyframes frgold{50%{box-shadow:0 0 0 3px #1a1a1a,0 0 0 6px #FFF0A0,0 0 20px 6px rgba(255,206,0,.6)}}
+.sframe.fr-or{animation:frspin 6s linear infinite}
+.sframe.fr-or b{animation:frspin 6s linear infinite reverse}
+@keyframes frspin{to{transform:rotate(360deg)}}
+.stx em[data-act]{cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.sdefi{border-color:color-mix(in srgb,var(--acc) 55%,transparent)}
+.sdefi.done{opacity:.7}
+/* Pluie de plumes */
+.frain{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
+.frain i{position:absolute;left:var(--x);bottom:-30px;color:var(--acc);transform:scale(var(--s));animation:frain 1.5s var(--d) cubic-bezier(.2,.7,.3,1) both}
+.frain .i{width:22px;height:22px}
+@keyframes frain{0%{opacity:0;transform:translate(0,0) rotate(0) scale(var(--s))}15%{opacity:1}100%{opacity:0;transform:translate(var(--dx),-70vh) rotate(var(--r)) scale(var(--s))}}
+body.calm .frain,.fr-or.calm .hlvl .badge{animation:none}

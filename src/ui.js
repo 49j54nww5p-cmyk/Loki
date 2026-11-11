@@ -207,7 +207,6 @@ MOUNT.home = async () => {
     if (k && !S.days[dayKey()]?.serie) k.textContent = "Oiseau du jour";
     im.onload = () => { b.classList.add("on"); b.disabled = false; if (im.src !== big && !navigator.connection?.saveData) { const hi = new Image(); hi.onload = () => { if (im.isConnected) im.src = big; }; hi.src = big; } };
     im.src = t.img.md;
-    if (typeof vidOtd === "function") vidOtd(t, top).catch(() => { });
   } catch (e) { /* hors ligne : l'affiche reste en aplats */ }
 };
 
@@ -999,7 +998,6 @@ const TOUR = [
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
   { v: "2026-11-11.3", n: "4.6", items: [
-    { ic: "bird", t: "L'oiseau du jour en vidéo", d: "Une courte vidéo sur l'accueil, avec son auteur et sa licence. Pas de lecture automatique en économie de données." },
     { ic: "trophy", t: "Nouveautés en boutique", d: "Cadres de niveau, sons de réussite, pluie de plumes, couleurs de saison et un défi expert du jour à XP doublé." },
     { ic: "eye", t: "Sur ordinateur", d: "Sur grand écran : menu à gauche, grande photo, réponses au clavier (1 à 6, Entrée)." },
     { ic: "info", t: "Crédits et mentions légales", d: "Auteur et licence de chaque photo après ta réponse, et une page de mentions légales." }

@@ -66,7 +66,7 @@ td.n,th.n{text-align:right}
 <script>
 "use strict";
 const DB = "https://project-2af97840-c7b8-4ccd-949-default-rtdb.europe-west1.firebasedatabase.app";
-const OWNER = "loulou33gaming@gmail.com";
+const OWNER = "admin@plumage.app"; /* compte interne : seul le mot de passe est demandé */
 const FBCFG = { apiKey: "AIzaSyDRy69FxnWvnAnctKm6cb5_Pp7iTteKJ7Q", authDomain: "project-2af97840-c7b8-4ccd-949.firebaseapp.com", databaseURL: DB };
 const DEMO = new URLSearchParams(location.search).has("demo");
 const $ = s => document.querySelector(s);
@@ -214,19 +214,20 @@ document.addEventListener("click", async ev => {
     try { await req("DELETE", t.dataset.del); if (!DEMO) await load(); toast("Supprimé"); render(); } catch (e) { t.disabled = false; toast("Échec : " + e.message); }
   }
   else if (t.id === "reload") { t.disabled = true; await load(); render(); toast("À jour"); }
-  else if (t.id === "go") signIn();
   else if (t.id === "out") { await firebase.auth().signOut(); }
 });
 
 /* ---------- Connexion ---------- */
 function loginScreen(msg) {
   $("#app").innerHTML = `<div class="login"><h1>Plumage <b>admin</b></h1><p class="sub">Espace réservé au propriétaire de l'appli.</p>
-  <div><button class="pri" id="go">Se connecter avec Google</button></div>${msg ? `<p class="err">${esc(msg)}</p>` : ""}
+  <form id="pwf" style="display:grid;gap:10px;max-width:320px;margin:0 auto"><input id="pw" type="password" autocomplete="current-password" placeholder="Mot de passe" style="padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:inherit;font:inherit"><button class="pri" id="go" type="submit">Entrer</button></form>${msg ? `<p class="err">${esc(msg)}</p>` : ""}
   ${USER ? `<div><button id="out">Changer de compte</button></div>` : ""}</div>`;
 }
 async function signIn() {
-  try { await firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
-  catch (e) { loginScreen(e.code === "auth/unauthorized-domain" ? "Domaine non autorisé dans la console Firebase." : e.message); }
+  const pw = ($("#pw") || {}).value || "";
+  if (!pw) return;
+  try { await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL); await firebase.auth().signInWithEmailAndPassword(OWNER, pw); }
+  catch (e) { loginScreen(/wrong-password|invalid-credential|invalid-login|user-not-found/.test(e.code || e.message) ? "Mot de passe incorrect." : e.code === "auth/operation-not-allowed" ? "Active « Adresse e-mail/Mot de passe » dans la console Firebase." : e.message); }
 }
 async function boot() {
   const v = location.hash.slice(1); if (V[v]) VIEW = v;
@@ -236,12 +237,13 @@ async function boot() {
   firebase.auth().onAuthStateChanged(async u => {
     USER = u;
     if (!u) { const m = DENY; DENY = ""; return loginScreen(m); }
-    if (u.email !== OWNER || !u.emailVerified) { DENY = "Accès refusé pour " + u.email + "."; await firebase.auth().signOut(); USER = null; return; }
+    if (u.email !== OWNER) { DENY = "Accès refusé pour " + u.email + "."; await firebase.auth().signOut(); USER = null; return; }
     $("#app").innerHTML = `<p class="sub" style="margin-top:40px">Chargement…</p>`;
     try { await load(); render(); } catch (e) { loginScreen(e.message); }
   });
 }
 function start() { boot(); }
+document.addEventListener("submit", e => { if (e.target.id === "pwf") { e.preventDefault(); signIn(); } });
 addEventListener("hashchange", () => { const v = location.hash.slice(1); if (V[v] && DATA && v !== VIEW) { VIEW = v; render(); } });
 if (DEMO) start();
 else {

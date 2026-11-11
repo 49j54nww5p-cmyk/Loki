@@ -989,6 +989,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-11.2", n: "4.5", items: [
+    { ic: "trophy", t: "100 niveaux, 100 oiseaux", d: "Chaque niveau porte un oiseau, du Moineau domestique aux raretés d'Ouessant. Un palier tous les 10 niveaux, et une roue dans les Réglages pour choisir ton titre parmi les oiseaux atteints. Au niveau 100 : titre libre." }
+  ] },
   { v: "2026-11-11.1", n: "4.4", items: [
     { ic: "trophy", t: "Classement en ligne", d: "Publie ton pseudo et ton XP si tu veux apparaître parmi les meilleurs joueurs. Un petit compteur de visites anonyme (désactivable dans les réglages, détails dans Confidentialité)." }
   ] },
@@ -1508,6 +1511,7 @@ VIEWS.settings = () => `<section class="view settings">
     <div class="set">${ic("clock")}<span class="lab"><b>Heure</b><small>Ajoute un rappel qui revient chaque jour dans ton calendrier.</small></span><input type="time" id="remind" value="${esc(S.set.remind)}" data-set="remind" aria-label="Heure du rappel"></div>
     <div class="set"><button class="btn primary" data-act="ics" style="width:100%">${ic("cal")}Ajouter au calendrier</button></div>
   </div>
+  ${titreSetHtml()}
   <div class="sec">${ic("eye")}Comptes</div>
   <div class="group">
     <div class="set"><span class="lab"><b>Pseudo iNaturalist</b><small>Pour jouer avec tes propres observations.</small></span><input type="text" id="inat" value="${esc(S.set.inat)}" data-set="inat" placeholder="pseudo" autocapitalize="off" spellcheck="false" aria-label="Pseudo iNaturalist"></div>

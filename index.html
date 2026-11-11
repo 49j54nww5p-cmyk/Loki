@@ -2677,6 +2677,17 @@ body.inquiz .navind{opacity:0}
 .gprize.rare .gprize-card{border-color:#FFCE00;border-width:2px;background:#1A1500}
 
 /* ==== niveaux.css ==== */
+.titp .wheel{position:relative;height:260px;margin:14px 0;border-radius:18px;background:rgba(255,255,255,.04);overflow:hidden}
+.titp #wheel{list-style:none;margin:0;padding:105px 0;height:100%;overflow-y:auto;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;-webkit-mask-image:linear-gradient(transparent,#000 35%,#000 65%,transparent);mask-image:linear-gradient(transparent,#000 35%,#000 65%,transparent)}
+.titp #wheel::-webkit-scrollbar{display:none}
+.titp #wheel li{scroll-snap-align:center;height:50px;display:flex;align-items:center;gap:12px;padding:0 18px;opacity:.45;transition:opacity .15s,transform .15s}
+.titp #wheel li.on{opacity:1;transform:scale(1.04)}
+.titp #wheel li.lk .wb{letter-spacing:.2em}
+.titp .wn{width:34px;text-align:right;font-variant-numeric:tabular-nums;color:var(--acc)}
+.titp .wb{flex:1;font-size:17px}
+.titp #wheel li small{opacity:.6;font-size:12px}
+.titp .wsel{position:absolute;left:10px;right:10px;top:50%;height:50px;margin-top:-25px;border-radius:12px;border:1px solid var(--acc);pointer-events:none}
+@media (prefers-reduced-motion:reduce){.titp #wheel li{transition:none}}
 
 /* ==== voix.css ==== */
 .voxwrap{position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:30;display:flex;align-items:center;gap:10px;pointer-events:none}
@@ -3207,6 +3218,10 @@ const SUF = {
 const RANKS = ["Œuf", "Poussin", "Oisillon", "Juvénile", "Premier hiver", "Immature", "Adulte nuptial",
   "Observateur", "Ornitho", "Bagueur", "Coche-tout", "Twitcher", "Chasseur de raretés",
   "Référent local", "Membre du CHN", "Légende vivante"];
+
+/* Niveaux : 100 oiseaux, un palier tous les 10 niveaux */
+const TIERS = ["Œuf", "Poussin", "Oisillon", "Juvénile", "Immature", "Adulte", "Observateur", "Ornitho", "Bagueur", "Légende"];
+const NIV = ["Moineau domestique", "Merle noir", "Mésange charbonnière", "Rougegorge familier", "Pigeon ramier", "Pie bavarde", "Corneille noire", "Étourneau sansonnet", "Pinson des arbres", "Tourterelle turque", "Mésange bleue", "Fauvette à tête noire", "Pouillot véloce", "Troglodyte mignon", "Rougequeue noir", "Verdier d'Europe", "Chardonneret élégant", "Goéland argenté", "Mouette rieuse", "Canard colvert", "Héron cendré", "Buse variable", "Faucon crécerelle", "Hirondelle rustique", "Martinet noir", "Bergeronnette grise", "Geai des chênes", "Pic épeiche", "Sittelle torchepot", "Accenteur mouchet", "Grimpereau des jardins", "Mésange à longue queue", "Pic vert", "Grive musicienne", "Foulque macroule", "Grèbe huppé", "Cygne tuberculé", "Milan noir", "Coucou gris", "Alouette des champs", "Épervier d'Europe", "Martin-pêcheur d'Europe", "Bouvreuil pivoine", "Roitelet huppé", "Bruant jaune", "Rossignol philomèle", "Loriot d'Europe", "Huppe fasciée", "Aigrette garzette", "Grande Aigrette", "Cigogne blanche", "Vanneau huppé", "Bécassine des marais", "Gobemouche gris", "Tadorne de Belon", "Huîtrier pie", "Spatule blanche", "Faucon hobereau", "Œdicnème criard", "Torcol fourmilier", "Engoulevent d'Europe", "Guêpier d'Europe", "Circaète Jean-le-Blanc", "Balbuzard pêcheur", "Rollier d'Europe", "Grand-duc d'Europe", "Butor étoilé", "Blongios nain", "Tichodrome échelette", "Crave à bec rouge", "Aigle royal", "Vautour fauve", "Gypaète barbu", "Grand Tétras", "Pygargue à queue blanche", "Vautour moine", "Aigle de Bonelli", "Ganga cata", "Phragmite aquatique", "Râle des genêts", "Pipit à gorge rousse", "Gobemouche nain", "Pipit de Richard", "Pouillot à grands sourcils", "Bruant nain", "Fauvette épervière", "Rousserolle verderolle", "Bruant mélanocéphale", "Pie-grièche isabelle", "Pouillot brun", "Pouillot de Pallas", "Pouillot de Hume", "Bruant rustique", "Fauvette de Rüppell", "Pouillot de Schwarz", "Rousserolle isabelle", "Pouillot boréal", "Locustelle lancéolée", "Grive à gorge noire", "Fauvette de Ménétries"];
 
 /* Badges */
 const BADGES = [
@@ -4275,7 +4290,9 @@ function level(xp = S.xp) {
   let n = 1;
   while (xp >= lvlXp(n + 1)) n++;
   const a = lvlXp(n), b = lvlXp(n + 1);
-  return { n, rank: RANKS[Math.min(n - 1, RANKS.length - 1)], cur: xp - a, need: b - a, p: (xp - a) / (b - a) };
+  const bird = NIV[Math.min(n, 100) - 1], tier = TIERS[Math.min(Math.floor((n - 1) / 10), 9)];
+  const t = S.set && S.set.titre, title = typeof t === "string" && t && n >= 100 ? t : (Number.isInteger(t) && t >= 1 && t <= Math.min(n, 100) ? NIV[t - 1] : bird);
+  return { n, rank: tier + " · " + title, tier, bird, title, cur: xp - a, need: b - a, p: (xp - a) / (b - a) };
 }
 function addXp(n) { S.xp += n; today().xp += n; }
 function liveStreak() {
@@ -9411,6 +9428,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-11.2", n: "4.5", items: [
+    { ic: "trophy", t: "100 niveaux, 100 oiseaux", d: "Chaque niveau porte un oiseau, du Moineau domestique aux raretés d'Ouessant. Un palier tous les 10 niveaux, et une roue dans les Réglages pour choisir ton titre parmi les oiseaux atteints. Au niveau 100 : titre libre." }
+  ] },
   { v: "2026-11-11.1", n: "4.4", items: [
     { ic: "trophy", t: "Classement en ligne", d: "Publie ton pseudo et ton XP si tu veux apparaître parmi les meilleurs joueurs. Un petit compteur de visites anonyme (désactivable dans les réglages, détails dans Confidentialité)." }
   ] },
@@ -9930,6 +9950,7 @@ VIEWS.settings = () => `<section class="view settings">
     <div class="set">${ic("clock")}<span class="lab"><b>Heure</b><small>Ajoute un rappel qui revient chaque jour dans ton calendrier.</small></span><input type="time" id="remind" value="${esc(S.set.remind)}" data-set="remind" aria-label="Heure du rappel"></div>
     <div class="set"><button class="btn primary" data-act="ics" style="width:100%">${ic("cal")}Ajouter au calendrier</button></div>
   </div>
+  ${titreSetHtml()}
   <div class="sec">${ic("eye")}Comptes</div>
   <div class="group">
     <div class="set"><span class="lab"><b>Pseudo iNaturalist</b><small>Pour jouer avec tes propres observations.</small></span><input type="text" id="inat" value="${esc(S.set.inat)}" data-set="inat" placeholder="pseudo" autocapitalize="off" spellcheck="false" aria-label="Pseudo iNaturalist"></div>
@@ -10985,6 +11006,43 @@ MOUNT.grand = (...a) => {
 };
 
 /* ---- niveaux.js ---- */
+/* ============================================================
+   Plumage — niveaux : 100 oiseaux, paliers de 10, roue de titre
+   Le joueur choisit son titre parmi les oiseaux déjà atteints ;
+   au-delà du niveau 100, il peut écrire un titre libre.
+   ============================================================ */
+function titreSetHtml() {
+  const L = level();
+  return `<div class="sec">${ic("trophy")}Niveau</div>
+  <div class="group"><div class="set"><span class="lvb">${L.n}</span><span class="lab"><b>${esc(L.title)}</b><small>Palier ${esc(L.tier)} · ${fmt(L.cur)} / ${fmt(L.need)} XP vers le niveau ${L.n + 1}</small></span><button class="btn ghost" data-act="titre">Changer</button></div></div>`;
+}
+function openTitre() {
+  const L = level(), max = Math.min(L.n, 100), cur = Number.isInteger(S.set.titre) ? S.set.titre : max;
+  const rows = NIV.map((b, i) => { const n = i + 1, ok = n <= max; return `<li data-n="${n}" class="${ok ? "" : "lk"}${n === cur ? " on" : ""}"><span class="wn">${n}</span><span class="wb">${ok ? esc(b) : "???"}</span>${n % 10 === 1 ? `<small>${esc(TIERS[(n - 1) / 10])}</small>` : ""}</li>`; }).join("");
+  openLayer(`<div class="panel titp" role="dialog" aria-label="Choisir mon titre"><button class="icon-btn close" data-act="close" aria-label="Fermer">${ic("x")}</button>
+  <div class="in" style="padding-top:22px"><h2>Mon titre</h2><p class="muted">Fais tourner la roue : tu peux porter le nom de n'importe quel oiseau déjà atteint.</p>
+  <div class="wheel"><ul id="wheel">${rows}</ul><div class="wsel"></div></div>
+  ${L.n >= 100 ? `<label class="fld"><span>Titre libre (niveau 100 atteint)</span><input id="titrelib" maxlength="24" value="${typeof S.set.titre === "string" ? esc(S.set.titre) : ""}" placeholder="ex. Roi du Bassin"></label>` : `<p class="muted" style="font-size:13px">Au niveau 100, tu pourras écrire ton propre titre.</p>`}
+  <button class="btn primary wide" data-act="titreok" style="margin:12px 0 22px">Garder ce titre</button></div></div>`, "titl");
+  const w = $("#wheel"), it = w && w.querySelector(`li[data-n="${cur}"]`);
+  if (it) w.scrollTop = it.offsetTop - w.clientHeight / 2 + it.offsetHeight / 2;
+  w && w.addEventListener("scroll", () => {
+    clearTimeout(w._t); w._t = setTimeout(() => {
+      const mid = w.scrollTop + w.clientHeight / 2; let best = null, d = 1e9;
+      w.querySelectorAll("li").forEach(li => { const x = Math.abs(li.offsetTop + li.offsetHeight / 2 - mid); if (x < d) { d = x; best = li; } });
+      w.querySelectorAll("li.on").forEach(li => li.classList.remove("on")); best && best.classList.add("on");
+    }, 60);
+  }, { passive: true });
+}
+ACT.titre = () => openTitre();
+ACT.titreok = () => {
+  const lib = $("#titrelib"), v = lib ? cleanName(lib.value).slice(0, 24) : "";
+  const on = $("#wheel li.on"), n = on ? +on.dataset.n : 0, max = Math.min(level().n, 100);
+  if (v) S.set.titre = v;
+  else if (n >= 1 && n <= max) S.set.titre = n;
+  else { toast("Cet oiseau n'est pas encore atteint."); return; }
+  save(); closeLayer(); rerender(); toast("Titre : " + level().title);
+};
 
 /* ---- voix.js ---- */
 /* ---------- Dictée vocale (Web Speech API) ---------- */

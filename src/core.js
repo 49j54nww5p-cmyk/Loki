@@ -831,7 +831,9 @@ function level(xp = S.xp) {
   let n = 1;
   while (xp >= lvlXp(n + 1)) n++;
   const a = lvlXp(n), b = lvlXp(n + 1);
-  return { n, rank: RANKS[Math.min(n - 1, RANKS.length - 1)], cur: xp - a, need: b - a, p: (xp - a) / (b - a) };
+  const bird = NIV[Math.min(n, 100) - 1], tier = TIERS[Math.min(Math.floor((n - 1) / 10), 9)];
+  const t = S.set && S.set.titre, title = typeof t === "string" && t && n >= 100 ? t : (Number.isInteger(t) && t >= 1 && t <= Math.min(n, 100) ? NIV[t - 1] : bird);
+  return { n, rank: tier + " · " + title, tier, bird, title, cur: xp - a, need: b - a, p: (xp - a) / (b - a) };
 }
 function addXp(n) { S.xp += n; today().xp += n; }
 function liveStreak() {

@@ -3,7 +3,33 @@
    Base Firebase Realtime Database, appelée par son API REST (aucune bibliothèque).
    Rien ne part tant que le joueur n'a pas choisi de publier son XP ou lancé un duel.
    ============================================================ */
-const NET_URL = ""; /* adresse de la base, ex. https://plumage-xxxx-default-rtdb.europe-west1.firebasedatabase.app */
+const NET_URL = "https://project-2af97840-c7b8-4ccd-949-default-rtdb.europe-west1.firebasedatabase.app"; /* base Realtime Database */
+const FB_KEY = "AIzaSyDRy69FxnWvnAnctKm6cb5_Pp7iTteKJ7Q"; /* clé web publique : la sécurité vient des règles de la base */
+
+/* ---------- Connexion anonyme : chaque téléphone a son identifiant Firebase ---------- */
+let FBP = null;
+async function fbToken() {
+  const f = S.fb || {};
+  if (f.token && f.exp > Date.now() + 60000) return f.token;
+  if (!FBP) FBP = (async () => {
+    try {
+      let j = null;
+      if (f.refresh) {
+        const r = await fetch(`https://securetoken.googleapis.com/v1/token?key=${FB_KEY}`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: "grant_type=refresh_token&refresh_token=" + encodeURIComponent(f.refresh) });
+        if (r.ok) { const d = await r.json(); j = { idToken: d.id_token, refreshToken: d.refresh_token, localId: d.user_id, expiresIn: d.expires_in }; }
+      }
+      if (!j) {
+        const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FB_KEY}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ returnSecureToken: true }) });
+        if (!r.ok) throw new Error("auth " + r.status);
+        j = await r.json();
+      }
+      S.fb = { token: j.idToken, refresh: j.refreshToken, uid: j.localId, exp: Date.now() + (+j.expiresIn || 3600) * 1000 };
+      S.uid = j.localId; save();
+      return S.fb.token;
+    } finally { FBP = null; }
+  })();
+  return FBP;
+}
 const netBase = () => String(S.set.net || NET_URL || "").replace(/\/+$/, "");
 const netOn = () => !!netBase();
 const netLocal = () => netBase() === "local"; /* tests : base partagée entre onglets du même navigateur */
@@ -46,7 +72,8 @@ function lsListen(path, cb) {
 /* ---------- Firebase : requêtes REST et flux en direct ---------- */
 async function netReq(method, path, body, query) {
   if (netLocal()) return lsReq(method, path, body);
-  const q = Object.entries(query || {}).map(([k, v]) => k + "=" + encodeURIComponent(v)).join("&");
+  const tok = await fbToken().catch(() => null);
+  const q = Object.entries({ ...(query || {}), ...(tok ? { auth: tok } : {}) }).map(([k, v]) => k + "=" + encodeURIComponent(v)).join("&");
   const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 12000);
   try {
     const r = await fetch(`${netBase()}/${path}.json${q ? "?" + q : ""}`, { method, cache: "no-store", signal: ctl.signal, body: body === undefined ? undefined : JSON.stringify(body) });
@@ -57,17 +84,20 @@ async function netReq(method, path, body, query) {
 /* Écoute un nœud : renvoie à chaque changement la copie à jour (événements « put » et « patch » de Firebase) */
 function netListen(path, cb) {
   if (netLocal()) return lsListen(path, cb);
-  let mirror = null, es = null;
+  let mirror = null, es = null, closed = false;
   const on = patch => e => {
     try { const d = JSON.parse(e.data); const parts = pParts(d.path); mirror = patch ? patchAt(mirror, parts, d.data) : setAt(mirror, parts, d.data); cb(mirror); }
     catch (err) { /* événement illisible : ignoré */ }
   };
-  es = new EventSource(`${netBase()}/${path}.json`);
-  es.addEventListener("put", on(false));
-  es.addEventListener("patch", on(true));
-  es.addEventListener("cancel", () => cb(mirror, "cancel"));
-  es.onerror = () => cb(mirror, "err");
-  return () => { try { es.close(); } catch (e) { /* rien */ } };
+  fbToken().catch(() => null).then(tok => {
+    if (closed) return;
+    es = new EventSource(`${netBase()}/${path}.json${tok ? "?auth=" + encodeURIComponent(tok) : ""}`);
+    es.addEventListener("put", on(false));
+    es.addEventListener("patch", on(true));
+    es.addEventListener("cancel", () => cb(mirror, "cancel"));
+    es.onerror = () => cb(mirror, "err");
+  });
+  return () => { closed = true; try { es && es.close(); } catch (e) { /* rien */ } };
 }
 const rid = (n, abc = "abcdefghijkmnpqrstuvwxyz23456789") => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => abc[b % abc.length]).join("");
 const myUid = () => { if (!S.uid) { S.uid = rid(20); save(); } return S.uid; };

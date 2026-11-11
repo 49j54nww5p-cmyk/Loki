@@ -45,6 +45,8 @@ const PATHS = [
 ];
 const PATHI = Object.fromEntries(PATHS.map(p => [p.id, p]));
 const PASS = 6, PLEN = 8;
+const BOSSLEN = 16;   /* bilan de chapitre : deux fois plus long, même marge (75 %) */
+const pLen = c => c.len || PLEN, pPass = c => Math.ceil(pLen(c) * PASS / PLEN);
 const pathSt = id => (S.paths || {})[id] || { s: {} };
 const stepStars = (id, i) => pathSt(id).s[i] || 0;
 const stepOpen = (P, i) => i === 0 || stepStars(P.id, i - 1) > 0;
@@ -62,7 +64,7 @@ const pathCfg = (P, i) => {
   const T = P.id === "grand" ? GTOURS[P.steps[i].tour] : null;
   if (T) {
     const st = P.steps[i], up = st.kind === "boss" ? 2 : st.kind === "rev" ? 1 : 0;   /* plus dur aux révisions et au bilan du chapitre */
-    Object.assign(c, { title: `Étape ${i + 1} · ${st.n}`, stim: T.stim, k: Math.min(6, (T.k || 4) + up), timer: T.timer || 0, leurres: !!T.leurres || st.kind === "boss", type: T.type || 0, juv: T.juv || 0 });
+    Object.assign(c, { len: st.kind === "boss" ? BOSSLEN : PLEN, title: `Étape ${i + 1} · ${st.n}`, stim: T.stim, k: Math.min(6, (T.k || 4) + up), timer: T.timer || 0, leurres: !!T.leurres || st.kind === "boss", type: T.type || 0, juv: T.juv || 0 });
   }
   return c;
 };
@@ -75,8 +77,9 @@ async function preparePath(ses) {
   const all = [...cur, ...prev.filter(t => !cur.some(x => x.id === t.id))];
   all.forEach(t => lexAdd(t));
   ses.pool = { list: all, byId: new Map(all.map(t => [t.id, t])) };
-  const extra = PLEN - cur.length - (prev.length ? 1 : 0);
-  const targets = shuffle([...cur, ...shuffle(cur).slice(0, Math.max(0, extra)), ...(prev.length ? [pick(prev)] : [])]).slice(0, PLEN);
+  const L = pLen(c), extra = L - cur.length - (prev.length ? 1 : 0);
+  let fill = []; while (fill.length < Math.max(0, extra)) fill = [...fill, ...shuffle(cur)];
+  const targets = shuffle([...cur, ...fill.slice(0, Math.max(0, extra)), ...(prev.length ? [pick(prev)] : [])]).slice(0, L);
   /* Leurres : les choix viennent aussi du reste du chapitre, en priorité même genre puis même famille */
   let leur = [];
   if (c.leurres && P.id === "grand") {
@@ -105,7 +108,7 @@ async function preparePath(ses) {
 function pathSettle(ses, n, ok, aborted) {
   const c = ses.cfg, P = PATHI[c.path];
   if (!P || aborted || n < ses.len) return;
-  const stars = ok >= PLEN ? 3 : ok >= PLEN - 1 ? 2 : ok >= PASS ? 1 : 0;
+  const L = pLen(c), stars = ok >= L ? 3 : ok >= L - 1 ? 2 : ok >= pPass(c) ? 1 : 0;
   ses.pathStars = stars;
   if (!stars) return;
   const st = (S.paths = S.paths || {})[P.id] = S.paths[P.id] || { s: {} };

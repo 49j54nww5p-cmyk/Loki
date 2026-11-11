@@ -34,10 +34,7 @@ applyAcc();
 const SHOP = [
   { k: "joker", ic: "flame", n: "Joker de flamme", d: "Sauve ta série un jour raté.", p: 150, have: () => `${S.streak.jokers || 0}/3`, max: () => (S.streak.jokers || 0) >= 3,
     buy: () => { S.streak.jokers = (S.streak.jokers || 0) + 1; } },
-  { k: "hints", ic: "bulb", n: "5 indices gratuits", d: "Des indices qui ne coûtent rien sur l'XP de la réponse.", p: 60, have: () => `${S.freeHints} en stock`,
-    buy: () => { S.freeHints += 5; } },
-  { k: "skip", ic: "arrow", n: "Passer une étape", d: "Valide l'étape en cours du parcours avec 1 étoile.", p: 200, have: () => `${S.skips} en stock`,
-    buy: () => { S.skips++; } }
+
 ];
 const plumesHtml = (n, cls = "") => `<span class="plumes ${cls}">${ic("feather")}<b data-pl>${fmt(n)}</b></span>`;
 

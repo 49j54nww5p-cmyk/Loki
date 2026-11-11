@@ -1,0 +1,17 @@
+.voxwrap{position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:30;display:flex;align-items:center;gap:10px;pointer-events:none}
+.voxbtn{pointer-events:auto;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;color:var(--acc);border:1px solid rgba(255,255,255,.14);background:rgba(20,20,20,.62);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;position:relative;transition:transform .15s,background .15s,color .15s}
+.voxbtn .i{width:24px;height:24px}
+.voxbtn:active{transform:scale(.94)}
+#voxBtn.on{background:var(--acc);color:var(--on-acc,#0B0B0B);border-color:var(--acc)}
+.voxbtn.on::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--acc);animation:voxring 1.1s ease-out infinite}
+.voxbtn.hold::after{animation-duration:.7s}
+@keyframes voxring{from{transform:scale(.9);opacity:.9}to{transform:scale(1.35);opacity:0}}
+.voxbub{pointer-events:none;max-width:min(62vw,280px);min-height:44px;padding:10px 14px;border-radius:22px;display:flex;align-items:center;gap:10px;font:600 15px/1.3 Figtree,system-ui,sans-serif;color:#fff;background:rgba(20,20,20,.72);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.12)}
+.voxbub[hidden]{display:none}
+.voxbub span{overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.voxwave{display:flex;align-items:center;gap:3px;height:18px;flex:none}
+.voxwave b{width:3px;height:100%;border-radius:2px;background:var(--acc);animation:voxw .9s ease-in-out infinite}
+.voxwave b:nth-child(2){animation-delay:-.7s}.voxwave b:nth-child(3){animation-delay:-.45s}.voxwave b:nth-child(4){animation-delay:-.25s}.voxwave b:nth-child(5){animation-delay:-.1s}
+@keyframes voxw{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
+body.calm .voxbtn.on::after,body.calm .voxwave b{animation:none}
+body.voxon .view.quiz{padding-bottom:calc(84px + env(safe-area-inset-bottom))}

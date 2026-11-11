@@ -39,6 +39,7 @@ Sur iPhone : ouvre le lien dans Safari, bouton Partager, puis « Sur l'écran d'
 
 Le numéro de version s'affiche en bas des Réglages ; « Nouveautés » liste toutes les versions.
 
+- **4.4** (11 novembre 2026) : classement en ligne (Firebase) et compteur de visites anonyme (désactivable)
 - **4.3** (10 novembre 2026) : coffres à partir de 500 XP (rares doublés), plumes gagnées en jouant et boutique (jokers, indices, passer une étape, couleurs)
 - **4.2** (10 novembre 2026) : pictos maison, animations dans toutes les pages, grand parcours de 1000 étapes (17 chapitres × 10 tours) avec un coffre par chapitre
 - **4.1** (10 novembre 2026) : parcours à difficulté cumulative (leurres, chants, latin, écrire, jeunes, chrono), tous les écrans au nouveau look, correctif iPhone (encoche, barre du bas)

@@ -511,9 +511,10 @@ function showFeedback(q, res, gain) {
   el.className = "fb " + (res.ok ? "ok" : res.partial ? "part" : "bad");
   el.id = "fb";
   el.setAttribute("role", "dialog");
-  el.style.maxHeight = "82vh";
-  el.style.overflowY = "auto";
-  el.innerHTML = fbHtml(q, res, gain);
+  el.innerHTML = `<div class="fbc">${fbHtml(q, res, gain)}</div>`;
+  /* « Suivant » dans un pied fixe et opaque : il ne recouvre plus les photos des sosies */
+  const nx = el.querySelector(".fbc > .next, .fbc [data-act=next]");
+  if (nx) { const ft = document.createElement("div"); ft.className = "fbf"; ft.appendChild(nx); el.appendChild(ft); }
   document.body.appendChild(el);
   fitImgs(el);
   if (q.kind === "taxon") fillLearn(q.t, q);
@@ -952,7 +953,7 @@ VIEWS.result = ({ ses, n, ok, badges, msgs }) => {
   const C = 2 * Math.PI * 84, p = n ? ok / n : 0;
   const PP = ses.kind === "path" ? PATHI[ses.cfg.path] : null, pnext = PP && ses.pathStars && ses.cfg.step + 1 < PP.steps.length ? ses.cfg.step + 1 : -1;
   const title = PP ? (ses.pathStars ? (ses.pathDoneNow ? "Parcours terminé !" : "Étape validée !") : "Presque !") : p === 1 ? "Sans faute !" : p >= .8 ? "Superbe série !" : p >= .5 ? "Belle progression" : "Chaque erreur compte";
-  const lead = PP ? (ses.pathStars ? (pnext >= 0 ? `Prochaine étape : ${PP.steps[pnext].n}.` : "Bravo, tu as bouclé ce parcours.") : `Il faut ${PASS} bonnes réponses sur ${PLEN} pour avancer. Relance l'étape : les erreurs t'aident à retenir.`) : ses.kind === "hand" ? (p === 1 ? "Rien à redire : tu peux passer à la station !" : "Ouvre les fiches des espèces ratées, puis rejoue.") : p === 1 ? "Rien à redire, tu peux viser plus dur." : p >= .5 ? "Les erreurs reviendront en révision au bon moment." : "Tes erreurs reviendront vite en révision : c'est comme ça qu'on retient.";
+  const lead = PP ? (ses.pathStars ? (pnext >= 0 ? `Prochaine étape : ${PP.steps[pnext].n}.` : "Bravo, tu as bouclé ce parcours.") : `Il faut ${pPass(ses.cfg)} bonnes réponses sur ${pLen(ses.cfg)} pour avancer. Relance l'étape : les erreurs t'aident à retenir.`) : ses.kind === "hand" ? (p === 1 ? "Rien à redire : tu peux passer à la station !" : "Ouvre les fiches des espèces ratées, puis rejoue.") : p === 1 ? "Rien à redire, tu peux viser plus dur." : p >= .5 ? "Les erreurs reviendront en révision au bon moment." : "Tes erreurs reviendront vite en révision : c'est comme ça qu'on retient.";
   const L = level();
   const missed = [...new Map(ses.missed.map(t => [t.id, t])).values()].slice(0, 8);
   const confs = ses.kind === "duel" ? [] : [...new Map((ses.confs || []).map(([a, b]) => [Math.min(a, b) + "," + Math.max(a, b), [a, b]])).values()]
@@ -988,6 +989,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-11.1", n: "4.4", items: [
+    { ic: "trophy", t: "Classement en ligne", d: "Publie ton pseudo et ton XP si tu veux apparaître parmi les meilleurs joueurs. Un petit compteur de visites anonyme (désactivable dans les réglages, détails dans Confidentialité)." }
+  ] },
   { v: "2026-11-10.6", n: "4.3", items: [
     { ic: "trophy", t: "Gros coffres et boutique", d: "Coffres à partir de 500 XP (et des rares, doublés). Tu gagnes des plumes en jouant : jokers, indices, passer une étape, couleurs de l'appli." }
   ] },
@@ -1322,7 +1326,10 @@ VIEWS.about = () => `<section class="view about">
   <div class="head"><button class="icon-btn" data-act="tab" data-tab="settings" aria-label="Retour">${ic("back")}</button><h1 class="h1" style="flex:1">Confidentialité et sources</h1></div>
   <div class="sec">${ic("shield")}Confidentialité</div>
   <div class="card prose">
-    <p class="lead2">Pas de compte, pas de publicité, pas de traceur, pas de mesure d'audience. Ce que tu fais dans l'appli reste sur ton appareil.</p>
+    <p class="lead2">Pas de compte, pas de publicité, pas de traceur. Ce que tu fais dans l'appli reste sur ton appareil, sauf un compteur de visites anonyme (désactivable).</p>
+    <h3>Compteur de visites</h3>
+    <ul><li>À l'ouverture et à chaque onglet, l'appli prévient GoatCounter (compteur libre, sans cookie) : la page, la taille d'écran et le site d'où tu viens. Aucun identifiant, rien sur ta progression.</li>
+    <li>Tu peux le couper : Réglages, « Compter ma visite ».</li></ul>
     <h3>Ce qui reste sur ton appareil</h3>
     <ul><li>Ta progression (XP, séries, révisions), ton carnet, tes astuces, tes sorties et observations, tes réglages.</li>
     <li>Une mémoire temporaire des réponses d'iNaturalist et de Wikipédia, pour aller plus vite.</li>
@@ -2424,5 +2431,6 @@ function init() {
   setTimeout(maybeIntro, 900);
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) { /* rien */ }
   loadTaxo().catch(() => {});
+  if (netOn()) setTimeout(() => fbToken().catch(() => {}), 300); /* identifiant Firebase dès l'ouverture */
 }
 init();

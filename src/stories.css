@@ -229,3 +229,10 @@ body.lite .glass,body.lite .choice{background:#1F1F1F}
   @media (display-mode:standalone){ .home > .hud{padding-top:max(52px, calc(env(safe-area-inset-top, 0px) + 6px))} }
 }
 .story{height:calc(100dvh - 64px - env(safe-area-inset-bottom, 0px))}
+
+/* Correction : contenu qui défile, « Suivant » dans un pied séparé (plus de clic par erreur sur les photos) */
+.fb{display:flex;flex-direction:column;max-height:84vh;max-height:84dvh;overflow:hidden;padding-bottom:0}
+.fb .fbc{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-bottom:14px}
+.fb .fbf{flex:none;margin:0 calc(-1 * var(--gutter-r)) 0 calc(-1 * var(--gutter-l));padding:12px var(--gutter-r) calc(14px + env(safe-area-inset-bottom, 0px)) var(--gutter-l);
+  background:#111;border-top:1px solid var(--line)}
+.fb .fbf .btn.next{position:static;margin:0;width:100%}

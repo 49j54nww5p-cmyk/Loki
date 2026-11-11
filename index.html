@@ -2010,6 +2010,13 @@ body.lite .glass,body.lite .choice{background:#1F1F1F}
 }
 .story{height:calc(100dvh - 64px - env(safe-area-inset-bottom, 0px))}
 
+/* Correction : contenu qui défile, « Suivant » dans un pied séparé (plus de clic par erreur sur les photos) */
+.fb{display:flex;flex-direction:column;max-height:84vh;max-height:84dvh;overflow:hidden;padding-bottom:0}
+.fb .fbc{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-bottom:14px}
+.fb .fbf{flex:none;margin:0 calc(-1 * var(--gutter-r)) 0 calc(-1 * var(--gutter-l));padding:12px var(--gutter-r) calc(14px + env(safe-area-inset-bottom, 0px)) var(--gutter-l);
+  background:#111;border-top:1px solid var(--line)}
+.fb .fbf .btn.next{position:static;margin:0;width:100%}
+
 /* ==== tabs.css ==== */
 /* =====================================================================
    Plumage v4 — onglets Carnet, Progrès, Réglages, À propos en style « Stories ».
@@ -2668,6 +2675,29 @@ body.inquiz .navind{opacity:0}
 .gprize-x{display:inline-flex;align-items:center;gap:6px;margin:0 0 6px;font:700 15px/1.2 var(--f-ui);color:#fff}
 .gprize-rare{display:block;margin-top:8px;font:700 13px/1 var(--f-ui);color:#FFCE00}
 .gprize.rare .gprize-card{border-color:#FFCE00;border-width:2px;background:#1A1500}
+
+/* ==== niveaux.css ==== */
+
+/* ==== voix.css ==== */
+.voxwrap{position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:30;display:flex;align-items:center;gap:10px;pointer-events:none}
+.voxbtn{pointer-events:auto;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;color:var(--acc);border:1px solid rgba(255,255,255,.14);background:rgba(20,20,20,.62);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;position:relative;transition:transform .15s,background .15s,color .15s}
+.voxbtn .i{width:24px;height:24px}
+.voxbtn:active{transform:scale(.94)}
+#voxBtn.on{background:var(--acc);color:var(--on-acc,#0B0B0B);border-color:var(--acc)}
+.voxbtn.on::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--acc);animation:voxring 1.1s ease-out infinite}
+.voxbtn.hold::after{animation-duration:.7s}
+@keyframes voxring{from{transform:scale(.9);opacity:.9}to{transform:scale(1.35);opacity:0}}
+.voxbub{pointer-events:none;max-width:min(62vw,280px);min-height:44px;padding:10px 14px;border-radius:22px;display:flex;align-items:center;gap:10px;font:600 15px/1.3 Figtree,system-ui,sans-serif;color:#fff;background:rgba(20,20,20,.72);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.12)}
+.voxbub[hidden]{display:none}
+.voxbub span{overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.voxwave{display:flex;align-items:center;gap:3px;height:18px;flex:none}
+.voxwave b{width:3px;height:100%;border-radius:2px;background:var(--acc);animation:voxw .9s ease-in-out infinite}
+.voxwave b:nth-child(2){animation-delay:-.7s}.voxwave b:nth-child(3){animation-delay:-.45s}.voxwave b:nth-child(4){animation-delay:-.25s}.voxwave b:nth-child(5){animation-delay:-.1s}
+@keyframes voxw{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
+body.calm .voxbtn.on::after,body.calm .voxwave b{animation:none}
+body.voxon .view.quiz{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+
+/* ==== video.css ==== */
 
 </style>
 </head>
@@ -6690,7 +6720,33 @@ function drillWorthy(a, b) {
    Base Firebase Realtime Database, appelée par son API REST (aucune bibliothèque).
    Rien ne part tant que le joueur n'a pas choisi de publier son XP ou lancé un duel.
    ============================================================ */
-const NET_URL = ""; /* adresse de la base, ex. https://plumage-xxxx-default-rtdb.europe-west1.firebasedatabase.app */
+const NET_URL = "https://project-2af97840-c7b8-4ccd-949-default-rtdb.europe-west1.firebasedatabase.app"; /* base Realtime Database */
+const FB_KEY = "AIzaSyDRy69FxnWvnAnctKm6cb5_Pp7iTteKJ7Q"; /* clé web publique : la sécurité vient des règles de la base */
+
+/* ---------- Connexion anonyme : chaque téléphone a son identifiant Firebase ---------- */
+let FBP = null;
+async function fbToken() {
+  const f = S.fb || {};
+  if (f.token && f.exp > Date.now() + 60000) return f.token;
+  if (!FBP) FBP = (async () => {
+    try {
+      let j = null;
+      if (f.refresh) {
+        const r = await fetch(`https://securetoken.googleapis.com/v1/token?key=${FB_KEY}`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: "grant_type=refresh_token&refresh_token=" + encodeURIComponent(f.refresh) });
+        if (r.ok) { const d = await r.json(); j = { idToken: d.id_token, refreshToken: d.refresh_token, localId: d.user_id, expiresIn: d.expires_in }; }
+      }
+      if (!j) {
+        const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FB_KEY}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ returnSecureToken: true }) });
+        if (!r.ok) throw new Error("auth " + r.status);
+        j = await r.json();
+      }
+      S.fb = { token: j.idToken, refresh: j.refreshToken, uid: j.localId, exp: Date.now() + (+j.expiresIn || 3600) * 1000 };
+      S.uid = j.localId; save();
+      return S.fb.token;
+    } finally { FBP = null; }
+  })();
+  return FBP;
+}
 const netBase = () => String(S.set.net || NET_URL || "").replace(/\/+$/, "");
 const netOn = () => !!netBase();
 const netLocal = () => netBase() === "local"; /* tests : base partagée entre onglets du même navigateur */
@@ -6733,7 +6789,8 @@ function lsListen(path, cb) {
 /* ---------- Firebase : requêtes REST et flux en direct ---------- */
 async function netReq(method, path, body, query) {
   if (netLocal()) return lsReq(method, path, body);
-  const q = Object.entries(query || {}).map(([k, v]) => k + "=" + encodeURIComponent(v)).join("&");
+  const tok = await fbToken().catch(() => null);
+  const q = Object.entries({ ...(query || {}), ...(tok ? { auth: tok } : {}) }).map(([k, v]) => k + "=" + encodeURIComponent(v)).join("&");
   const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 12000);
   try {
     const r = await fetch(`${netBase()}/${path}.json${q ? "?" + q : ""}`, { method, cache: "no-store", signal: ctl.signal, body: body === undefined ? undefined : JSON.stringify(body) });
@@ -6744,17 +6801,20 @@ async function netReq(method, path, body, query) {
 /* Écoute un nœud : renvoie à chaque changement la copie à jour (événements « put » et « patch » de Firebase) */
 function netListen(path, cb) {
   if (netLocal()) return lsListen(path, cb);
-  let mirror = null, es = null;
+  let mirror = null, es = null, closed = false;
   const on = patch => e => {
     try { const d = JSON.parse(e.data); const parts = pParts(d.path); mirror = patch ? patchAt(mirror, parts, d.data) : setAt(mirror, parts, d.data); cb(mirror); }
     catch (err) { /* événement illisible : ignoré */ }
   };
-  es = new EventSource(`${netBase()}/${path}.json`);
-  es.addEventListener("put", on(false));
-  es.addEventListener("patch", on(true));
-  es.addEventListener("cancel", () => cb(mirror, "cancel"));
-  es.onerror = () => cb(mirror, "err");
-  return () => { try { es.close(); } catch (e) { /* rien */ } };
+  fbToken().catch(() => null).then(tok => {
+    if (closed) return;
+    es = new EventSource(`${netBase()}/${path}.json${tok ? "?auth=" + encodeURIComponent(tok) : ""}`);
+    es.addEventListener("put", on(false));
+    es.addEventListener("patch", on(true));
+    es.addEventListener("cancel", () => cb(mirror, "cancel"));
+    es.onerror = () => cb(mirror, "err");
+  });
+  return () => { closed = true; try { es && es.close(); } catch (e) { /* rien */ } };
 }
 const rid = (n, abc = "abcdefghijkmnpqrstuvwxyz23456789") => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => abc[b % abc.length]).join("");
 const myUid = () => { if (!S.uid) { S.uid = rid(20); save(); } return S.uid; };
@@ -7678,6 +7738,8 @@ const PATHS = [
 ];
 const PATHI = Object.fromEntries(PATHS.map(p => [p.id, p]));
 const PASS = 6, PLEN = 8;
+const BOSSLEN = 16;   /* bilan de chapitre : deux fois plus long, même marge (75 %) */
+const pLen = c => c.len || PLEN, pPass = c => Math.ceil(pLen(c) * PASS / PLEN);
 const pathSt = id => (S.paths || {})[id] || { s: {} };
 const stepStars = (id, i) => pathSt(id).s[i] || 0;
 const stepOpen = (P, i) => i === 0 || stepStars(P.id, i - 1) > 0;
@@ -7695,7 +7757,7 @@ const pathCfg = (P, i) => {
   const T = P.id === "grand" ? GTOURS[P.steps[i].tour] : null;
   if (T) {
     const st = P.steps[i], up = st.kind === "boss" ? 2 : st.kind === "rev" ? 1 : 0;   /* plus dur aux révisions et au bilan du chapitre */
-    Object.assign(c, { title: `Étape ${i + 1} · ${st.n}`, stim: T.stim, k: Math.min(6, (T.k || 4) + up), timer: T.timer || 0, leurres: !!T.leurres || st.kind === "boss", type: T.type || 0, juv: T.juv || 0 });
+    Object.assign(c, { len: st.kind === "boss" ? BOSSLEN : PLEN, title: `Étape ${i + 1} · ${st.n}`, stim: T.stim, k: Math.min(6, (T.k || 4) + up), timer: T.timer || 0, leurres: !!T.leurres || st.kind === "boss", type: T.type || 0, juv: T.juv || 0 });
   }
   return c;
 };
@@ -7708,8 +7770,9 @@ async function preparePath(ses) {
   const all = [...cur, ...prev.filter(t => !cur.some(x => x.id === t.id))];
   all.forEach(t => lexAdd(t));
   ses.pool = { list: all, byId: new Map(all.map(t => [t.id, t])) };
-  const extra = PLEN - cur.length - (prev.length ? 1 : 0);
-  const targets = shuffle([...cur, ...shuffle(cur).slice(0, Math.max(0, extra)), ...(prev.length ? [pick(prev)] : [])]).slice(0, PLEN);
+  const L = pLen(c), extra = L - cur.length - (prev.length ? 1 : 0);
+  let fill = []; while (fill.length < Math.max(0, extra)) fill = [...fill, ...shuffle(cur)];
+  const targets = shuffle([...cur, ...fill.slice(0, Math.max(0, extra)), ...(prev.length ? [pick(prev)] : [])]).slice(0, L);
   /* Leurres : les choix viennent aussi du reste du chapitre, en priorité même genre puis même famille */
   let leur = [];
   if (c.leurres && P.id === "grand") {
@@ -7738,7 +7801,7 @@ async function preparePath(ses) {
 function pathSettle(ses, n, ok, aborted) {
   const c = ses.cfg, P = PATHI[c.path];
   if (!P || aborted || n < ses.len) return;
-  const stars = ok >= PLEN ? 3 : ok >= PLEN - 1 ? 2 : ok >= PASS ? 1 : 0;
+  const L = pLen(c), stars = ok >= L ? 3 : ok >= L - 1 ? 2 : ok >= pPass(c) ? 1 : 0;
   ses.pathStars = stars;
   if (!stars) return;
   const st = (S.paths = S.paths || {})[P.id] = S.paths[P.id] || { s: {} };
@@ -8005,7 +8068,7 @@ function grandHtml() {
   <header class="ghead"><button class="icon-btn" data-act="home" aria-label="Retour">${ic("x")}</button><h1>Ton parcours</h1><span class="gcount">Tour ${curT + 1}/${GTOURS.length}</span></header>
   <div class="gtotal"><div class="gtotal-n"><b>${done}</b><span>/ ${fmt(tot)} étapes</span><small>${CHEST}${chests} coffre${chests > 1 ? "s" : ""}</small></div><span class="gbar"><i style="width:${(100 * done / tot).toFixed(1)}%"></i></span></div>
   <div class="gtours">${GTOURS.map((t, k) => `<button class="${k === ti ? "on" : ""}" data-act="gtour" data-t="${k}" ${k > curT ? "disabled" : ""}>${k > curT ? ic("lock", "xs") : ""}Tour ${k + 1}</button>`).join("")}</div>
-  <p class="gtour-d"><b>Tour ${ti + 1} · ${esc(T.n)}</b> ${esc(T.d)}. Chaque tour garde tout ce qui précède. Dans un chapitre : un choix de plus aux révisions, deux au bilan, et un coffre à la fin. ${PASS} bonnes réponses sur ${PLEN} pour avancer.</p>
+  <p class="gtour-d"><b>Tour ${ti + 1} · ${esc(T.n)}</b> ${esc(T.d)}. Chaque tour garde tout ce qui précède. Dans un chapitre : un choix de plus aux révisions, deux au bilan (16 questions), et un coffre à la fin. ${PASS} bonnes réponses sur ${PLEN} pour avancer.</p>
   <div class="gchs">${GCH.map((_, ci) => chHtml(ti, ci, nx)).join("")}</div>
   <button class="glink" data-act="daily">${ic("shuffle", "xs")}Série du jour classique : 12 questions mélangées</button>
 </section>`;
@@ -8870,9 +8933,10 @@ function showFeedback(q, res, gain) {
   el.className = "fb " + (res.ok ? "ok" : res.partial ? "part" : "bad");
   el.id = "fb";
   el.setAttribute("role", "dialog");
-  el.style.maxHeight = "82vh";
-  el.style.overflowY = "auto";
-  el.innerHTML = fbHtml(q, res, gain);
+  el.innerHTML = `<div class="fbc">${fbHtml(q, res, gain)}</div>`;
+  /* « Suivant » dans un pied fixe et opaque : il ne recouvre plus les photos des sosies */
+  const nx = el.querySelector(".fbc > .next, .fbc [data-act=next]");
+  if (nx) { const ft = document.createElement("div"); ft.className = "fbf"; ft.appendChild(nx); el.appendChild(ft); }
   document.body.appendChild(el);
   fitImgs(el);
   if (q.kind === "taxon") fillLearn(q.t, q);
@@ -9311,7 +9375,7 @@ VIEWS.result = ({ ses, n, ok, badges, msgs }) => {
   const C = 2 * Math.PI * 84, p = n ? ok / n : 0;
   const PP = ses.kind === "path" ? PATHI[ses.cfg.path] : null, pnext = PP && ses.pathStars && ses.cfg.step + 1 < PP.steps.length ? ses.cfg.step + 1 : -1;
   const title = PP ? (ses.pathStars ? (ses.pathDoneNow ? "Parcours terminé !" : "Étape validée !") : "Presque !") : p === 1 ? "Sans faute !" : p >= .8 ? "Superbe série !" : p >= .5 ? "Belle progression" : "Chaque erreur compte";
-  const lead = PP ? (ses.pathStars ? (pnext >= 0 ? `Prochaine étape : ${PP.steps[pnext].n}.` : "Bravo, tu as bouclé ce parcours.") : `Il faut ${PASS} bonnes réponses sur ${PLEN} pour avancer. Relance l'étape : les erreurs t'aident à retenir.`) : ses.kind === "hand" ? (p === 1 ? "Rien à redire : tu peux passer à la station !" : "Ouvre les fiches des espèces ratées, puis rejoue.") : p === 1 ? "Rien à redire, tu peux viser plus dur." : p >= .5 ? "Les erreurs reviendront en révision au bon moment." : "Tes erreurs reviendront vite en révision : c'est comme ça qu'on retient.";
+  const lead = PP ? (ses.pathStars ? (pnext >= 0 ? `Prochaine étape : ${PP.steps[pnext].n}.` : "Bravo, tu as bouclé ce parcours.") : `Il faut ${pPass(ses.cfg)} bonnes réponses sur ${pLen(ses.cfg)} pour avancer. Relance l'étape : les erreurs t'aident à retenir.`) : ses.kind === "hand" ? (p === 1 ? "Rien à redire : tu peux passer à la station !" : "Ouvre les fiches des espèces ratées, puis rejoue.") : p === 1 ? "Rien à redire, tu peux viser plus dur." : p >= .5 ? "Les erreurs reviendront en révision au bon moment." : "Tes erreurs reviendront vite en révision : c'est comme ça qu'on retient.";
   const L = level();
   const missed = [...new Map(ses.missed.map(t => [t.id, t])).values()].slice(0, 8);
   const confs = ses.kind === "duel" ? [] : [...new Map((ses.confs || []).map(([a, b]) => [Math.min(a, b) + "," + Math.max(a, b), [a, b]])).values()]
@@ -9347,6 +9411,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-11.1", n: "4.4", items: [
+    { ic: "trophy", t: "Classement en ligne", d: "Publie ton pseudo et ton XP si tu veux apparaître parmi les meilleurs joueurs. Un petit compteur de visites anonyme (désactivable dans les réglages, détails dans Confidentialité)." }
+  ] },
   { v: "2026-11-10.6", n: "4.3", items: [
     { ic: "trophy", t: "Gros coffres et boutique", d: "Coffres à partir de 500 XP (et des rares, doublés). Tu gagnes des plumes en jouant : jokers, indices, passer une étape, couleurs de l'appli." }
   ] },
@@ -9681,7 +9748,10 @@ VIEWS.about = () => `<section class="view about">
   <div class="head"><button class="icon-btn" data-act="tab" data-tab="settings" aria-label="Retour">${ic("back")}</button><h1 class="h1" style="flex:1">Confidentialité et sources</h1></div>
   <div class="sec">${ic("shield")}Confidentialité</div>
   <div class="card prose">
-    <p class="lead2">Pas de compte, pas de publicité, pas de traceur, pas de mesure d'audience. Ce que tu fais dans l'appli reste sur ton appareil.</p>
+    <p class="lead2">Pas de compte, pas de publicité, pas de traceur. Ce que tu fais dans l'appli reste sur ton appareil, sauf un compteur de visites anonyme (désactivable).</p>
+    <h3>Compteur de visites</h3>
+    <ul><li>À l'ouverture et à chaque onglet, l'appli prévient GoatCounter (compteur libre, sans cookie) : la page, la taille d'écran et le site d'où tu viens. Aucun identifiant, rien sur ta progression.</li>
+    <li>Tu peux le couper : Réglages, « Compter ma visite ».</li></ul>
     <h3>Ce qui reste sur ton appareil</h3>
     <ul><li>Ta progression (XP, séries, révisions), ton carnet, tes astuces, tes sorties et observations, tes réglages.</li>
     <li>Une mémoire temporaire des réponses d'iNaturalist et de Wikipédia, pour aller plus vite.</li>
@@ -10783,6 +10853,7 @@ function init() {
   setTimeout(maybeIntro, 900);
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) { /* rien */ }
   loadTaxo().catch(() => {});
+  if (netOn()) setTimeout(() => fbToken().catch(() => {}), 300); /* identifiant Firebase dès l'ouverture */
 }
 init();
 
@@ -10823,10 +10894,7 @@ applyAcc();
 const SHOP = [
   { k: "joker", ic: "flame", n: "Joker de flamme", d: "Sauve ta série un jour raté.", p: 150, have: () => `${S.streak.jokers || 0}/3`, max: () => (S.streak.jokers || 0) >= 3,
     buy: () => { S.streak.jokers = (S.streak.jokers || 0) + 1; } },
-  { k: "hints", ic: "bulb", n: "5 indices gratuits", d: "Des indices qui ne coûtent rien sur l'XP de la réponse.", p: 60, have: () => `${S.freeHints} en stock`,
-    buy: () => { S.freeHints += 5; } },
-  { k: "skip", ic: "arrow", n: "Passer une étape", d: "Valide l'étape en cours du parcours avec 1 étoile.", p: 200, have: () => `${S.skips} en stock`,
-    buy: () => { S.skips++; } }
+
 ];
 const plumesHtml = (n, cls = "") => `<span class="plumes ${cls}">${ic("feather")}<b data-pl>${fmt(n)}</b></span>`;
 
@@ -10915,6 +10983,194 @@ MOUNT.grand = (...a) => {
   }
   return r;
 };
+
+/* ---- niveaux.js ---- */
+
+/* ---- voix.js ---- */
+/* ---------- Dictée vocale (Web Speech API) ---------- */
+const VOX_API = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+if (VOX_API && S.set.voice === undefined) S.set.voice = true;
+const VOX = { rec: null, on: false, hold: false, timer: 0, down: 0, alts: [], live: "", q: null };
+const voxIcon = `<svg class="i" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>`;
+
+function voxNorm(s) {
+  return " " + String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[-'’_.,;:!?«»"()]/g, " ").replace(/\s+/g, " ").trim() + " ";
+}
+function voxClean(s) { return voxNorm(s).replace(/ (l|le|la|les|un|une|des|du|de|d|c est|c|est|euh) /g, " ").replace(/ (l|le|la|les|un|une|des|du|de|d) /g, " ").replace(/\s+/g, " ").trim(); }
+function voxLev(a, b) {
+  const m = a.length, n = b.length; if (!m) return n; if (!n) return m;
+  let p = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) { const c = [i]; for (let j = 1; j <= n; j++) c[j] = Math.min(p[j] + 1, c[j - 1] + 1, p[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); p = c; }
+  return p[n];
+}
+/* score 0..1 entre ce qui est entendu et un nom */
+function voxScore(heard, name) {
+  const h = voxClean(heard), t = voxClean(name);
+  if (!h || !t) return 0;
+  if (h === t) return 1;
+  if (t.length >= 4 && (" " + h + " ").includes(" " + t + " ")) return 0.95;
+  if (h.length >= 5 && (" " + t + " ").includes(" " + h + " ")) return 0.8;
+  const d = voxLev(h, t), r = 1 - d / Math.max(h.length, t.length);
+  return d <= Math.max(1, Math.round(t.length * 0.3)) ? Math.max(r, 0.7) : r * 0.8;
+}
+function voxNames(q, c) {
+  const el = document.querySelector(`#answers [data-k="${CSS.escape(c.key)}"] .lbl, #answers [data-k="${CSS.escape(c.key)}"] .nm`);
+  return [c.fr, c.sci, c.label, c.t?.fr, c.t?.sci, el?.textContent].filter(x => x && typeof x === "string");
+}
+function voxMatch(q, alts) {
+  const sc = (q.choices || []).map(c => ({ c, s: Math.max(0, ...alts.flatMap(a => voxNames(q, c).map(n => voxScore(a, n)))) })).sort((a, b) => b.s - a.s);
+  if (!sc.length || sc[0].s < 0.68) return null;
+  if (sc[1] && sc[0].s - sc[1].s < 0.08) return null;
+  return sc[0].c;
+}
+const voxOk = q => VOX_API && S.set.voice !== false && q && !q.done && ["qcm", "tiles", "type"].includes(q.format) && q.kind !== "hand";
+
+function voxApply(alts) {
+  const q = SES?.q, txt = (alts[0] || "").trim();
+  if (!q || q.done || q !== VOX.q) return;
+  if (!txt) { toast("Je n'ai rien entendu."); return; }
+  if (q.format === "type") {
+    const inp = $("#ans"), f = $("#typer"); if (!inp || !f) return;
+    inp.value = txt; inp.dispatchEvent(new Event("input", { bubbles: true }));
+    f.requestSubmit ? f.requestSubmit() : f.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    return;
+  }
+  const c = voxMatch(q, alts);
+  const btn = c && document.querySelector(`#answers [data-act=pick][data-k="${CSS.escape(c.key)}"]`);
+  if (btn) btn.click(); else toast(`Pas compris : “${txt}”`);
+}
+
+function voxUi(state) {
+  const b = $("#voxBtn"), bub = $("#voxBub");
+  if (b) b.classList.toggle("on", state === "on");
+  if (bub) { bub.hidden = state !== "on"; if (state === "on") bub.querySelector("span").textContent = VOX.live || "J'écoute…"; }
+}
+function voxStart(hold) {
+  if (VOX.on) return;
+  const q = SES?.q; if (!voxOk(q)) return;
+  let r; try { r = new VOX_API(); } catch (e) { toast("Dictée vocale indisponible."); return; }
+  r.lang = "fr-FR"; r.interimResults = true; r.maxAlternatives = 5; r.continuous = !!hold;
+  VOX.rec = r; VOX.on = true; VOX.hold = hold; VOX.alts = []; VOX.live = ""; VOX.q = q; VOX.err = "";
+  r.onresult = e => {
+    let live = "", fin = [];
+    for (let i = 0; i < e.results.length; i++) {
+      const res = e.results[i];
+      if (res.isFinal) { const a = []; for (let j = 0; j < res.length; j++) a.push(res[j].transcript); fin.push(a); }
+      live += res[0].transcript + " ";
+    }
+    VOX.live = live.trim();
+    if (fin.length) {
+      /* alternatives de la dernière phrase + texte complet */
+      VOX.alts = [VOX.live, ...fin[fin.length - 1]].filter((x, i, a) => x && a.indexOf(x) === i);
+    }
+    voxUi("on");
+  };
+  r.onerror = e => {
+    VOX.err = e.error;
+    if (e.error === "not-allowed" || e.error === "service-not-allowed") toast("Autorise le micro dans les réglages du téléphone pour dicter.", 4000);
+    else if (e.error === "no-speech") toast("Je n'ai rien entendu.");
+    else if (e.error !== "aborted") toast("Dictée interrompue (" + e.error + ").");
+  };
+  r.onend = () => {
+    const alts = VOX.alts.length ? VOX.alts : VOX.live ? [VOX.live] : [];
+    VOX.on = false; VOX.rec = null; voxUi("off");
+    if (VOX.err && VOX.err !== "no-speech") return;
+    if (alts.length) voxApply(alts); else if (!VOX.err) toast("Je n'ai rien entendu.");
+  };
+  voxUi("on");
+  try { r.start(); } catch (e) { VOX.on = false; VOX.rec = null; voxUi("off"); }
+}
+function voxStop(abort) { const r = VOX.rec; if (!r) return; try { abort ? r.abort() : r.stop(); } catch (e) { /* déjà fini */ } }
+
+function voxKill() {
+  const r = VOX.rec; VOX.on = false; VOX.rec = null; VOX.pressed = false;
+  if (r) { r.onresult = r.onerror = r.onend = null; try { r.abort(); } catch (e) { /* déjà fini */ } }
+}
+function voxOff() { voxKill(); $("#voxWrap")?.remove(); document.body.classList.remove("voxon"); }
+function voxMount(q) {
+  voxOff();
+  voxKill();
+  if (!voxOk(q)) return;
+  if (!$(".view.quiz")) return;
+  document.body.classList.add("voxon");
+  document.body.insertAdjacentHTML("beforeend", `<div class="voxwrap" id="voxWrap"><div class="voxbub glass" id="voxBub" hidden><i class="voxwave" aria-hidden="true"><b></b><b></b><b></b><b></b><b></b></i><span>J'écoute…</span></div><button class="voxbtn glass" id="voxBtn" type="button" aria-label="Dicter la réponse (maintenir pour parler)">${voxIcon}</button></div>`);
+  const b = $("#voxBtn");
+  b.addEventListener("pointerdown", e => {
+    e.preventDefault();
+    if (VOX.on) { voxStop(); return; }
+    VOX.down = Date.now(); VOX.pressed = true;
+    voxStart(false);
+    clearTimeout(VOX.timer);
+    VOX.timer = setTimeout(() => { if (VOX.pressed) { VOX.hold = true; b.classList.add("hold"); } }, 350);
+  });
+  const up = () => {
+    if (!VOX.pressed) return; VOX.pressed = false; clearTimeout(VOX.timer); b.classList.remove("hold");
+    if (VOX.hold && VOX.on) voxStop(); /* maintenu : relâcher = valider ; appui court : jusqu'au silence */
+  };
+  b.addEventListener("pointerup", up); b.addEventListener("pointercancel", up); b.addEventListener("pointerleave", up);
+  b.addEventListener("contextmenu", e => e.preventDefault());
+  b.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); VOX.on ? voxStop() : voxStart(false); } });
+}
+{
+  const _mq = mountQuestion;
+  mountQuestion = function (q) { _mq(q); try { voxMount(q); } catch (e) { /* la dictée ne doit jamais casser le quiz */ } };
+  const _st = settle;
+  if (typeof settle === "function") settle = function (...a) { voxOff(); return _st.apply(this, a); };
+  const _go = go;
+  go = function (...a) { voxOff(); return _go.apply(this, a); };
+  const _vs = VIEWS.settings;
+  VIEWS.settings = d => {
+    const html = _vs(d);
+    const row = VOX_API
+      ? `<div class="set"><span class="lab"><b>Dictée vocale</b><small>Un bouton micro pendant le quiz : maintiens pour parler, ou touche une fois et dis le nom.</small></span>${sw("voice")}</div>`
+      : `<div class="set"><span class="lab"><b>Dictée vocale</b><small>Non disponible sur ce navigateur.</small></span></div>`;
+    return html.replace(/(<div class="set"><span class="lab"><b>Animations réduites<\/b>.*?<\/div>)/, `$1\n    ${row}`);
+  };
+}
+
+/* ---- video.js ---- */
+
+/* ---- stats.js ---- */
+/* ============================================================
+   Plumage — compteur de visites anonyme (GoatCounter)
+   Pas de cookie, pas d'identifiant : juste « une page vue » ou « un événement ».
+   Désactivable dans les Réglages (S.set.stats). Rien n'est envoyé hors du vrai site.
+   ============================================================ */
+const GC_URL = "https://plumage.goatcounter.com/count";
+const gcOn = () => S.set.stats !== false && /github\.io$/.test(location.hostname) && !navigator.webdriver && navigator.onLine !== false;
+function gcSend(path, title, ev) {
+  if (!gcOn()) return;
+  try {
+    const q = new URLSearchParams({ p: path, t: title || path, s: `${screen.width},${screen.height},${Math.round(devicePixelRatio || 1)}`, rnd: Math.random().toString(36).slice(2) });
+    if (ev) q.set("e", "true");
+    if (!ev && document.referrer && !document.referrer.includes(location.host)) q.set("r", document.referrer);
+    const img = new Image(); img.referrerPolicy = "no-referrer-when-downgrade"; img.src = `${GC_URL}?${q}`;
+  } catch (e) { /* rien */ }
+}
+/* Une visite à l'ouverture, puis les onglets visités, une fois par session */
+const GC_SEEN = new Set();
+const _gcGo = go;
+go = function (v, data) {
+  _gcGo(v, data);
+  if (["home", "carnet", "progress", "settings", "grand", "shop", "builder"].includes(v) && !GC_SEEN.has(v)) { GC_SEEN.add(v); gcSend(v === "home" ? "/" : "/" + v, { home: "Accueil", carnet: "Carnet", progress: "Progrès", settings: "Réglages", grand: "Parcours", shop: "Boutique", builder: "Sur mesure" }[v]); }
+};
+/* Événements de jeu : partie terminée (par type), étape du parcours réussie */
+if (typeof endSession === "function") {
+  const _gcFin = endSession;
+  endSession = function (...a) {
+    const ses = SES, r = _gcFin.apply(this, a);
+    try { if (ses && ses.results && ses.results.length >= 3) gcSend("partie-" + (ses.kind || "quiz"), "Partie : " + (ses.kind || "quiz"), true); } catch (e) { /* rien */ }
+    return r;
+  };
+}
+/* Réglage : interrupteur dans le groupe Confort */
+{
+  const _gcVs = VIEWS.settings;
+  VIEWS.settings = d => _gcVs(d).replace(/(<div class="set"><span class="lab"><b>Animations réduites<\/b>.*?<\/div>)/, `$1
+    <div class="set"><span class="lab"><b>Compter ma visite</b><small>Compteur anonyme, sans cookie ni identifiant : aide à savoir combien de gens utilisent l'appli.</small></span><button class="switch ${S.set.stats !== false ? "on" : ""}" data-act="gcstat" role="switch" aria-checked="${S.set.stats !== false}" aria-label="Compter ma visite"></button></div>`);
+  ACT.gcstat = () => { S.set.stats = S.set.stats === false; save(true); rerender(); };
+}
 
 /* ---- anim.js ---- */
 /* ============================================================

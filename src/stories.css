@@ -236,3 +236,15 @@ body.lite .glass,body.lite .choice{background:#1F1F1F}
 .fb .fbf{flex:none;margin:0 calc(-1 * var(--gutter-r)) 0 calc(-1 * var(--gutter-l));padding:12px var(--gutter-r) calc(14px + env(safe-area-inset-bottom, 0px)) var(--gutter-l);
   background:#111;border-top:1px solid var(--line)}
 .fb .fbf .btn.next{position:static;margin:0;width:100%}
+
+
+/* Accueil : deux gros boutons */
+.schips button{height:58px;font-size:15.5px;gap:8px}
+.schips button .i{width:20px;height:20px}
+.hero-go .hgs{font:600 13px/1 var(--f-ui);opacity:.6;margin-left:6px}
+/* Photo pas assez en hauteur : l'oiseau entier sur la même photo floutée, l'écran reste plein */
+.story-ph::before{content:"";position:absolute;inset:-60px;background:var(--bg) center/cover no-repeat;filter:blur(30px) brightness(.7) saturate(1.15);opacity:0;transition:opacity .6s var(--ease)}
+.story-ph.fit::before{opacity:1}
+.story-ph.fit img{position:relative;object-fit:contain;object-position:50% 34%;max-height:78%;-webkit-mask-image:radial-gradient(130% 95% at 50% 45%,#000 62%,transparent 100%);mask-image:radial-gradient(130% 95% at 50% 45%,#000 62%,transparent 100%)}
+.story-ph.fit img{position:absolute;left:0;top:42%;width:100%;height:auto;max-height:none;transform:translateY(-50%);object-fit:cover;-webkit-mask-image:linear-gradient(transparent,#000 22%,#000 78%,transparent);mask-image:linear-gradient(transparent,#000 22%,#000 78%,transparent)}
+.story-ph.fit.on img{transform:translateY(-50%)}

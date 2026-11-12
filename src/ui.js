@@ -164,14 +164,15 @@ VIEWS.home = () => {
   <div class="story ${done ? "done" : ""}">
     <button class="story-ph" id="otd" data-act="otd" aria-label="Oiseau du jour" disabled><img alt=""></button>
     <div class="story-low">
-      <span class="k" id="otdK">${done ? "Série bouclée, rejoue quand tu veux" : `${esc(dateFr())} · ${esc(zoneLabel(S.set.zone))}`}</span>
-      <h1 id="otdName">Série du jour</h1><em class="latin" id="otdLa"></em>
+      <span class="k" id="otdK">${esc(dateFr())} · ${esc(zoneLabel(S.set.zone))}</span>
+      <h1 id="otdName">Oiseau du jour</h1><em class="latin" id="otdLa"></em>
       <div class="schips">
-        <button class="glass" data-act="mini">${ic("bolt", "xs")}Mini</button>
-        <button class="glass ${due ? "due" : ""}" data-act="review">${ic("replay", "xs")}${due ? due + " à revoir" : "Révisions"}</button>
-        <button class="glass" data-act="mode" data-mode="perso">${ic("sliders", "xs")}Sur mesure</button>
+        <button class="glass" data-act="mini">${ic("bolt")}Mini quiz</button>
+        <button class="glass" data-act="mode" data-mode="perso">${ic("sliders")}Quiz sur mesure</button>
       </div>
-      <button class="hero-go" data-act="chemin" aria-label="Lancer la série du jour">${ic(done ? "replay" : "play")}<span>${done ? "Rejouer la série du jour" : "Lancer la série du jour"}</span></button>
+      ${(() => { const nx = typeof gNext === "function" ? gNext() : -1; return nx >= 0
+        ? `<button class="hero-go" data-act="gstep" data-i="${nx}" aria-label="Continuer le parcours, étape ${nx + 1}">${ic("play")}<span>Continuer le parcours <small class="hgs">étape ${nx + 1}</small></span></button>`
+        : `<button class="hero-go" data-act="chemin" aria-label="Voir le parcours">${ic("map")}<span>Voir le parcours</span></button>`; })()}
     </div>
     <div class="goal" title="Objectif du jour"><i style="width:${(goal * 100).toFixed(0)}%"></i></div>
   </div>
@@ -204,11 +205,31 @@ MOUNT.home = async () => {
     const nm = $("#otdName"), la = $("#otdLa"), k = $("#otdK");
     if (nm) { nm.textContent = nameFr(t); nm.classList.add("in"); }
     if (la) la.textContent = t.fr ? t.sci : "";
-    if (k && !S.days[dayKey()]?.serie) k.textContent = "Oiseau du jour";
-    im.onload = () => { b.classList.add("on"); b.disabled = false; if (im.src !== big && !navigator.connection?.saveData) { const hi = new Image(); hi.onload = () => { if (im.isConnected) im.src = big; }; hi.src = big; } };
+    if (k) k.textContent = "Oiseau du jour";
+    im.onload = () => { b.classList.add("on"); b.disabled = false; if (im.src !== big && !im.dataset.tall && !navigator.connection?.saveData) { const hi = new Image(); hi.onload = () => { if (im.isConnected && !im.dataset.tall) im.src = big; }; hi.src = big; } };
     im.src = t.img.md;
+    otdTall(t).then(ph => {
+      if (!ph || !im.isConnected) return;
+      im.dataset.tall = "1";
+      const hi = new Image();
+      hi.onload = () => { if (!im.isConnected) return; b.classList.toggle("fit", ph.r < 1.3); b.style.setProperty("--bg", `url("${hi.src}")`); im.src = hi.src; };
+      hi.src = navigator.connection?.saveData ? ph.md : ph.lg;
+    }).catch(() => {});
   } catch (e) { /* hors ligne : l'affiche reste en aplats */ }
 };
+
+/* L'affiche est en plein cadre (écran en hauteur) : on cherche parmi les photos de l'espèce
+   celle qui est le plus « en hauteur », pour ne pas couper l'oiseau. Gardée 7 jours. */
+async function otdTall(t) {
+  return cached("otdtall:" + t.id, 7 * DAY, async () => {
+    const d = await inat("/taxa/" + t.id, { fields: "id,taxon_photos.photo.url,taxon_photos.photo.medium_url,taxon_photos.photo.large_url,taxon_photos.photo.original_dimensions" }, 1);
+    const ps = ((d.results || [])[0]?.taxon_photos || []).map(x => x && x.photo).filter(ph => ph && ph.original_dimensions && (ph.url || ph.medium_url))
+      .map(ph => ({ r: ph.original_dimensions.height / ph.original_dimensions.width, md: ph.medium_url || sizeUrl(ph.url, "medium"), lg: ph.large_url || sizeUrl(ph.url, "large") }));
+    if (!ps.length) return null;
+    ps.sort((a, b) => b.r - a.r);
+    return ps[0];
+  });
+}
 
 /* ---------- Chargement & erreurs ---------- */
 VIEWS.loading = d => `<section class="view loading"><div>
@@ -997,6 +1018,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-12.2", n: "4.8", items: [
+    { ic: "bird", t: "Un accueil plus clair", d: "L'oiseau du jour en entier, deux gros boutons (Mini quiz, Quiz sur mesure) et « Continuer le parcours » pour reprendre là où tu en étais." }
+  ] },
   { v: "2026-11-12.1", n: "4.7", items: [
     { ic: "bolt", t: "4 défis experts", d: "Expert ×2, Maître ×3, Extrême ×5 et Impossible ×10 : de plus en plus durs, de plus en plus chers, et l'XP multipliée sur chaque bonne réponse. Dans la boutique." }
   ] },

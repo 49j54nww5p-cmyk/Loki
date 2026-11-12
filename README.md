@@ -39,6 +39,7 @@ Sur iPhone : ouvre le lien dans Safari, bouton Partager, puis « Sur l'écran d'
 
 Le numéro de version s'affiche en bas des Réglages ; « Nouveautés » liste toutes les versions.
 
+- **4.8** (12 novembre 2026) : accueil revu (oiseau du jour en entier, Mini quiz, Quiz sur mesure, Continuer le parcours)
 - **4.7** (12 novembre 2026) : 4 défis experts (×2, ×3, ×5, ×10 XP), payants en plumes, nombre d'essais limité par jour
 - **4.6** (11 novembre 2026) : boutique (cadres, sons, pluie de plumes, couleurs de saison, défi expert), version ordinateur, crédits photo et mentions légales, appli admin
 - **4.5** (11 novembre 2026) : 100 niveaux nommés d'après des oiseaux (du plus commun au plus rare), paliers de 10, roue de titre, titre libre au niveau 100

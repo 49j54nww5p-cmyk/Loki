@@ -59,7 +59,7 @@ const ONLY = process.argv[2] || "all";
   await shot("01-home-full", true);
 
   if (ONLY === "all" || ONLY === "serie") {
-    await page.click("[data-act=chemin]"); await page.waitForSelector(".view.grand");
+    await page.evaluate(() => ACT.chemin()); await page.waitForSelector(".view.grand");
     await page.click(".view.grand [data-act=daily]");
     await play(14, "02-serie", 6);
     await page.waitForSelector(".view.result", { timeout: 10000 });

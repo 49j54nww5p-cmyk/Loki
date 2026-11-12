@@ -8772,7 +8772,7 @@ VIEWS.home = () => {
         <button class="glass" data-act="mode" data-mode="perso">${ic("sliders")}Quiz sur mesure</button>
       </div>
       ${(() => { const nx = typeof gNext === "function" ? gNext() : -1; return nx >= 0
-        ? `<button class="hero-go" data-act="gstep" data-i="${nx}" aria-label="Continuer le parcours, étape ${nx + 1}">${ic("play")}<span>Continuer le parcours <small class="hgs">étape ${nx + 1}</small></span></button>`
+        ? `<button class="hero-go" data-act="chemin" aria-label="Continuer le parcours, étape ${nx + 1}">${ic("play")}<span>Continuer le parcours <small class="hgs">étape ${nx + 1}</small></span></button>`
         : `<button class="hero-go" data-act="chemin" aria-label="Voir le parcours">${ic("map")}<span>Voir le parcours</span></button>`; })()}
     </div>
     <div class="goal" title="Objectif du jour"><i style="width:${(goal * 100).toFixed(0)}%"></i></div>

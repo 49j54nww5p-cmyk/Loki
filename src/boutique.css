@@ -55,3 +55,6 @@
 .frain .i{width:22px;height:22px}
 @keyframes frain{0%{opacity:0;transform:translate(0,0) rotate(0) scale(var(--s))}15%{opacity:1}100%{opacity:0;transform:translate(var(--dx),-70vh) rotate(var(--r)) scale(var(--s))}}
 body.calm .frain,.fr-or.calm .hlvl .badge{animation:none}
+.sdefi .xm{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;font-size:12px;background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--acc)}
+.sdefi.t3{border-color:color-mix(in srgb,#F97316 60%,transparent)}.sdefi.t3 .xm{background:color-mix(in srgb,#F97316 22%,transparent);color:#FB923C}
+.sdefi.t4{border-color:color-mix(in srgb,#EF4444 70%,transparent);background:linear-gradient(135deg,color-mix(in srgb,#EF4444 14%,transparent),transparent)}.sdefi.t4 .xm{background:color-mix(in srgb,#EF4444 25%,transparent);color:#F87171}

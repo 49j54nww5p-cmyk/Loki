@@ -47,12 +47,12 @@ const { handle } = require("./mock.cjs");
       const lockOk = !cosBuy("fr-or"); S.xp = Math.max(xp0, lvlXp(61));
       const buy = cosBuy("fr-or"), cls = document.documentElement.classList.contains("fr-or");
       cosBuy("snd-pic"); cosBuy("fx-plumes");
-      const pl = S.plumes, d1 = defiStart(), d2 = defiStart();
-      const dx = xpFor({ cfg: { expertX: true }, combo: 0 }, { kind: "taxon", format: "type", stim: "photo", level: "species", diff: "expert" }, { ok: true }, 9000) === 2 * xpFor({ cfg: {}, combo: 0 }, { kind: "taxon", format: "type", stim: "photo", level: "species", diff: "expert" }, { ok: true }, 9000);
+      S.defiX = null; const pl = S.plumes, d1 = defiStart(4), d2 = defiStart(4);
+      const dx = xpFor({ cfg: { expertX: 10 }, combo: 0 }, { kind: "taxon", format: "type", stim: "photo", level: "species", diff: "expert" }, { ok: true }, 9000) === 10 * xpFor({ cfg: {}, combo: 0 }, { kind: "taxon", format: "type", stim: "photo", level: "species", diff: "expert" }, { ok: true }, 9000);
       try { SES.ended = true; SES = null; } catch (e) {}
       return { lockOk, buy, cls, pl, own: S.cos.length, son: S.set.okson, pluie: S.set.pluie, d1, d2, after: S.plumes, dx };
     });
-    if (!cz.lockOk || !cz.buy || !cz.cls || cz.pl !== 2000 - 800 - 250 - 350 || cz.own !== 3 || cz.son !== "snd-pic" || !cz.pluie || !cz.d1 || cz.d2 || cz.after !== cz.pl - 30 || !cz.dx) fail("cosmétiques " + JSON.stringify(cz));
+    if (!cz.lockOk || !cz.buy || !cz.cls || cz.pl !== 2000 - 800 - 250 - 350 || cz.own !== 3 || cz.son !== "snd-pic" || !cz.pluie || !cz.d1 || cz.d2 || cz.after !== cz.pl - 200 || !cz.dx) fail("cosmétiques " + JSON.stringify(cz));
   } catch (e) { errs.push(e.message); }
   console.log("ERR", JSON.stringify(errs));
   await b.close();

@@ -2698,6 +2698,9 @@ body.inquiz .navind{opacity:0}
 .frain .i{width:22px;height:22px}
 @keyframes frain{0%{opacity:0;transform:translate(0,0) rotate(0) scale(var(--s))}15%{opacity:1}100%{opacity:0;transform:translate(var(--dx),-70vh) rotate(var(--r)) scale(var(--s))}}
 body.calm .frain,.fr-or.calm .hlvl .badge{animation:none}
+.sdefi .xm{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;font-size:12px;background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--acc)}
+.sdefi.t3{border-color:color-mix(in srgb,#F97316 60%,transparent)}.sdefi.t3 .xm{background:color-mix(in srgb,#F97316 22%,transparent);color:#FB923C}
+.sdefi.t4{border-color:color-mix(in srgb,#EF4444 70%,transparent);background:linear-gradient(135deg,color-mix(in srgb,#EF4444 14%,transparent),transparent)}.sdefi.t4 .xm{background:color-mix(in srgb,#EF4444 25%,transparent);color:#F87171}
 
 /* ==== niveaux.css ==== */
 .titp .wheel{position:relative;height:260px;margin:14px 0;border-radius:18px;background:rgba(255,255,255,.04);overflow:hidden}
@@ -9583,6 +9586,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-12.1", n: "4.7", items: [
+    { ic: "bolt", t: "4 défis experts", d: "Expert ×2, Maître ×3, Extrême ×5 et Impossible ×10 : de plus en plus durs, de plus en plus chers, et l'XP multipliée sur chaque bonne réponse. Dans la boutique." }
+  ] },
   { v: "2026-11-11.3", n: "4.6", items: [
     { ic: "trophy", t: "Nouveautés en boutique", d: "Cadres de niveau, sons de réussite, pluie de plumes, couleurs de saison et un défi expert du jour à XP doublé." },
     { ic: "eye", t: "Sur ordinateur", d: "Sur grand écran : menu à gauche, grande photo, réponses au clavier (1 à 6, Entrée)." },
@@ -11246,16 +11252,30 @@ function featherRain(n = 14) {
   setTimeout(() => box.remove(), 1800);
 }
 
-/* Défi expert du jour : payant, saisie libre, 10 s par question, XP doublée. Plus dur, pas plus facile. */
-const DEFI_P = 30;
-const defiDone = () => S.defiX === dayKey();
+/* Défis experts : 4 paliers payants, plus durs, jamais plus faciles. XP multipliée sur les bonnes réponses.
+   Équilibre : une bonne réponse « écrite, expert » vaut ~25 à 35 XP ; 1 plume = 10 XP.
+   Chaque palier se rembourse à peu près à mi-parcours ; un sans-faute rapporte 3 à 2 fois la mise. */
+const DEFIS = [
+  { t: 1, n: "Expert", m: 2, p: 20, max: 15, len: 10, timer: 10, stim: ["photo"], d: "10 oiseaux à écrire, 10 s chacun." },
+  { t: 2, n: "Maître", m: 3, p: 40, max: 10, len: 15, timer: 8, stim: ["photo", "field"], d: "15 oiseaux à écrire, 8 s chacun, photos de terrain." },
+  { t: 3, n: "Extrême", m: 5, p: 100, max: 5, len: 20, timer: 6, stim: ["photo", "field", "son"], d: "20 oiseaux à écrire, 6 s chacun, photos et chants." },
+  { t: 4, n: "Impossible", m: 10, p: 200, max: 1, len: 20, timer: 5, stim: ["son", "field"], d: "20 oiseaux à écrire, 5 s chacun, chants et photos de terrain, toutes espèces." }
+];
+const DEFI_P = DEFIS[0].p;
+const defiTier = t => DEFIS.find(d => d.t === +t) || DEFIS[0];
+const defiN = t => { const x = S.defiX; return x && typeof x === "object" && x.day === dayKey() ? +(x.n?.[t] || 0) : 0; };
+const defiLeft = t => defiTier(t).max - defiN(t);
+const defiDone = (t = 1) => defiLeft(t) <= 0;
 const xpForBase = xpFor;
-xpFor = function (ses, q, res, ms) { const x = xpForBase(ses, q, res, ms); return ses?.cfg?.expertX && res.ok ? x * 2 : x; };
-function defiStart() {
-  if (defiDone() || S.plumes < DEFI_P) return false;
-  S.plumes -= DEFI_P; S.defiX = dayKey(); save(true);
-  startSession({ kind: "quiz", expertX: true, title: "Défi expert du jour", icon: "bolt", zone: S.set.zone, freq: "common", size: 150,
-    stim: ["photo"], target: "species", names: S.set.names, format: "type", k: S.set.k, diff: "expert", len: 10, timer: 10 });
+xpFor = function (ses, q, res, ms) { const x = xpForBase(ses, q, res, ms), m = ses?.cfg?.expertX; return m && res.ok ? x * (m === true ? 2 : +m || 1) : x; };
+function defiStart(t = 1) {
+  const D = defiTier(t);
+  if (defiDone(D.t) || S.plumes < D.p) return false;
+  const x = S.defiX && typeof S.defiX === "object" && S.defiX.day === dayKey() ? S.defiX : { day: dayKey(), n: {} };
+  x.n[D.t] = (x.n[D.t] || 0) + 1; S.defiX = x;
+  S.plumes -= D.p; save(true);
+  startSession({ kind: "quiz", expertX: D.m, title: "Défi " + D.n.toLowerCase() + " ×" + D.m, icon: "bolt", zone: S.set.zone, freq: D.t >= 4 ? "all" : D.t === 3 ? "rare" : "common", size: 150 + 100 * D.t,
+    stim: D.stim, target: "species", names: S.set.names, format: "type", k: S.set.k, diff: "expert", len: D.len, timer: D.timer });
   return true;
 }
 
@@ -11268,10 +11288,11 @@ function cosmHtml() {
       : `<button class="sbuy" data-act="cosbuy" data-k="${it.k}" ${S.plumes < it.p ? "disabled" : ""}>${ic("feather", "xs")}${it.p}</button>`;
     return `<div class="sitem glass ${on ? "on" : ""}" data-k="${it.k}">${vis}<div class="stx"><b>${esc(it.n)}</b><small>${esc(it.d)}</small>${it.g === "snd" && own ? `<em data-act="costry" data-k="${it.k}" role="button">Écouter</em>` : ""}</div>${btn}</div>`;
   }, grp = g => COSM.filter(c => c.g === g).map(row).join("");
-  const dd = defiDone();
-  return `<h2 class="ssec">Défi du jour</h2>
-  <div class="sgrid"><div class="sitem glass sdefi ${dd ? "done" : ""}" data-k="defi"><span class="sic">${ic("bolt")}</span><div class="stx"><b>Défi expert</b><small>10 oiseaux à écrire, 10 s chacun, niveau expert. XP doublée sur les bonnes réponses.</small><em>${dd ? "Fait aujourd'hui, reviens demain" : "Une fois par jour"}</em></div>
-    <button class="sbuy" data-act="shopdefi" ${dd || S.plumes < DEFI_P ? "disabled" : ""}>${dd ? "Fait" : `${ic("feather", "xs")}${DEFI_P}`}</button></div></div>
+  const dfi = DEFIS.map(D => { const left = defiLeft(D.t), dd = left <= 0;
+    return `<div class="sitem glass sdefi t${D.t} ${dd ? "done" : ""}" data-k="defi${D.t}"><span class="sic">${ic("bolt")}</span><div class="stx"><b>${D.n} <span class="xm">×${D.m} XP</span></b><small>${esc(D.d)}</small><em>${dd ? "Plus d'essai aujourd'hui" : `Encore ${left} essai${left > 1 ? "s" : ""} aujourd'hui (${D.max} par jour)`}</em></div>
+    <button class="sbuy" data-act="shopdefi" data-t="${D.t}" ${dd || S.plumes < D.p ? "disabled" : ""}>${dd ? "Fait" : `${ic("feather", "xs")}${D.p}`}</button></div>`; }).join("");
+  return `<h2 class="ssec">Défis experts</h2>
+  <div class="sgrid">${dfi}</div>
   <h2 class="ssec">Cadres de niveau</h2><div class="sgrid">${grp("frame")}</div>
   <h2 class="ssec">Sons et effets</h2><div class="sgrid">${grp("snd")}${grp("fx")}</div>`;
 }
@@ -11297,7 +11318,7 @@ Object.assign(ACT, {
   cosbuy: el => cosBuy(el.dataset.k),
   cosuse: el => { cosUse(el.dataset.k); save(true); const y = window.scrollY; go("shop"); window.scrollTo(0, y); },
   costry: el => { unlockAudio(); OKSND[el.dataset.k]?.(); },
-  shopdefi: () => { if (!defiStart()) toast(defiDone() ? "Défi déjà joué aujourd'hui" : "Pas assez de plumes"); }
+  shopdefi: el => { const t = +el.dataset.t || 1; if (!defiStart(t)) toast(defiDone(t) ? "Plus d'essai aujourd'hui pour ce défi" : "Pas assez de plumes"); }
 });
 
 /* ---- niveaux.js ---- */

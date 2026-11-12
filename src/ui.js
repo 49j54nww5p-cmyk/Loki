@@ -997,6 +997,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-12.1", n: "4.7", items: [
+    { ic: "bolt", t: "4 défis experts", d: "Expert ×2, Maître ×3, Extrême ×5 et Impossible ×10 : de plus en plus durs, de plus en plus chers, et l'XP multipliée sur chaque bonne réponse. Dans la boutique." }
+  ] },
   { v: "2026-11-11.3", n: "4.6", items: [
     { ic: "trophy", t: "Nouveautés en boutique", d: "Cadres de niveau, sons de réussite, pluie de plumes, couleurs de saison et un défi expert du jour à XP doublé." },
     { ic: "eye", t: "Sur ordinateur", d: "Sur grand écran : menu à gauche, grande photo, réponses au clavier (1 à 6, Entrée)." },

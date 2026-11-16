@@ -980,9 +980,9 @@ function geoValidate() {
 /* ---------- Bilan ---------- */
 VIEWS.result = ({ ses, n, ok, badges, msgs }) => {
   const C = 2 * Math.PI * 84, p = n ? ok / n : 0;
-  const PP = ses.kind === "path" ? PATHI[ses.cfg.path] : null, pnext = PP && ses.pathStars && ses.cfg.step + 1 < PP.steps.length ? ses.cfg.step + 1 : -1;
+  const PP = ses.kind === "path" ? PATHI[ses.cfg.path] : null, pnext = (() => { if (!PP || !ses.pathStars) return -1; let j = ses.cfg.step + 1; while (j < PP.steps.length && stepSkip(PP.id, j)) j++; return j < PP.steps.length ? j : -1; })();
   const title = PP ? (ses.pathStars ? (ses.pathDoneNow ? "Parcours terminé !" : "Étape validée !") : "Presque !") : p === 1 ? "Sans faute !" : p >= .8 ? "Superbe série !" : p >= .5 ? "Belle progression" : "Chaque erreur compte";
-  const lead = PP ? (ses.pathStars ? (pnext >= 0 ? `Prochaine étape : ${PP.steps[pnext].n}.` : "Bravo, tu as bouclé ce parcours.") : `Il faut ${pPass(ses.cfg)} bonnes réponses sur ${pLen(ses.cfg)} pour avancer. Relance l'étape : les erreurs t'aident à retenir.`) : ses.kind === "hand" ? (p === 1 ? "Rien à redire : tu peux passer à la station !" : "Ouvre les fiches des espèces ratées, puis rejoue.") : p === 1 ? "Rien à redire, tu peux viser plus dur." : p >= .5 ? "Les erreurs reviendront en révision au bon moment." : "Tes erreurs reviendront vite en révision : c'est comme ça qu'on retient.";
+  const lead = PP ? (ses.pathStars ? (pnext >= 0 ? `Prochaine étape : ${PP.steps[pnext].n}.` : "Bravo, tu as bouclé ce parcours.") : (ses.pathMissing && ses.pathMissing.length ? `Il te reste à reconnaître : ${ses.pathMissing.map(id => { const t = ses.pool?.byId?.get(id); return t ? nameFr(t) : "?"; }).join(", ")}. Regarde sa fiche, puis relance l'étape.` : "Relance l'étape : chaque oiseau doit être reconnu au moins une fois.")) : ses.kind === "hand" ? (p === 1 ? "Rien à redire : tu peux passer à la station !" : "Ouvre les fiches des espèces ratées, puis rejoue.") : p === 1 ? "Rien à redire, tu peux viser plus dur." : p >= .5 ? "Les erreurs reviendront en révision au bon moment." : "Tes erreurs reviendront vite en révision : c'est comme ça qu'on retient.";
   const L = level();
   const missed = [...new Map(ses.missed.map(t => [t.id, t])).values()].slice(0, 8);
   const confs = ses.kind === "duel" ? [] : [...new Map((ses.confs || []).map(([a, b]) => [Math.min(a, b) + "," + Math.max(a, b), [a, b]])).values()]
@@ -1018,6 +1018,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-16.1", n: "4.9", items: [
+    { ic: "map", t: "Un parcours qui fait vraiment apprendre", d: "Pour valider une étape, reconnais chaque oiseau au moins une fois : un oiseau raté revient plus loin. Le bilan passe en revue tout le chapitre. Premier tour sans révisions, laridés enrichis (21 espèces), outre-mer retiré." }
+  ] },
   { v: "2026-11-12.2", n: "4.8", items: [
     { ic: "bird", t: "Un accueil plus clair", d: "L'oiseau du jour en entier, deux gros boutons (Mini quiz, Quiz sur mesure) et « Continuer le parcours » pour reprendre là où tu en étais." }
   ] },

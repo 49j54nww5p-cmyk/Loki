@@ -5091,6 +5091,7 @@ function settle(res) {
       (ses.confs || (ses.confs = [])).push([q.t.id, res.chosen.t.id]);
     }
     if (!ok) ses.missed.push(q.t);
+    if (typeof pathRedo === "function") pathRedo(ses, q, ok);
   } else if (q.kind === "geo") { bump("geo", ok); if (ok) count("geook"); }
   else if (q.kind === "root") { bump("root", ok); if (ok) count("rootok"); }
   else if (q.kind === "hand") { bump("hand", ok); if (ok) count("handok"); handRecord(q, ok); if (!ok && q.sp) (ses.hmiss || (ses.hmiss = [])).push(q.sp); }
@@ -7905,8 +7906,10 @@ const PATHS = [
   ] },
   { id: "larides", n: "Mouettes, goélands, sternes", d: "Pour ne plus dire « une mouette »", ic: "wing", c: "#7DD3FC", stim: ["photo", "field"], steps: [
     { n: "Les plus courants", sp: [["Chroicocephalus ridibundus", "Mouette rieuse"], ["Larus argentatus", "Goéland argenté"], ["Larus fuscus", "Goéland brun"], ["Larus marinus", "Goéland marin"]] },
-    { n: "Les autres goélands et mouettes", sp: [["Larus michahellis", "Goéland leucophée"], ["Larus canus", "Goéland cendré"], ["Ichthyaetus melanocephalus", "Mouette mélanocéphale"], ["Rissa tridactyla", "Mouette tridactyle"]] },
-    { n: "Les sternes", sp: [["Sterna hirundo", "Sterne pierregarin"], ["Thalasseus sandvicensis", "Sterne caugek"], ["Sternula albifrons", "Sterne naine"], ["Chlidonias niger", "Guifette noire"]] }
+    { n: "Les grands goélands", sp: [["Larus michahellis", "Goéland leucophée"], ["Larus cachinnans", "Goéland pontique"], ["Larus canus", "Goéland cendré"], ["Larus hyperboreus", "Goéland bourgmestre"]] },
+    { n: "Les mouettes", sp: [["Ichthyaetus melanocephalus", "Mouette mélanocéphale"], ["Rissa tridactyla", "Mouette tridactyle"], ["Hydrocoloeus minutus", "Mouette pygmée"], ["Xema sabini", "Mouette de Sabine"]] },
+    { n: "Les sternes", sp: [["Sterna hirundo", "Sterne pierregarin"], ["Thalasseus sandvicensis", "Sterne caugek"], ["Sternula albifrons", "Sterne naine"], ["Sterna paradisaea", "Sterne arctique"], ["Sterna dougallii", "Sterne de Dougall"]] },
+    { n: "Guifettes et labbes", sp: [["Chlidonias niger", "Guifette noire"], ["Chlidonias hybrida", "Guifette moustac"], ["Chlidonias leucopterus", "Guifette leucoptère"], ["Stercorarius parasiticus", "Labbe parasite"]] }
   ] },
   { id: "chants", n: "Les chants du printemps", d: "Reconnaître à l'oreille", ic: "wave", c: "#FFCB5C", stim: ["son"], steps: [
     { n: "Les voix du jardin", sp: [["Turdus merula", "Merle noir"], ["Erithacus rubecula", "Rougegorge familier"], ["Parus major", "Mésange charbonnière"], ["Fringilla coelebs", "Pinson des arbres"], ["Troglodytes troglodytes", "Troglodyte mignon"]] },
@@ -7920,8 +7923,9 @@ const PASS = 6, PLEN = 8;
 const BOSSLEN = 16;   /* bilan de chapitre : deux fois plus long, même marge (75 %) */
 const pLen = c => c.len || PLEN, pPass = c => Math.ceil(pLen(c) * PASS / PLEN);
 const pathSt = id => (S.paths || {})[id] || { s: {} };
-const stepStars = (id, i) => pathSt(id).s[i] || 0;
-const stepOpen = (P, i) => i === 0 || stepStars(P.id, i - 1) > 0;
+const stepSkip = (id, i) => !!(PATHI[id] && PATHI[id].skip && PATHI[id].skip(i));
+const stepStars = (id, i) => pathSt(id).s[i] || (stepSkip(id, i) ? 1 : 0);
+const stepOpen = (P, i) => { let j = i - 1; while (j >= 0 && stepSkip(P.id, j)) j--; return j < 0 || stepStars(P.id, j) > 0; };
 const pathDone = P => P.steps.filter((_, i) => stepStars(P.id, i) > 0).length;
 const pathNext = P => { const i = P.steps.findIndex((_, k) => !stepStars(P.id, k)); return i < 0 ? -1 : i; };
 async function stepTaxa(P, i) {
@@ -7936,7 +7940,8 @@ const pathCfg = (P, i) => {
   const T = P.id === "grand" ? GTOURS[P.steps[i].tour] : null;
   if (T) {
     const st = P.steps[i], up = st.kind === "boss" ? 2 : st.kind === "rev" ? 1 : 0;   /* plus dur aux révisions et au bilan du chapitre */
-    Object.assign(c, { len: st.kind === "boss" ? BOSSLEN : PLEN, title: `Étape ${i + 1} · ${st.n}`, stim: T.stim, k: Math.min(6, (T.k || 4) + up), timer: T.timer || 0, leurres: !!T.leurres || st.kind === "boss", type: T.type || 0, juv: T.juv || 0 });
+    const nsp = new Set(st.sp.map(x => x[0])).size, base = st.kind === "boss" ? BOSSLEN : PLEN;
+    Object.assign(c, { len: Math.max(base, nsp + 1), title: `Étape ${i + 1} · ${st.n}`, stim: T.stim, k: Math.min(6, (T.k || 4) + up), timer: T.timer || 0, leurres: !!T.leurres || st.kind === "boss", type: T.type || 0, juv: T.juv || 0 });
   }
   return c;
 };
@@ -7973,14 +7978,30 @@ async function preparePath(ses) {
     return { t, stim, age, pair: shuffle([t, ...others]), k: others.length + 1 };
   });
   ses.len = ses.plan.length;
+  ses.need = cur.map(t => t.id);   /* pour valider : chaque oiseau de l'étape reconnu au moins une fois */
+  ses.redo = {};
   ses.title = c.title;
   photosFor(cur.map(t => t.id)).catch(() => {});
+}
+/* Oiseau raté : il revient un peu plus loin dans l'étape (2 fois au plus), sans prendre la place d'un autre */
+function pathRedo(ses, q, ok) {
+  if (ok || ses.kind !== "path" || !ses.redo || !q.t || q.kind !== "taxon") return;
+  const id = q.t.id, n = ses.redo[id] || 0, cap = (ses.need || []).length;
+  if (n >= 2 || Object.values(ses.redo).reduce((a, b) => a + b, 0) >= cap) return;
+  const orig = ses.plan.find(p => p.t && p.t.id === id) || { t: q.t };
+  const at = Math.min(ses.plan.length, Math.max(ses.built || 0, ses.results.length + 3));
+  ses.plan.splice(at, 0, { ...orig, redo: 1 });
+  ses.redo[id] = n + 1; ses.len++;
 }
 /* Fin d'étape : étoiles et déblocage */
 function pathSettle(ses, n, ok, aborted) {
   const c = ses.cfg, P = PATHI[c.path];
   if (!P || aborted || n < ses.len) return;
-  const L = pLen(c), stars = ok >= L ? 3 : ok >= L - 1 ? 2 : ok >= pPass(c) ? 1 : 0;
+  ses.pathMissing = (ses.need || []).filter(id => !(ses.results || []).some(r => r.ok && r.id === id));
+  const need = ses.need || [], got = new Set((ses.results || []).filter(r => r.ok).map(r => r.id));
+  const miss = (ses.results || []).filter(r => !r.ok).length;
+  const passed = need.length ? need.every(id => got.has(id)) : ok >= pPass(c);
+  const stars = !passed ? 0 : miss === 0 ? 3 : miss <= 2 ? 2 : 1;
   ses.pathStars = stars;
   if (!stars) return;
   const st = (S.paths = S.paths || {})[P.id] = S.paths[P.id] || { s: {} };
@@ -8106,10 +8127,6 @@ const GCH = [
   ] },
   { k: "rares", n: "Les visiteurs rares", steps: [
     { n: "Raretés d'automne", sp: [["Phylloscopus inornatus", "Pouillot à grands sourcils"], ["Bombycilla garrulus", "Jaseur boréal"], ["Anthus richardi", "Pipit de Richard"], ["Lanius excubitor", "Pie-grièche grise"], ["Calidris pugnax", "Combattant varié"]] }
-  ] },
-  { k: "outremer", n: "L'outre-mer", steps: [
-    { n: "La Réunion", sp: [["Hypsipetes borbonicus", "Bulbul de la Réunion"], ["Zosterops borbonicus", "Zostérops des Mascareignes"], ["Saxicola tectes", "Tarier de la Réunion"], ["Terpsiphone bourbonnensis", "Tchitrec des Mascareignes"], ["Phaethon lepturus", "Phaéton à bec jaune"]] },
-    { n: "Les Antilles", sp: [["Coereba flaveola", "Sucrier à ventre jaune"], ["Quiscalus lugubris", "Quiscale merle"], ["Eulampis jugularis", "Colibri madère"], ["Orthorhyncus cristatus", "Colibri huppé"], ["Loxigilla noctis", "Sporophile rougegorge"]] }
   ] }
 ];
 /* Les 10 tours : chaque tour garde tout ce qui précède et ajoute une difficulté (cumulatif, mélangé) */
@@ -8142,6 +8159,7 @@ const GBASE = (() => {
 const GRAND = { id: "grand", n: "Le grand parcours", d: "Toute la France, chapitre par chapitre", ic: "bird", c: "#FFCE00", stim: ["photo"],
   steps: GTOURS.flatMap((T, ti) => GBASE.map(s => ({ ...s, tour: ti }))) };
 PATHI.grand = GRAND;
+GRAND.skip = i => { const st = GRAND.steps[i]; return !!st && st.tour === 0 && st.kind === "rev"; };   /* tour 1 : découverte, sans révisions */
 const GPT = GBASE.length;   // étapes par tour
 const gStep = i => GRAND.steps[i];
 const gNext = () => pathNext(GRAND);
@@ -8163,11 +8181,30 @@ function gMigrate(st) {
   st.s = s;
   return st;
 }
-if (S.gv !== 2) { if (S.paths?.grand) gMigrate(S.paths.grand); S.gv = 2; save(); }
+if (S.gv !== 2 && S.gv !== 3) { if (S.paths?.grand) gMigrate(S.paths.grand); S.gv = 3; save(); }
+
+/* ---------- v3 : laridés en 5 étapes, outre-mer retiré, révisions sautées au tour 1 ----------
+   Les étapes sont retrouvées par (tour, chapitre, nom, rang parmi les étapes de même nom). */
+const GOLD3 = [["jardin", "Les incontournables", "learn"], ["jardin", "Pinsons et compagnie", "learn"], ["jardin", "Révision", "rev"], ["jardin", "Les noirs et les gris", "learn"], ["jardin", "Les plus grands", "learn"], ["jardin", "Révision", "rev"], ["jardin", "Les petits discrets", "learn"], ["jardin", "Les visiteurs d'été", "learn"], ["jardin", "Bilan : Le jardin", "boss"], ["foret", "Les pics", "learn"], ["foret", "Grives et merles", "learn"], ["foret", "Révision", "rev"], ["foret", "Roitelets et pouillots", "learn"], ["foret", "Les mésanges des bois", "learn"], ["foret", "Révision", "rev"], ["foret", "Gros becs", "learn"], ["foret", "Les voix de la forêt", "learn"], ["foret", "Bilan : La forêt", "boss"], ["champs", "Alouettes et pipits", "learn"], ["champs", "Les bruants", "learn"], ["champs", "Révision", "rev"], ["champs", "Fauvettes et pies-grièches", "learn"], ["champs", "Tariers et traquets", "learn"], ["champs", "Révision", "rev"], ["champs", "Les oiseaux des plaines", "learn"], ["champs", "Bilan : Champs et haies", "boss"], ["villes", "Hirondelles et martinets", "learn"], ["villes", "Les corvidés", "learn"], ["villes", "Révision", "rev"], ["villes", "Pigeons et tourterelles", "learn"], ["villes", "Bilan : Villes et ciel", "boss"], ["eaux", "Les plus connus", "learn"], ["eaux", "Les canards de surface", "learn"], ["eaux", "Révision", "rev"], ["eaux", "Les plongeurs", "learn"], ["eaux", "Grèbes, foulques et cie", "learn"], ["eaux", "Bilan : Étangs et canards", "boss"], ["roseaux", "Les hérons", "learn"], ["roseaux", "Les hérons discrets", "learn"], ["roseaux", "Révision", "rev"], ["roseaux", "Les grands échassiers", "learn"], ["roseaux", "Les voix des roseaux", "learn"], ["roseaux", "Révision", "rev"], ["roseaux", "Les bijoux du marais", "learn"], ["roseaux", "Bilan : Hérons et roselières", "boss"], ["limicoles", "Les inratables", "learn"], ["limicoles", "Les bécasseaux", "learn"], ["limicoles", "Révision", "rev"], ["limicoles", "Pluviers et gravelots", "learn"], ["limicoles", "Les chevaliers", "learn"], ["limicoles", "Révision", "rev"], ["limicoles", "Barges, courlis, bécassine", "learn"], ["limicoles", "Bilan : Les limicoles", "boss"], ["larides", "Les plus courants", "learn"], ["larides", "Les autres goélands et mouettes", "learn"], ["larides", "Révision", "rev"], ["larides", "Les sternes", "learn"], ["larides", "Bilan : Mouettes, goélands, sternes", "boss"], ["mer", "Les oiseaux du large", "learn"], ["mer", "Pingouins et plongeons", "learn"], ["mer", "Révision", "rev"], ["mer", "Cormorans et canards marins", "learn"], ["mer", "Rochers et dunes", "learn"], ["mer", "Bilan : Mer et côtes", "boss"], ["rapaces", "Les plus courants", "learn"], ["rapaces", "Les grands planeurs", "learn"], ["rapaces", "Révision", "rev"], ["rapaces", "Busards et faucons", "learn"], ["rapaces", "Les rapaces nocturnes", "learn"], ["rapaces", "Révision", "rev"], ["rapaces", "Aigles et vautours", "learn"], ["rapaces", "Bilan : Les rapaces", "boss"], ["nuit", "Les grands nocturnes", "learn"], ["nuit", "Ils chantent la nuit", "learn"], ["nuit", "Révision", "rev"], ["nuit", "Râles et marouettes", "learn"], ["nuit", "Bilan : Les oiseaux de nuit", "boss"], ["montagne", "Les sommets", "learn"], ["montagne", "Les forêts d'altitude", "learn"], ["montagne", "Révision", "rev"], ["montagne", "Torrents et falaises", "learn"], ["montagne", "Bilan : La montagne", "boss"], ["sud", "La garrigue", "learn"], ["sud", "Les couleurs du Sud", "learn"], ["sud", "Bilan : Le Sud", "boss"], ["medit", "Les oiseaux de Corse", "learn"], ["medit", "La grande bleue", "learn"], ["medit", "Révision", "rev"], ["medit", "Lagunes et salins", "learn"], ["medit", "La Crau et les steppes", "learn"], ["medit", "Bilan : Corse et Méditerranée", "boss"], ["migr", "Les passereaux de passage", "learn"], ["migr", "Les grands voyageurs", "learn"], ["migr", "Révision", "rev"], ["migr", "Limicoles de passage", "learn"], ["migr", "Bilan : Migrateurs et hivernants", "boss"], ["rares", "Raretés d'automne", "learn"], ["outremer", "La Réunion", "learn"], ["outremer", "Les Antilles", "learn"], ["outremer", "Bilan : L'outre-mer", "boss"]];
+const GREN3 = { "larides|Les autres goélands et mouettes": "Les grands goélands", "larides|Bilan : Mouettes, goélands, sternes": "Bilan : Mouettes, goélands, sternes" };
+function gMigrate3(st) {
+  const key = L => { const seen = {}; return L.map(([k, n, kind]) => { const nn = GREN3[k + "|" + n] || n, id = k + "|" + nn + "|" + kind; seen[id] = (seen[id] || 0) + 1; return id + "|" + seen[id]; }); };
+  const oldK = key(GOLD3), newK = key(GBASE.map(b => [b.ck, b.n, b.kind])), at = new Map(newK.map((k, j) => [k, j]));
+  const s = {};
+  for (const [i, v] of Object.entries(st.s || {})) {
+    const t = Math.floor(+i / GOLD3.length), j = at.get(oldK[+i % GOLD3.length]);
+    if (j != null) s[t * GPT + j] = Math.max(s[t * GPT + j] || 0, v);
+  }
+  /* le nouveau chapitre est déjà commencé : les étapes nouvelles avant une étape faite sont ouvertes, rien de plus */
+  st.s = s;
+  if (st.c) for (const k of Object.keys(st.c)) if (k.startsWith("outremer.")) delete st.c[k];
+  return st;
+}
+if (S.gv === 2) { if (S.paths?.grand) gMigrate3(S.paths.grand); S.gv = 3; save(); }
 
 /* ---------- Les coffres : un par chapitre et par tour, à ouvrir une fois le bilan réussi ---------- */
 const gKey = (ti, ci) => `${GCH[ci].k}.${ti}`;
-const gIdx = (ti, ci) => GBASE.map((s, k) => s.ch === ci ? ti * GPT + k : -1).filter(k => k >= 0);
+const gIdx = (ti, ci) => GBASE.map((s, k) => s.ch === ci ? ti * GPT + k : -1).filter(k => k >= 0 && !GRAND.skip(k));
 const gFull = (ti, ci) => gIdx(ti, ci).every(i => stepStars("grand", i) > 0);
 const gOpened = (ti, ci) => !!(pathSt("grand").c || {})[gKey(ti, ci)];
 /* La récompense : 500 XP au 1er chapitre, +100 par chapitre, × (1 + 0,5 × tour) ; 1 coffre sur 5 « rare » (doré, double) ;
@@ -8238,16 +8275,18 @@ function chHtml(ti, ci, nx) {
   </div>`;
 }
 function grandHtml() {
-  if (S.gv !== 2) { if (S.paths?.grand) gMigrate(S.paths.grand); S.gv = 2; save(); }
+  if (S.gv !== 2 && S.gv !== 3) { if (S.paths?.grand) gMigrate(S.paths.grand); S.gv = 2; save(); }
+  if (S.gv === 2) { if (S.paths?.grand) gMigrate3(S.paths.grand); S.gv = 3; save(); }
   const nx = gNext(), curT = nx < 0 ? GTOURS.length - 1 : Math.floor(nx / GPT);
   const ti = GV.tour >= 0 ? Math.min(GV.tour, curT) : curT, T = GTOURS[ti];
-  const done = GRAND.steps.filter((_, i) => stepStars("grand", i) > 0).length, tot = GRAND.steps.length;
+  const vis = GRAND.steps.map((_, i) => i).filter(i => !GRAND.skip(i));
+  const done = vis.filter(i => stepStars("grand", i) > 0).length, tot = vis.length;
   const chests = GTOURS.reduce((a, _, t) => a + GCH.filter((_, c) => gOpened(t, c)).length, 0);
   return `<section class="view grand">
   <header class="ghead"><button class="icon-btn" data-act="home" aria-label="Retour">${ic("x")}</button><h1>Ton parcours</h1><span class="gcount">Tour ${curT + 1}/${GTOURS.length}</span></header>
   <div class="gtotal"><div class="gtotal-n"><b>${done}</b><span>/ ${fmt(tot)} étapes</span><small>${CHEST}${chests} coffre${chests > 1 ? "s" : ""}</small></div><span class="gbar"><i style="width:${(100 * done / tot).toFixed(1)}%"></i></span></div>
   <div class="gtours">${GTOURS.map((t, k) => `<button class="${k === ti ? "on" : ""}" data-act="gtour" data-t="${k}" ${k > curT ? "disabled" : ""}>${k > curT ? ic("lock", "xs") : ""}Tour ${k + 1}</button>`).join("")}</div>
-  <p class="gtour-d"><b>Tour ${ti + 1} · ${esc(T.n)}</b> ${esc(T.d)}. Chaque tour garde tout ce qui précède. Dans un chapitre : un choix de plus aux révisions, deux au bilan (16 questions), et un coffre à la fin. ${PASS} bonnes réponses sur ${PLEN} pour avancer.</p>
+  <p class="gtour-d"><b>Tour ${ti + 1} · ${esc(T.n)}</b> ${esc(T.d)}. Chaque tour garde tout ce qui précède. ${ti === 0 ? "Premier tour : découverte, sans révisions. " : "Un choix de plus aux révisions, deux au bilan. "}Pour avancer, reconnais chaque oiseau de l'étape au moins une fois : un oiseau raté revient plus loin. Un coffre à la fin de chaque chapitre.</p>
   <div class="gchs">${GCH.map((_, ci) => chHtml(ti, ci, nx)).join("")}</div>
   <button class="glink" data-act="daily">${ic("shuffle", "xs")}Série du jour classique : 12 questions mélangées</button>
 </section>`;
@@ -9581,9 +9620,9 @@ function geoValidate() {
 /* ---------- Bilan ---------- */
 VIEWS.result = ({ ses, n, ok, badges, msgs }) => {
   const C = 2 * Math.PI * 84, p = n ? ok / n : 0;
-  const PP = ses.kind === "path" ? PATHI[ses.cfg.path] : null, pnext = PP && ses.pathStars && ses.cfg.step + 1 < PP.steps.length ? ses.cfg.step + 1 : -1;
+  const PP = ses.kind === "path" ? PATHI[ses.cfg.path] : null, pnext = (() => { if (!PP || !ses.pathStars) return -1; let j = ses.cfg.step + 1; while (j < PP.steps.length && stepSkip(PP.id, j)) j++; return j < PP.steps.length ? j : -1; })();
   const title = PP ? (ses.pathStars ? (ses.pathDoneNow ? "Parcours terminé !" : "Étape validée !") : "Presque !") : p === 1 ? "Sans faute !" : p >= .8 ? "Superbe série !" : p >= .5 ? "Belle progression" : "Chaque erreur compte";
-  const lead = PP ? (ses.pathStars ? (pnext >= 0 ? `Prochaine étape : ${PP.steps[pnext].n}.` : "Bravo, tu as bouclé ce parcours.") : `Il faut ${pPass(ses.cfg)} bonnes réponses sur ${pLen(ses.cfg)} pour avancer. Relance l'étape : les erreurs t'aident à retenir.`) : ses.kind === "hand" ? (p === 1 ? "Rien à redire : tu peux passer à la station !" : "Ouvre les fiches des espèces ratées, puis rejoue.") : p === 1 ? "Rien à redire, tu peux viser plus dur." : p >= .5 ? "Les erreurs reviendront en révision au bon moment." : "Tes erreurs reviendront vite en révision : c'est comme ça qu'on retient.";
+  const lead = PP ? (ses.pathStars ? (pnext >= 0 ? `Prochaine étape : ${PP.steps[pnext].n}.` : "Bravo, tu as bouclé ce parcours.") : (ses.pathMissing && ses.pathMissing.length ? `Il te reste à reconnaître : ${ses.pathMissing.map(id => { const t = ses.pool?.byId?.get(id); return t ? nameFr(t) : "?"; }).join(", ")}. Regarde sa fiche, puis relance l'étape.` : "Relance l'étape : chaque oiseau doit être reconnu au moins une fois.")) : ses.kind === "hand" ? (p === 1 ? "Rien à redire : tu peux passer à la station !" : "Ouvre les fiches des espèces ratées, puis rejoue.") : p === 1 ? "Rien à redire, tu peux viser plus dur." : p >= .5 ? "Les erreurs reviendront en révision au bon moment." : "Tes erreurs reviendront vite en révision : c'est comme ça qu'on retient.";
   const L = level();
   const missed = [...new Map(ses.missed.map(t => [t.id, t])).values()].slice(0, 8);
   const confs = ses.kind === "duel" ? [] : [...new Map((ses.confs || []).map(([a, b]) => [Math.min(a, b) + "," + Math.max(a, b), [a, b]])).values()]
@@ -9619,6 +9658,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-16.1", n: "4.9", items: [
+    { ic: "map", t: "Un parcours qui fait vraiment apprendre", d: "Pour valider une étape, reconnais chaque oiseau au moins une fois : un oiseau raté revient plus loin. Le bilan passe en revue tout le chapitre. Premier tour sans révisions, laridés enrichis (21 espèces), outre-mer retiré." }
+  ] },
   { v: "2026-11-12.2", n: "4.8", items: [
     { ic: "bird", t: "Un accueil plus clair", d: "L'oiseau du jour en entier, deux gros boutons (Mini quiz, Quiz sur mesure) et « Continuer le parcours » pour reprendre là où tu en étais." }
   ] },

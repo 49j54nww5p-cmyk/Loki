@@ -76,10 +76,6 @@ const GCH = [
   ] },
   { k: "rares", n: "Les visiteurs rares", steps: [
     { n: "Raretés d'automne", sp: [["Phylloscopus inornatus", "Pouillot à grands sourcils"], ["Bombycilla garrulus", "Jaseur boréal"], ["Anthus richardi", "Pipit de Richard"], ["Lanius excubitor", "Pie-grièche grise"], ["Calidris pugnax", "Combattant varié"]] }
-  ] },
-  { k: "outremer", n: "L'outre-mer", steps: [
-    { n: "La Réunion", sp: [["Hypsipetes borbonicus", "Bulbul de la Réunion"], ["Zosterops borbonicus", "Zostérops des Mascareignes"], ["Saxicola tectes", "Tarier de la Réunion"], ["Terpsiphone bourbonnensis", "Tchitrec des Mascareignes"], ["Phaethon lepturus", "Phaéton à bec jaune"]] },
-    { n: "Les Antilles", sp: [["Coereba flaveola", "Sucrier à ventre jaune"], ["Quiscalus lugubris", "Quiscale merle"], ["Eulampis jugularis", "Colibri madère"], ["Orthorhyncus cristatus", "Colibri huppé"], ["Loxigilla noctis", "Sporophile rougegorge"]] }
   ] }
 ];
 /* Les 10 tours : chaque tour garde tout ce qui précède et ajoute une difficulté (cumulatif, mélangé) */
@@ -112,6 +108,7 @@ const GBASE = (() => {
 const GRAND = { id: "grand", n: "Le grand parcours", d: "Toute la France, chapitre par chapitre", ic: "bird", c: "#FFCE00", stim: ["photo"],
   steps: GTOURS.flatMap((T, ti) => GBASE.map(s => ({ ...s, tour: ti }))) };
 PATHI.grand = GRAND;
+GRAND.skip = i => { const st = GRAND.steps[i]; return !!st && st.tour === 0 && st.kind === "rev"; };   /* tour 1 : découverte, sans révisions */
 const GPT = GBASE.length;   // étapes par tour
 const gStep = i => GRAND.steps[i];
 const gNext = () => pathNext(GRAND);
@@ -133,11 +130,30 @@ function gMigrate(st) {
   st.s = s;
   return st;
 }
-if (S.gv !== 2) { if (S.paths?.grand) gMigrate(S.paths.grand); S.gv = 2; save(); }
+if (S.gv !== 2 && S.gv !== 3) { if (S.paths?.grand) gMigrate(S.paths.grand); S.gv = 3; save(); }
+
+/* ---------- v3 : laridés en 5 étapes, outre-mer retiré, révisions sautées au tour 1 ----------
+   Les étapes sont retrouvées par (tour, chapitre, nom, rang parmi les étapes de même nom). */
+const GOLD3 = [["jardin", "Les incontournables", "learn"], ["jardin", "Pinsons et compagnie", "learn"], ["jardin", "Révision", "rev"], ["jardin", "Les noirs et les gris", "learn"], ["jardin", "Les plus grands", "learn"], ["jardin", "Révision", "rev"], ["jardin", "Les petits discrets", "learn"], ["jardin", "Les visiteurs d'été", "learn"], ["jardin", "Bilan : Le jardin", "boss"], ["foret", "Les pics", "learn"], ["foret", "Grives et merles", "learn"], ["foret", "Révision", "rev"], ["foret", "Roitelets et pouillots", "learn"], ["foret", "Les mésanges des bois", "learn"], ["foret", "Révision", "rev"], ["foret", "Gros becs", "learn"], ["foret", "Les voix de la forêt", "learn"], ["foret", "Bilan : La forêt", "boss"], ["champs", "Alouettes et pipits", "learn"], ["champs", "Les bruants", "learn"], ["champs", "Révision", "rev"], ["champs", "Fauvettes et pies-grièches", "learn"], ["champs", "Tariers et traquets", "learn"], ["champs", "Révision", "rev"], ["champs", "Les oiseaux des plaines", "learn"], ["champs", "Bilan : Champs et haies", "boss"], ["villes", "Hirondelles et martinets", "learn"], ["villes", "Les corvidés", "learn"], ["villes", "Révision", "rev"], ["villes", "Pigeons et tourterelles", "learn"], ["villes", "Bilan : Villes et ciel", "boss"], ["eaux", "Les plus connus", "learn"], ["eaux", "Les canards de surface", "learn"], ["eaux", "Révision", "rev"], ["eaux", "Les plongeurs", "learn"], ["eaux", "Grèbes, foulques et cie", "learn"], ["eaux", "Bilan : Étangs et canards", "boss"], ["roseaux", "Les hérons", "learn"], ["roseaux", "Les hérons discrets", "learn"], ["roseaux", "Révision", "rev"], ["roseaux", "Les grands échassiers", "learn"], ["roseaux", "Les voix des roseaux", "learn"], ["roseaux", "Révision", "rev"], ["roseaux", "Les bijoux du marais", "learn"], ["roseaux", "Bilan : Hérons et roselières", "boss"], ["limicoles", "Les inratables", "learn"], ["limicoles", "Les bécasseaux", "learn"], ["limicoles", "Révision", "rev"], ["limicoles", "Pluviers et gravelots", "learn"], ["limicoles", "Les chevaliers", "learn"], ["limicoles", "Révision", "rev"], ["limicoles", "Barges, courlis, bécassine", "learn"], ["limicoles", "Bilan : Les limicoles", "boss"], ["larides", "Les plus courants", "learn"], ["larides", "Les autres goélands et mouettes", "learn"], ["larides", "Révision", "rev"], ["larides", "Les sternes", "learn"], ["larides", "Bilan : Mouettes, goélands, sternes", "boss"], ["mer", "Les oiseaux du large", "learn"], ["mer", "Pingouins et plongeons", "learn"], ["mer", "Révision", "rev"], ["mer", "Cormorans et canards marins", "learn"], ["mer", "Rochers et dunes", "learn"], ["mer", "Bilan : Mer et côtes", "boss"], ["rapaces", "Les plus courants", "learn"], ["rapaces", "Les grands planeurs", "learn"], ["rapaces", "Révision", "rev"], ["rapaces", "Busards et faucons", "learn"], ["rapaces", "Les rapaces nocturnes", "learn"], ["rapaces", "Révision", "rev"], ["rapaces", "Aigles et vautours", "learn"], ["rapaces", "Bilan : Les rapaces", "boss"], ["nuit", "Les grands nocturnes", "learn"], ["nuit", "Ils chantent la nuit", "learn"], ["nuit", "Révision", "rev"], ["nuit", "Râles et marouettes", "learn"], ["nuit", "Bilan : Les oiseaux de nuit", "boss"], ["montagne", "Les sommets", "learn"], ["montagne", "Les forêts d'altitude", "learn"], ["montagne", "Révision", "rev"], ["montagne", "Torrents et falaises", "learn"], ["montagne", "Bilan : La montagne", "boss"], ["sud", "La garrigue", "learn"], ["sud", "Les couleurs du Sud", "learn"], ["sud", "Bilan : Le Sud", "boss"], ["medit", "Les oiseaux de Corse", "learn"], ["medit", "La grande bleue", "learn"], ["medit", "Révision", "rev"], ["medit", "Lagunes et salins", "learn"], ["medit", "La Crau et les steppes", "learn"], ["medit", "Bilan : Corse et Méditerranée", "boss"], ["migr", "Les passereaux de passage", "learn"], ["migr", "Les grands voyageurs", "learn"], ["migr", "Révision", "rev"], ["migr", "Limicoles de passage", "learn"], ["migr", "Bilan : Migrateurs et hivernants", "boss"], ["rares", "Raretés d'automne", "learn"], ["outremer", "La Réunion", "learn"], ["outremer", "Les Antilles", "learn"], ["outremer", "Bilan : L'outre-mer", "boss"]];
+const GREN3 = { "larides|Les autres goélands et mouettes": "Les grands goélands", "larides|Bilan : Mouettes, goélands, sternes": "Bilan : Mouettes, goélands, sternes" };
+function gMigrate3(st) {
+  const key = L => { const seen = {}; return L.map(([k, n, kind]) => { const nn = GREN3[k + "|" + n] || n, id = k + "|" + nn + "|" + kind; seen[id] = (seen[id] || 0) + 1; return id + "|" + seen[id]; }); };
+  const oldK = key(GOLD3), newK = key(GBASE.map(b => [b.ck, b.n, b.kind])), at = new Map(newK.map((k, j) => [k, j]));
+  const s = {};
+  for (const [i, v] of Object.entries(st.s || {})) {
+    const t = Math.floor(+i / GOLD3.length), j = at.get(oldK[+i % GOLD3.length]);
+    if (j != null) s[t * GPT + j] = Math.max(s[t * GPT + j] || 0, v);
+  }
+  /* le nouveau chapitre est déjà commencé : les étapes nouvelles avant une étape faite sont ouvertes, rien de plus */
+  st.s = s;
+  if (st.c) for (const k of Object.keys(st.c)) if (k.startsWith("outremer.")) delete st.c[k];
+  return st;
+}
+if (S.gv === 2) { if (S.paths?.grand) gMigrate3(S.paths.grand); S.gv = 3; save(); }
 
 /* ---------- Les coffres : un par chapitre et par tour, à ouvrir une fois le bilan réussi ---------- */
 const gKey = (ti, ci) => `${GCH[ci].k}.${ti}`;
-const gIdx = (ti, ci) => GBASE.map((s, k) => s.ch === ci ? ti * GPT + k : -1).filter(k => k >= 0);
+const gIdx = (ti, ci) => GBASE.map((s, k) => s.ch === ci ? ti * GPT + k : -1).filter(k => k >= 0 && !GRAND.skip(k));
 const gFull = (ti, ci) => gIdx(ti, ci).every(i => stepStars("grand", i) > 0);
 const gOpened = (ti, ci) => !!(pathSt("grand").c || {})[gKey(ti, ci)];
 /* La récompense : 500 XP au 1er chapitre, +100 par chapitre, × (1 + 0,5 × tour) ; 1 coffre sur 5 « rare » (doré, double) ;
@@ -208,16 +224,18 @@ function chHtml(ti, ci, nx) {
   </div>`;
 }
 function grandHtml() {
-  if (S.gv !== 2) { if (S.paths?.grand) gMigrate(S.paths.grand); S.gv = 2; save(); }
+  if (S.gv !== 2 && S.gv !== 3) { if (S.paths?.grand) gMigrate(S.paths.grand); S.gv = 2; save(); }
+  if (S.gv === 2) { if (S.paths?.grand) gMigrate3(S.paths.grand); S.gv = 3; save(); }
   const nx = gNext(), curT = nx < 0 ? GTOURS.length - 1 : Math.floor(nx / GPT);
   const ti = GV.tour >= 0 ? Math.min(GV.tour, curT) : curT, T = GTOURS[ti];
-  const done = GRAND.steps.filter((_, i) => stepStars("grand", i) > 0).length, tot = GRAND.steps.length;
+  const vis = GRAND.steps.map((_, i) => i).filter(i => !GRAND.skip(i));
+  const done = vis.filter(i => stepStars("grand", i) > 0).length, tot = vis.length;
   const chests = GTOURS.reduce((a, _, t) => a + GCH.filter((_, c) => gOpened(t, c)).length, 0);
   return `<section class="view grand">
   <header class="ghead"><button class="icon-btn" data-act="home" aria-label="Retour">${ic("x")}</button><h1>Ton parcours</h1><span class="gcount">Tour ${curT + 1}/${GTOURS.length}</span></header>
   <div class="gtotal"><div class="gtotal-n"><b>${done}</b><span>/ ${fmt(tot)} étapes</span><small>${CHEST}${chests} coffre${chests > 1 ? "s" : ""}</small></div><span class="gbar"><i style="width:${(100 * done / tot).toFixed(1)}%"></i></span></div>
   <div class="gtours">${GTOURS.map((t, k) => `<button class="${k === ti ? "on" : ""}" data-act="gtour" data-t="${k}" ${k > curT ? "disabled" : ""}>${k > curT ? ic("lock", "xs") : ""}Tour ${k + 1}</button>`).join("")}</div>
-  <p class="gtour-d"><b>Tour ${ti + 1} · ${esc(T.n)}</b> ${esc(T.d)}. Chaque tour garde tout ce qui précède. Dans un chapitre : un choix de plus aux révisions, deux au bilan (16 questions), et un coffre à la fin. ${PASS} bonnes réponses sur ${PLEN} pour avancer.</p>
+  <p class="gtour-d"><b>Tour ${ti + 1} · ${esc(T.n)}</b> ${esc(T.d)}. Chaque tour garde tout ce qui précède. ${ti === 0 ? "Premier tour : découverte, sans révisions. " : "Un choix de plus aux révisions, deux au bilan. "}Pour avancer, reconnais chaque oiseau de l'étape au moins une fois : un oiseau raté revient plus loin. Un coffre à la fin de chaque chapitre.</p>
   <div class="gchs">${GCH.map((_, ci) => chHtml(ti, ci, nx)).join("")}</div>
   <button class="glink" data-act="daily">${ic("shuffle", "xs")}Série du jour classique : 12 questions mélangées</button>
 </section>`;

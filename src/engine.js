@@ -608,6 +608,7 @@ function settle(res) {
       (ses.confs || (ses.confs = [])).push([q.t.id, res.chosen.t.id]);
     }
     if (!ok) ses.missed.push(q.t);
+    if (typeof pathRedo === "function") pathRedo(ses, q, ok);
   } else if (q.kind === "geo") { bump("geo", ok); if (ok) count("geook"); }
   else if (q.kind === "root") { bump("root", ok); if (ok) count("rootok"); }
   else if (q.kind === "hand") { bump("hand", ok); if (ok) count("handok"); handRecord(q, ok); if (!ok && q.sp) (ses.hmiss || (ses.hmiss = [])).push(q.sp); }

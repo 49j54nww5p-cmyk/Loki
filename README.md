@@ -39,6 +39,7 @@ Sur iPhone : ouvre le lien dans Safari, bouton Partager, puis « Sur l'écran d'
 
 Le numéro de version s'affiche en bas des Réglages ; « Nouveautés » liste toutes les versions.
 
+- **4.9** (16 novembre 2026) : parcours — validation espèce par espèce, oiseaux ratés reposés, bilan complet, tour 1 sans révisions, laridés à 21 espèces, outre-mer retiré
 - **4.8** (12 novembre 2026) : accueil revu (oiseau du jour en entier, Mini quiz, Quiz sur mesure, Continuer le parcours)
 - **4.7** (12 novembre 2026) : 4 défis experts (×2, ×3, ×5, ×10 XP), payants en plumes, nombre d'essais limité par jour
 - **4.6** (11 novembre 2026) : boutique (cadres, sons, pluie de plumes, couleurs de saison, défi expert), version ordinateur, crédits photo et mentions légales, appli admin

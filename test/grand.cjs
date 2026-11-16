@@ -11,10 +11,10 @@ const { handle } = require("./mock.cjs");
   const info = await p.evaluate(() => ({ n: GRAND.steps.length, per: GPT, tours: GTOURS.length, ch: GCH.length,
     dup: (() => { const m = {}; GCH.forEach(c => c.steps.forEach(st => st.sp.forEach(([la]) => (m[la] = m[la] || new Set()).add(c.k)))); return Object.entries(m).filter(([, v]) => v.size > 1).map(([k]) => k); })() }));
   if (info.n !== 1000 || info.per * info.tours !== 1000) fail("il faut 1000 étapes " + JSON.stringify(info));
-  if (info.ch < 17) fail("chapitres manquants " + JSON.stringify(info));
+  if (info.ch < 16) fail("chapitres manquants " + JSON.stringify(info));
   // l'ancienne progression (13 chapitres × 12 tours, 81 étapes par tour) est retrouvée chapitre par chapitre
   const mig = await p.evaluate(() => gMigrate({ s: { 0: 3, 5: 2, 72: 1, 80: 3, 81: 3, 162: 2, 241: 1 } }).s);
-  if (JSON.stringify(mig) !== JSON.stringify({ 0: 3, 5: 2, 77: 1, 96: 3, 100: 2, 184: 1 })) fail("migration " + JSON.stringify(mig));
+  if (JSON.stringify(mig) !== JSON.stringify({ 0: 3, 5: 2, 80: 1, 99: 3, 100: 2, 187: 1 })) fail("migration " + JSON.stringify(mig));
   await p.click("[data-act=chemin]"); await p.waitForSelector(".view.grand .groad li.here");
   await p.screenshot({ path: "test/shots/g1-parcours.png" });
   await p.click(".groad li.here [data-act=gstep]");

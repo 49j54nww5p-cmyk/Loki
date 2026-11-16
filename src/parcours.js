@@ -33,8 +33,10 @@ const PATHS = [
   ] },
   { id: "larides", n: "Mouettes, goélands, sternes", d: "Pour ne plus dire « une mouette »", ic: "wing", c: "#7DD3FC", stim: ["photo", "field"], steps: [
     { n: "Les plus courants", sp: [["Chroicocephalus ridibundus", "Mouette rieuse"], ["Larus argentatus", "Goéland argenté"], ["Larus fuscus", "Goéland brun"], ["Larus marinus", "Goéland marin"]] },
-    { n: "Les autres goélands et mouettes", sp: [["Larus michahellis", "Goéland leucophée"], ["Larus canus", "Goéland cendré"], ["Ichthyaetus melanocephalus", "Mouette mélanocéphale"], ["Rissa tridactyla", "Mouette tridactyle"]] },
-    { n: "Les sternes", sp: [["Sterna hirundo", "Sterne pierregarin"], ["Thalasseus sandvicensis", "Sterne caugek"], ["Sternula albifrons", "Sterne naine"], ["Chlidonias niger", "Guifette noire"]] }
+    { n: "Les grands goélands", sp: [["Larus michahellis", "Goéland leucophée"], ["Larus cachinnans", "Goéland pontique"], ["Larus canus", "Goéland cendré"], ["Larus hyperboreus", "Goéland bourgmestre"]] },
+    { n: "Les mouettes", sp: [["Ichthyaetus melanocephalus", "Mouette mélanocéphale"], ["Rissa tridactyla", "Mouette tridactyle"], ["Hydrocoloeus minutus", "Mouette pygmée"], ["Xema sabini", "Mouette de Sabine"]] },
+    { n: "Les sternes", sp: [["Sterna hirundo", "Sterne pierregarin"], ["Thalasseus sandvicensis", "Sterne caugek"], ["Sternula albifrons", "Sterne naine"], ["Sterna paradisaea", "Sterne arctique"], ["Sterna dougallii", "Sterne de Dougall"]] },
+    { n: "Guifettes et labbes", sp: [["Chlidonias niger", "Guifette noire"], ["Chlidonias hybrida", "Guifette moustac"], ["Chlidonias leucopterus", "Guifette leucoptère"], ["Stercorarius parasiticus", "Labbe parasite"]] }
   ] },
   { id: "chants", n: "Les chants du printemps", d: "Reconnaître à l'oreille", ic: "wave", c: "#FFCB5C", stim: ["son"], steps: [
     { n: "Les voix du jardin", sp: [["Turdus merula", "Merle noir"], ["Erithacus rubecula", "Rougegorge familier"], ["Parus major", "Mésange charbonnière"], ["Fringilla coelebs", "Pinson des arbres"], ["Troglodytes troglodytes", "Troglodyte mignon"]] },
@@ -48,8 +50,9 @@ const PASS = 6, PLEN = 8;
 const BOSSLEN = 16;   /* bilan de chapitre : deux fois plus long, même marge (75 %) */
 const pLen = c => c.len || PLEN, pPass = c => Math.ceil(pLen(c) * PASS / PLEN);
 const pathSt = id => (S.paths || {})[id] || { s: {} };
-const stepStars = (id, i) => pathSt(id).s[i] || 0;
-const stepOpen = (P, i) => i === 0 || stepStars(P.id, i - 1) > 0;
+const stepSkip = (id, i) => !!(PATHI[id] && PATHI[id].skip && PATHI[id].skip(i));
+const stepStars = (id, i) => pathSt(id).s[i] || (stepSkip(id, i) ? 1 : 0);
+const stepOpen = (P, i) => { let j = i - 1; while (j >= 0 && stepSkip(P.id, j)) j--; return j < 0 || stepStars(P.id, j) > 0; };
 const pathDone = P => P.steps.filter((_, i) => stepStars(P.id, i) > 0).length;
 const pathNext = P => { const i = P.steps.findIndex((_, k) => !stepStars(P.id, k)); return i < 0 ? -1 : i; };
 async function stepTaxa(P, i) {
@@ -64,7 +67,8 @@ const pathCfg = (P, i) => {
   const T = P.id === "grand" ? GTOURS[P.steps[i].tour] : null;
   if (T) {
     const st = P.steps[i], up = st.kind === "boss" ? 2 : st.kind === "rev" ? 1 : 0;   /* plus dur aux révisions et au bilan du chapitre */
-    Object.assign(c, { len: st.kind === "boss" ? BOSSLEN : PLEN, title: `Étape ${i + 1} · ${st.n}`, stim: T.stim, k: Math.min(6, (T.k || 4) + up), timer: T.timer || 0, leurres: !!T.leurres || st.kind === "boss", type: T.type || 0, juv: T.juv || 0 });
+    const nsp = new Set(st.sp.map(x => x[0])).size, base = st.kind === "boss" ? BOSSLEN : PLEN;
+    Object.assign(c, { len: Math.max(base, nsp + 1), title: `Étape ${i + 1} · ${st.n}`, stim: T.stim, k: Math.min(6, (T.k || 4) + up), timer: T.timer || 0, leurres: !!T.leurres || st.kind === "boss", type: T.type || 0, juv: T.juv || 0 });
   }
   return c;
 };
@@ -101,14 +105,30 @@ async function preparePath(ses) {
     return { t, stim, age, pair: shuffle([t, ...others]), k: others.length + 1 };
   });
   ses.len = ses.plan.length;
+  ses.need = cur.map(t => t.id);   /* pour valider : chaque oiseau de l'étape reconnu au moins une fois */
+  ses.redo = {};
   ses.title = c.title;
   photosFor(cur.map(t => t.id)).catch(() => {});
+}
+/* Oiseau raté : il revient un peu plus loin dans l'étape (2 fois au plus), sans prendre la place d'un autre */
+function pathRedo(ses, q, ok) {
+  if (ok || ses.kind !== "path" || !ses.redo || !q.t || q.kind !== "taxon") return;
+  const id = q.t.id, n = ses.redo[id] || 0, cap = (ses.need || []).length;
+  if (n >= 2 || Object.values(ses.redo).reduce((a, b) => a + b, 0) >= cap) return;
+  const orig = ses.plan.find(p => p.t && p.t.id === id) || { t: q.t };
+  const at = Math.min(ses.plan.length, Math.max(ses.built || 0, ses.results.length + 3));
+  ses.plan.splice(at, 0, { ...orig, redo: 1 });
+  ses.redo[id] = n + 1; ses.len++;
 }
 /* Fin d'étape : étoiles et déblocage */
 function pathSettle(ses, n, ok, aborted) {
   const c = ses.cfg, P = PATHI[c.path];
   if (!P || aborted || n < ses.len) return;
-  const L = pLen(c), stars = ok >= L ? 3 : ok >= L - 1 ? 2 : ok >= pPass(c) ? 1 : 0;
+  ses.pathMissing = (ses.need || []).filter(id => !(ses.results || []).some(r => r.ok && r.id === id));
+  const need = ses.need || [], got = new Set((ses.results || []).filter(r => r.ok).map(r => r.id));
+  const miss = (ses.results || []).filter(r => !r.ok).length;
+  const passed = need.length ? need.every(id => got.has(id)) : ok >= pPass(c);
+  const stars = !passed ? 0 : miss === 0 ? 3 : miss <= 2 ? 2 : 1;
   ses.pathStars = stars;
   if (!stars) return;
   const st = (S.paths = S.paths || {})[P.id] = S.paths[P.id] || { s: {} };

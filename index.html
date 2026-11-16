@@ -10234,6 +10234,7 @@ VIEWS.settings = () => `<section class="view settings">
     <div class="set"><span class="lab"><b>Envoyer ma sauvegarde</b><small><span id="bklast">${S.bk?.last ? "Dernière : " + esc(ago(S.bk.last)) + "." : "Jamais faite."}</span> Vers Fichiers, iCloud ou un mail (ta clé xeno-canto n'y est pas).</small></span><button class="btn ghost" data-act="backup">${ic("down")}Sauvegarder</button></div>
     ${cloudSettingsHtml()}
     <div class="set"><span class="lab"><b>Importer</b><small>Restaure une sauvegarde sur ce téléphone.</small></span><label class="btn ghost" style="cursor:pointer">${ic("up")}Importer<input type="file" id="importf" accept="application/json,.json" hidden></label></div>
+    <div class="set"><span class="lab"><b>Recommencer le parcours</b><small>Remet le parcours à 0 et garde le reste.</small></span><button class="btn ghost" data-act="resetpath">${ic("replay")}Recommencer</button></div>
     <div class="set"><span class="lab"><b>Tout effacer</b><small>Remet l'appli à zéro sur cet appareil.</small></span><button class="btn ghost" data-act="reset" id="resetBtn">${ic("trash")}Effacer</button></div>
   </div>
   ${packSettingsHtml()}
@@ -10961,6 +10962,10 @@ const ACT = {
   },
   prad: el => { if (!PMAP) return; PMAP._r = +el.dataset.r; $$("[data-act=prad]").forEach(b => b.classList.toggle("on", b === el)); drawPick(); },
   pmapok: () => { const m = PMAP; if (!m || !m._c) return; const z = { k: "pt", lat: +m._c.lat.toFixed(3), lng: +((((m._c.lng + 540) % 360) - 180).toFixed(3)), r: m._r, name: `Point choisi · ${m._r} km` }; const cb = PCB; closeLayer(); if (cb) cb(z); },
+  resetpath: el => {
+    if (el.dataset.armed) { try { if (S.paths) delete S.paths.grand; S.gv = 3; save(true); } catch (e) { /* rien */ } GV.tour = -1; GV.ch = -1; toast("Parcours remis à zéro."); go("grand"); return; }
+    el.dataset.armed = "1"; el.innerHTML = ic("replay") + "Confirmer ?"; setTimeout(() => { if (el.isConnected) { delete el.dataset.armed; el.innerHTML = ic("replay") + "Recommencer"; } }, 4000);
+  },
   reset: el => {
     if (el.dataset.armed) { try { localStorage.removeItem(KEY); purgeCache(0); } catch (e) { /* rien */ } S = defaults(); save(true); toast("Tout est remis à zéro."); go("home"); return; }
     el.dataset.armed = "1"; el.innerHTML = ic("trash") + "Confirmer ?"; setTimeout(() => { if (el.isConnected) { delete el.dataset.armed; el.innerHTML = ic("trash") + "Effacer"; } }, 4000);

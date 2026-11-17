@@ -157,6 +157,8 @@ const V = {
       <div class="kpi"><small>Au classement</small><b>${fmt(P.filter(p => p.inTop).length)}</b></div>
       <div class="kpi"><small>Nouveaux 7 j</small><b>${fmt(P.filter(p => p.first && now - p.first < 7 * D).length)}</b></div>
     </div>
+    <h2>Mes réponses</h2>
+    <div class="card"><div class="row"><span class="sub" style="margin:0">Toutes les réponses envoyées par ton téléphone, en un fichier à donner à Claude.</span><button class="pri" id="mine">Exporter pour Claude</button></div></div>
     <h2>Niveaux</h2>
     <div class="card bars">${B.map(b => `<div class="bar"><span>niv. ${b.l}</span><span><i style="width:${(b.c / mx * 100).toFixed(1)}%"></i></span><span>${b.c}</span></div>`).join("")}</div>
     <h2>Versions</h2>
@@ -214,6 +216,18 @@ document.addEventListener("click", async ev => {
     try { await req("DELETE", t.dataset.del); if (!DEMO) await load(); toast("Supprimé"); render(); } catch (e) { t.disabled = false; toast("Échec : " + e.message); }
   }
   else if (t.id === "reload") { t.disabled = true; await load(); render(); toast("À jour"); }
+  else if (t.id === "mine") {
+    t.disabled = true;
+    try {
+      const m = DEMO ? {} : (await req("GET", "mine")) || {};
+      const rows = Object.entries(m).flatMap(([uid, v]) => Object.values((v && v.log) || {}).map(r => ({ uid, ...r }))).sort((a, b) => a.t - b.t);
+      if (!rows.length) { toast("Aucune réponse reçue pour l'instant"); t.disabled = false; return; }
+      const blob = new Blob([JSON.stringify({ n: rows.length, at: Date.now(), rows })], { type: "application/json" });
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `plumage-reponses-${new Date().toISOString().slice(0, 10)}.json`; a.click();
+      toast(fmt(rows.length) + " réponses exportées");
+    } catch (e) { toast("Échec : " + e.message); }
+    t.disabled = false;
+  }
   else if (t.id === "out") { await firebase.auth().signOut(); }
 });
 

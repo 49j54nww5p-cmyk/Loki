@@ -5076,6 +5076,7 @@ function settle(res) {
         if (pk || su) r.od = pushU(r.od, todayNum(), 8);
       }
       logAttempt(q.t.id, ok, q.stim === "field" ? "f" : mod === "son" ? "s" : mod === "nom" ? "n" : "p", pk || (su ? sndKey(su) : 0));
+      logRec({ sp: q.t.sci || q.t.id, lv: q.level, st: q.stim || "photo", ok: ok ? 1 : 0, ms: Math.min(ms, 600000), hu: (q.hintsUsed || 0) > 0 ? 1 : 0, ph: pk || 0, ch: !ok && res.chosen?.t ? (res.chosen.t.sci || res.chosen.t.id) : null, pn: S.paths?.grand ? 1 : 0 });
     }
     else { const f = fam(q.t); if (f) { const s = S.fam[f] || (S.fam[f] = { n: 0, ok: 0 }); s.n++; if (ok) s.ok++; } }
     bump(q.level === "family" ? "fam" : q.level === "genus" ? "genre" : q.level === "order" ? "ordre" : mod, ok);
@@ -7341,6 +7342,60 @@ function liveViewHtml() {
    À chaque fin de partie, au plus une fois par minute : niveau, XP, meilleure série,
    nombre de parties, première et dernière visite, version. Coupé par « Compter ma visite ». */
 let USR_T = 0;
+/* Chaque réponse part dans mine/<ton identifiant>/log : seul ton compte admin peut lire. Silencieux hors ligne. */
+async function logRec(r) {
+  if (!S.set.share || !netOn() || netLocal()) return;
+  const rec = { ...r, t: Date.now() };
+  try { await fbToken(); await netReq("POST", `mine/${S.fb?.uid || myUid()}/log`, rec); } catch (e) { /* hors ligne : tant pis */ }
+}
+/* ---------- Mode admin caché : 5 touches sur la version dans Réglages, puis le mot de passe ----------
+   Le mot de passe est vérifié par Firebase (compte admin@plumage.app) ; l'appli ne garde que le jeton. */
+const ADM = { taps: 0, t: 0, ask: false, busy: false, err: "" };
+async function admTok() {
+  const a = S.adm; if (!a) throw new Error("admin");
+  if (a.token && a.exp > Date.now() + 60000) return a.token;
+  const r = await fetch(`https://securetoken.googleapis.com/v1/token?key=${FB_KEY}`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: "grant_type=refresh_token&refresh_token=" + encodeURIComponent(a.refresh) });
+  const j = await r.json(); if (!r.ok) throw new Error("session");
+  S.adm = { token: j.id_token, refresh: j.refresh_token, exp: Date.now() + (+j.expires_in || 3600) * 1000 }; save();
+  return S.adm.token;
+}
+async function admLogin() {
+  const pw = ($("#admpw") || {}).value || ""; if (!pw || ADM.busy) return;
+  ADM.busy = true; ADM.err = "";
+  try {
+    const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FB_KEY}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: "admin@plumage.app", password: pw, returnSecureToken: true }) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(/PASSWORD|CREDENTIAL|NOT_FOUND/.test(j.error?.message || "") ? "Mot de passe incorrect." : /OPERATION_NOT_ALLOWED|CONFIGURATION/.test(j.error?.message || "") ? "Active « E-mail/Mot de passe » dans la console Firebase." : "Connexion impossible.");
+    S.adm = { token: j.idToken, refresh: j.refreshToken, exp: Date.now() + (+j.expiresIn || 3600) * 1000 }; save(true);
+    ADM.ask = false; toast("Mode admin activé.");
+  } catch (e) { ADM.err = e.message === "Failed to fetch" ? "Pas de réseau." : e.message; }
+  ADM.busy = false; rerender();
+}
+async function admExport(el) {
+  if (el) el.disabled = true;
+  try {
+    const tok = await admTok();
+    const r = await fetch(`${netBase()}/mine.json?auth=${encodeURIComponent(tok)}`, { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status === 401 ? "Règles Firebase non publiées." : "Erreur " + r.status);
+    const m = (await r.json()) || {};
+    const rows = Object.entries(m).flatMap(([uid, v]) => Object.values((v && v.log) || {}).map(x => ({ uid, ...x }))).sort((a, b) => a.t - b.t);
+    if (!rows.length) { toast("Aucune réponse reçue pour l'instant."); return; }
+    const name = `plumage-reponses-${new Date().toISOString().slice(0, 10)}.json`;
+    const file = new File([JSON.stringify({ n: rows.length, at: Date.now(), rows })], name, { type: "application/json" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) await navigator.share({ files: [file], title: "Mes réponses Plumage" }).catch(() => {});
+    else { const a = document.createElement("a"); a.href = URL.createObjectURL(file); a.download = name; a.click(); }
+    toast(fmt(rows.length) + " réponses exportées.");
+  } catch (e) { toast(e.message === "admin" || e.message === "session" ? "Session admin expirée : reconnecte-toi." : e.message); }
+  finally { if (el) el.disabled = false; }
+}
+function admHtml() {
+  if (S.adm) return `<div class="sec" style="margin-top:18px">${ic("shield")}Admin</div><div class="group">
+    <div class="set"><span class="lab"><b>Partager mes réponses avec Claude</b><small>Chaque réponse de ce téléphone part vers une base que seul l'admin lit.</small></span>${`<button class="switch ${S.set.share ? "on" : ""}" data-act="toggle" data-k="share" role="switch" aria-checked="${S.set.share ? "true" : "false"}" aria-label="Partager"></button>`}</div>
+    <div class="set"><span class="lab"><b>Exporter pour Claude</b><small>Toutes les réponses reçues, en un fichier à m'envoyer.</small></span><button class="btn ghost" data-act="admexp">${ic("down")}Exporter</button></div>
+    <div class="set"><span class="lab"><b>Quitter le mode admin</b><small>Coupe aussi le partage.</small></span><button class="btn ghost" data-act="admout">Quitter</button></div></div>`;
+  if (!ADM.ask) return "";
+  return `<div class="sec" style="margin-top:18px">${ic("shield")}Admin</div><div class="group"><div class="set"><span class="lab"><b>Code admin</b>${ADM.err ? `<small style="color:var(--bad,#e66)">${esc(ADM.err)}</small>` : ""}</span><input type="password" id="admpw" autocomplete="current-password" placeholder="mot de passe" aria-label="Code admin"><button class="btn ghost" data-act="admgo">OK</button></div></div>`;
+}
 async function userPing() {
   if (!netOn() || netLocal() || S.set.stats === false) return;
   const now = Date.now();
@@ -10240,7 +10295,8 @@ VIEWS.settings = () => `<section class="view settings">
   ${packSettingsHtml()}
   <div class="group" style="margin-top:18px"><button class="set link" data-act="tour">${ic("info")}<span class="lab"><b>Revoir la présentation</b><small>Le tour de l'appli en 6 écrans.</small></span>${ic("arrow")}</button><button class="set link" data-act="ideas">${ic("bulb")}<span class="lab"><b>Boîte à idées</b><small>Une envie, un bug, un oiseau mal nommé : dis-le.</small></span>${ic("arrow")}</button><button class="set link" data-act="news">${ic("spark")}<span class="lab"><b>Nouveautés · v${esc(APP_VERSION)}</b><small>Toutes les versions et ce qu'elles ont apporté.</small></span>${ic("arrow")}</button></div>
   <div class="group" style="margin-top:18px"><button class="set link" data-act="tab" data-tab="about">${ic("shield")}<span class="lab"><b>Mentions légales, confidentialité et sources</b><small>Qui édite l'appli, ce qui reste sur ton téléphone, ce qui en sort, et d'où viennent les données.</small></span>${ic("arrow", "s")}</button></div>
-  <p class="foot vfoot"><b>Plumage v${esc(APP_VERSION)}</b> · ${esc(vDate(NEWS[0].v))} · <button class="lnk" data-act="news">toutes les versions</button></p>
+  ${admHtml()}
+  <p class="foot vfoot"><b data-act="vtap">Plumage v${esc(APP_VERSION)}</b> · ${esc(vDate(NEWS[0].v))} · <button class="lnk" data-act="news">toutes les versions</button></p>
   <p class="foot">Photos, sons et données : iNaturalist, Wikipédia, Wikimedia Commons et xeno-canto, avec l'auteur et la licence de chaque média. Ta progression reste sur cet appareil.</p>
 </section>`;
 
@@ -10931,6 +10987,10 @@ const ACT = {
   cfilt: el => { CARNET.f = el.dataset.f; $$("[data-act=cfilt]").forEach(b => b.classList.toggle("on", b === el)); $("#cgrid").innerHTML = carnetGrid(); },
   set: el => { const k = el.dataset.k; S.set[k] = k === "goal" ? +el.dataset.v : el.dataset.v; save(); $$(`[data-act=set][data-k=${k}]`).forEach(b => b.classList.toggle("on", b === el)); },
   setk: el => { S.set.k = clamp(S.set.k + +el.dataset.d, 2, 6); save(); rerender(); },
+  vtap: () => { const n = Date.now(); ADM.taps = n - (ADM.t || 0) < 2500 ? (ADM.taps || 0) + 1 : 1; ADM.t = n; if (ADM.taps >= 5 && !S.adm) { ADM.ask = true; ADM.taps = 0; rerender(); setTimeout(() => $("#admpw")?.focus(), 50); } },
+  admgo: () => admLogin(),
+  admout: () => { delete S.adm; S.set.share = false; save(true); ADM.ask = false; toast("Mode admin fermé."); rerender(); },
+  admexp: el => admExport(el),
   toggle: el => {
     const k = el.dataset.k; S.set[k] = !S.set[k]; save();
     $$(`[data-act=toggle][data-k=${k}]`).forEach(b => { b.classList.toggle("on", S.set[k]); b.setAttribute("aria-checked", S.set[k] ? "true" : "false"); });

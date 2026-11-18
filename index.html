@@ -2830,6 +2830,23 @@ body.voxon .view.quiz{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
   #answers [data-act=pick]{padding-right:16px}
 }
 
+/* ==== groupes.css ==== */
+/* Sélecteur de groupe (accueil, en haut à gauche) */
+.hud .gsw{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:2px;width:42px;height:42px;padding:0;border-radius:999px;border:1.5px solid color-mix(in srgb,var(--gc) 55%,transparent);background:color-mix(in srgb,var(--gc) 14%,transparent);color:var(--gc);cursor:pointer}
+.hud .gsw .i{width:22px;height:22px}
+.hud .gsw .i.xs{width:12px;height:12px;opacity:.8;transform:rotate(90deg)}
+.grplist{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grpit{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:4px 10px;text-align:left;padding:12px;border-radius:16px;border:1.5px solid var(--line-2,rgba(255,255,255,.12));background:var(--card,#161616);color:inherit;cursor:pointer}
+.grpit .gi{grid-row:span 2;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--gc) 18%,transparent);color:var(--gc)}
+.grpit .gi .i{width:24px;height:24px}
+.grpit b{font-weight:700;font-size:15px}
+.grpit small{grid-column:2;color:var(--muted,#999);font-size:12px}
+.grpit>.i.s{grid-row:1;grid-column:3;color:var(--gc)}
+.grpit.on{border-color:var(--gc);background:color-mix(in srgb,var(--gc) 10%,var(--card,#161616))}
+.ghome .gz{margin:14px 0 4px}
+.ghome .gz .row{flex-wrap:wrap}
+.gnote{font-size:13px;margin:14px 2px 0}
+
 </style>
 </head>
 <body>
@@ -2839,7 +2856,7 @@ body.voxon .view.quiz{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
       <stop offset="0" stop-color="#1FD1F2"/><stop offset=".55" stop-color="#3D7BFF"/><stop offset="1" stop-color="#14B8A6"/>
     </linearGradient>
   </defs>
-  <symbol id="i-bird" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M21.4 8.7l-2.9-1.2C17.9 5.6 16.3 4.5 14.5 4.6c-2.3.1-3.9 1.9-4 4.2-2.6.9-4.6 2.9-5.7 5.5L2.4 20.1c-.1.3.2.5.4.4l5.1-3.1c1.4.6 2.9.8 4.5.6 3.6-.5 6.2-3.6 6.2-7.4v-.9zM15.1 7.1a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/><path fill="currentColor" stroke="none" d="M9.4 17.9l-.9 3.1h3.6l-.4-.9h-1.2l.5-2z"/></symbol>
+  <symbol id="i-leaf" viewBox="0 0 24 24"><g stroke-width="2"><path d="M5 19C5 10 10 5 20 4c0 10-5 15-14 15z"/><path d="M5 19l8-8"/></g></symbol><symbol id="i-bug" viewBox="0 0 24 24"><g stroke-width="2"><path d="M8 9h8v5a4 4 0 0 1-8 0z"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0M12 9v9M8 12H4M20 12h-4M8 16l-3 2M16 16l3 2M8.5 7 7 5M15.5 7 17 5"/></g></symbol><symbol id="i-mush" viewBox="0 0 24 24"><g stroke-width="2"><path d="M3.5 12a8.5 7 0 0 1 17 0z"/><path d="M10 12v6.5a2 2 0 0 0 4 0V12"/></g></symbol><symbol id="i-paw" viewBox="0 0 24 24"><g stroke-width="1.8"><path d="M8 15.5c0-2.2 1.8-4 4-4s4 1.8 4 4c0 1.7-1.3 2.8-2.6 2.5-.6-.1-.9-.3-1.4-.3s-.8.2-1.4.3C9.3 18.3 8 17.2 8 15.5z"/><circle cx="6.5" cy="10.5" r="1.6"/><circle cx="17.5" cy="10.5" r="1.6"/><circle cx="9.5" cy="6.5" r="1.6"/><circle cx="14.5" cy="6.5" r="1.6"/></g></symbol><symbol id="i-lizard" viewBox="0 0 24 24"><g stroke-width="2"><path d="M14 3c1.5 0 2.5 1 2.5 2.5S15 8 15 10s1 4 0 6-3 3-5 3.5c-2 .5-4 0-5.5 1"/><path d="M15 10.5l3 1M14.6 14l-3.6.5M15.7 8l-3-1"/></g></symbol><symbol id="i-frog" viewBox="0 0 24 24"><g stroke-width="2"><path d="M4 15c0-4 3.6-6.5 8-6.5S20 11 20 15c0 2.2-1.8 3.5-4 3.5H8c-2.2 0-4-1.3-4-3.5z"/><circle cx="8" cy="7.5" r="2"/><circle cx="16" cy="7.5" r="2"/><path d="M9 14.5c1.8 1 4.2 1 6 0"/></g></symbol><symbol id="i-fish" viewBox="0 0 24 24"><g stroke-width="2"><path d="M3 12c3-4 7-5.5 11-4.5 2 .5 3.5 2 4.5 4.5-1 2.5-2.5 4-4.5 4.5C10 17.5 6 16 3 12z"/><path d="M18.5 12 21 9v6z"/><circle cx="14" cy="11" r=".6" fill="currentColor"/></g></symbol><symbol id="i-spider" viewBox="0 0 24 24"><g stroke-width="1.8"><ellipse cx="12" cy="14" rx="3" ry="3.6"/><circle cx="12" cy="8.6" r="2"/><path d="M9.5 12.5 5 10 3 6M14.5 12.5 19 10l2-4M9 14.5H4l-2 2M15 14.5h5l2 2M9.6 16.6 6 19l-1 3M14.4 16.6 18 19l1 3"/></g></symbol><symbol id="i-shell" viewBox="0 0 24 24"><g stroke-width="2"><path d="M4 18c0-6 3.5-12 8-12s8 6 8 12z"/><path d="M12 6v12M8.2 8.5 7 18M15.8 8.5 17 18M3 18h18"/></g></symbol><symbol id="i-bird" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M21.4 8.7l-2.9-1.2C17.9 5.6 16.3 4.5 14.5 4.6c-2.3.1-3.9 1.9-4 4.2-2.6.9-4.6 2.9-5.7 5.5L2.4 20.1c-.1.3.2.5.4.4l5.1-3.1c1.4.6 2.9.8 4.5.6 3.6-.5 6.2-3.6 6.2-7.4v-.9zM15.1 7.1a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/><path fill="currentColor" stroke="none" d="M9.4 17.9l-.9 3.1h3.6l-.4-.9h-1.2l.5-2z"/></symbol>
   <symbol id="i-playc" viewBox="0 0 24 24"><g stroke-width="2"><path d="M12 3.2c4.9 0 8.8 3.9 8.8 8.8s-3.9 8.8-8.8 8.8S3.2 16.9 3.2 12 7.1 3.2 12 3.2z"/><path fill="currentColor" stroke-width="1.4" d="M10.2 8.6v6.8l5.2-3.4z"/></g></symbol>
   <symbol id="i-book" viewBox="0 0 24 24"><g stroke-width="2"><path d="M6.2 3.5h11.3a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H6.2a1.7 1.7 0 0 1-1.7-1.7V5.2a1.7 1.7 0 0 1 1.7-1.7zM8 3.5v17M15.8 3.2v17.6"/><path stroke-width="1.5" d="M10.6 13.4c.4-2.4 1.8-3.8 3-4.4-.2 2.2-1.2 3.7-3 4.4zM10.6 13.4l-.5 1.3"/></g></symbol>
   <symbol id="i-chart" viewBox="0 0 24 24"><g stroke-width="1.9"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M4.8 10.6C8.3 12.6 8.3 12.7 7.78 14.1L5.7 15L7.78 15.6C7.6 16.6 5.4 17.6 4.8 17.6C1.3 16.2 1.3 12.6 4.8 10.6zM4.4 12.8h.8V17.6h-.8z"/><path d="M4.8 17.6V20.8"/><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M12 7C15.5 9 15.5 10.9 14.97 12.3L12.9 13.2L14.97 13.8C14.8 16.6 12.6 17.6 12 17.6C8.5 16.2 8.5 9 12 7zM11.6 9.2h.8V17.6h-.8z"/><path d="M12 17.6V20.8"/><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M19.2 3C22.7 5 22.7 8.9 22.18 10.3L20.1 11.2L22.18 11.8C22 16.6 19.8 17.6 19.2 17.6C15.7 16.2 15.7 5 19.2 3zM18.8 5.2h.8V17.6h-.8z"/><path d="M19.2 17.6V20.8"/></g></symbol>
@@ -3804,15 +3821,41 @@ function memo(key, fn) {
   return p;
 }
 
+/* ---------- Groupes : les oiseaux (développés) et les autres taxons (quiz simple) ---------- */
+const GROUPS = [
+  { id: 3, k: "aves", n: "Oiseaux", one: "Oiseau", ic: "bird", c: "#FFCE00" },
+  { id: 47126, k: "plantae", n: "Plantes", one: "Plante", ic: "leaf", c: "#5FD068" },
+  { id: 47158, k: "insecta", n: "Insectes", one: "Insecte", ic: "bug", c: "#FF9A3C" },
+  { id: 47170, k: "fungi", n: "Champignons", one: "Champignon", ic: "mush", c: "#C8A27A" },
+  { id: 40151, k: "mammalia", n: "Mammifères", one: "Mammifère", ic: "paw", c: "#E9B872" },
+  { id: 26036, k: "reptilia", n: "Reptiles", one: "Reptile", ic: "lizard", c: "#9BD45F" },
+  { id: 20978, k: "amphibia", n: "Amphibiens", one: "Amphibien", ic: "frog", c: "#3BE59D" },
+  { id: 47178, k: "actinopterygii", n: "Poissons", one: "Poisson", ic: "fish", c: "#3D9BFF" },
+  { id: 47119, k: "arachnida", n: "Araignées et cie", one: "Arachnide", ic: "spider", c: "#B18CFF" },
+  { id: 47115, k: "mollusca", n: "Mollusques", one: "Mollusque", ic: "shell", c: "#FF8FB1" }
+];
+const ROOT = () => +(S.set.grp || 3);
+const GRP = () => GROUPS.find(g => g.id === ROOT()) || GROUPS[0];
+const isBirds = () => ROOT() === 3;
+const inGrp = r => +((r && r.g) || 3) === ROOT();
+/* Zone : celle des oiseaux, ou une zone à part pour les autres groupes (monde par défaut) */
+const curZone = () => isBirds() ? S.set.zone : (S.set.gzone || null);
+function setGroup(id) {
+  if (+id === ROOT()) return;
+  S.set.grp = +id; save(true);
+  TAXO.fam = new Map(); TAXO.ord = new Map(); TAXO.famByName = new Map(); TAXO.ready = null; TAXO.ok = false; LEXP = null;
+}
+
 /* ---------- Taxonomie ---------- */
 const TAXO = { fam: new Map(), ord: new Map(), famByName: new Map(), ready: null, ok: false };
 const famFr = n => n.replace(/idae$/, "idés");
 function loadTaxo() {
   if (TAXO.ready) return TAXO.ready;
-  TAXO.ready = cached("taxo3", 30 * DAY, async () => {
+  const R = ROOT();
+  TAXO.ready = cached(R === 3 ? "taxo3" : "taxo3:" + R, 30 * DAY, async () => {
     const [o, f] = await Promise.all([
-      inat("/taxa", { taxon_id: 3, rank: "order", per_page: 200, locale: "fr" }),
-      inat("/taxa", { taxon_id: 3, rank: "family", per_page: 500, locale: "fr" })
+      inat("/taxa", { taxon_id: R, rank: "order", per_page: 200, locale: "fr", ...(R === 3 ? {} : { order_by: "observations_count", order: "desc" }) }),
+      inat("/taxa", { taxon_id: R, rank: "family", per_page: 500, locale: "fr", ...(R === 3 ? {} : { order_by: "observations_count", order: "desc" }) })
     ]);
     const ords = new Set(o.results.map(t => t.id));
     return {
@@ -3839,7 +3882,7 @@ function mini(t) {
   if (!t) return null;
   const dp = t.default_photo;
   const anc = t.ancestor_ids || [];
-  const i3 = anc.indexOf(3);
+  const i3 = anc.indexOf(ROOT());
   const m = {
     id: t.id, sci: t.name, fr: cap(t.preferred_common_name || ""), rank: t.rank,
     a: (i3 >= 0 ? anc.slice(i3 + 1) : anc).filter(x => x !== t.id),
@@ -3904,7 +3947,7 @@ function seasonMonths() { const m = new Date().getMonth() + 1; return [((m + 10)
 /* ---------- Groupes d'espèces (pools) ---------- */
 async function getPool(p) {
   await loadTaxo().catch(() => {});
-  const params = { taxon_id: p.taxa && p.taxa.length ? p.taxa.join(",") : 3, quality_grade: "research", locale: "fr", preferred_place_id: 6753, ...zoneParams(p.zone) };
+  const params = { taxon_id: p.taxa && p.taxa.length ? p.taxa.join(",") : ROOT(), quality_grade: "research", locale: "fr", preferred_place_id: 6753, ...zoneParams(p.zone) };
   if (p.freq === "season") params.month = seasonMonths().join(",");
   if (p.freq === "rare") params.order = "asc";
   if (p.freq === "exotic") params.introduced = "true";
@@ -3921,8 +3964,8 @@ async function getPool(p) {
   });
   list = (list || []).map(t => { t.f = fam(t); t.o = ord(t); return t; });
   if (p.freq === "lifers") {
-    const mine = await cached("mine:" + S.set.inat, DAY, async () => {
-      const d = await inat("/observations/species_counts", { taxon_id: 3, user_login: S.set.inat, per_page: 500 });
+    const mine = await cached("mine:" + S.set.inat + (isBirds() ? "" : ":" + ROOT()), DAY, async () => {
+      const d = await inat("/observations/species_counts", { taxon_id: ROOT(), user_login: S.set.inat, per_page: 500 });
       return (d.results || []).map(r => r.taxon?.id).filter(Boolean);
     });
     const seen = new Set(mine || []);
@@ -3937,7 +3980,7 @@ async function getPool(p) {
 
 /* ---------- Sorties : espèces attendues ---------- */
 async function tripSpecies(zone, month, recent) {
-  const base = { taxon_id: 3, quality_grade: "research", locale: "fr", preferred_place_id: 6753, per_page: 200, ...zoneParams(zone) };
+  const base = { taxon_id: ROOT(), quality_grade: "research", locale: "fr", preferred_place_id: 6753, per_page: 200, ...zoneParams(zone) };
   const key = "trip:" + qs({ ...base, m: month, r: recent ? 1 : 0, d: recent ? dayKey() : "" });
   const list = await cached(key, recent ? DAY / 2 : 7 * DAY, async () => {
     const conv = d => (d.results || []).filter(r => r.taxon && r.taxon.rank === "species").map(r => ({ ...mini(r.taxon), c: r.count }));
@@ -3954,14 +3997,14 @@ async function tripSpecies(zone, month, recent) {
 const LEX = new Map();
 function lexAdd(t) {
   if (!t || !t.id || !t.sci) return;
-  if (!LEX.has(t.id)) LEX.set(t.id, { id: t.id, sci: t.sci, fr: t.fr || "", img: t.img?.sq || t.img || "", f: t.f || 0, n: norm((t.fr || "") + " " + t.sci) });
+  if (!LEX.has(t.id)) LEX.set(t.id, { id: t.id, sci: t.sci, fr: t.fr || "", img: t.img?.sq || t.img || "", f: t.f || 0, g: +(t.g || ROOT()), n: norm((t.fr || "") + " " + t.sci) });
 }
 /* Espèce dont le nom tapé correspond (à une faute près) */
 function lexExact(v) {
   const a = norm(v);
   if (a.length < 4) return null;
   let best = null, bd = 9;
-  for (const e of LEX.values()) for (const n of [norm(e.fr), norm(e.sci)]) {
+  for (const e of LEX.values()) if (e.g === ROOT()) for (const n of [norm(e.fr), norm(e.sci)]) {
     if (!n) continue;
     const d = n === a ? 0 : Math.abs(n.length - a.length) > 2 ? 9 : lev(a, n);
     if (d < bd && d <= (n.length <= 7 ? 0 : 1)) { bd = d; best = e; }
@@ -3972,17 +4015,18 @@ function lexExact(v) {
 }
 let LEXP = null;
 function loadLexicon() {
-  for (const [id, r] of Object.entries(S.sp)) lexAdd({ id: +id, sci: r.sci, fr: r.fr, img: r.img, f: r.f });
+  for (const [id, r] of Object.entries(S.sp)) lexAdd({ id: +id, sci: r.sci, fr: r.fr, img: r.img, f: r.f, g: r.g || 3 });
   if (LEXP) return LEXP;
-  LEXP = cached("lex1", 30 * DAY, async () => {
+  const R = ROOT();
+  LEXP = cached(R === 3 ? "lex1" : "lex1:" + R, 30 * DAY, async () => {
     const out = [];
     for (const page of [1, 2]) {
-      const d = await inat("/observations/species_counts", { taxon_id: 3, place_id: 6753, locale: "fr", preferred_place_id: 6753, per_page: 500, page });
+      const d = await inat("/observations/species_counts", { taxon_id: R, ...(R === 3 ? { place_id: 6753 } : {}), locale: "fr", preferred_place_id: 6753, per_page: 500, page });
       for (const r of d.results || []) if (r.taxon && r.taxon.rank === "species") out.push([r.taxon.id, r.taxon.name, cap(r.taxon.preferred_common_name || ""), r.taxon.default_photo?.square_url || ""]);
       if ((d.results || []).length < 500) break;
     }
     return out;
-  }).then(list => { for (const [id, sci, fr, img] of list || []) lexAdd({ id, sci, fr, img }); return true; })
+  }).then(list => { for (const [id, sci, fr, img] of list || []) lexAdd({ id, sci, fr, img, g: R }); return true; })
     .catch(() => { LEXP = null; return false; });
   return LEXP;
 }
@@ -3991,6 +4035,7 @@ function lexSearch(qs_, n = 8) {
   if (!toks.length) return [];
   const res = [];
   for (const e of LEX.values()) {
+    if (e.g !== ROOT()) continue;
     const words = e.n.split(" ");
     let score = 0, ok = true;
     for (const tk of toks) {
@@ -4003,7 +4048,7 @@ function lexSearch(qs_, n = 8) {
   return res.sort((a, b) => b[0] - a[0]).slice(0, n).map(x => x[1]);
 }
 async function lexRemote(q) {
-  const d = await inat("/taxa/autocomplete", { q, taxon_id: 3, rank: "species", per_page: 8, locale: "fr", preferred_place_id: 6753 });
+  const d = await inat("/taxa/autocomplete", { q, taxon_id: ROOT(), rank: "species", per_page: 8, locale: "fr", preferred_place_id: 6753 });
   const out = (d.results || []).filter(r => r.rank === "species").map(r => mini(r));
   out.forEach(lexAdd);
   return out;
@@ -4014,12 +4059,12 @@ const FIELD = { ids: new Set(), who: "" };
 async function loadField() {
   const who = S.set.inat;
   if (!who) { FIELD.ids = new Set(); FIELD.who = ""; return FIELD.ids; }
-  if (FIELD.who === who) return FIELD.ids;
-  const list = await cached("mine:" + who, DAY, async () => {
-    const d = await inat("/observations/species_counts", { taxon_id: 3, user_login: who, per_page: 500 });
+  if (FIELD.who === who + ROOT()) return FIELD.ids;
+  const list = await cached("mine:" + who + (isBirds() ? "" : ":" + ROOT()), DAY, async () => {
+    const d = await inat("/observations/species_counts", { taxon_id: ROOT(), user_login: who, per_page: 500 });
     return (d.results || []).map(r => r.taxon?.id).filter(Boolean);
   });
-  FIELD.ids = new Set(list || []); FIELD.who = who;
+  FIELD.ids = new Set(list || []); FIELD.who = who + ROOT();
   return FIELD.ids;
 }
 function ago(t) {
@@ -4337,7 +4382,7 @@ async function resolveTaxon(sci, fr) {
     for (const q of [sci, fr].filter(Boolean)) {
       try {
         const d = await inat("/taxa/autocomplete", { q, per_page: 5, locale: "fr", preferred_place_id: 6753 });
-        const r = (d.results || []).find(x => x.rank === "species" && (x.iconic_taxon_name === "Aves" || (x.ancestor_ids || []).includes(3)));
+        const r = (d.results || []).find(x => x.rank === "species" && (x.ancestor_ids || []).includes(ROOT()));
         if (r) return mini(r);
       } catch (e) { /* suivant */ }
     }
@@ -4359,7 +4404,7 @@ function preload(url) {
 const INTERVALS = [0, 1, 2, 4, 8, 16, 32];
 function rec(t) {
   let r = S.sp[t.id];
-  if (!r) r = S.sp[t.id] = { fr: t.fr || "", sci: t.sci, f: fam(t) || 0, o: ord(t) || 0, img: t.img?.sq || "", md: t.img?.md || "", n: 0, ok: 0, box: {}, due: {}, conf: {}, first: dayKey() };
+  if (!r) r = S.sp[t.id] = { ...(isBirds() ? {} : { g: ROOT() }), fr: t.fr || "", sci: t.sci, f: fam(t) || 0, o: ord(t) || 0, img: t.img?.sq || "", md: t.img?.md || "", n: 0, ok: 0, box: {}, due: {}, conf: {}, first: dayKey() };
   else {
     if (t.fr && !r.fr) r.fr = t.fr;
     if (t.img?.md && !r.md) { r.md = t.img.md; r.img = t.img.sq; }
@@ -4418,7 +4463,7 @@ function srsUpdate(r, mod, ok, soft) {
 }
 function dueList() {
   const t = todayNum(), out = [];
-  for (const [id, r] of Object.entries(S.sp)) for (const [mod, d] of Object.entries(r.due || {})) if (d <= t) out.push({ id: +id, mod, d, box: r.box?.[mod] ?? 0 });
+  for (const [id, r] of Object.entries(S.sp)) if (inGrp(r)) for (const [mod, d] of Object.entries(r.due || {})) if (d <= t) out.push({ id: +id, mod, d, box: r.box?.[mod] ?? 0 });
   return out.sort((a, b) => a.d - b.d || a.box - b.box);
 }
 const lvlXp = n => 60 * (n - 1) * n;
@@ -4503,7 +4548,7 @@ const MODES = [
 
 function photoStim() { return S.set.photo === "field" ? ["field"] : S.set.photo === "mix" ? ["photo", "field"] : ["photo"]; }
 function baseCfg() {
-  return { kind: "quiz", zone: S.set.zone, freq: "common", size: 120, target: "species", names: S.set.names, format: S.set.fmt || "qcm", k: S.set.k, diff: S.set.diff, len: 10, timer: 0 };
+  return { kind: "quiz", grp: ROOT(), zone: curZone(), freq: "common", size: 120, target: "species", names: S.set.names, format: S.set.fmt || "qcm", k: S.set.k, diff: S.set.diff, len: 10, timer: 0 };
 }
 function modeCfg(k) {
   const b = baseCfg();
@@ -4518,9 +4563,9 @@ function modeCfg(k) {
     default: return null;
   }
 }
-const dailyCfg = () => ({ kind: "serie", format: S.set.fmt || "qcm", title: "Série du jour", icon: "spark", zone: S.set.zone, len: 12, names: S.set.names, diff: S.set.diff, k: S.set.k });
-const miniCfg = () => ({ kind: "mini", format: S.set.fmt || "qcm", title: "Mini-série", icon: "bolt", zone: S.set.zone, len: 3, names: S.set.names, diff: S.set.diff, k: S.set.k });
-const reviewCfg = () => ({ kind: "review", format: S.set.fmt || "qcm", title: "Révisions", icon: "replay", zone: S.set.zone, names: S.set.names, diff: S.set.diff, k: S.set.k });
+const dailyCfg = () => ({ kind: "serie", grp: ROOT(), format: S.set.fmt || "qcm", title: "Série du jour", icon: "spark", zone: curZone(), len: 12, names: S.set.names, diff: S.set.diff, k: S.set.k });
+const miniCfg = () => ({ kind: "mini", grp: ROOT(), format: S.set.fmt || "qcm", title: "Mini-série", icon: "bolt", zone: curZone(), len: 3, names: S.set.names, diff: S.set.diff, k: S.set.k });
+const reviewCfg = () => ({ kind: "review", grp: ROOT(), format: S.set.fmt || "qcm", title: "Révisions", icon: "replay", zone: curZone(), names: S.set.names, diff: S.set.diff, k: S.set.k });
 const duelCfg = pair => ({ kind: "duel", title: "Duel", icon: "duel", zone: S.set.zone, pair, len: 8, names: S.set.names, k: 2 });
 
 function newSession(cfg) {
@@ -4535,6 +4580,10 @@ async function startSession(cfg) {
   unlockAudio();
   closeLayer();
   sndStop();
+  /* une partie garde son groupe (rejouer, favoris) : on y rebascule si besoin */
+  /* sans groupe noté : ancienne partie, donc oiseaux */
+  const g = +(cfg.grp || 3);
+  if (g !== ROOT()) setGroup(g);
   const ses = SES = newSession(cfg);
   go("loading", { title: cfg.title, icon: cfg.icon });
   try {
@@ -4642,6 +4691,7 @@ function planSerie(ses, len) {
 }
 function planMini(ses) {
   const P = ses.pool.list.slice(0, 80), a = shuffle(P);
+  if (!isBirds()) return [{ t: a[0], stim: "photo" }, { t: a[1], stim: "field" }, { t: a[2], stim: "la" }];
   return [{ t: a[0], stim: "photo" }, { t: a[1], stim: "son", format: "tiles", k: 4 }, { t: a[2], stim: "fr" }];
 }
 function planReview(ses) {
@@ -8820,7 +8870,7 @@ const isStandalone = () => window.navigator.standalone === true || !!(window.mat
 const installCard = () => isIOS() && !isStandalone() && Date.now() - (S.hint?.install || 0) > 30 * DAY
   ? `<div class="notice inst"><span class="ic">${ic("down")}</span><span class="tx"><b>Installe l'appli sur ton écran d'accueil</b><small>Dans Safari : Partager, puis « Sur l'écran d'accueil ». Sinon Safari peut effacer ta progression après 7 jours sans visite.</small></span><button class="icon-btn" data-act="insthide" aria-label="Masquer">${ic("x")}</button></div>` : "";
 function needBackup() {
-  const n = Object.values(S.sp).filter(r => r.n > 0 || r.nobs > 0).length, now = Date.now();
+  const n = Object.values(S.sp).filter(r => inGrp(r) && (r.n > 0 || r.nobs > 0)).length, now = Date.now();
   if (n < 8 && S.xp < 300) return false;
   if (now - (S.bk?.snooze || 0) < 3 * DAY) return false;
   return !S.bk?.last || now - S.bk.last > 14 * DAY;
@@ -8888,11 +8938,11 @@ MOUNT.home = async () => {
     if (l) l.classList.remove("wait");
   }, INTRO.wait);
   try {
-    const pool = await getPool({ zone: S.set.zone, freq: "common", size: 150 });
+    const pool = await getPool({ zone: curZone(), freq: "common", size: 150 });
     if (VIEW !== "home") return;
     const top = pool.list.filter(t => t.img).slice(0, 80);
     if (!top.length) return;
-    const t = OTD = top[hashStr(dayKey() + zoneKey(S.set.zone)) % top.length];
+    const t = OTD = top[hashStr(dayKey() + zoneKey(curZone()) + ROOT()) % top.length];
     const b = $("#otd");
     if (!b) return;
     /* l'oiseau du jour fait l'affiche : photo moyenne d'abord (rapide), puis la grande */
@@ -8900,7 +8950,7 @@ MOUNT.home = async () => {
     const nm = $("#otdName"), la = $("#otdLa"), k = $("#otdK");
     if (nm) { nm.textContent = nameFr(t); nm.classList.add("in"); }
     if (la) la.textContent = t.fr ? t.sci : "";
-    if (k) k.textContent = "Oiseau du jour";
+    if (k) k.textContent = GRP().one + " du jour";
     im.onload = () => { b.classList.add("on"); b.disabled = false; if (im.src !== big && !im.dataset.tall && !navigator.connection?.saveData) { const hi = new Image(); hi.onload = () => { if (im.isConnected && !im.dataset.tall) im.src = big; }; hi.src = big; } };
     im.src = t.img.md;
     otdTall(t).then(ph => {
@@ -9713,6 +9763,11 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-18.1", n: "5.0", items: [
+    { ic: "leaf", t: "Tout le vivant", d: "Le rond en haut à gauche de l'accueil change de groupe : plantes, insectes, champignons, mammifères, reptiles, amphibiens, poissons, araignées, mollusques. Un quiz simple pour chacun, dans le monde entier ou ta zone." },
+    { ic: "search", t: "Quiz sur mesure, taxon par taxon", d: "Cherche une espèce, un genre, une famille ou un ordre, en français ou en latin, et coche ce que tu veux réviser. Marche aussi pour les oiseaux." },
+    { ic: "star", t: "Nouveau logo", d: "Une plume, à l'encre sur le jaune." }
+  ] },
   { v: "2026-11-16.1", n: "4.9", items: [
     { ic: "map", t: "Un parcours qui fait vraiment apprendre", d: "Pour valider une étape, reconnais chaque oiseau au moins une fois : un oiseau raté revient plus loin. Le bilan passe en revue tout le chapitre. Premier tour sans révisions, laridés enrichis (21 espèces), outre-mer retiré." }
   ] },
@@ -9850,7 +9905,7 @@ VIEWS.path = () => pathHtml();
 MOUNT.path = () => pathMount();
 
 /* ---------- Constructeur « Sur mesure » ---------- */
-const defaultB = () => ({ zone: S.set.zone, guilds: [], fams: [], freq: "common", size: 100, stim: ["photo"], age: "all", target: "species", names: S.set.names, format: "qcm", k: S.set.k, diff: S.set.diff, len: 10, timer: 0 });
+const defaultB = () => ({ zone: curZone(), guilds: [], fams: [], tx: [], freq: "common", size: 100, stim: ["photo"], age: "all", target: "species", names: S.set.names, format: "qcm", k: S.set.k, diff: S.set.diff, len: 10, timer: 0 });
 const BOPT = {
   freq: [["common", "Communs", "star"], ["season", "De saison", "cal"], ["all", "Tous", "list"], ["rare", "Raretés", "spark"], ["exotic", "Exotiques", "pin"], ["mine", "Mes obs. iNat", "eye"], ["lifers", "À découvrir", "binoc"]],
   size: [[25, "Top 25"], [50, "Top 50"], [100, "Top 100"], [200, "Top 200"]],
@@ -9863,7 +9918,14 @@ const BOPT = {
   len: [[5, "5"], [10, "10"], [20, "20"], [0, "∞"]],
   timer: [[0, "Sans"], [10, "10 s / question"], [60, "Défi 60 s"]]
 };
-const getB = () => { const B = S.set.builder = S.set.builder || defaultB(); if (!B.age) B.age = "all"; return B; };
+const getB = () => {
+  let B;
+  if (isBirds()) B = S.set.builder = S.set.builder || defaultB();
+  else { const G = S.set.gbuild = S.set.gbuild || {}; B = G[ROOT()] = G[ROOT()] || { ...defaultB(), stim: ["photo"], names: "both" }; }
+  if (!B.age) B.age = "all"; if (!B.tx) B.tx = [];
+  if (!isBirds()) { B.stim = B.stim.filter(x => x !== "son" && x !== "soncho"); if (!B.stim.length) B.stim = ["photo"]; B.age = "all"; B.guilds = []; }
+  return B;
+};
 function optRow(field, list, multi, wrap) {
   const B = getB();
   return `<div class="row ${wrap ? "wrap" : ""}">${list.map(([v, l, i]) => {
@@ -9874,20 +9936,22 @@ function optRow(field, list, multi, wrap) {
 VIEWS.builder = () => {
   const B = getB();
   const famChips = B.fams.map(id => { const f = TAXO.fam.get(id); return f ? `<button class="chip fam" data-act="bfamdel" data-id="${id}">${esc(f.fr)} ${ic("x", "xs")}</button>` : ""; }).join("");
-  const bopen = (S.pv || {}).bset ?? false;
+  const txChips = (B.tx || []).map(x => `<button class="chip fam" data-act="btxdel" data-id="${x.id}">${esc(x.n)} <small class="muted">${esc(rankFr(x.r))}</small> ${ic("x", "xs")}</button>`).join("");
+  const birds = isBirds(), G = GRP();
+  const bopen = birds ? ((S.pv || {}).bset ?? false) : true;
   return `<section class="view builder">
-  <div class="head"><button class="icon-btn" data-act="home" aria-label="Retour">${ic("back")}</button><div><h1>Sur mesure</h1><p>Une recette en un geste, ou règle tout toi-même.</p></div></div>
+  <div class="head"><button class="icon-btn" data-act="home" aria-label="Retour">${ic("back")}</button><div><h1>Sur mesure${birds ? "" : " · " + esc(G.n)}</h1><p>${birds ? "Une recette en un geste, ou règle tout toi-même." : "Choisis tes taxons un par un, puis règle la question."}</p></div></div>
   <div class="opt"><div class="opt-h">${ic("pin")}Zone<span class="val">${esc(zoneLabel(B.zone))}</span></div><div class="row">${zoneChips(B.zone, "bzone")}</div></div>
-  <div class="sec">${ic("spark")}Recettes</div>
-  ${recipesHtml()}
+  ${birds ? `<div class="sec">${ic("spark")}Recettes</div>
+  ${recipesHtml()}` : ""}
   <details class="bset"${bopen ? " open" : ""} data-k="bset"><summary data-act="pvt"><span class="pvi">${ic("sliders")}</span><span class="pvt"><b>Régler moi-même</b><small>${esc(builderTitle(B))}</small></span><span class="pvc">${ic("chev")}</span></summary>
-  <div class="opt"><div class="opt-h">${ic("tree")}Oiseaux<span class="val">${B.guilds.length || B.fams.length ? (B.guilds.length + B.fams.length) + " groupe(s)" : "Tous"}</span></div>
-    <div class="row"><button class="opt-btn ${!B.guilds.length && !B.fams.length ? "on" : ""}" data-act="ball">${ic("bird")}Tous</button>${GUILDS.map(g => `<button class="opt-btn ${B.guilds.includes(g.n) ? "on" : ""}" data-act="bguild" data-g="${esc(g.n)}">${esc(g.n)}</button>`).join("")}<button class="opt-btn" data-act="bfam">${ic("search")}Une famille…</button></div>
-    ${famChips ? `<div class="selfam">${famChips}</div>` : ""}</div>
+  <div class="opt"><div class="opt-h">${ic(G.ic)}${esc(G.n)}<span class="val">${B.guilds.length || B.fams.length || B.tx.length ? (B.guilds.length + B.fams.length + B.tx.length) + " choix" : "Tous"}</span></div>
+    <div class="row wrap"><button class="opt-btn ${!B.guilds.length && !B.fams.length && !B.tx.length ? "on" : ""}" data-act="ball">${ic(G.ic)}Tous</button>${birds ? GUILDS.map(g => `<button class="opt-btn ${B.guilds.includes(g.n) ? "on" : ""}" data-act="bguild" data-g="${esc(g.n)}">${esc(g.n)}</button>`).join("") : ""}<button class="opt-btn" data-act="btx">${ic("search")}Espèce, genre, famille…</button><button class="opt-btn" data-act="bfam">${ic("tree")}Liste des familles</button></div>
+    ${famChips || txChips ? `<div class="selfam">${famChips}${txChips}</div>` : ""}</div>
   <div class="opt"><div class="opt-h">${ic("star")}Lesquels</div>${optRow("freq", BOPT.freq)}${["common", "rare", "lifers"].includes(B.freq) ? `<div style="margin-top:8px">${optRow("size", BOPT.size)}</div>` : ""}</div>
-  <div class="opt"><div class="opt-h">${ic("eye")}Question<span class="val">plusieurs choix possibles</span></div>${optRow("stim", BOPT.stim, true, true)}</div>
-  <div class="opt"><div class="opt-h">${ic("cal")}Âge des oiseaux<span class="val">${B.age === "juv" ? "juvéniles" : B.age === "adult" ? "adultes" : "tous"}</span></div>${optRow("age", BOPT.age)}
-    ${B.age !== "all" ? `<p class="muted note" style="margin-top:6px">Photos d'observations iNaturalist annotées « ${B.age === "juv" ? "juvénile" : "adulte"} » par les observateurs : seules les espèces qui en ont dans la zone sont proposées. S'applique aux questions avec photo.</p>` : ""}</div>
+  <div class="opt"><div class="opt-h">${ic("eye")}Question<span class="val">plusieurs choix possibles</span></div>${optRow("stim", birds ? BOPT.stim : BOPT.stim.filter(x => x[0] !== "son" && x[0] !== "soncho"), true, true)}</div>
+  ${birds ? `<div class="opt"><div class="opt-h">${ic("cal")}Âge des oiseaux<span class="val">${B.age === "juv" ? "juvéniles" : B.age === "adult" ? "adultes" : "tous"}</span></div>${optRow("age", BOPT.age)}
+    ${B.age !== "all" ? `<p class="muted note" style="margin-top:6px">Photos d'observations iNaturalist annotées « ${B.age === "juv" ? "juvénile" : "adulte"} » par les observateurs : seules les espèces qui en ont dans la zone sont proposées. S'applique aux questions avec photo.</p>` : ""}</div>` : ""}
   <div class="opt"><div class="opt-h">${ic("check")}Réponse attendue</div>${optRow("target", BOPT.target)}</div>
   <div class="opt"><div class="opt-h">${ic("type")}Noms affichés</div>${optRow("names", BOPT.names)}</div>
   <div class="opt"><div class="opt-h">${ic("list")}Format</div>${optRow("format", BOPT.format)}
@@ -9899,12 +9963,13 @@ VIEWS.builder = () => {
 </section>`;
 };
 function builderTitle(B) {
-  const grp = B.guilds.length === 1 && !B.fams.length ? B.guilds[0] : B.fams.length === 1 && !B.guilds.length ? famName(B.fams[0]) : B.guilds.length + B.fams.length ? "Groupes" : "Oiseaux";
+  const tx = B.tx || [], nsel = B.guilds.length + B.fams.length + tx.length;
+  const grp = nsel === 1 ? (B.guilds[0] || (B.fams[0] ? famName(B.fams[0]) : tx[0].n)) : nsel ? (nsel + " taxons") : GRP().n;
   const st = B.stim.map(s => (BOPT.stim.find(x => x[0] === s) || [])[1]).filter(Boolean).join("+");
   return `${grp}${B.age && B.age !== "all" ? " · " + (B.age === "juv" ? "Juvéniles" : "Adultes") : ""} · ${st} · ${zoneLabel(B.zone)}`;
 }
 async function builderCfg(B) {
-  let taxa = [...B.fams];
+  let taxa = [...B.fams, ...(B.tx || []).map(x => x.id)];
   if (B.fnames?.length) { await loadTaxo(); for (const n of B.fnames) { const f = TAXO.famByName.get(n); if (f) taxa.push(f.id); } }
   if (B.guilds.length) {
     await loadTaxo();
@@ -9912,7 +9977,7 @@ async function builderCfg(B) {
   }
   taxa = [...new Set(taxa)];
   const onlySound = B.stim.every(s => s === "son" || s === "soncho");
-  return { kind: "quiz", title: builderTitle(B), icon: "sliders", zone: B.zone, taxa, freq: B.freq, size: B.size, sounds: onlySound, stim: B.stim.slice(), age: B.age && B.age !== "all" ? B.age : "", target: B.target, names: B.names, format: B.format, k: B.k, diff: B.diff, len: B.timer === 60 ? 0 : B.len, timer: B.timer };
+  return { kind: "quiz", grp: ROOT(), title: builderTitle(B), icon: "sliders", zone: B.zone, taxa, freq: B.freq, size: B.size, sounds: onlySound, stim: B.stim.slice(), age: B.age && B.age !== "all" ? B.age : "", target: B.target, names: B.names, format: B.format, k: B.k, diff: B.diff, len: B.timer === 60 ? 0 : B.len, timer: B.timer };
 }
 
 /* ---------- Préparer une sortie ---------- */
@@ -10142,7 +10207,7 @@ function carnetGrid() {
   return `<div class="cgrid">${list.map(({ id, r }) => `<button class="ctile" data-act="fiche" data-id="${id}"><span class="av" style="--p:${(stars(r) / 3 * 100).toFixed(0)}">${r.img || r.md ? `<img src="${esc(r.img || r.md)}" alt="" loading="lazy">` : `<span class="noimg">${ic("book")}</span>`}${FIELD.ids.has(id) || r.nobs > 0 ? `<span class="fld" title="Vue sur le terrain">${ic("eye", "xs")}</span>` : ""}</span><b>${esc(r.fr || r.sci || "Espèce")}</b>${starsHtml(stars(r))}</button>`).join("")}</div>`;
 }
 VIEWS.carnet = () => {
-  const recs = Object.values(S.sp).filter(r => r.n > 0 || r.nobs > 0);
+  const recs = Object.values(S.sp).filter(r => inGrp(r) && (r.n > 0 || r.nobs > 0));
   const master = recs.filter(r => stars(r) === 3).length, seenN = Object.entries(S.sp).filter(([id, r]) => r.nobs > 0 || FIELD.ids.has(+id)).length;
   const filt = [["all", "Toutes"], ["due", "À revoir"], ["weak", "Fragiles"], ["master", "Maîtrisées"], ["field", "Observées"]];
   return `<section class="view carnet">
@@ -10976,7 +11041,13 @@ const ACT = {
     save(); rerender();
   },
   bk: el => { const B = getB(); B.k = clamp(B.k + +el.dataset.d, 2, 6); save(); rerender(); },
-  ball: () => { const B = getB(); B.guilds = []; B.fams = []; save(); rerender(); },
+  ball: () => { const B = getB(); B.guilds = []; B.fams = []; B.tx = []; save(); rerender(); },
+  btx: () => openTaxPicker(),
+  btxdel: el => { const B = getB(); B.tx = (B.tx || []).filter(x => x.id !== +el.dataset.id); save(); rerender(); },
+  txtog: el => { const B = getB(), id = +el.dataset.id, i = B.tx.findIndex(x => x.id === id); if (i >= 0) B.tx.splice(i, 1); else B.tx.push({ id, n: el.dataset.n, r: el.dataset.r }); el.classList.toggle("on", i < 0); save(); },
+  txdone: () => { closeLayer(); if (VIEW === "builder") rerender(); },
+  grp: () => openGroupPicker(),
+  grpset: el => { const id = +el.dataset.id; closeLayer(); if (id !== ROOT()) { setGroup(id); OTD = null; toast(GRP().n + " : c'est parti !"); } go("home"); },
   bguild: el => { const B = getB(), g = el.dataset.g, i = B.guilds.indexOf(g); if (i >= 0) B.guilds.splice(i, 1); else B.guilds.push(g); save(); rerender(); },
   bfam: () => openFamPicker(),
   bfamdel: el => { const B = getB(); B.fams = B.fams.filter(x => x !== +el.dataset.id); save(); rerender(); },
@@ -11877,6 +11948,124 @@ if (typeof endSession === "function") {
     try { if (navigator.vibrate && !S.set.calm) navigator.vibrate([6, 30, 6]); } catch (err) { /* pas de vibreur */ }
   }, { passive: true });
 })();
+
+/* ---- groupes.js ---- */
+/* ============================================================
+   Plumage — les autres groupes du vivant
+   Le sélecteur en haut à gauche de l'accueil change de groupe.
+   Oiseaux : l'appli complète. Autres groupes : un quiz simple
+   (sessions de base + quiz sur mesure taxon par taxon), sans parcours ni coffres.
+   ============================================================ */
+const RANK_FR = { kingdom: "règne", phylum: "embranchement", subphylum: "sous-embr.", class: "classe", subclass: "sous-classe", superorder: "super-ordre", order: "ordre", suborder: "sous-ordre", infraorder: "infra-ordre", superfamily: "super-famille", family: "famille", subfamily: "sous-famille", tribe: "tribu", subtribe: "sous-tribu", genus: "genre", subgenus: "sous-genre", section: "section", complex: "complexe", species: "espèce", hybrid: "hybride", subspecies: "sous-espèce", variety: "variété", form: "forme" };
+const rankFr = r => RANK_FR[r] || r || "";
+
+/* Le bouton du sélecteur, en tête de l'accueil */
+const grpBtn = () => { const G = GRP(); return `<button class="gsw" data-act="grp" style="--gc:${G.c}" aria-label="Groupe : ${esc(G.n)}. Changer">${ic(G.ic)}</button>`; };
+
+function openGroupPicker() {
+  openLayer(`<div class="panel"><button class="icon-btn close" data-act="close" aria-label="Fermer">${ic("x")}</button><div class="in" style="padding-top:22px">
+    <h2>Que veux-tu apprendre ?</h2><p class="muted" style="margin:6px 0 14px;font-size:14px">Les oiseaux ont toute l'appli. Les autres groupes ont un quiz simple, réglable taxon par taxon.</p>
+    <div class="grplist">${GROUPS.map(g => `<button class="grpit ${g.id === ROOT() ? "on" : ""}" data-act="grpset" data-id="${g.id}" style="--gc:${g.c}"><span class="gi">${ic(g.ic)}</span><b>${esc(g.n)}</b>${g.id === 3 ? `<small>Parcours, coffres, chants…</small>` : ""}${g.id === ROOT() ? ic("check", "s") : ""}</button>`).join("")}</div></div></div>`);
+}
+
+/* Choisir n'importe quel taxon du groupe : espèce, genre, famille, ordre… */
+let TXQ = { q: "", t: 0, res: [] };
+function openTaxPicker() {
+  TXQ = { q: "", t: 0, res: [] };
+  openLayer(`<div class="panel"><button class="icon-btn close" data-act="close" aria-label="Fermer">${ic("x")}</button><div class="in" style="padding-top:22px">
+    <h2>${esc(GRP().n)} : choisir</h2><p class="muted" style="margin:6px 0 14px;font-size:14px">Cherche une espèce, un genre, une famille ou un ordre, en français ou en latin. Coche autant que tu veux.</p>
+    <div class="search">${ic("search")}<input id="txsearch" type="search" placeholder="${esc(isBirds() ? "Ex. Larus, sternes, mésange bleue…" : "Ex. orchidées, Quercus, coccinelle…")}" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+    <div class="plist" id="txlist">${txListHtml()}</div>
+    <button class="btn primary wide" data-act="txdone" style="margin-top:14px;position:sticky;bottom:12px">${ic("check")}Valider</button></div></div>`);
+  setTimeout(() => $("#txsearch")?.focus(), 60);
+}
+function txListHtml() {
+  const B = getB(), on = new Set((B.tx || []).map(x => x.id));
+  if (!TXQ.q) {
+    const sel = B.tx || [];
+    return sel.length ? sel.map(x => `<button class="pitem on" data-act="txtog" data-id="${x.id}" data-n="${esc(x.n)}" data-r="${esc(x.r)}"><b style="font-weight:650">${esc(x.n)}</b><small>${esc(rankFr(x.r))}</small></button>`).join("") : `<p class="muted" style="font-size:14px;padding:8px 2px">Tape au moins 2 lettres.</p>`;
+  }
+  if (!TXQ.res.length) return `<p class="muted" style="font-size:14px;padding:8px 2px">${TXQ.busy ? "Recherche…" : "Rien trouvé dans ce groupe."}</p>`;
+  return TXQ.res.map(t => { const n = t.fr ? `${t.fr} (${t.sci})` : t.sci; return `<button class="pitem ${on.has(t.id) ? "on" : ""}" data-act="txtog" data-id="${t.id}" data-n="${esc(t.fr || t.sci)}" data-r="${esc(t.rank)}">${t.img ? `<img src="${esc(t.img)}" alt="" style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex:none">` : ""}<span style="flex:1;min-width:0"><b style="font-weight:650">${esc(n)}</b></span><small>${esc(rankFr(t.rank))}${t.n ? " · " + fmt(t.n) + " obs." : ""}</small></button>`; }).join("");
+}
+async function txSearch(q) {
+  TXQ.q = q.trim();
+  const my = ++TXQ.t;
+  if (TXQ.q.length < 2) { TXQ.res = []; TXQ.busy = false; const l = $("#txlist"); if (l) l.innerHTML = txListHtml(); return; }
+  TXQ.busy = true;
+  await new Promise(r => setTimeout(r, 250));
+  if (my !== TXQ.t) return;
+  try {
+    const d = await inat("/taxa/autocomplete", { q: TXQ.q, taxon_id: ROOT(), per_page: 15, locale: "fr", preferred_place_id: 6753, is_active: "true" });
+    if (my !== TXQ.t) return;
+    TXQ.res = (d.results || []).filter(t => t.id !== ROOT()).map(t => ({ id: t.id, sci: t.name, fr: cap(t.preferred_common_name || ""), rank: t.rank, n: t.observations_count || 0, img: t.default_photo?.square_url || "" }));
+  } catch (e) { TXQ.res = []; }
+  TXQ.busy = false;
+  const l = $("#txlist"); if (l) l.innerHTML = txListHtml();
+}
+document.addEventListener("input", e => { if (e.target && e.target.id === "txsearch") txSearch(e.target.value); });
+
+/* Les sessions de base des autres groupes */
+const GSESS = [
+  { k: "photo", n: "Photo", d: "Qui est-ce ?", ic: "frame" },
+  { k: "terrain", n: "Terrain", d: "Photos d'observateurs", ic: "eye" },
+  { k: "latin", n: "Latin", d: "Français ↔ latin", ic: "quill" },
+  { k: "famille", n: "Familles", d: "Qui est parent ?", ic: "tree" },
+  { k: "genre", n: "Genres", d: "Le bon genre", ic: "root" },
+  { k: "ecrire", n: "Écrire", d: "Tape le nom", ic: "keyboard" }
+];
+function gsessCfg(k) {
+  const b = { ...baseCfg(), grp: ROOT(), size: 150 };
+  const s = GSESS.find(x => x.k === k) || GSESS[0];
+  const c = { ...b, title: `${s.n} · ${GRP().n}`, icon: s.ic, stim: ["photo"] };
+  if (k === "terrain") c.stim = ["field"];
+  if (k === "latin") c.stim = ["fr", "la"];
+  if (k === "famille") { c.target = "family"; c.size = 250; }
+  if (k === "genre") { c.target = "genus"; c.size = 250; }
+  if (k === "ecrire") c.format = "type";
+  return c;
+}
+ACT.gplay = el => { LASTCFG = gsessCfg(el.dataset.k); startSession(LASTCFG); };
+ACT.gzone = el => pickZone(el.dataset.z, z => { S.set.gzone = z; save(); OTD = null; if (VIEW === "home") rerender(); });
+
+/* L'accueil */
+const homeBirds = VIEWS.home;
+VIEWS.home = (...a) => {
+  if (isBirds()) return homeBirds(...a).replace('<header class="hud">', '<header class="hud">' + grpBtn());
+  const G = GRP(), L = level(), st = liveStreak(), due = dueList().length;
+  const mine = x => +((x && x.cfg && x.cfg.grp) || 3) === ROOT();
+  const favs = S.favs.map((f, i) => [f, i]).filter(([f]) => mine(f));
+  const hi = (S.hist || []).findIndex(mine), last = hi >= 0 ? S.hist[hi] : null;
+  const known = Object.values(S.sp).filter(r => inGrp(r) && r.n > 0).length;
+  return `<section class="view home ghome" style="--gc:${G.c}">
+  <header class="hud">${grpBtn()}
+    <button class="hlvl" id="hlvl" data-act="tab" data-tab="progress" aria-label="Niveau ${L.n}, ${esc(L.rank)}"><span class="badge">${L.n}</span><span class="meta"><b>${esc(L.rank)}</b><span class="bar"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span></span></button>
+    <div class="pill flame ${st ? "" : "cold"}" title="Jours d'affilée">${ic("flame")}<span>${st}</span></div>
+    <button class="pill xp" data-act="tab" data-tab="top" title="Classement">${ic("spark")}<span>${fmt(S.xp)}</span></button>
+  </header>
+  <div class="story">
+    <button class="story-ph" id="otd" data-act="otd" aria-label="${esc(G.one)} du jour" disabled><img alt=""></button>
+    <div class="story-low">
+      <span class="k" id="otdK">${esc(dateFr())} · ${esc(zoneLabel(curZone()))}</span>
+      <h1 id="otdName">${esc(G.n)}</h1><em class="latin" id="otdLa"></em>
+      <div class="schips">
+        <button class="glass" data-act="mini">${ic("bolt")}Mini quiz</button>
+        <button class="glass" data-act="mode" data-mode="perso">${ic("sliders")}Quiz sur mesure</button>
+      </div>
+      <button class="hero-go" data-act="gplay" data-k="photo">${ic("play")}<span>Quiz photo <small class="hgs">${esc(G.n.toLowerCase())}</small></span></button>
+    </div>
+  </div>
+  <div class="opt gz"><div class="opt-h">${ic("pin")}Zone<span class="val">${esc(zoneLabel(curZone()))}</span></div><div class="row">${zoneChips(curZone(), "gzone")}</div></div>
+  ${due ? `<button class="lastp" data-act="review"><span class="ic">${ic("replay")}</span><span class="tx"><small>À revoir</small><b>${due} révision${due > 1 ? "s" : ""}</b><span>Les ${esc(G.n.toLowerCase())} qui t'échappent</span></span><span class="go">${ic("play")}Réviser</span></button>` : ""}
+  ${favs.length ? `<div class="favs top" aria-label="Mes quiz">${favs.map(([f, i]) => `<button class="fav" data-act="fav" data-i="${i}">${ic("star")}${esc(f.title)}</button>`).join("")}</div>` : ""}
+  ${last ? `<button class="lastp" data-act="histplay" data-i="${hi}"><span class="ic">${ic(last.cfg?.icon || "replay")}</span><span class="tx"><small>Dernière partie, ${esc(ago(last.t))}</small><b>${esc(last.title || "Partie")}</b><span>${last.ok}/${last.n} bonnes réponses, +${fmt(last.xp)} XP</span></span><span class="go">${ic("replay")}Rejouer</span></button>` : ""}
+  <div class="sec">${ic("grid")}Sessions</div>
+  <div class="mgrid">${GSESS.map((m, i) => `<button class="mtile g${i % 3}" data-act="gplay" data-k="${m.k}" title="${esc(m.d)}" style="--d:${i * 40}ms"><span class="ic">${ic(m.ic)}</span><b>${m.n}</b></button>`).join("")}</div>
+  <p class="muted note gnote">${known ? `${known} espèce${known > 1 ? "s" : ""} déjà croisée${known > 1 ? "s" : ""} dans ce groupe. ` : ""}Parcours, coffres et chants restent réservés aux oiseaux.</p>
+</section>`;
+};
+/* Le premier affichage de l'accueil a lieu avant le chargement de ce fichier : on y glisse le sélecteur */
+(() => { const h = document.querySelector(".view.home .hud"); if (h && !h.querySelector(".gsw")) h.insertAdjacentHTML("afterbegin", grpBtn()); })();
 
 </script>
 </body>

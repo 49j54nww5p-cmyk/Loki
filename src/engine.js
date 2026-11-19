@@ -163,7 +163,8 @@ function planSerie(ses, len) {
 }
 function planMini(ses) {
   const P = ses.pool.list.slice(0, 80), a = shuffle(P);
-  if (!isBirds()) return [{ t: a[0], stim: "photo" }, { t: a[1], stim: "field" }, { t: a[2], stim: "la" }];
+  if (!isBirds() && !grpSnd()) return [{ t: a[0], stim: "photo" }, { t: a[1], stim: "field" }, { t: a[2], stim: "la" }];
+  if (!isBirds()) return [{ t: a[0], stim: "photo" }, { t: a[1], stim: "son", format: "tiles", k: 4 }, { t: a[2], stim: "la" }];
   return [{ t: a[0], stim: "photo" }, { t: a[1], stim: "son", format: "tiles", k: 4 }, { t: a[2], stim: "fr" }];
 }
 function planReview(ses) {

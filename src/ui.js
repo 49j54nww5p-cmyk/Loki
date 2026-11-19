@@ -1018,6 +1018,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-19.6", n: "5.6", items: [
+    { ic: "wave", t: "Les sons au-delà des oiseaux", d: "Chants des grenouilles et crapauds, des criquets et cigales, cris des mammifères : une session « Chants » (ou « Cris ») dans ces groupes, et les questions de son dans le quiz sur mesure et le mini quiz." }
+  ] },
   { v: "2026-11-19.5", n: "5.5", items: [
     { ic: "bulb", t: "Ta boîte à idées te répond", d: "Chaque message est lu et traité : tu vois son statut (lu, corrigé, à l'étude) dans « Tes derniers envois ». Les petits bugs sont corrigés au fil de l'eau." }
   ] },
@@ -1196,7 +1199,8 @@ const getB = () => {
   if (isBirds()) B = S.set.builder = S.set.builder || defaultB();
   else { const G = S.set.gbuild = S.set.gbuild || {}; B = G[ROOT()] = G[ROOT()] || { ...defaultB(), stim: ["photo"], names: "both" }; }
   if (!B.age) B.age = "all"; if (!B.tx) B.tx = [];
-  if (!isBirds()) { B.stim = B.stim.filter(x => x !== "son" && x !== "soncho"); if (!B.stim.length) B.stim = ["photo"]; B.age = "all"; B.guilds = []; }
+  if (!grpSnd()) { B.stim = B.stim.filter(x => x !== "son" && x !== "soncho"); if (!B.stim.length) B.stim = ["photo"]; }
+  if (!isBirds()) { B.age = "all"; B.guilds = []; }
   return B;
 };
 function optRow(field, list, multi, wrap) {
@@ -1222,7 +1226,7 @@ VIEWS.builder = () => {
     <div class="row wrap"><button class="opt-btn ${!B.guilds.length && !B.fams.length && !B.tx.length ? "on" : ""}" data-act="ball">${ic(G.ic)}Tous</button>${birds ? GUILDS.map(g => `<button class="opt-btn ${B.guilds.includes(g.n) ? "on" : ""}" data-act="bguild" data-g="${esc(g.n)}">${esc(g.n)}</button>`).join("") : ""}<button class="opt-btn" data-act="btx">${ic("search")}Espèce, genre, famille…</button><button class="opt-btn" data-act="bfam">${ic("tree")}Liste des familles</button></div>
     ${famChips || txChips ? `<div class="selfam">${famChips}${txChips}</div>` : ""}</div>
   <div class="opt"><div class="opt-h">${ic("star")}Lesquels</div>${optRow("freq", BOPT.freq)}${["common", "rare", "lifers"].includes(B.freq) ? `<div style="margin-top:8px">${optRow("size", BOPT.size)}</div>` : ""}</div>
-  <div class="opt"><div class="opt-h">${ic("eye")}Question<span class="val">plusieurs choix possibles</span></div>${optRow("stim", birds ? BOPT.stim : BOPT.stim.filter(x => x[0] !== "son" && x[0] !== "soncho"), true, true)}</div>
+  <div class="opt"><div class="opt-h">${ic("eye")}Question<span class="val">plusieurs choix possibles</span></div>${optRow("stim", grpSnd() ? (grpSnd() === "Cris" ? BOPT.stim.map(x => x[0] === "son" ? ["son", "Cri", x[2]] : x[0] === "soncho" ? ["soncho", "Quel cri ?", x[2]] : x) : BOPT.stim) : BOPT.stim.filter(x => x[0] !== "son" && x[0] !== "soncho"), true, true)}</div>
   ${birds ? `<div class="opt"><div class="opt-h">${ic("cal")}Âge des oiseaux<span class="val">${B.age === "juv" ? "juvéniles" : B.age === "adult" ? "adultes" : "tous"}</span></div>${optRow("age", BOPT.age)}
     ${B.age !== "all" ? `<p class="muted note" style="margin-top:6px">Photos d'observations iNaturalist annotées « ${B.age === "juv" ? "juvénile" : "adulte"} » par les observateurs : seules les espèces qui en ont dans la zone sont proposées. S'applique aux questions avec photo.</p>` : ""}</div>` : ""}
   <div class="opt"><div class="opt-h">${ic("check")}Réponse attendue</div>${optRow("target", BOPT.target)}</div>

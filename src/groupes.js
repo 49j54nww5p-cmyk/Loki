@@ -63,11 +63,14 @@ const GSESS = [
   { k: "ecrire", n: "Écrire", d: "Tape le nom", ic: "keyboard" },
   { k: "duel", n: "Duel", d: "Contre un ami, en direct", ic: "duel" }
 ];
+/* + une session de sons pour les groupes qui en ont */
+const gsessList = () => grpSnd() ? [GSESS[0], { k: "son", n: grpSnd(), d: "À l'oreille", ic: "wave" }, ...GSESS.slice(1)] : GSESS;
 function gsessCfg(k) {
   const b = { ...baseCfg(), grp: ROOT(), size: 150 };
-  const s = GSESS.find(x => x.k === k) || GSESS[0];
+  const s = gsessList().find(x => x.k === k) || GSESS[0];
   const c = { ...b, title: `${s.n} · ${GRP().n}`, icon: s.ic, stim: ["photo"] };
   if (k === "terrain") c.stim = ["field"];
+  if (k === "son") Object.assign(c, { stim: ["son"], format: "tiles", k: 4, sounds: true, size: 80 });
   if (k === "latin") c.stim = ["fr", "la"];
   if (k === "famille") { c.target = "family"; c.size = 250; }
   if (k === "genre") { c.target = "genus"; c.size = 250; }
@@ -110,8 +113,8 @@ VIEWS.home = (...a) => {
   ${favs.length ? `<div class="favs top" aria-label="Mes quiz">${favs.map(([f, i]) => `<button class="fav" data-act="fav" data-i="${i}">${ic("star")}${esc(f.title)}</button>`).join("")}</div>` : ""}
   ${last ? `<button class="lastp" data-act="histplay" data-i="${hi}"><span class="ic">${ic(last.cfg?.icon || "replay")}</span><span class="tx"><small>Dernière partie, ${esc(ago(last.t))}</small><b>${esc(last.title || "Partie")}</b><span>${last.ok}/${last.n} bonnes réponses, +${fmt(last.xp)} XP</span></span><span class="go">${ic("replay")}Rejouer</span></button>` : ""}
   <div class="sec">${ic("grid")}Sessions</div>
-  <div class="mgrid">${GSESS.map((m, i) => `<button class="mtile g${i % 3}" data-act="gplay" data-k="${m.k}" title="${esc(m.d)}" style="--d:${i * 40}ms"><span class="ic">${ic(m.ic)}</span><b>${m.n}</b></button>`).join("")}</div>
-  <p class="muted note gnote">${known ? `${known} espèce${known > 1 ? "s" : ""} déjà croisée${known > 1 ? "s" : ""} dans ce groupe. ` : ""}Parcours, coffres et chants restent réservés aux oiseaux.</p>
+  <div class="mgrid">${gsessList().map((m, i) => `<button class="mtile g${i % 3}" data-act="gplay" data-k="${m.k}" title="${esc(m.d)}" style="--d:${i * 40}ms"><span class="ic">${ic(m.ic)}</span><b>${m.n}</b></button>`).join("")}</div>
+  <p class="muted note gnote">${known ? `${known} espèce${known > 1 ? "s" : ""} déjà croisée${known > 1 ? "s" : ""} dans ce groupe. ` : ""}${grpSnd() ? "Le parcours et les coffres restent réservés aux oiseaux pour l'instant." : "Parcours, coffres et sons restent réservés aux oiseaux (pas de sons pour ce groupe)."}</p>
 </section>`;
 };
 /* Le premier affichage de l'accueil a lieu avant le chargement de ce fichier : on y glisse le sélecteur */

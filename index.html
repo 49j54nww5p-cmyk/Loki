@@ -3919,13 +3919,13 @@ function memo(key, fn) {
 
 /* ---------- Groupes : les oiseaux (développés) et les autres taxons (quiz simple) ---------- */
 const GROUPS = [
-  { id: 3, k: "aves", n: "Oiseaux", one: "Oiseau", ic: "bird", c: "#FFCE00" },
+  { id: 3, k: "aves", n: "Oiseaux", one: "Oiseau", ic: "bird", c: "#FFCE00", snd: "Chants" },
   { id: 47126, k: "plantae", n: "Plantes", one: "Plante", ic: "leaf", c: "#5FD068" },
-  { id: 47158, k: "insecta", n: "Insectes", one: "Insecte", ic: "bug", c: "#FF9A3C" },
+  { id: 47158, k: "insecta", n: "Insectes", one: "Insecte", ic: "bug", c: "#FF9A3C", snd: "Chants" },
   { id: 47170, k: "fungi", n: "Champignons", one: "Champignon", ic: "mush", c: "#C8A27A" },
-  { id: 40151, k: "mammalia", n: "Mammifères", one: "Mammifère", ic: "paw", c: "#E9B872" },
+  { id: 40151, k: "mammalia", n: "Mammifères", one: "Mammifère", ic: "paw", c: "#E9B872", snd: "Cris" },
   { id: 26036, k: "reptilia", n: "Reptiles", one: "Reptile", ic: "lizard", c: "#9BD45F" },
-  { id: 20978, k: "amphibia", n: "Amphibiens", one: "Amphibien", ic: "frog", c: "#3BE59D" },
+  { id: 20978, k: "amphibia", n: "Amphibiens", one: "Amphibien", ic: "frog", c: "#3BE59D", snd: "Chants" },
   { id: 47178, k: "actinopterygii", n: "Poissons", one: "Poisson", ic: "fish", c: "#3D9BFF" },
   { id: 47119, k: "arachnida", n: "Araignées et cie", one: "Arachnide", ic: "spider", c: "#B18CFF" },
   { id: 47115, k: "mollusca", n: "Mollusques", one: "Mollusque", ic: "shell", c: "#FF8FB1" }
@@ -3933,6 +3933,7 @@ const GROUPS = [
 const ROOT = () => +(S.set.grp || 3);
 const GRP = () => GROUPS.find(g => g.id === ROOT()) || GROUPS[0];
 const isBirds = () => ROOT() === 3;
+const grpSnd = () => GRP().snd || "";   /* les groupes qui ont des sons : oiseaux, amphibiens, insectes (criquets, cigales), mammifères */
 const inGrp = r => +((r && r.g) || 3) === ROOT();
 /* Zone : celle des oiseaux, ou une zone à part pour les autres groupes (monde par défaut) */
 const curZone = () => isBirds() ? S.set.zone : (S.set.gzone || null);
@@ -4838,7 +4839,8 @@ function planSerie(ses, len) {
 }
 function planMini(ses) {
   const P = ses.pool.list.slice(0, 80), a = shuffle(P);
-  if (!isBirds()) return [{ t: a[0], stim: "photo" }, { t: a[1], stim: "field" }, { t: a[2], stim: "la" }];
+  if (!isBirds() && !grpSnd()) return [{ t: a[0], stim: "photo" }, { t: a[1], stim: "field" }, { t: a[2], stim: "la" }];
+  if (!isBirds()) return [{ t: a[0], stim: "photo" }, { t: a[1], stim: "son", format: "tiles", k: 4 }, { t: a[2], stim: "la" }];
   return [{ t: a[0], stim: "photo" }, { t: a[1], stim: "son", format: "tiles", k: 4 }, { t: a[2], stim: "fr" }];
 }
 function planReview(ses) {
@@ -9927,6 +9929,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-19.6", n: "5.6", items: [
+    { ic: "wave", t: "Les sons au-delà des oiseaux", d: "Chants des grenouilles et crapauds, des criquets et cigales, cris des mammifères : une session « Chants » (ou « Cris ») dans ces groupes, et les questions de son dans le quiz sur mesure et le mini quiz." }
+  ] },
   { v: "2026-11-19.5", n: "5.5", items: [
     { ic: "bulb", t: "Ta boîte à idées te répond", d: "Chaque message est lu et traité : tu vois son statut (lu, corrigé, à l'étude) dans « Tes derniers envois ». Les petits bugs sont corrigés au fil de l'eau." }
   ] },
@@ -10105,7 +10110,8 @@ const getB = () => {
   if (isBirds()) B = S.set.builder = S.set.builder || defaultB();
   else { const G = S.set.gbuild = S.set.gbuild || {}; B = G[ROOT()] = G[ROOT()] || { ...defaultB(), stim: ["photo"], names: "both" }; }
   if (!B.age) B.age = "all"; if (!B.tx) B.tx = [];
-  if (!isBirds()) { B.stim = B.stim.filter(x => x !== "son" && x !== "soncho"); if (!B.stim.length) B.stim = ["photo"]; B.age = "all"; B.guilds = []; }
+  if (!grpSnd()) { B.stim = B.stim.filter(x => x !== "son" && x !== "soncho"); if (!B.stim.length) B.stim = ["photo"]; }
+  if (!isBirds()) { B.age = "all"; B.guilds = []; }
   return B;
 };
 function optRow(field, list, multi, wrap) {
@@ -10131,7 +10137,7 @@ VIEWS.builder = () => {
     <div class="row wrap"><button class="opt-btn ${!B.guilds.length && !B.fams.length && !B.tx.length ? "on" : ""}" data-act="ball">${ic(G.ic)}Tous</button>${birds ? GUILDS.map(g => `<button class="opt-btn ${B.guilds.includes(g.n) ? "on" : ""}" data-act="bguild" data-g="${esc(g.n)}">${esc(g.n)}</button>`).join("") : ""}<button class="opt-btn" data-act="btx">${ic("search")}Espèce, genre, famille…</button><button class="opt-btn" data-act="bfam">${ic("tree")}Liste des familles</button></div>
     ${famChips || txChips ? `<div class="selfam">${famChips}${txChips}</div>` : ""}</div>
   <div class="opt"><div class="opt-h">${ic("star")}Lesquels</div>${optRow("freq", BOPT.freq)}${["common", "rare", "lifers"].includes(B.freq) ? `<div style="margin-top:8px">${optRow("size", BOPT.size)}</div>` : ""}</div>
-  <div class="opt"><div class="opt-h">${ic("eye")}Question<span class="val">plusieurs choix possibles</span></div>${optRow("stim", birds ? BOPT.stim : BOPT.stim.filter(x => x[0] !== "son" && x[0] !== "soncho"), true, true)}</div>
+  <div class="opt"><div class="opt-h">${ic("eye")}Question<span class="val">plusieurs choix possibles</span></div>${optRow("stim", grpSnd() ? (grpSnd() === "Cris" ? BOPT.stim.map(x => x[0] === "son" ? ["son", "Cri", x[2]] : x[0] === "soncho" ? ["soncho", "Quel cri ?", x[2]] : x) : BOPT.stim) : BOPT.stim.filter(x => x[0] !== "son" && x[0] !== "soncho"), true, true)}</div>
   ${birds ? `<div class="opt"><div class="opt-h">${ic("cal")}Âge des oiseaux<span class="val">${B.age === "juv" ? "juvéniles" : B.age === "adult" ? "adultes" : "tous"}</span></div>${optRow("age", BOPT.age)}
     ${B.age !== "all" ? `<p class="muted note" style="margin-top:6px">Photos d'observations iNaturalist annotées « ${B.age === "juv" ? "juvénile" : "adulte"} » par les observateurs : seules les espèces qui en ont dans la zone sont proposées. S'applique aux questions avec photo.</p>` : ""}</div>` : ""}
   <div class="opt"><div class="opt-h">${ic("check")}Réponse attendue</div>${optRow("target", BOPT.target)}</div>
@@ -12201,11 +12207,14 @@ const GSESS = [
   { k: "ecrire", n: "Écrire", d: "Tape le nom", ic: "keyboard" },
   { k: "duel", n: "Duel", d: "Contre un ami, en direct", ic: "duel" }
 ];
+/* + une session de sons pour les groupes qui en ont */
+const gsessList = () => grpSnd() ? [GSESS[0], { k: "son", n: grpSnd(), d: "À l'oreille", ic: "wave" }, ...GSESS.slice(1)] : GSESS;
 function gsessCfg(k) {
   const b = { ...baseCfg(), grp: ROOT(), size: 150 };
-  const s = GSESS.find(x => x.k === k) || GSESS[0];
+  const s = gsessList().find(x => x.k === k) || GSESS[0];
   const c = { ...b, title: `${s.n} · ${GRP().n}`, icon: s.ic, stim: ["photo"] };
   if (k === "terrain") c.stim = ["field"];
+  if (k === "son") Object.assign(c, { stim: ["son"], format: "tiles", k: 4, sounds: true, size: 80 });
   if (k === "latin") c.stim = ["fr", "la"];
   if (k === "famille") { c.target = "family"; c.size = 250; }
   if (k === "genre") { c.target = "genus"; c.size = 250; }
@@ -12248,8 +12257,8 @@ VIEWS.home = (...a) => {
   ${favs.length ? `<div class="favs top" aria-label="Mes quiz">${favs.map(([f, i]) => `<button class="fav" data-act="fav" data-i="${i}">${ic("star")}${esc(f.title)}</button>`).join("")}</div>` : ""}
   ${last ? `<button class="lastp" data-act="histplay" data-i="${hi}"><span class="ic">${ic(last.cfg?.icon || "replay")}</span><span class="tx"><small>Dernière partie, ${esc(ago(last.t))}</small><b>${esc(last.title || "Partie")}</b><span>${last.ok}/${last.n} bonnes réponses, +${fmt(last.xp)} XP</span></span><span class="go">${ic("replay")}Rejouer</span></button>` : ""}
   <div class="sec">${ic("grid")}Sessions</div>
-  <div class="mgrid">${GSESS.map((m, i) => `<button class="mtile g${i % 3}" data-act="gplay" data-k="${m.k}" title="${esc(m.d)}" style="--d:${i * 40}ms"><span class="ic">${ic(m.ic)}</span><b>${m.n}</b></button>`).join("")}</div>
-  <p class="muted note gnote">${known ? `${known} espèce${known > 1 ? "s" : ""} déjà croisée${known > 1 ? "s" : ""} dans ce groupe. ` : ""}Parcours, coffres et chants restent réservés aux oiseaux.</p>
+  <div class="mgrid">${gsessList().map((m, i) => `<button class="mtile g${i % 3}" data-act="gplay" data-k="${m.k}" title="${esc(m.d)}" style="--d:${i * 40}ms"><span class="ic">${ic(m.ic)}</span><b>${m.n}</b></button>`).join("")}</div>
+  <p class="muted note gnote">${known ? `${known} espèce${known > 1 ? "s" : ""} déjà croisée${known > 1 ? "s" : ""} dans ce groupe. ` : ""}${grpSnd() ? "Le parcours et les coffres restent réservés aux oiseaux pour l'instant." : "Parcours, coffres et sons restent réservés aux oiseaux (pas de sons pour ce groupe)."}</p>
 </section>`;
 };
 /* Le premier affichage de l'accueil a lieu avant le chargement de ce fichier : on y glisse le sélecteur */

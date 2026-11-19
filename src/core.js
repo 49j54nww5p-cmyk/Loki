@@ -227,13 +227,13 @@ function memo(key, fn) {
 
 /* ---------- Groupes : les oiseaux (développés) et les autres taxons (quiz simple) ---------- */
 const GROUPS = [
-  { id: 3, k: "aves", n: "Oiseaux", one: "Oiseau", ic: "bird", c: "#FFCE00" },
+  { id: 3, k: "aves", n: "Oiseaux", one: "Oiseau", ic: "bird", c: "#FFCE00", snd: "Chants" },
   { id: 47126, k: "plantae", n: "Plantes", one: "Plante", ic: "leaf", c: "#5FD068" },
-  { id: 47158, k: "insecta", n: "Insectes", one: "Insecte", ic: "bug", c: "#FF9A3C" },
+  { id: 47158, k: "insecta", n: "Insectes", one: "Insecte", ic: "bug", c: "#FF9A3C", snd: "Chants" },
   { id: 47170, k: "fungi", n: "Champignons", one: "Champignon", ic: "mush", c: "#C8A27A" },
-  { id: 40151, k: "mammalia", n: "Mammifères", one: "Mammifère", ic: "paw", c: "#E9B872" },
+  { id: 40151, k: "mammalia", n: "Mammifères", one: "Mammifère", ic: "paw", c: "#E9B872", snd: "Cris" },
   { id: 26036, k: "reptilia", n: "Reptiles", one: "Reptile", ic: "lizard", c: "#9BD45F" },
-  { id: 20978, k: "amphibia", n: "Amphibiens", one: "Amphibien", ic: "frog", c: "#3BE59D" },
+  { id: 20978, k: "amphibia", n: "Amphibiens", one: "Amphibien", ic: "frog", c: "#3BE59D", snd: "Chants" },
   { id: 47178, k: "actinopterygii", n: "Poissons", one: "Poisson", ic: "fish", c: "#3D9BFF" },
   { id: 47119, k: "arachnida", n: "Araignées et cie", one: "Arachnide", ic: "spider", c: "#B18CFF" },
   { id: 47115, k: "mollusca", n: "Mollusques", one: "Mollusque", ic: "shell", c: "#FF8FB1" }
@@ -241,6 +241,7 @@ const GROUPS = [
 const ROOT = () => +(S.set.grp || 3);
 const GRP = () => GROUPS.find(g => g.id === ROOT()) || GROUPS[0];
 const isBirds = () => ROOT() === 3;
+const grpSnd = () => GRP().snd || "";   /* les groupes qui ont des sons : oiseaux, amphibiens, insectes (criquets, cigales), mammifères */
 const inGrp = r => +((r && r.g) || 3) === ROOT();
 /* Zone : celle des oiseaux, ou une zone à part pour les autres groupes (monde par défaut) */
 const curZone = () => isBirds() ? S.set.zone : (S.set.gzone || null);

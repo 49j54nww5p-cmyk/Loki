@@ -2846,6 +2846,10 @@ body.voxon .view.quiz{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
 .ghome .gz{margin:14px 0 4px}
 .ghome .gz .row{flex-wrap:wrap}
 .gnote{font-size:13px;margin:14px 2px 0}
+.lgrp{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.lgrp button{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:999px;border:1.5px solid var(--line-2,rgba(255,255,255,.12));background:none;color:inherit;font:600 13px/1 var(--f-ui,system-ui);cursor:pointer}
+.lgrp button .i{width:16px;height:16px;color:var(--gc)}
+.lgrp button.on{border-color:var(--gc);background:color-mix(in srgb,var(--gc) 14%,transparent)}
 
 </style>
 </head>
@@ -7112,7 +7116,7 @@ async function liveCreate() {
   liveReset();
   const T = +(S.set.liveT || 10), code = rid(5, LCODE);
   try {
-    await netReq("PUT", "duels/" + code, { t: Date.now(), v: 1, st: "wait", T, N: 10, host: { n, a: Date.now() } });
+    await netReq("PUT", "duels/" + code, { t: Date.now(), v: 1, st: "wait", T, N: 10, g: ROOT(), gn: GRP().n, host: { n, a: Date.now() } });
     Object.assign(LIVE, { code, role: "host", st: "wait", T });
     LIVE.stop = netListen("duels/" + code, liveOnRoom);
     liveStartPresence();
@@ -7148,7 +7152,7 @@ async function liveLeave() {
 }
 /* L'hôte prépare les questions : photos d'espèces communes de sa zone, 4 choix */
 async function liveDeck(N) {
-  const ses = newSession({ kind: "quiz", zone: S.set.zone, freq: "common", size: 120, stim: ["photo"], target: "species", format: "qcm", k: 4, diff: S.set.diff || "moyen", len: N + 6, names: "both", timer: 0 });
+  const ses = newSession({ kind: "quiz", grp: ROOT(), zone: curZone(), freq: "common", size: 120, stim: ["photo"], target: "species", format: "qcm", k: 4, diff: S.set.diff || "moyen", len: N + 6, names: "both", timer: 0 });
   await prepare(ses);
   const out = [];
   for (let g = 0; g < N + 6 && out.length < N; g++) {
@@ -7335,7 +7339,9 @@ function liveViewHtml() {
   <label class="fld"><span>Ton pseudo</span><input id="lpseudo" type="text" maxlength="16" autocomplete="nickname" placeholder="ex. Piaf33" value="${esc(S.set.pseudo || "")}"></label>
   <div class="sec">${ic("play")}Créer une partie</div>
   <div class="card lbox"><div class="lrow"><span class="lab">Chrono par question</span><div class="seg">${[5, 10, 15].map(v => `<button class="${+(S.set.liveT || 10) === v ? "on" : ""}" data-act="liveT" data-v="${v}">${v} s</button>`).join("")}</div></div>
-    <p class="muted" style="font-size:13px;margin:8px 0 12px">10 photos d'oiseaux communs de ta zone (${esc(zoneLabel(S.set.zone))}), 4 choix.</p>
+    <div class="lrow" style="margin-top:10px"><span class="lab">Groupe</span></div>
+    <div class="lgrp">${GROUPS.map(g => `<button class="${g.id === ROOT() ? "on" : ""}" data-act="lgrp" data-id="${g.id}" style="--gc:${g.c}">${ic(g.ic)}${esc(g.n)}</button>`).join("")}</div>
+    <p class="muted" style="font-size:13px;margin:8px 0 12px">10 photos ${isBirds() ? "d'oiseaux communs" : "de " + esc(GRP().n.toLowerCase()) + " parmi les plus observés"} (${esc(zoneLabel(curZone()))}), 4 choix.</p>
     <button class="btn primary wide" data-act="lcreate">${ic("bolt")}Créer et inviter</button></div>
   <div class="sec">${ic("arrow")}Rejoindre</div>
   <form class="card lbox ljoin" id="ljoin" autocomplete="off"><input id="lcode" type="text" inputmode="text" autocapitalize="characters" maxlength="5" placeholder="CODE" value="${jc}" aria-label="Code de la partie"><button class="btn primary" type="submit">${ic("check")}Rejoindre</button></form>
@@ -7353,7 +7359,7 @@ function liveViewHtml() {
     ${LIVE.st === "prep" ? `<div class="lprep"><div class="spin"></div><b>${me === "host" ? "Je prépare les questions…" : esc(r?.host?.n || "") + " prépare les questions…"}</b></div>`
       : me === "host" ? (both ? `<button class="btn primary wide" data-act="llaunch">${ic("play")}C'est parti !</button>` : `<button class="btn ghost wide" data-act="lshare">${ic("arrow")}Inviter un ami</button>`)
       : `<p class="muted">En attente que ${esc(r?.host?.n || "l'hôte")} lance la partie…</p>`}
-    <p class="muted note">Chrono : ${r?.T || LIVE.T} s par question.</p>
+    <p class="muted note">${r?.gn ? esc(r.gn) + " · " : ""}Chrono : ${r?.T || LIVE.T} s par question.</p>
   </div></section>`;
   }
   if (LIVE.st === "q") {
@@ -7365,7 +7371,7 @@ function liveViewHtml() {
     <span style="width:44px"></span></header>
   <div class="timer"><i id="ltbar"></i></div>
   <div class="lwarn" id="lwarn" hidden>${ic("wave", "xs")}${esc(o?.n || "L'adversaire")} ne répond plus…</div>
-  <div class="stage"><figure class="shot" id="lshot"><img class="main" id="limg" alt="Oiseau à identifier" draggable="false"><span class="ret tl"></span><span class="ret tr"></span><span class="ret bl"></span><span class="ret br"></span><div class="spinner"><div class="spin"></div></div><figcaption class="credit">${esc(q.a || "")}</figcaption></figure></div>
+  <div class="stage"><figure class="shot" id="lshot"><img class="main" id="limg" alt="Espèce à identifier" draggable="false"><span class="ret tl"></span><span class="ret tr"></span><span class="ret bl"></span><span class="ret br"></span><div class="spinner"><div class="spin"></div></div><figcaption class="credit">${esc(q.a || "")}</figcaption></figure></div>
   <div class="prompt"><div class="q">${ic("frame")}<span>Quelle espèce ?</span></div><span class="lwait" id="lwait"></span></div>
   <div class="answers" id="lans">${q.c.map(([k, fr, sci], j) => `<button class="choice" data-act="lpick" data-k="${esc(k)}"><span class="k">${j + 1}</span><span class="lbl"><b>${esc(fr)}</b>${sci && sci !== fr ? `<span class="latin">${esc(sci)}</span>` : ""}</span></button>`).join("")}</div>
   <div class="lres" id="lres" hidden></div>
@@ -9763,6 +9769,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-19.1", n: "5.1", items: [
+    { ic: "duel", t: "Duel en direct pour tous les groupes", d: "Plantes, insectes, champignons… : choisis le groupe avant de créer la partie, ton ami voit lequel en rejoignant. Aussi dans les sessions de chaque groupe." }
+  ] },
   { v: "2026-11-18.1", n: "5.0", items: [
     { ic: "leaf", t: "Tout le vivant", d: "Le rond en haut à gauche de l'accueil change de groupe : plantes, insectes, champignons, mammifères, reptiles, amphibiens, poissons, araignées, mollusques. Un quiz simple pour chacun, dans le monde entier ou ta zone." },
     { ic: "search", t: "Quiz sur mesure, taxon par taxon", d: "Cherche une espèce, un genre, une famille ou un ordre, en français ou en latin, et coche ce que tu veux réviser. Marche aussi pour les oiseaux." },
@@ -12012,7 +12021,8 @@ const GSESS = [
   { k: "latin", n: "Latin", d: "Français ↔ latin", ic: "quill" },
   { k: "famille", n: "Familles", d: "Qui est parent ?", ic: "tree" },
   { k: "genre", n: "Genres", d: "Le bon genre", ic: "root" },
-  { k: "ecrire", n: "Écrire", d: "Tape le nom", ic: "keyboard" }
+  { k: "ecrire", n: "Écrire", d: "Tape le nom", ic: "keyboard" },
+  { k: "duel", n: "Duel", d: "Contre un ami, en direct", ic: "duel" }
 ];
 function gsessCfg(k) {
   const b = { ...baseCfg(), grp: ROOT(), size: 150 };
@@ -12025,7 +12035,8 @@ function gsessCfg(k) {
   if (k === "ecrire") c.format = "type";
   return c;
 }
-ACT.gplay = el => { LASTCFG = gsessCfg(el.dataset.k); startSession(LASTCFG); };
+ACT.gplay = el => { if (el.dataset.k === "duel") { ACT.live(el); return; } LASTCFG = gsessCfg(el.dataset.k); startSession(LASTCFG); };
+ACT.lgrp = el => { setGroup(+el.dataset.id); OTD = null; rerender(); };
 ACT.gzone = el => pickZone(el.dataset.z, z => { S.set.gzone = z; save(); OTD = null; if (VIEW === "home") rerender(); });
 
 /* L'accueil */

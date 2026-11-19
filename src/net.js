@@ -84,20 +84,26 @@ async function netReq(method, path, body, query) {
 /* Écoute un nœud : renvoie à chaque changement la copie à jour (événements « put » et « patch » de Firebase) */
 function netListen(path, cb) {
   if (netLocal()) return lsListen(path, cb);
-  let mirror = null, es = null, closed = false;
+  /* Le flux se rouvre tout seul : jeton expiré (au bout d'une heure, « auth_revoked »), refus passager
+     (« cancel ») ou connexion coupée (iPhone en arrière-plan, réseau perdu). */
+  let mirror = null, es = null, closed = false, tm = 0, fails = 0;
   const on = patch => e => {
+    fails = 0;
     try { const d = JSON.parse(e.data); const parts = pParts(d.path); mirror = patch ? patchAt(mirror, parts, d.data) : setAt(mirror, parts, d.data); cb(mirror); }
     catch (err) { /* événement illisible : ignoré */ }
   };
-  fbToken().catch(() => null).then(tok => {
+  const reopen = delay => { try { es && es.close(); } catch (e) { /* rien */ } es = null; clearTimeout(tm); if (!closed && fails < 40) tm = setTimeout(open, delay); };
+  const open = () => fbToken().catch(() => null).then(tok => {
     if (closed) return;
     es = new EventSource(`${netBase()}/${path}.json${tok ? "?auth=" + encodeURIComponent(tok) : ""}`);
     es.addEventListener("put", on(false));
     es.addEventListener("patch", on(true));
-    es.addEventListener("cancel", () => cb(mirror, "cancel"));
-    es.onerror = () => cb(mirror, "err");
+    es.addEventListener("auth_revoked", () => reopen(300));
+    es.addEventListener("cancel", () => { cb(mirror, "cancel"); fails++; reopen(4000 * fails); });
+    es.onerror = () => { cb(mirror, "err"); if (es && es.readyState === 2) { fails++; reopen(Math.min(30000, 1500 * fails)); } };
   });
-  return () => { closed = true; try { es && es.close(); } catch (e) { /* rien */ } };
+  open();
+  return () => { closed = true; clearTimeout(tm); try { es && es.close(); } catch (e) { /* rien */ } };
 }
 const rid = (n, abc = "abcdefghijkmnpqrstuvwxyz23456789") => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => abc[b % abc.length]).join("");
 const myUid = () => { if (!S.uid) { S.uid = rid(20); save(); } return S.uid; };

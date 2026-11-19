@@ -1018,6 +1018,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-19.7", n: "5.7", items: [
+    { ic: "bolt", t: "Invitations de duel plus fiables", d: "Les défis entre amis arrivent même après une heure d'appli ouverte, après un passage en arrière-plan ou un duel mal quitté. Sur iPhone, un lien ami ouvert dans Safari te donne le code à entrer dans l'appli." }
+  ] },
   { v: "2026-11-19.6", n: "5.6", items: [
     { ic: "wave", t: "Les sons au-delà des oiseaux", d: "Chants des grenouilles et crapauds, des criquets et cigales, cris des mammifères : une session « Chants » (ou « Cris ») dans ces groupes, et les questions de son dans le quiz sur mesure et le mini quiz." }
   ] },

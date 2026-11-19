@@ -186,7 +186,22 @@ function amiLinkHash() {
   const m = location.hash.replace("#", "").match(/^ami=([A-Za-z0-9]{6})$/);
   if (!m) return false;
   history.replaceState(null, "", location.pathname + location.search);
-  AMI.pending = amiFmt(m[1]); AMI.list = null; AMI.scroll = true; go("profil");
+  AMI.pending = amiFmt(m[1]);
+  /* iPhone : le lien s'ouvre dans Safari, qui est un « autre téléphone » que l'appli de l'écran d'accueil.
+     Si Safari est vierge (on joue sûrement dans l'appli), on donne le code à entrer dans l'appli. */
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const standalone = navigator.standalone || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
+  if (ios && !standalone && !(S.xp > 0) && !Object.keys(S.sp || {}).length) {
+    go("home");
+    setTimeout(() => openLayer(`<div class="panel"><button class="icon-btn close" data-act="close" aria-label="Fermer">${ic("x")}</button><div class="in" style="padding-top:22px">
+      <h2>Ajouter cet ami</h2>
+      <p class="muted" style="font-size:14px;margin:6px 0 12px">Tu joues depuis l'icône Plumage de ton écran d'accueil ? Ouvre-la, touche le rond <b>Profil</b> en bas, et entre ce code :</p>
+      <div class="acode" style="justify-content:center"><b style="font:400 40px/1 var(--f-display,serif);letter-spacing:.14em">${esc(AMI.pending)}</b></div>
+      <button class="btn primary wide" data-act="amicopyp" style="margin-top:14px">${ic("copy")}Copier le code</button>
+      <button class="btn ghost wide" data-act="amihere" style="margin:10px 0 22px">Non, je joue ici dans Safari</button></div></div>`), 300);
+    return true;
+  }
+  AMI.list = null; AMI.scroll = true; go("profil");
   setTimeout(() => { const i = $("#amiin"); if (i) { i.value = AMI.pending; if (cleanName(S.set.pseudo)) $("#amiadd")?.requestSubmit(); else { toast("Choisis un pseudo, puis touche Ajouter."); $("#apseudo")?.focus(); } } }, 400);
   return true;
 }
@@ -216,7 +231,7 @@ ACT.amiduel = el => amiDuel(el.dataset.u);
 ACT.lfriend = el => amiDuel(el.dataset.u);
 function dvShow(from, v) {
   if (DV.card || !v || !v.code) return;
-  if (LIVE.code) return;   /* déjà dans un duel */
+  if (VIEW === "live" && LIVE.code && ["wait", "prep", "q"].includes(LIVE.st)) return;   /* déjà en pleine partie */
   const box = document.createElement("div");
   box.className = "dvcard"; box.setAttribute("role", "alertdialog");
   box.innerHTML = `<span class="av">${esc(cleanName(v.n).slice(0, 1).toUpperCase() || "?")}</span><span class="tx"><b>${esc(cleanName(v.n) || "Un ami")} te défie !</b><small>Duel en direct${v.g ? " · " + esc(String(v.g).slice(0, 24)) : ""}</small></span><button class="btn primary sm" data-dv="go">${ic("bolt")}Rejoindre</button><button class="icon-btn" data-dv="no" aria-label="Plus tard">${ic("x")}</button>`;
@@ -242,11 +257,22 @@ function dvOnData(d) {
     break;
   }
 }
-async function dvListen() {
-  if (DV.stop || !netOn() || !S.amiC) return;
+async function dvListen(restart) {
+  if (!netOn() || !S.amiC) return;
+  if (DV.stop && !restart) return;
+  if (DV.stop) { DV.stop(); DV.stop = null; }
   try { const me = await amiUid(); DV.stop = netListen("dv/" + me, dvOnData); } catch (e) { /* hors ligne : au prochain lancement */ }
 }
+/* Filet de sécurité : on relit aussi les invitations toutes les 20 s quand l'appli est à l'écran,
+   et tout de suite quand on revient dessus (iOS coupe les connexions en arrière-plan) */
+async function dvPoll() {
+  if (!netOn() || !S.amiC || document.visibilityState !== "visible") return;
+  try { dvOnData(await netReq("GET", "dv/" + (await amiUid()))); } catch (e) { /* hors ligne */ }
+}
 dvListen();
+setInterval(dvPoll, 20000);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") { dvPoll(); dvListen(true); } });
+window.addEventListener("online", () => { dvPoll(); dvListen(true); });
 const amiCodeBase = amiCode;
 amiCode = async (...a) => { const c = await amiCodeBase(...a); dvListen(); return c; };
 
@@ -265,3 +291,6 @@ setInterval(() => {
 }, 60000);
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") { PRESP = 0; presencePing(); } });
 setTimeout(presencePing, 3000);
+
+ACT.amicopyp = () => copyText(AMI.pending || "", "Code copié ! Colle-le dans l'appli.");
+ACT.amihere = () => { closeLayer(); AMI.list = null; AMI.scroll = true; go("profil"); setTimeout(() => { const i = $("#amiin"); if (i) { i.value = AMI.pending || ""; if (cleanName(S.set.pseudo)) $("#amiadd")?.requestSubmit(); else { toast("Choisis un pseudo, puis touche Ajouter."); $("#apseudo")?.focus(); } } }, 400); };

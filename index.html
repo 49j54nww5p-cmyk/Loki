@@ -2896,6 +2896,49 @@ body.voxon .view.quiz{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
 .amig .xv{font-size:15px}
 .areq{display:flex;flex-direction:column;gap:8px}
 .aq{display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;padding:8px 10px;border-radius:14px;background:var(--card,#161616)}
+/* Le bouton Profil : rond, au milieu, un peu au-dessus de la barre */
+.nav .navme{position:relative;overflow:visible}
+.nav .navme .nme{display:grid;place-items:center;width:54px;height:54px;margin:-28px auto 2px;border-radius:50%;background:var(--gold,#FFCE00);color:#000;font:800 22px/1 var(--f-ui,system-ui);box-shadow:0 0 0 5px var(--bg,#0B0B0B),0 6px 18px rgba(0,0,0,.45);transition:transform .2s}
+.nav .navme .nme .i{width:26px;height:26px;padding:0;background:none;color:#000}
+.nav .navme.on .nme{transform:translateY(-2px) scale(1.06)}
+.nav .navme.on .nme .i{background:none;color:#000;padding:0}
+.nav .navme:active .nme{transform:scale(.94)}
+@media (min-width:1024px){
+  .nav .navme .nme{width:34px;height:34px;margin:0;font-size:15px;box-shadow:none}
+  .nav .navme .nme .i{width:20px;height:20px}
+}
+/* Page profil */
+.pfhead{display:flex;align-items:center;gap:14px;margin:6px 0 16px}
+.pfav{flex:none;width:64px;height:64px;border-radius:50%;display:grid;place-items:center;background:var(--gold,#FFCE00);color:#000;font:800 28px/1 var(--f-ui,system-ui)}
+.pfav .i{width:32px;height:32px}
+.pfid{min-width:0}.pfid h1{font:400 34px/1.05 var(--f-display,serif);margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pfid small{color:var(--muted,#999);font-size:13px}
+.pflvl{display:flex;flex-direction:column;gap:10px}
+.pfl{display:flex;align-items:center;gap:12px}.pfl .tx{display:flex;flex-direction:column;gap:2px}.pfl .tx small{color:var(--muted,#999);font-size:12.5px}
+.pflvl .lbar{display:block;height:6px;border-radius:6px;background:var(--line-2,rgba(255,255,255,.1));overflow:hidden}.pflvl .lbar i{display:block;height:100%;background:var(--gold,#FFCE00)}
+.pfstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0 4px}
+.pfstats>div{background:var(--card,#161616);border-radius:14px;padding:10px 6px;text-align:center}
+.pfstats b{display:flex;align-items:center;justify-content:center;gap:3px;font:800 20px/1 var(--f-display,system-ui)}.pfstats b .i{width:16px;height:16px;color:var(--gold,#FFCE00)}
+.pfstats b i{font-style:normal;font-size:13px}
+.pfstats small{display:block;margin-top:4px;color:var(--muted,#999);font-size:11px;line-height:1.25}
+.pfmore{margin-top:8px}.pfmore summary{cursor:pointer;color:var(--muted,#999);font-size:13px;padding:6px 2px}
+.pfmore .xplist{margin-top:6px;opacity:.75}
+.profil .xprow .tx small+small{margin-top:2px}
+.pfend{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:18px 0 8px}
+/* Défier un ami */
+.lfr{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.lfr button{display:inline-flex;align-items:center;gap:6px;padding:5px 12px 5px 5px;border-radius:999px;border:1.5px solid var(--line-2,rgba(255,255,255,.12));background:none;color:inherit;font:600 13px/1 var(--f-ui,system-ui);cursor:pointer}
+.lfr .av{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--card-3,#262626);font-size:12px}
+.dvcard{position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));z-index:60;max-width:520px;margin:0 auto;display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;padding:10px 10px 10px 12px;border-radius:18px;background:var(--card-2,#1E1E1E);border:1.5px solid var(--gold,#FFCE00);box-shadow:0 12px 32px rgba(0,0,0,.5);transform:translateY(-140%);transition:transform .35s var(--spring,ease)}
+.dvcard.on{transform:none}
+.dvcard .av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--gold,#FFCE00);color:#000;font:800 17px/1 var(--f-ui,system-ui)}
+.dvcard .tx{min-width:0;display:flex;flex-direction:column}.dvcard small{color:var(--muted,#999);font-size:12px}
+/* Pastille en ligne (vert) / hors ligne (rouge) */
+.ami .av,.lfr .av{position:relative}
+.dot{position:absolute;right:-1px;bottom:-1px;width:12px;height:12px;border-radius:50%;background:#FF4D4F;box-shadow:0 0 0 2.5px var(--card,#161616)}
+.dot.on{background:#3BE59D}
+.lfr .dot{width:9px;height:9px;right:-2px;bottom:-2px;box-shadow:0 0 0 2px var(--bg,#0B0B0B)}
+.nav:has(.navme.on) .navind{opacity:0}
 
 </style>
 </head>
@@ -2906,7 +2949,7 @@ body.voxon .view.quiz{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
       <stop offset="0" stop-color="#1FD1F2"/><stop offset=".55" stop-color="#3D7BFF"/><stop offset="1" stop-color="#14B8A6"/>
     </linearGradient>
   </defs>
-  <symbol id="i-leaf" viewBox="0 0 24 24"><g stroke-width="2"><path d="M5 19C5 10 10 5 20 4c0 10-5 15-14 15z"/><path d="M5 19l8-8"/></g></symbol><symbol id="i-bug" viewBox="0 0 24 24"><g stroke-width="2"><path d="M8 9h8v5a4 4 0 0 1-8 0z"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0M12 9v9M8 12H4M20 12h-4M8 16l-3 2M16 16l3 2M8.5 7 7 5M15.5 7 17 5"/></g></symbol><symbol id="i-mush" viewBox="0 0 24 24"><g stroke-width="2"><path d="M3.5 12a8.5 7 0 0 1 17 0z"/><path d="M10 12v6.5a2 2 0 0 0 4 0V12"/></g></symbol><symbol id="i-paw" viewBox="0 0 24 24"><g stroke-width="1.8"><path d="M8 15.5c0-2.2 1.8-4 4-4s4 1.8 4 4c0 1.7-1.3 2.8-2.6 2.5-.6-.1-.9-.3-1.4-.3s-.8.2-1.4.3C9.3 18.3 8 17.2 8 15.5z"/><circle cx="6.5" cy="10.5" r="1.6"/><circle cx="17.5" cy="10.5" r="1.6"/><circle cx="9.5" cy="6.5" r="1.6"/><circle cx="14.5" cy="6.5" r="1.6"/></g></symbol><symbol id="i-lizard" viewBox="0 0 24 24"><g stroke-width="2"><path d="M14 3c1.5 0 2.5 1 2.5 2.5S15 8 15 10s1 4 0 6-3 3-5 3.5c-2 .5-4 0-5.5 1"/><path d="M15 10.5l3 1M14.6 14l-3.6.5M15.7 8l-3-1"/></g></symbol><symbol id="i-frog" viewBox="0 0 24 24"><g stroke-width="2"><path d="M4 15c0-4 3.6-6.5 8-6.5S20 11 20 15c0 2.2-1.8 3.5-4 3.5H8c-2.2 0-4-1.3-4-3.5z"/><circle cx="8" cy="7.5" r="2"/><circle cx="16" cy="7.5" r="2"/><path d="M9 14.5c1.8 1 4.2 1 6 0"/></g></symbol><symbol id="i-fish" viewBox="0 0 24 24"><g stroke-width="2"><path d="M3 12c3-4 7-5.5 11-4.5 2 .5 3.5 2 4.5 4.5-1 2.5-2.5 4-4.5 4.5C10 17.5 6 16 3 12z"/><path d="M18.5 12 21 9v6z"/><circle cx="14" cy="11" r=".6" fill="currentColor"/></g></symbol><symbol id="i-spider" viewBox="0 0 24 24"><g stroke-width="1.8"><ellipse cx="12" cy="14" rx="3" ry="3.6"/><circle cx="12" cy="8.6" r="2"/><path d="M9.5 12.5 5 10 3 6M14.5 12.5 19 10l2-4M9 14.5H4l-2 2M15 14.5h5l2 2M9.6 16.6 6 19l-1 3M14.4 16.6 18 19l1 3"/></g></symbol><symbol id="i-shell" viewBox="0 0 24 24"><g stroke-width="2"><path d="M4 18c0-6 3.5-12 8-12s8 6 8 12z"/><path d="M12 6v12M8.2 8.5 7 18M15.8 8.5 17 18M3 18h18"/></g></symbol><symbol id="i-bird" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M21.4 8.7l-2.9-1.2C17.9 5.6 16.3 4.5 14.5 4.6c-2.3.1-3.9 1.9-4 4.2-2.6.9-4.6 2.9-5.7 5.5L2.4 20.1c-.1.3.2.5.4.4l5.1-3.1c1.4.6 2.9.8 4.5.6 3.6-.5 6.2-3.6 6.2-7.4v-.9zM15.1 7.1a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/><path fill="currentColor" stroke="none" d="M9.4 17.9l-.9 3.1h3.6l-.4-.9h-1.2l.5-2z"/></symbol>
+  <symbol id="i-leaf" viewBox="0 0 24 24"><g stroke-width="2"><path d="M5 19C5 10 10 5 20 4c0 10-5 15-14 15z"/><path d="M5 19l8-8"/></g></symbol><symbol id="i-bug" viewBox="0 0 24 24"><g stroke-width="2"><path d="M8 9h8v5a4 4 0 0 1-8 0z"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0M12 9v9M8 12H4M20 12h-4M8 16l-3 2M16 16l3 2M8.5 7 7 5M15.5 7 17 5"/></g></symbol><symbol id="i-mush" viewBox="0 0 24 24"><g stroke-width="2"><path d="M3.5 12a8.5 7 0 0 1 17 0z"/><path d="M10 12v6.5a2 2 0 0 0 4 0V12"/></g></symbol><symbol id="i-paw" viewBox="0 0 24 24"><g stroke-width="1.8"><path d="M8 15.5c0-2.2 1.8-4 4-4s4 1.8 4 4c0 1.7-1.3 2.8-2.6 2.5-.6-.1-.9-.3-1.4-.3s-.8.2-1.4.3C9.3 18.3 8 17.2 8 15.5z"/><circle cx="6.5" cy="10.5" r="1.6"/><circle cx="17.5" cy="10.5" r="1.6"/><circle cx="9.5" cy="6.5" r="1.6"/><circle cx="14.5" cy="6.5" r="1.6"/></g></symbol><symbol id="i-lizard" viewBox="0 0 24 24"><g stroke-width="2"><path d="M14 3c1.5 0 2.5 1 2.5 2.5S15 8 15 10s1 4 0 6-3 3-5 3.5c-2 .5-4 0-5.5 1"/><path d="M15 10.5l3 1M14.6 14l-3.6.5M15.7 8l-3-1"/></g></symbol><symbol id="i-frog" viewBox="0 0 24 24"><g stroke-width="2"><path d="M4 15c0-4 3.6-6.5 8-6.5S20 11 20 15c0 2.2-1.8 3.5-4 3.5H8c-2.2 0-4-1.3-4-3.5z"/><circle cx="8" cy="7.5" r="2"/><circle cx="16" cy="7.5" r="2"/><path d="M9 14.5c1.8 1 4.2 1 6 0"/></g></symbol><symbol id="i-fish" viewBox="0 0 24 24"><g stroke-width="2"><path d="M3 12c3-4 7-5.5 11-4.5 2 .5 3.5 2 4.5 4.5-1 2.5-2.5 4-4.5 4.5C10 17.5 6 16 3 12z"/><path d="M18.5 12 21 9v6z"/><circle cx="14" cy="11" r=".6" fill="currentColor"/></g></symbol><symbol id="i-spider" viewBox="0 0 24 24"><g stroke-width="1.8"><ellipse cx="12" cy="14" rx="3" ry="3.6"/><circle cx="12" cy="8.6" r="2"/><path d="M9.5 12.5 5 10 3 6M14.5 12.5 19 10l2-4M9 14.5H4l-2 2M15 14.5h5l2 2M9.6 16.6 6 19l-1 3M14.4 16.6 18 19l1 3"/></g></symbol><symbol id="i-shell" viewBox="0 0 24 24"><g stroke-width="2"><path d="M4 18c0-6 3.5-12 8-12s8 6 8 12z"/><path d="M12 6v12M8.2 8.5 7 18M15.8 8.5 17 18M3 18h18"/></g></symbol><symbol id="i-user" viewBox="0 0 24 24"><g stroke-width="2"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 20.5c.8-3.9 3.9-6 7.5-6s6.7 2.1 7.5 6"/></g></symbol><symbol id="i-bird" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M21.4 8.7l-2.9-1.2C17.9 5.6 16.3 4.5 14.5 4.6c-2.3.1-3.9 1.9-4 4.2-2.6.9-4.6 2.9-5.7 5.5L2.4 20.1c-.1.3.2.5.4.4l5.1-3.1c1.4.6 2.9.8 4.5.6 3.6-.5 6.2-3.6 6.2-7.4v-.9zM15.1 7.1a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/><path fill="currentColor" stroke="none" d="M9.4 17.9l-.9 3.1h3.6l-.4-.9h-1.2l.5-2z"/></symbol>
   <symbol id="i-playc" viewBox="0 0 24 24"><g stroke-width="2"><path d="M12 3.2c4.9 0 8.8 3.9 8.8 8.8s-3.9 8.8-8.8 8.8S3.2 16.9 3.2 12 7.1 3.2 12 3.2z"/><path fill="currentColor" stroke-width="1.4" d="M10.2 8.6v6.8l5.2-3.4z"/></g></symbol>
   <symbol id="i-book" viewBox="0 0 24 24"><g stroke-width="2"><path d="M6.2 3.5h11.3a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H6.2a1.7 1.7 0 0 1-1.7-1.7V5.2a1.7 1.7 0 0 1 1.7-1.7zM8 3.5v17M15.8 3.2v17.6"/><path stroke-width="1.5" d="M10.6 13.4c.4-2.4 1.8-3.8 3-4.4-.2 2.2-1.2 3.7-3 4.4zM10.6 13.4l-.5 1.3"/></g></symbol>
   <symbol id="i-chart" viewBox="0 0 24 24"><g stroke-width="1.9"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M4.8 10.6C8.3 12.6 8.3 12.7 7.78 14.1L5.7 15L7.78 15.6C7.6 16.6 5.4 17.6 4.8 17.6C1.3 16.2 1.3 12.6 4.8 10.6zM4.4 12.8h.8V17.6h-.8z"/><path d="M4.8 17.6V20.8"/><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M12 7C15.5 9 15.5 10.9 14.97 12.3L12.9 13.2L14.97 13.8C14.8 16.6 12.6 17.6 12 17.6C8.5 16.2 8.5 9 12 7zM11.6 9.2h.8V17.6h-.8z"/><path d="M12 17.6V20.8"/><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M19.2 3C22.7 5 22.7 8.9 22.18 10.3L20.1 11.2L22.18 11.8C22 16.6 19.8 17.6 19.2 17.6C15.7 16.2 15.7 5 19.2 3zM18.8 5.2h.8V17.6h-.8z"/><path d="M19.2 17.6V20.8"/></g></symbol>
@@ -2979,6 +3022,7 @@ body.voxon .view.quiz{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
 <nav id="nav" class="nav" aria-label="Navigation">
   <button type="button" data-act="tab" data-tab="home" aria-label="Jouer"><svg class="i"><use href="#i-playc"/></svg><span>Jouer</span></button>
   <button type="button" data-act="tab" data-tab="carnet" aria-label="Carnet"><svg class="i"><use href="#i-book"/></svg><span>Carnet</span></button>
+  <button type="button" class="navme" data-act="tab" data-tab="profil" aria-label="Profil"><span class="nme" id="navav"><svg class="i"><use href="#i-user"/></svg></span><span>Profil</span></button>
   <button type="button" data-act="tab" data-tab="progress" aria-label="Progrès"><svg class="i"><use href="#i-chart"/></svg><span>Progrès</span></button>
   <button type="button" data-act="tab" data-tab="settings" aria-label="Réglages"><svg class="i"><use href="#i-sliders"/></svg><span>Réglages</span></button>
 </nav>
@@ -7188,7 +7232,7 @@ function liveScores(room, upto) {
 function liveReset() {
   if (LIVE.stop) LIVE.stop();
   clearTimeout(LIVE.tmr); clearInterval(LIVE.ping); clearInterval(LIVE.chk);
-  Object.assign(LIVE, { st: "lobby", code: "", role: "", room: null, stop: null, i: -1, t0: 0, ans: {}, tmr: 0, ping: 0, chk: 0, seen: 0, otherA: 0, shown: -1, rev: -1, err: "", xpDone: false, rm: 0, sig: "" });
+  Object.assign(LIVE, { st: "lobby", code: "", role: "", room: null, stop: null, i: -1, t0: 0, ans: {}, tmr: 0, ping: 0, chk: 0, seen: 0, otherA: 0, shown: -1, rev: -1, err: "", xpDone: false, rm: 0, sig: "", invited: "" });
 }
 function livePseudo() {
   const inp = $("#lpseudo"), v = cleanName(inp ? inp.value : S.set.pseudo);
@@ -7439,7 +7483,8 @@ function liveViewHtml() {
     <div class="lrow" style="margin-top:10px"><span class="lab">Groupe</span></div>
     <div class="lgrp">${GROUPS.map(g => `<button class="${g.id === ROOT() ? "on" : ""}" data-act="lgrp" data-id="${g.id}" style="--gc:${g.c}">${ic(g.ic)}${esc(g.n)}</button>`).join("")}</div>
     <p class="muted" style="font-size:13px;margin:8px 0 12px">10 photos ${isBirds() ? "d'oiseaux communs" : "de " + esc(GRP().n.toLowerCase()) + " parmi les plus observés"} (${esc(zoneLabel(curZone()))}), 4 choix.</p>
-    <button class="btn primary wide" data-act="lcreate">${ic("bolt")}Créer et inviter</button></div>
+    <button class="btn primary wide" data-act="lcreate">${ic("bolt")}Créer et inviter</button>
+    ${(S.amis || []).length ? `<div class="lrow" style="margin-top:14px"><span class="lab">Ou défie un ami directement</span></div><div class="lfr">${S.amis.slice(0, 12).map(a => `<button data-act="lfriend" data-u="${esc(a.u)}"><span class="av">${esc((a.n || "?").slice(0, 1).toUpperCase())}${typeof AMI !== "undefined" && AMI.list ? `<i class="dot ${(AMI.list.find(r => r.u === a.u) || {}).on ? "on" : ""}"></i>` : ""}</span>${esc(a.n || "Ami")}</button>`).join("")}</div>` : ""}</div>
   <div class="sec">${ic("arrow")}Rejoindre</div>
   <form class="card lbox ljoin" id="ljoin" autocomplete="off"><input id="lcode" type="text" inputmode="text" autocapitalize="characters" maxlength="5" placeholder="CODE" value="${jc}" aria-label="Code de la partie"><button class="btn primary" type="submit">${ic("check")}Rejoindre</button></form>
   <p class="muted note">Pendant un duel, la partie (pseudos, questions, réponses) passe par le serveur de l'appli et elle est effacée à la fin.</p>
@@ -7451,7 +7496,7 @@ function liveViewHtml() {
   <div class="lcard">
     <span class="eyebrow">Code de la partie</span><div class="lcode">${esc(LIVE.code)}</div>
     <div class="lplayers"><div class="pl me"><span class="av">${esc((my?.n || "?").slice(0, 1).toUpperCase())}</span><b>${esc(my?.n || "")}</b><small>toi</small></div><span class="vs">VS</span>
-      <div class="pl ${o ? "" : "wait"}"><span class="av">${o ? esc(o.n.slice(0, 1).toUpperCase()) : `<i class="dotp"></i>`}</span><b>${o ? esc(o.n) : "En attente…"}</b><small>${o ? "prêt" : "partage le code"}</small></div></div>
+      <div class="pl ${o ? "" : "wait"}"><span class="av">${o ? esc(o.n.slice(0, 1).toUpperCase()) : `<i class="dotp"></i>`}</span><b>${o ? esc(o.n) : LIVE.invited ? esc(LIVE.invited) : "En attente…"}</b><small>${o ? "prêt" : LIVE.invited ? "invitation envoyée…" : "partage le code"}</small></div></div>
     ${LIVE.err ? `<p class="lerr">${esc(LIVE.err)}</p>` : ""}
     ${LIVE.st === "prep" ? `<div class="lprep"><div class="spin"></div><b>${me === "host" ? "Je prépare les questions…" : esc(r?.host?.n || "") + " prépare les questions…"}</b></div>`
       : me === "host" ? (both ? `<button class="btn primary wide" data-act="llaunch">${ic("play")}C'est parti !</button>` : `<button class="btn ghost wide" data-act="lshare">${ic("arrow")}Inviter un ami</button>`)
@@ -9866,6 +9911,11 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-19.4", n: "5.4", items: [
+    { ic: "user", t: "Ton profil", d: "Le bouton rond au milieu de la barre : ton niveau global, tes stats tous groupes confondus, tes groupes et tes amis, au même endroit." },
+    { ic: "bolt", t: "Défier un ami en un geste", d: "Dans ton profil, touche un ami puis « Défier en duel » : il reçoit l'invitation tout de suite et rejoint d'un geste. Tes amis sont aussi proposés dans le salon du duel." },
+    { ic: "eye", t: "Qui est en ligne", d: "Une pastille verte sur les amis qui ont l'appli ouverte, rouge sinon, avec « vu il y a… »." }
+  ] },
   { v: "2026-11-19.3", n: "5.3", items: [
     { ic: "duel", t: "Les amis", d: "Un code ami à partager (ou un lien), et un tableau entre amis : pseudo, niveau, XP total et XP de chaque groupe. Quand quelqu'un t'ajoute, tu peux l'ajouter en retour d'un geste. Touche l'XP en haut, puis « Amis »." }
   ] },
@@ -11352,7 +11402,7 @@ function tapRipple(e) {
 }
 
 /* ---------- Transitions : chaque changement d'écran a son mouvement ---------- */
-const TABS = ["home", "carnet", "progress", "settings"];
+const TABS = ["home", "carnet", "profil", "progress", "settings"];
 function trKind(a, b) {
   const i = TABS.indexOf(a === "about" ? "settings" : a), j = TABS.indexOf(b === "about" ? "settings" : b);
   if (a === b) return b === "quiz" ? "next" : "none";
@@ -12235,7 +12285,7 @@ async function profPush(force) {
   PROFT = Date.now();
   const g = {};
   for (const [k, v] of Object.entries(gxpMap())) if (+v > 0) g[k] = Math.round(+v);
-  try { await netReq("PUT", "prof/" + (await amiUid()), { n: cleanName(S.set.pseudo), xp: Math.round(S.xp || 0), g, c: S.amiC, t: Date.now() }); }
+  try { await netReq("PUT", "prof/" + (await amiUid()), { n: cleanName(S.set.pseudo), xp: Math.round(S.xp || 0), g, c: S.amiC, t: Date.now(), on: Date.now() }); }
   catch (e) { /* hors ligne : on réessaiera */ }
 }
 const topPushAmi = topPush;
@@ -12263,7 +12313,7 @@ async function amiAdd(raw) {
   } catch (e) { toast("Connexion impossible. Vérifie ton réseau."); return false; }
 }
 function amiNameOk() {
-  const inp = $("#apseudo"), v = cleanName(inp ? inp.value : S.set.pseudo);
+  const inp = $("#apseudo") || $("#lpseudo"), v = cleanName(inp ? inp.value : S.set.pseudo);
   if (!v) { toast("Choisis d'abord un pseudo."); inp?.focus(); return false; }
   if (v !== S.set.pseudo) { S.set.pseudo = v; save(); }
   return true;
@@ -12275,7 +12325,7 @@ async function amiLoad() {
   AMI.list = ids.map((u, i) => {
     const p = profs[i], a = (S.amis || []).find(x => x.u === u);
     if (p && a && p.n && a.n !== cleanName(p.n)) a.n = cleanName(p.n);
-    return { u, me: u === me, n: cleanName(p && p.n) || (a && a.n) || "?", xp: Math.max(0, Math.round(+(p && p.xp) || 0)), g: (p && p.g) || {}, t: +(p && p.t) || 0, ok: !!p };
+    return { u, me: u === me, n: cleanName(p && p.n) || (a && a.n) || "?", xp: Math.max(0, Math.round(+(p && p.xp) || 0)), g: (p && p.g) || {}, t: Math.max(+(p && p.t) || 0, +(p && p.on) || 0), on: u === me || Date.now() - (+(p && p.on) || 0) < 150000, ok: !!p };
   });
   const rq = await netReq("GET", "fq/" + me).catch(() => null);
   AMI.req = Object.entries(rq || {}).filter(([u, v]) => v && !(S.amis || []).some(a => a.u === u)).map(([u, v]) => ({ u, n: cleanName(v.n) || "?", c: amiFmt(v.c), t: +v.t || 0 }));
@@ -12287,19 +12337,18 @@ function amiRowHtml(r) {
   const L = level(r.xp, 3), gs = Object.entries(r.g || {}).map(([g, x]) => [+g, +x]).filter(([, x]) => x > 0).sort((a, b) => b[1] - a[1]);
   const open = AMI.open === r.u;
   return `<li class="ami ${r.me ? "me" : ""} ${open ? "open" : ""}">
-    <button class="amih" data-act="amiopen" data-u="${esc(r.u)}"><span class="av">${esc(r.n.slice(0, 1).toUpperCase())}</span>
-      <span class="tx"><b>${esc(r.n)}${r.me ? " <small>(toi)</small>" : ""}</b><small>${r.ok ? `Niveau ${L.n} · ${esc(L.tier)}${r.t && !r.me ? " · vu " + esc(ago(r.t)) : ""}` : "Profil pas encore publié"}</small>
+    <button class="amih" data-act="amiopen" data-u="${esc(r.u)}"><span class="av">${esc(r.n.slice(0, 1).toUpperCase())}<i class="dot ${r.on ? "on" : ""}" title="${r.on ? "En ligne" : "Hors ligne"}"></i></span>
+      <span class="tx"><b>${esc(r.n)}${r.me ? " <small>(toi)</small>" : ""}</b><small>${r.ok ? `Niveau ${L.n} · ${esc(L.tier)}${r.me ? "" : r.on ? " · en ligne" : r.t ? " · vu " + esc(ago(r.t)) : ""}` : "Profil pas encore publié"}</small>
       <span class="agrp">${gs.slice(0, 5).map(([g, x]) => { const G = GROUPS.find(y => y.id === g); return G ? `<span style="--gc:${G.c}" title="${esc(G.n)}">${ic(G.ic)}${level(x, g).n}</span>` : ""; }).join("")}</span></span>
       <span class="xv">${fmt(r.xp)}<small>XP</small></span></button>
     ${open ? `<div class="amid">${gs.length ? gs.map(([g, x]) => { const G = GROUPS.find(y => y.id === g); if (!G) return ""; const Lg = level(x, g); return `<div class="amig" style="--gc:${G.c}"><span class="gi">${ic(G.ic)}</span><span><b>${esc(G.n)}</b><small>Niveau ${Lg.n} · ${esc(Lg.tier)}</small></span><span class="xv">${fmt(x)}<small>XP</small></span></div>`; }).join("") : `<p class="muted" style="font-size:13px">Pas encore d'XP.</p>`}
-      ${r.me ? "" : `<button class="btn ghost wide" data-act="amidel" data-u="${esc(r.u)}" style="margin-top:8px">${ic("trash")}Retirer de mes amis</button>`}</div>` : ""}
+      ${r.me ? "" : `<button class="btn primary wide" data-act="amiduel" data-u="${esc(r.u)}" style="margin-top:8px">${ic("bolt")}Défier en duel</button><button class="btn ghost wide" data-act="amidel" data-u="${esc(r.u)}" style="margin-top:8px">${ic("trash")}Retirer de mes amis</button>`}</div>` : ""}
   </li>`;
 }
-function amisHtml() {
+/* ---------- Le profil (bouton rond au milieu de la barre) : tout, tous groupes confondus, puis les amis ---------- */
+function amisBlockHtml() {
   const nm = esc(S.set.pseudo || ""), list = AMI.list ? AMI.list.slice().sort((a, b) => b.xp - a.xp) : null;
-  return `<section class="view amis">
-  <div class="head"><button class="icon-btn" data-act="home" aria-label="Retour">${ic("back")}</button><h1 class="h1" style="flex:1">Amis</h1></div>
-  ${netOn() ? "" : `<div class="notice"><span class="ic">${ic("info")}</span><span class="tx"><b>Hors ligne</b><small>Les amis ont besoin du serveur de l'appli.</small></span></div>`}
+  return `${netOn() ? "" : `<div class="notice"><span class="ic">${ic("info")}</span><span class="tx"><b>Hors ligne</b><small>Les amis ont besoin du serveur de l'appli.</small></span></div>`}
   <div class="card amime">
     <label class="fld"><span>Ton pseudo</span><input id="apseudo" type="text" maxlength="16" autocomplete="nickname" placeholder="ex. Piaf33" value="${nm}"></label>
     <div class="acode"><span class="muted">Ton code ami</span><b id="amicode">${S.amiC ? esc(S.amiC) : "······"}</b></div>
@@ -12309,24 +12358,62 @@ function amisHtml() {
   <form class="card lbox ljoin" id="amiadd" autocomplete="off"><input id="amiin" type="text" autocapitalize="characters" maxlength="6" placeholder="CODE AMI" aria-label="Code ami"><button class="btn primary" type="submit">${ic("plus")}Ajouter</button></form>
   ${AMI.req.length ? `<div class="sec">${ic("bell")}Ils t'ont ajouté</div><div class="areq">${AMI.req.map(q => `<div class="aq"><span class="av">${esc(q.n.slice(0, 1).toUpperCase())}</span><b>${esc(q.n)}</b><button class="btn primary sm" data-act="amiback" data-c="${esc(q.c)}">${ic("plus")}Ajouter aussi</button><button class="icon-btn" data-act="amino" data-u="${esc(q.u)}" aria-label="Ignorer">${ic("x")}</button></div>`).join("")}</div>` : ""}
   <div class="sec">${ic("trophy")}Entre amis</div>
-  <div id="amilist">${AMI.err ? `<div class="empty">${ic("wave")}<b>Amis injoignables</b><p>${esc(AMI.err)}</p></div>` : !list ? `<div class="sono-ph" style="height:120px"><div class="spin"></div></div>` : `<ol class="amilist">${list.map(amiRowHtml).join("")}</ol>${list.length < 2 ? `<p class="muted note">Pas encore d'ami : envoie ton code ou ton lien, ou entre le code d'un ami ci-dessus.</p>` : ""}`}</div>
+  <div id="amilist">${AMI.err ? `<div class="empty">${ic("wave")}<b>Amis injoignables</b><p>${esc(AMI.err)}</p></div>` : !netOn() ? "" : !list ? `<div class="sono-ph" style="height:120px"><div class="spin"></div></div>` : `<ol class="amilist">${list.map(amiRowHtml).join("")}</ol>${list.length < 2 ? `<p class="muted note">Pas encore d'ami : envoie ton code ou ton lien, ou entre le code d'un ami ci-dessus.</p>` : ""}`}</div>`;
+}
+const navInitial = () => { const n = cleanName(S.set.pseudo); return n ? esc(n.slice(0, 1).toUpperCase()) : ic("user"); };
+function profilHtml() {
+  const nm = cleanName(S.set.pseudo), L = level(S.xp, 3), st = liveStreak();
+  const recs = Object.values(S.sp).filter(r => r.n > 0), master = recs.filter(r => stars(r) === 3).length;
+  const tot = Object.values(S.stats).reduce((a, x) => ({ n: a.n + x.n, ok: a.ok + x.ok }), { n: 0, ok: 0 });
+  const since = new Date(S.created || Date.now()).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+  const groups = GROUPS.map(g => ({ g, xp: gxp(g.id), L: level(undefined, g.id), sp: recs.filter(r => +(r.g || 3) === g.id).length })).sort((a, b) => b.xp - a.xp || (a.g.id === 3 ? -1 : 1));
+  const played = groups.filter(x => x.xp > 0), rest = groups.filter(x => !x.xp);
+  const grow = x => `<button class="xprow ${x.g.id === ROOT() ? "on" : ""}" data-act="grpset" data-id="${x.g.id}" style="--gc:${x.g.c}"><span class="gi">${ic(x.g.ic)}</span><span class="tx"><b>${esc(x.g.n)}</b><small>Niveau ${x.L.n} · ${esc(x.L.rank)}</small><span class="xb"><i style="width:${(x.L.p * 100).toFixed(1)}%"></i></span><small>${x.sp} espèce${x.sp > 1 ? "s" : ""} rencontrée${x.sp > 1 ? "s" : ""}</small></span><span class="xv">${fmt(x.xp)}<small>XP</small></span></button>`;
+  return `<section class="view profil">
+  <div class="pfhead"><span class="pfav">${nm ? esc(nm.slice(0, 1).toUpperCase()) : ic("user")}</span>
+    <div class="pfid"><h1>${nm ? esc(nm) : "Ton profil"}</h1><small>Naturaliste depuis ${esc(since)}${S.amiC ? " · code ami " + esc(S.amiC) : ""}</small></div></div>
+  <div class="card pflvl"><div class="pfl"><span class="lvb">${L.n}</span><span class="tx"><b>Niveau global ${L.n}</b><small>${fmt(S.xp)} XP, tous groupes · encore ${fmt(L.need - L.cur)} pour le niveau ${L.n + 1}</small></span></div><span class="lbar"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span></div>
+  <div class="pfstats">
+    <div><b>${ic("flame")}${st}</b><small>jour${st > 1 ? "s" : ""} d'affilée<br>record ${S.streak?.best || st}</small></div>
+    <div><b>${recs.length}</b><small>espèce${recs.length > 1 ? "s" : ""}<br>rencontrée${recs.length > 1 ? "s" : ""}</small></div>
+    <div><b>${ic("star")}${master}</b><small>maîtrisée${master > 1 ? "s" : ""}</small></div>
+    <div><b>${tot.n ? Math.round(100 * tot.ok / tot.n) : 0}<i>%</i></b><small>de bonnes<br>réponses</small></div>
+  </div>
+  <div class="sec">${ic("grid")}Mes groupes</div>
+  <div class="xplist">${played.map(grow).join("") || `<p class="muted note">Joue une partie pour commencer.</p>`}</div>
+  ${rest.length ? `<details class="pfmore"><summary>${rest.length} groupe${rest.length > 1 ? "s" : ""} pas encore joué${rest.length > 1 ? "s" : ""}</summary><div class="xplist">${rest.map(grow).join("")}</div></details>` : ""}
+  <div class="sec" id="pfamis">${ic("duel")}Amis</div>
+  <div id="pfab">${amisBlockHtml()}</div>
+  <div class="pfend"><button class="btn ghost" data-act="tab" data-tab="top">${ic("trophy")}Classement</button><button class="btn ghost" data-act="tab" data-tab="progress">${ic("chart")}Mes progrès</button></div>
 </section>`;
 }
 async function amisMount() {
-  if (!netOn() || AMI.busy) return;
-  AMI.busy = true; AMI.err = "";
+  if (!netOn()) return;
+  if (AMI.busy) { AMI.again = true; return; }   /* déjà en cours : on relancera une fois à la fin */
+  AMI.busy = true; AMI.err = ""; AMI.again = false;
   try {
     if (cleanName(S.set.pseudo)) { await amiCode(); await profPush(true); }
     const c = $("#amicode"); if (c && S.amiC) c.textContent = S.amiC;
     await amiLoad();
   } catch (e) { AMI.err = "Vérifie ta connexion, puis reviens ici."; }
   AMI.busy = false;
-  const v = document.querySelector(".view.amis");
-  if (VIEW === "amis" && v) { const y = scrollY; v.outerHTML = amisHtml(); scrollTo(0, y); }
+  const box = $("#pfab");
+  if (VIEW === "profil" && box) {
+    const a = document.activeElement, keep = a && a.id === "apseudo" ? a.value : null;
+    box.innerHTML = amisBlockHtml();
+    if (keep !== null) { const i = $("#apseudo"); if (i) { i.value = keep; i.focus(); } }
+  }
+  if (AMI.scroll) { AMI.scroll = false; setTimeout(() => $("#pfamis")?.scrollIntoView({ block: "start", behavior: "smooth" }), 80); }
+  if (AMI.again && VIEW === "profil") { AMI.again = false; amisMount(); }
 }
-VIEWS.amis = () => amisHtml();
-MOUNT.amis = () => amisMount();
-ACT.amis = () => { closeLayer(); SES = null; AMI.list = null; go("amis"); };
+VIEWS.profil = () => profilHtml();
+MOUNT.profil = () => { navMe(); if (AMI.scroll) setTimeout(() => $("#pfamis")?.scrollIntoView({ block: "start" }), 30); return amisMount(); };
+VIEWS.amis = VIEWS.profil; MOUNT.amis = MOUNT.profil;
+ACT.amis = () => { closeLayer(); SES = null; AMI.list = null; AMI.scroll = true; go("profil"); };
+/* L'initiale du pseudo dans le bouton rond */
+function navMe() { const b = $("#navav"); if (b) b.innerHTML = navInitial(); }
+document.addEventListener("change", e => { if (e.target && e.target.id === "apseudo") { const v = cleanName(e.target.value); if (v && v !== S.set.pseudo) { S.set.pseudo = v; save(); navMe(); profPush(true).catch(() => {}); } } });
+navMe();
 ACT.amiopen = el => { AMI.open = AMI.open === el.dataset.u ? "" : el.dataset.u; $("#amilist").innerHTML = `<ol class="amilist">${AMI.list.slice().sort((a, b) => b.xp - a.xp).map(amiRowHtml).join("")}</ol>`; };
 ACT.amidel = el => {
   if (!el.dataset.armed) { el.dataset.armed = "1"; el.innerHTML = ic("trash") + "Confirmer ?"; setTimeout(() => { if (el.isConnected) { delete el.dataset.armed; el.innerHTML = ic("trash") + "Retirer de mes amis"; } }, 4000); return; }
@@ -12353,12 +12440,85 @@ function amiLinkHash() {
   const m = location.hash.replace("#", "").match(/^ami=([A-Za-z0-9]{6})$/);
   if (!m) return false;
   history.replaceState(null, "", location.pathname + location.search);
-  AMI.pending = amiFmt(m[1]); AMI.list = null; go("amis");
+  AMI.pending = amiFmt(m[1]); AMI.list = null; AMI.scroll = true; go("profil");
   setTimeout(() => { const i = $("#amiin"); if (i) { i.value = AMI.pending; if (cleanName(S.set.pseudo)) $("#amiadd")?.requestSubmit(); else { toast("Choisis un pseudo, puis touche Ajouter."); $("#apseudo")?.focus(); } } }, 400);
   return true;
 }
 amiLinkHash();
 window.addEventListener("hashchange", () => { if (!SES || SES.ended) amiLinkHash(); });
+
+
+/* ---------- Défier un ami : un geste, sans retaper de code ----------
+   Je crée la partie, puis je dépose une invitation dans dv/{ami}/{moi} : son téléphone l'affiche
+   aussitôt (écoute en direct) avec « Rejoindre ». Une invitation vit 15 minutes. */
+const DV = { stop: null, seen: {}, card: null };
+async function amiDuel(u) {
+  const a = (S.amis || []).find(x => x.u === u);
+  if (!a) return;
+  if (!amiNameOk()) return;
+  closeLayer();
+  await liveCreate();
+  if (!LIVE.code || LIVE.role !== "host") return;
+  try {
+    const me = await amiUid();
+    await netReq("PUT", `dv/${u}/${me}`, { n: cleanName(S.set.pseudo), code: LIVE.code, g: GRP().n, t: Date.now() });
+    LIVE.invited = a.n || "ton ami";
+    toast(`Invitation envoyée à ${LIVE.invited} !`);
+  } catch (e) { toast("Invitation impossible : partage le code à la main."); }
+}
+ACT.amiduel = el => amiDuel(el.dataset.u);
+ACT.lfriend = el => amiDuel(el.dataset.u);
+function dvShow(from, v) {
+  if (DV.card || !v || !v.code) return;
+  if (LIVE.code) return;   /* déjà dans un duel */
+  const box = document.createElement("div");
+  box.className = "dvcard"; box.setAttribute("role", "alertdialog");
+  box.innerHTML = `<span class="av">${esc(cleanName(v.n).slice(0, 1).toUpperCase() || "?")}</span><span class="tx"><b>${esc(cleanName(v.n) || "Un ami")} te défie !</b><small>Duel en direct${v.g ? " · " + esc(String(v.g).slice(0, 24)) : ""}</small></span><button class="btn primary sm" data-dv="go">${ic("bolt")}Rejoindre</button><button class="icon-btn" data-dv="no" aria-label="Plus tard">${ic("x")}</button>`;
+  document.body.appendChild(box);
+  DV.card = box;
+  try { sfx.lvl(); } catch (e) { /* son facultatif */ }
+  requestAnimationFrame(() => box.classList.add("on"));
+  const done = async join => {
+    box.remove(); DV.card = null; DV.seen[from] = v.t;
+    try { netReq("DELETE", `dv/${await amiUid()}/${from}`).catch(() => {}); } catch (e) { /* rien */ }
+    if (join) { if (cleanName(S.set.pseudo)) liveJoin(v.code); else { LIVE.joinCode = v.code; go("live"); } }
+  };
+  box.querySelector('[data-dv="go"]').addEventListener("click", () => done(true));
+  box.querySelector('[data-dv="no"]').addEventListener("click", () => done(false));
+}
+function dvOnData(d) {
+  const now = Date.now();
+  for (const [from, v] of Object.entries(d || {})) {
+    if (!v || typeof v !== "object") continue;
+    if (now - (+v.t || 0) > 15 * 60000) { amiUid().then(me => netReq("DELETE", `dv/${me}/${from}`)).catch(() => {}); continue; }
+    if (DV.seen[from] === v.t) continue;
+    dvShow(from, v);
+    break;
+  }
+}
+async function dvListen() {
+  if (DV.stop || !netOn() || !S.amiC) return;
+  try { const me = await amiUid(); DV.stop = netListen("dv/" + me, dvOnData); } catch (e) { /* hors ligne : au prochain lancement */ }
+}
+dvListen();
+const amiCodeBase = amiCode;
+amiCode = async (...a) => { const c = await amiCodeBase(...a); dvListen(); return c; };
+
+
+/* ---------- En ligne / hors ligne : un signe de vie par minute tant que l'appli est à l'écran ---------- */
+let PRESP = 0;
+async function presencePing() {
+  if (!netOn() || !S.amiC || !cleanName(S.set.pseudo) || document.visibilityState !== "visible") return;
+  if (Date.now() - PRESP < 50000) return;
+  PRESP = Date.now();
+  try { await netReq("PATCH", "prof/" + (await amiUid()), { on: Date.now() }); } catch (e) { /* hors ligne */ }
+}
+setInterval(() => {
+  presencePing();
+  if (VIEW === "profil" && !AMI.busy && document.visibilityState === "visible") amisMount();   /* les pastilles des amis se mettent à jour */
+}, 60000);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") { PRESP = 0; presencePing(); } });
+setTimeout(presencePing, 3000);
 
 </script>
 </body>

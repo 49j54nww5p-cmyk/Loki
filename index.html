@@ -2713,6 +2713,8 @@ body.calm .frain,.fr-or.calm .hlvl .badge{animation:none}
 .sdefi .xm{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;font-size:12px;background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--acc)}
 .sdefi.t3{border-color:color-mix(in srgb,#F97316 60%,transparent)}.sdefi.t3 .xm{background:color-mix(in srgb,#F97316 22%,transparent);color:#FB923C}
 .sdefi.t4{border-color:color-mix(in srgb,#EF4444 70%,transparent);background:linear-gradient(135deg,color-mix(in srgb,#EF4444 14%,transparent),transparent)}.sdefi.t4 .xm{background:color-mix(in srgb,#EF4444 25%,transparent);color:#F87171}
+.idmine .idst{display:block;margin-top:3px;font-style:normal;font-size:12px;color:var(--gold-ink,#FFDD4D)}
+.idmine .idst.ok{color:#3BE59D}
 
 /* ==== niveaux.css ==== */
 .titp .wheel{position:relative;height:260px;margin:14px 0;border-radius:18px;background:rgba(255,255,255,.04);overflow:hidden}
@@ -8864,7 +8866,7 @@ function openIdeas(k) {
     <button class="btn primary wide" type="submit" style="margin-top:12px">${ic("arrow")}Envoyer</button>
   </form>
   <p class="muted note">Partent avec ton message : son type, la version de l'appli (v${esc(APP_VERSION)}) et ce que tu mets dans « Pour te répondre ». Rien d'autre.</p>
-  ${mine.length ? `<div class="sec">${ic("check")}Tes derniers envois</div><div class="idmine">${mine.map(x => `<div><b>${esc((IDK.find(k => k[0] === x.k) || IDK[0])[1])}</b><span>${esc(clip(x.txt, 90))}</span><small>${esc(ago(x.t))}${x.sent ? "" : " · en attente d'envoi"}</small></div>`).join("")}</div>` : ""}
+  ${mine.length ? `<div class="sec">${ic("check")}Tes derniers envois</div><div class="idmine">${mine.map(x => `<div><b>${esc((IDK.find(k => k[0] === x.k) || IDK[0])[1])}</b><span>${esc(clip(x.txt, 90))}</span><small>${esc(ago(x.t))}${x.sent ? "" : " · en attente d'envoi"}</small>${x.st ? `<em class="idst ${x.st === "corrigé" || x.st === "fait" ? "ok" : ""}">${esc(x.st)}${x.r ? " : " + esc(clip(x.r, 120)) : ""}</em>` : ""}</div>`).join("")}</div>` : ""}
   <div style="height:18px"></div></div></div>`, "ideal");
 }
 async function ideaSend() {
@@ -8883,11 +8885,25 @@ async function ideaFlush() {
   if (!netOn()) return false;
   let all = true;
   for (const it of (S.ideas || []).filter(x => !x.sent)) {
-    try { await netReq("PUT", "ideas/" + it.id, { k: it.k, txt: it.txt, c: it.c || "", v: it.v, t: it.t }); it.sent = true; }
-    catch (e) { all = false; break; }
+    try {
+      const u = netLocal() ? myUid() : (await fbToken(), (S.fb && S.fb.uid) || "");
+      await netReq("PUT", "ideas/" + it.id, { k: it.k, txt: it.txt, c: it.c || "", v: it.v, t: it.t, u });
+      it.sent = true;
+    }
+    catch (e) { if (e && (e.status === 401 || e.status === 403)) { it.sent = true; continue; } all = false; break; }   /* déjà arrivé (envoi répété) */
   }
   save();
   return all;
+}
+
+/* Où en est mon message ? (lu, corrigé, à l'étude…) : on relit le statut de mes envois en ouvrant la boîte */
+async function ideaStatus() {
+  if (!netOn()) return;
+  let ch = false;
+  for (const it of (S.ideas || []).filter(x => x.sent).slice(0, 5)) {
+    try { const d = await netReq("GET", "ideas/" + it.id); if (d && (d.st || "") !== (it.st || "")) { it.st = d.st || ""; it.r = d.r || ""; ch = true; } } catch (e) { /* pas encore lu */ }
+  }
+  if (ch) { save(); if ($("#layer") && !$("#layer").hidden && $(".ideap")) openIdeas(IDEA.k); }
 }
 
 /* ---- ui.js ---- */
@@ -9911,6 +9927,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-19.5", n: "5.5", items: [
+    { ic: "bulb", t: "Ta boîte à idées te répond", d: "Chaque message est lu et traité : tu vois son statut (lu, corrigé, à l'étude) dans « Tes derniers envois ». Les petits bugs sont corrigés au fil de l'eau." }
+  ] },
   { v: "2026-11-19.4", n: "5.4", items: [
     { ic: "user", t: "Ton profil", d: "Le bouton rond au milieu de la barre : ton niveau global, tes stats tous groupes confondus, tes groupes et tes amis, au même endroit." },
     { ic: "bolt", t: "Défier un ami en un geste", d: "Dans ton profil, touche un ami puis « Défier en duel » : il reçoit l'invitation tout de suite et rejoint d'un geste. Tes amis sont aussi proposés dans le salon du duel." },
@@ -11183,7 +11202,7 @@ const ACT = {
   cloudrest: () => openCloudRestore(),
   cloudoff: () => cloudOff(),
   ccopy: () => { const c = cloudFmt(S.cloud?.code || ""); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(c).then(() => toast("Code copié."), () => toast("Sélectionne le code pour le copier.")); else toast("Sélectionne le code pour le copier."); },
-  ideas: () => openIdeas(),
+  ideas: () => { openIdeas(); ideaStatus().catch(() => {}); },
   idk: el => { IDEA.k = el.dataset.v; $$("[data-act=idk]").forEach(b => b.classList.toggle("on", b === el)); const t = $("#idtxt"); if (t) t.placeholder = IDEA.k === "bug" ? "Ce qui s'est passé, et sur quel écran…" : IDEA.k === "oiseau" ? "Quel oiseau, et qu'est-ce qui cloche (nom, photo, son, critère)…" : "Ton idée, en quelques mots…"; },
   duelgo: el => {
     let cfg;

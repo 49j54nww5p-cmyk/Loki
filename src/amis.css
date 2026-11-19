@@ -1,0 +1,71 @@
+/* Amis */
+.xpact{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 22px}
+.amime .acode{display:flex;justify-content:space-between;align-items:center;margin:12px 2px 10px}
+.amime .acode b{font:400 34px/1 var(--f-display,serif);letter-spacing:.12em}
+.amime .arow{display:grid;grid-template-columns:1.4fr 1fr;gap:8px}
+#amiadd{margin-top:12px}
+.amilist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.ami{border-radius:16px;background:var(--card,#161616);border:1.5px solid var(--line-2,rgba(255,255,255,.1))}
+.ami.me{border-color:color-mix(in srgb,var(--gold,#FFCE00) 55%,transparent)}
+.amih{width:100%;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:10px 12px;background:none;border:0;color:inherit;text-align:left;cursor:pointer}
+.ami .av,.aq .av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--card-3,#262626);font:700 17px/1 var(--f-ui,system-ui)}
+.ami.me .av{background:var(--gold,#FFCE00);color:#000}
+.amih .tx{min-width:0;display:flex;flex-direction:column;gap:3px}
+.amih .tx b{font-weight:700;font-size:15px}.amih .tx b small{font-weight:500;color:var(--muted,#999)}
+.amih .tx>small{color:var(--muted,#999);font-size:12px}
+.agrp{display:flex;flex-wrap:wrap;gap:8px}
+.agrp span{display:inline-flex;align-items:center;gap:3px;font:700 12px/1 var(--f-ui,system-ui)}
+.agrp .i{width:15px;height:15px;color:var(--gc)}
+.ami .xv{font:800 18px/1 var(--f-display,system-ui);text-align:right;font-variant-numeric:tabular-nums}
+.ami .xv small{display:block;font:600 11px/1.4 var(--f-ui,system-ui);color:var(--muted,#999)}
+.amid{padding:2px 12px 12px;display:flex;flex-direction:column;gap:6px}
+.amig{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center}
+.amig .gi{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:color-mix(in srgb,var(--gc) 18%,transparent);color:var(--gc)}
+.amig .gi .i{width:18px;height:18px}
+.amig b{display:block;font-size:14px}.amig small{color:var(--muted,#999);font-size:12px}
+.amig .xv{font-size:15px}
+.areq{display:flex;flex-direction:column;gap:8px}
+.aq{display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;padding:8px 10px;border-radius:14px;background:var(--card,#161616)}
+/* Le bouton Profil : rond, au milieu, un peu au-dessus de la barre */
+.nav .navme{position:relative;overflow:visible}
+.nav .navme .nme{display:grid;place-items:center;width:54px;height:54px;margin:-28px auto 2px;border-radius:50%;background:var(--gold,#FFCE00);color:#000;font:800 22px/1 var(--f-ui,system-ui);box-shadow:0 0 0 5px var(--bg,#0B0B0B),0 6px 18px rgba(0,0,0,.45);transition:transform .2s}
+.nav .navme .nme .i{width:26px;height:26px;padding:0;background:none;color:#000}
+.nav .navme.on .nme{transform:translateY(-2px) scale(1.06)}
+.nav .navme.on .nme .i{background:none;color:#000;padding:0}
+.nav .navme:active .nme{transform:scale(.94)}
+@media (min-width:1024px){
+  .nav .navme .nme{width:34px;height:34px;margin:0;font-size:15px;box-shadow:none}
+  .nav .navme .nme .i{width:20px;height:20px}
+}
+/* Page profil */
+.pfhead{display:flex;align-items:center;gap:14px;margin:6px 0 16px}
+.pfav{flex:none;width:64px;height:64px;border-radius:50%;display:grid;place-items:center;background:var(--gold,#FFCE00);color:#000;font:800 28px/1 var(--f-ui,system-ui)}
+.pfav .i{width:32px;height:32px}
+.pfid{min-width:0}.pfid h1{font:400 34px/1.05 var(--f-display,serif);margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pfid small{color:var(--muted,#999);font-size:13px}
+.pflvl{display:flex;flex-direction:column;gap:10px}
+.pfl{display:flex;align-items:center;gap:12px}.pfl .tx{display:flex;flex-direction:column;gap:2px}.pfl .tx small{color:var(--muted,#999);font-size:12.5px}
+.pflvl .lbar{display:block;height:6px;border-radius:6px;background:var(--line-2,rgba(255,255,255,.1));overflow:hidden}.pflvl .lbar i{display:block;height:100%;background:var(--gold,#FFCE00)}
+.pfstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0 4px}
+.pfstats>div{background:var(--card,#161616);border-radius:14px;padding:10px 6px;text-align:center}
+.pfstats b{display:flex;align-items:center;justify-content:center;gap:3px;font:800 20px/1 var(--f-display,system-ui)}.pfstats b .i{width:16px;height:16px;color:var(--gold,#FFCE00)}
+.pfstats b i{font-style:normal;font-size:13px}
+.pfstats small{display:block;margin-top:4px;color:var(--muted,#999);font-size:11px;line-height:1.25}
+.pfmore{margin-top:8px}.pfmore summary{cursor:pointer;color:var(--muted,#999);font-size:13px;padding:6px 2px}
+.pfmore .xplist{margin-top:6px;opacity:.75}
+.profil .xprow .tx small+small{margin-top:2px}
+.pfend{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:18px 0 8px}
+/* Défier un ami */
+.lfr{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.lfr button{display:inline-flex;align-items:center;gap:6px;padding:5px 12px 5px 5px;border-radius:999px;border:1.5px solid var(--line-2,rgba(255,255,255,.12));background:none;color:inherit;font:600 13px/1 var(--f-ui,system-ui);cursor:pointer}
+.lfr .av{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--card-3,#262626);font-size:12px}
+.dvcard{position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));z-index:60;max-width:520px;margin:0 auto;display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;padding:10px 10px 10px 12px;border-radius:18px;background:var(--card-2,#1E1E1E);border:1.5px solid var(--gold,#FFCE00);box-shadow:0 12px 32px rgba(0,0,0,.5);transform:translateY(-140%);transition:transform .35s var(--spring,ease)}
+.dvcard.on{transform:none}
+.dvcard .av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--gold,#FFCE00);color:#000;font:800 17px/1 var(--f-ui,system-ui)}
+.dvcard .tx{min-width:0;display:flex;flex-direction:column}.dvcard small{color:var(--muted,#999);font-size:12px}
+/* Pastille en ligne (vert) / hors ligne (rouge) */
+.ami .av,.lfr .av{position:relative}
+.dot{position:absolute;right:-1px;bottom:-1px;width:12px;height:12px;border-radius:50%;background:#FF4D4F;box-shadow:0 0 0 2.5px var(--card,#161616)}
+.dot.on{background:#3BE59D}
+.lfr .dot{width:9px;height:9px;right:-2px;bottom:-2px;box-shadow:0 0 0 2px var(--bg,#0B0B0B)}
+.nav:has(.navme.on) .navind{opacity:0}

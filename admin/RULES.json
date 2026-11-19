@@ -1,0 +1,82 @@
+{
+  "rules": {
+    ".read": "auth != null && auth.token.email == 'admin@plumage.app'",
+    "top": {
+      ".indexOn": [
+        "xp"
+      ],
+      ".read": true,
+      "$uid": {
+        ".write": "auth != null && (auth.uid == $uid || (auth.token.email == 'admin@plumage.app'))"
+      }
+    },
+    "weekly": {
+      ".read": true,
+      "$wk": {
+        "$uid": {
+          ".write": "auth != null && (auth.uid == $uid || (auth.token.email == 'admin@plumage.app'))"
+        }
+      }
+    },
+    "users": {
+      ".indexOn": [
+        "last",
+        "xp"
+      ],
+      "$uid": {
+        ".write": "auth != null && auth.uid == $uid",
+        ".validate": "newData.hasChildren(['lv', 'xp', 'last']) && newData.child('lv').isNumber() && newData.child('xp').isNumber() && newData.child('last').isNumber()"
+      }
+    },
+    "mine": {
+      "$uid": {
+        ".read": "auth != null && auth.token.email == 'admin@plumage.app'",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+    "saves": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "duels": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "ideas": {
+      ".read": "auth != null && (auth.token.email == 'admin@plumage.app' || auth.token.email == 'bot@plumage.app')",
+      "$id": {
+        ".read": "auth != null && data.child('u').val() == auth.uid",
+        ".write": "auth != null && ((!data.exists() && newData.child('u').val() == auth.uid) || (auth.token.email == 'admin@plumage.app' || auth.token.email == 'bot@plumage.app'))"
+      }
+    },
+    "prof": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid == $uid",
+        ".validate": "newData.hasChildren(['n', 'xp', 't'])"
+      }
+    },
+    "fcode": {
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null && !data.exists() && newData.isString() && newData.val() == auth.uid"
+      }
+    },
+    "fq": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        "$from": {
+          ".write": "auth != null && (auth.uid == $from || auth.uid == $uid)"
+        }
+      }
+    },
+    "dv": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        "$from": {
+          ".write": "auth != null && (auth.uid == $from || auth.uid == $uid)"
+        }
+      }
+    }
+  }
+}

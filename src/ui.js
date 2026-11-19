@@ -125,7 +125,7 @@ const isStandalone = () => window.navigator.standalone === true || !!(window.mat
 const installCard = () => isIOS() && !isStandalone() && Date.now() - (S.hint?.install || 0) > 30 * DAY
   ? `<div class="notice inst"><span class="ic">${ic("down")}</span><span class="tx"><b>Installe l'appli sur ton écran d'accueil</b><small>Dans Safari : Partager, puis « Sur l'écran d'accueil ». Sinon Safari peut effacer ta progression après 7 jours sans visite.</small></span><button class="icon-btn" data-act="insthide" aria-label="Masquer">${ic("x")}</button></div>` : "";
 function needBackup() {
-  const n = Object.values(S.sp).filter(r => r.n > 0 || r.nobs > 0).length, now = Date.now();
+  const n = Object.values(S.sp).filter(r => inGrp(r) && (r.n > 0 || r.nobs > 0)).length, now = Date.now();
   if (n < 8 && S.xp < 300) return false;
   if (now - (S.bk?.snooze || 0) < 3 * DAY) return false;
   return !S.bk?.last || now - S.bk.last > 14 * DAY;
@@ -159,7 +159,7 @@ VIEWS.home = () => {
     ${INTRO.brand ? `<div class="brand" id="brand"><span class="mark">${ic("bird")}</span><span class="bname">Plumage</span></div>` : ""}
     <button class="hlvl ${INTRO.brand ? "wait" : ""}" id="hlvl" data-act="tab" data-tab="progress" aria-label="Niveau ${L.n}, ${esc(L.rank)}"><span class="badge">${L.n}</span><span class="meta"><b>${esc(L.rank)}</b><span class="bar"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span></span></button>
     <div class="pill flame ${st ? "" : "cold"} ${hot ? "hot" : ""}" title="Jours d'affilée">${ic("flame")}<span>${st}</span></div>
-    <button class="pill xp" data-act="tab" data-tab="top" title="Classement">${ic("spark")}<span>${fmt(S.xp)}</span></button>
+    ${xpPill()}
   </header>
   <div class="story ${done ? "done" : ""}">
     <button class="story-ph" id="otd" data-act="otd" aria-label="Oiseau du jour" disabled><img alt=""></button>
@@ -193,11 +193,11 @@ MOUNT.home = async () => {
     if (l) l.classList.remove("wait");
   }, INTRO.wait);
   try {
-    const pool = await getPool({ zone: S.set.zone, freq: "common", size: 150 });
+    const pool = await getPool({ zone: curZone(), freq: "common", size: 150 });
     if (VIEW !== "home") return;
     const top = pool.list.filter(t => t.img).slice(0, 80);
     if (!top.length) return;
-    const t = OTD = top[hashStr(dayKey() + zoneKey(S.set.zone)) % top.length];
+    const t = OTD = top[hashStr(dayKey() + zoneKey(curZone()) + ROOT()) % top.length];
     const b = $("#otd");
     if (!b) return;
     /* l'oiseau du jour fait l'affiche : photo moyenne d'abord (rapide), puis la grande */
@@ -205,7 +205,7 @@ MOUNT.home = async () => {
     const nm = $("#otdName"), la = $("#otdLa"), k = $("#otdK");
     if (nm) { nm.textContent = nameFr(t); nm.classList.add("in"); }
     if (la) la.textContent = t.fr ? t.sci : "";
-    if (k) k.textContent = "Oiseau du jour";
+    if (k) k.textContent = GRP().one + " du jour";
     im.onload = () => { b.classList.add("on"); b.disabled = false; if (im.src !== big && !im.dataset.tall && !navigator.connection?.saveData) { const hi = new Image(); hi.onload = () => { if (im.isConnected && !im.dataset.tall) im.src = big; }; hi.src = big; } };
     im.src = t.img.md;
     otdTall(t).then(ph => {
@@ -1018,6 +1018,29 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-19.5", n: "5.5", items: [
+    { ic: "bulb", t: "Ta boîte à idées te répond", d: "Chaque message est lu et traité : tu vois son statut (lu, corrigé, à l'étude) dans « Tes derniers envois ». Les petits bugs sont corrigés au fil de l'eau." }
+  ] },
+  { v: "2026-11-19.4", n: "5.4", items: [
+    { ic: "user", t: "Ton profil", d: "Le bouton rond au milieu de la barre : ton niveau global, tes stats tous groupes confondus, tes groupes et tes amis, au même endroit." },
+    { ic: "bolt", t: "Défier un ami en un geste", d: "Dans ton profil, touche un ami puis « Défier en duel » : il reçoit l'invitation tout de suite et rejoint d'un geste. Tes amis sont aussi proposés dans le salon du duel." },
+    { ic: "eye", t: "Qui est en ligne", d: "Une pastille verte sur les amis qui ont l'appli ouverte, rouge sinon, avec « vu il y a… »." }
+  ] },
+  { v: "2026-11-19.3", n: "5.3", items: [
+    { ic: "duel", t: "Les amis", d: "Un code ami à partager (ou un lien), et un tableau entre amis : pseudo, niveau, XP total et XP de chaque groupe. Quand quelqu'un t'ajoute, tu peux l'ajouter en retour d'un geste. Touche l'XP en haut, puis « Amis »." }
+  ] },
+  { v: "2026-11-19.2", n: "5.2", items: [
+    { ic: "spark", t: "Une XP par groupe", d: "L'XP en haut montre celle du groupe en cours, avec son icône. Touche-la pour voir l'XP de chaque groupe. Le classement garde le total." },
+    { ic: "trophy", t: "Des niveaux pour chaque groupe", d: "Chaque groupe a ses 100 niveaux, nommés d'après ses propres espèces, et ses paliers (Graine, Têtard, Spore…). Ta progression d'oiseaux ne change pas." }
+  ] },
+  { v: "2026-11-19.1", n: "5.1", items: [
+    { ic: "duel", t: "Duel en direct pour tous les groupes", d: "Plantes, insectes, champignons… : choisis le groupe avant de créer la partie, ton ami voit lequel en rejoignant. Aussi dans les sessions de chaque groupe." }
+  ] },
+  { v: "2026-11-18.1", n: "5.0", items: [
+    { ic: "leaf", t: "Tout le vivant", d: "Le rond en haut à gauche de l'accueil change de groupe : plantes, insectes, champignons, mammifères, reptiles, amphibiens, poissons, araignées, mollusques. Un quiz simple pour chacun, dans le monde entier ou ta zone." },
+    { ic: "search", t: "Quiz sur mesure, taxon par taxon", d: "Cherche une espèce, un genre, une famille ou un ordre, en français ou en latin, et coche ce que tu veux réviser. Marche aussi pour les oiseaux." },
+    { ic: "star", t: "Nouveau logo", d: "Une plume, à l'encre sur le jaune." }
+  ] },
   { v: "2026-11-16.1", n: "4.9", items: [
     { ic: "map", t: "Un parcours qui fait vraiment apprendre", d: "Pour valider une étape, reconnais chaque oiseau au moins une fois : un oiseau raté revient plus loin. Le bilan passe en revue tout le chapitre. Premier tour sans révisions, laridés enrichis (21 espèces), outre-mer retiré." }
   ] },
@@ -1155,7 +1178,7 @@ VIEWS.path = () => pathHtml();
 MOUNT.path = () => pathMount();
 
 /* ---------- Constructeur « Sur mesure » ---------- */
-const defaultB = () => ({ zone: S.set.zone, guilds: [], fams: [], freq: "common", size: 100, stim: ["photo"], age: "all", target: "species", names: S.set.names, format: "qcm", k: S.set.k, diff: S.set.diff, len: 10, timer: 0 });
+const defaultB = () => ({ zone: curZone(), guilds: [], fams: [], tx: [], freq: "common", size: 100, stim: ["photo"], age: "all", target: "species", names: S.set.names, format: "qcm", k: S.set.k, diff: S.set.diff, len: 10, timer: 0 });
 const BOPT = {
   freq: [["common", "Communs", "star"], ["season", "De saison", "cal"], ["all", "Tous", "list"], ["rare", "Raretés", "spark"], ["exotic", "Exotiques", "pin"], ["mine", "Mes obs. iNat", "eye"], ["lifers", "À découvrir", "binoc"]],
   size: [[25, "Top 25"], [50, "Top 50"], [100, "Top 100"], [200, "Top 200"]],
@@ -1168,7 +1191,14 @@ const BOPT = {
   len: [[5, "5"], [10, "10"], [20, "20"], [0, "∞"]],
   timer: [[0, "Sans"], [10, "10 s / question"], [60, "Défi 60 s"]]
 };
-const getB = () => { const B = S.set.builder = S.set.builder || defaultB(); if (!B.age) B.age = "all"; return B; };
+const getB = () => {
+  let B;
+  if (isBirds()) B = S.set.builder = S.set.builder || defaultB();
+  else { const G = S.set.gbuild = S.set.gbuild || {}; B = G[ROOT()] = G[ROOT()] || { ...defaultB(), stim: ["photo"], names: "both" }; }
+  if (!B.age) B.age = "all"; if (!B.tx) B.tx = [];
+  if (!isBirds()) { B.stim = B.stim.filter(x => x !== "son" && x !== "soncho"); if (!B.stim.length) B.stim = ["photo"]; B.age = "all"; B.guilds = []; }
+  return B;
+};
 function optRow(field, list, multi, wrap) {
   const B = getB();
   return `<div class="row ${wrap ? "wrap" : ""}">${list.map(([v, l, i]) => {
@@ -1179,20 +1209,22 @@ function optRow(field, list, multi, wrap) {
 VIEWS.builder = () => {
   const B = getB();
   const famChips = B.fams.map(id => { const f = TAXO.fam.get(id); return f ? `<button class="chip fam" data-act="bfamdel" data-id="${id}">${esc(f.fr)} ${ic("x", "xs")}</button>` : ""; }).join("");
-  const bopen = (S.pv || {}).bset ?? false;
+  const txChips = (B.tx || []).map(x => `<button class="chip fam" data-act="btxdel" data-id="${x.id}">${esc(x.n)} <small class="muted">${esc(rankFr(x.r))}</small> ${ic("x", "xs")}</button>`).join("");
+  const birds = isBirds(), G = GRP();
+  const bopen = birds ? ((S.pv || {}).bset ?? false) : true;
   return `<section class="view builder">
-  <div class="head"><button class="icon-btn" data-act="home" aria-label="Retour">${ic("back")}</button><div><h1>Sur mesure</h1><p>Une recette en un geste, ou règle tout toi-même.</p></div></div>
+  <div class="head"><button class="icon-btn" data-act="home" aria-label="Retour">${ic("back")}</button><div><h1>Sur mesure${birds ? "" : " · " + esc(G.n)}</h1><p>${birds ? "Une recette en un geste, ou règle tout toi-même." : "Choisis tes taxons un par un, puis règle la question."}</p></div></div>
   <div class="opt"><div class="opt-h">${ic("pin")}Zone<span class="val">${esc(zoneLabel(B.zone))}</span></div><div class="row">${zoneChips(B.zone, "bzone")}</div></div>
-  <div class="sec">${ic("spark")}Recettes</div>
-  ${recipesHtml()}
+  ${birds ? `<div class="sec">${ic("spark")}Recettes</div>
+  ${recipesHtml()}` : ""}
   <details class="bset"${bopen ? " open" : ""} data-k="bset"><summary data-act="pvt"><span class="pvi">${ic("sliders")}</span><span class="pvt"><b>Régler moi-même</b><small>${esc(builderTitle(B))}</small></span><span class="pvc">${ic("chev")}</span></summary>
-  <div class="opt"><div class="opt-h">${ic("tree")}Oiseaux<span class="val">${B.guilds.length || B.fams.length ? (B.guilds.length + B.fams.length) + " groupe(s)" : "Tous"}</span></div>
-    <div class="row"><button class="opt-btn ${!B.guilds.length && !B.fams.length ? "on" : ""}" data-act="ball">${ic("bird")}Tous</button>${GUILDS.map(g => `<button class="opt-btn ${B.guilds.includes(g.n) ? "on" : ""}" data-act="bguild" data-g="${esc(g.n)}">${esc(g.n)}</button>`).join("")}<button class="opt-btn" data-act="bfam">${ic("search")}Une famille…</button></div>
-    ${famChips ? `<div class="selfam">${famChips}</div>` : ""}</div>
+  <div class="opt"><div class="opt-h">${ic(G.ic)}${esc(G.n)}<span class="val">${B.guilds.length || B.fams.length || B.tx.length ? (B.guilds.length + B.fams.length + B.tx.length) + " choix" : "Tous"}</span></div>
+    <div class="row wrap"><button class="opt-btn ${!B.guilds.length && !B.fams.length && !B.tx.length ? "on" : ""}" data-act="ball">${ic(G.ic)}Tous</button>${birds ? GUILDS.map(g => `<button class="opt-btn ${B.guilds.includes(g.n) ? "on" : ""}" data-act="bguild" data-g="${esc(g.n)}">${esc(g.n)}</button>`).join("") : ""}<button class="opt-btn" data-act="btx">${ic("search")}Espèce, genre, famille…</button><button class="opt-btn" data-act="bfam">${ic("tree")}Liste des familles</button></div>
+    ${famChips || txChips ? `<div class="selfam">${famChips}${txChips}</div>` : ""}</div>
   <div class="opt"><div class="opt-h">${ic("star")}Lesquels</div>${optRow("freq", BOPT.freq)}${["common", "rare", "lifers"].includes(B.freq) ? `<div style="margin-top:8px">${optRow("size", BOPT.size)}</div>` : ""}</div>
-  <div class="opt"><div class="opt-h">${ic("eye")}Question<span class="val">plusieurs choix possibles</span></div>${optRow("stim", BOPT.stim, true, true)}</div>
-  <div class="opt"><div class="opt-h">${ic("cal")}Âge des oiseaux<span class="val">${B.age === "juv" ? "juvéniles" : B.age === "adult" ? "adultes" : "tous"}</span></div>${optRow("age", BOPT.age)}
-    ${B.age !== "all" ? `<p class="muted note" style="margin-top:6px">Photos d'observations iNaturalist annotées « ${B.age === "juv" ? "juvénile" : "adulte"} » par les observateurs : seules les espèces qui en ont dans la zone sont proposées. S'applique aux questions avec photo.</p>` : ""}</div>
+  <div class="opt"><div class="opt-h">${ic("eye")}Question<span class="val">plusieurs choix possibles</span></div>${optRow("stim", birds ? BOPT.stim : BOPT.stim.filter(x => x[0] !== "son" && x[0] !== "soncho"), true, true)}</div>
+  ${birds ? `<div class="opt"><div class="opt-h">${ic("cal")}Âge des oiseaux<span class="val">${B.age === "juv" ? "juvéniles" : B.age === "adult" ? "adultes" : "tous"}</span></div>${optRow("age", BOPT.age)}
+    ${B.age !== "all" ? `<p class="muted note" style="margin-top:6px">Photos d'observations iNaturalist annotées « ${B.age === "juv" ? "juvénile" : "adulte"} » par les observateurs : seules les espèces qui en ont dans la zone sont proposées. S'applique aux questions avec photo.</p>` : ""}</div>` : ""}
   <div class="opt"><div class="opt-h">${ic("check")}Réponse attendue</div>${optRow("target", BOPT.target)}</div>
   <div class="opt"><div class="opt-h">${ic("type")}Noms affichés</div>${optRow("names", BOPT.names)}</div>
   <div class="opt"><div class="opt-h">${ic("list")}Format</div>${optRow("format", BOPT.format)}
@@ -1204,12 +1236,13 @@ VIEWS.builder = () => {
 </section>`;
 };
 function builderTitle(B) {
-  const grp = B.guilds.length === 1 && !B.fams.length ? B.guilds[0] : B.fams.length === 1 && !B.guilds.length ? famName(B.fams[0]) : B.guilds.length + B.fams.length ? "Groupes" : "Oiseaux";
+  const tx = B.tx || [], nsel = B.guilds.length + B.fams.length + tx.length;
+  const grp = nsel === 1 ? (B.guilds[0] || (B.fams[0] ? famName(B.fams[0]) : tx[0].n)) : nsel ? (nsel + " taxons") : GRP().n;
   const st = B.stim.map(s => (BOPT.stim.find(x => x[0] === s) || [])[1]).filter(Boolean).join("+");
   return `${grp}${B.age && B.age !== "all" ? " · " + (B.age === "juv" ? "Juvéniles" : "Adultes") : ""} · ${st} · ${zoneLabel(B.zone)}`;
 }
 async function builderCfg(B) {
-  let taxa = [...B.fams];
+  let taxa = [...B.fams, ...(B.tx || []).map(x => x.id)];
   if (B.fnames?.length) { await loadTaxo(); for (const n of B.fnames) { const f = TAXO.famByName.get(n); if (f) taxa.push(f.id); } }
   if (B.guilds.length) {
     await loadTaxo();
@@ -1217,7 +1250,7 @@ async function builderCfg(B) {
   }
   taxa = [...new Set(taxa)];
   const onlySound = B.stim.every(s => s === "son" || s === "soncho");
-  return { kind: "quiz", title: builderTitle(B), icon: "sliders", zone: B.zone, taxa, freq: B.freq, size: B.size, sounds: onlySound, stim: B.stim.slice(), age: B.age && B.age !== "all" ? B.age : "", target: B.target, names: B.names, format: B.format, k: B.k, diff: B.diff, len: B.timer === 60 ? 0 : B.len, timer: B.timer };
+  return { kind: "quiz", grp: ROOT(), title: builderTitle(B), icon: "sliders", zone: B.zone, taxa, freq: B.freq, size: B.size, sounds: onlySound, stim: B.stim.slice(), age: B.age && B.age !== "all" ? B.age : "", target: B.target, names: B.names, format: B.format, k: B.k, diff: B.diff, len: B.timer === 60 ? 0 : B.len, timer: B.timer };
 }
 
 /* ---------- Préparer une sortie ---------- */
@@ -1447,7 +1480,7 @@ function carnetGrid() {
   return `<div class="cgrid">${list.map(({ id, r }) => `<button class="ctile" data-act="fiche" data-id="${id}"><span class="av" style="--p:${(stars(r) / 3 * 100).toFixed(0)}">${r.img || r.md ? `<img src="${esc(r.img || r.md)}" alt="" loading="lazy">` : `<span class="noimg">${ic("book")}</span>`}${FIELD.ids.has(id) || r.nobs > 0 ? `<span class="fld" title="Vue sur le terrain">${ic("eye", "xs")}</span>` : ""}</span><b>${esc(r.fr || r.sci || "Espèce")}</b>${starsHtml(stars(r))}</button>`).join("")}</div>`;
 }
 VIEWS.carnet = () => {
-  const recs = Object.values(S.sp).filter(r => r.n > 0 || r.nobs > 0);
+  const recs = Object.values(S.sp).filter(r => inGrp(r) && (r.n > 0 || r.nobs > 0));
   const master = recs.filter(r => stars(r) === 3).length, seenN = Object.entries(S.sp).filter(([id, r]) => r.nobs > 0 || FIELD.ids.has(+id)).length;
   const filt = [["all", "Toutes"], ["due", "À revoir"], ["weak", "Fragiles"], ["master", "Maîtrisées"], ["field", "Observées"]];
   return `<section class="view carnet">
@@ -1513,7 +1546,7 @@ VIEWS.progress = () => {
   <div class="head"><h1 class="ptitle">Progrès</h1></div>
   <div class="psum">
     <div class="psh"><div class="lring"><small>Niveau</small><b>${L.n}</b></div>
-      <div class="pst"><h2>${esc(L.rank)}</h2><p>${fmt(S.xp)} XP · encore ${fmt(L.need - L.cur)} pour le niveau ${L.n + 1}</p><span class="lbar"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span></div></div>
+      <div class="pst"><h2>${esc(L.rank)}</h2><p>${fmt(gxp())} XP ${esc(GRP().n.toLowerCase())} · encore ${fmt(L.need - L.cur)} pour le niveau ${L.n + 1}</p><span class="lbar"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span></div></div>
     <div class="pnums">
       <div><b>${ic("flame")}${st}</b><small>jour${st > 1 ? "s" : ""} d'affilée</small></div>
       <div><b>${recs.length}</b><small>espèce${recs.length > 1 ? "s" : ""}</small></div>
@@ -1521,7 +1554,7 @@ VIEWS.progress = () => {
       <div><b>${tot.n ? Math.round(100 * tot.ok / tot.n) : 0}<i>%</i></b><small>réussite</small></div>
     </div>
     <div class="pgoal"><span class="lab">${ic("sun", "xs")}Aujourd'hui</span><span class="bar"><i style="width:${(gp * 100).toFixed(1)}%"></i></span><span class="v">${fmt(td.xp)} / ${fmt(goal)} XP</span></div>
-    <div class="pact">${due ? `<button class="btn warm" data-act="review" aria-label="Réviser ${due} espèce${due > 1 ? "s" : ""}">${ic("replay")}Réviser<span class="pn">${due}</span></button>` : `<button class="btn ghost" data-act="daily">${ic("spark")}Série du jour</button>`}<button class="btn ghost" data-act="tab" data-tab="top">${ic("trophy")}Classement</button></div>
+    <div class="pact">${due ? `<button class="btn warm" data-act="review" aria-label="Réviser ${due} espèce${due > 1 ? "s" : ""}">${ic("replay")}Réviser<span class="pn">${due}</span></button>` : `<button class="btn ghost" data-act="daily">${ic("spark")}Série du jour</button>`}<button class="btn ghost" data-act="tab" data-tab="top">${ic("trophy")}Classement</button><button class="btn ghost" data-act="amis">${ic("duel")}Amis</button></div>
   </div>
   ${conf.length ? box("conf", "duel", "Tes confusions", `${conf.length} paire${conf.length > 1 ? "s" : ""} à départager`, `<div class="pconf">${conf.map(c => { const a = S.sp[c.a], b = S.sp[c.b]; return `<div class="conf"><img src="${esc(a.img || a.md)}" alt=""><span class="vs">VS</span><img src="${esc(b.img || b.md)}" alt=""><span class="tx">${esc(a.fr || a.sci)}<small>${esc(b.fr || b.sci)} · ${c.n}×</small></span><button class="btn primary" data-act="duelgo" data-ids="${c.a},${c.b}">Duel</button></div>`; }).join("")}</div>`, true) : ""}
   ${box("mem", "clock", "Mémoire à long terme", `1 semaine : ${rv(r7)} · 1 mois : ${rv(r30)}`, `<div class="grid2"><div class="stat"><small>${ic("cal")}Après 1 semaine</small><b>${rv(r7)}</b><div class="sub">${rsub(r7)}</div></div><div class="stat"><small>${ic("cal")}Après 1 mois</small><b>${rv(r30)}</b><div class="sub">${rsub(r30)}</div></div></div>
@@ -1594,12 +1627,14 @@ VIEWS.settings = () => `<section class="view settings">
     <div class="set"><span class="lab"><b>Envoyer ma sauvegarde</b><small><span id="bklast">${S.bk?.last ? "Dernière : " + esc(ago(S.bk.last)) + "." : "Jamais faite."}</span> Vers Fichiers, iCloud ou un mail (ta clé xeno-canto n'y est pas).</small></span><button class="btn ghost" data-act="backup">${ic("down")}Sauvegarder</button></div>
     ${cloudSettingsHtml()}
     <div class="set"><span class="lab"><b>Importer</b><small>Restaure une sauvegarde sur ce téléphone.</small></span><label class="btn ghost" style="cursor:pointer">${ic("up")}Importer<input type="file" id="importf" accept="application/json,.json" hidden></label></div>
+    <div class="set"><span class="lab"><b>Recommencer le parcours</b><small>Remet le parcours à 0 et garde le reste.</small></span><button class="btn ghost" data-act="resetpath">${ic("replay")}Recommencer</button></div>
     <div class="set"><span class="lab"><b>Tout effacer</b><small>Remet l'appli à zéro sur cet appareil.</small></span><button class="btn ghost" data-act="reset" id="resetBtn">${ic("trash")}Effacer</button></div>
   </div>
   ${packSettingsHtml()}
   <div class="group" style="margin-top:18px"><button class="set link" data-act="tour">${ic("info")}<span class="lab"><b>Revoir la présentation</b><small>Le tour de l'appli en 6 écrans.</small></span>${ic("arrow")}</button><button class="set link" data-act="ideas">${ic("bulb")}<span class="lab"><b>Boîte à idées</b><small>Une envie, un bug, un oiseau mal nommé : dis-le.</small></span>${ic("arrow")}</button><button class="set link" data-act="news">${ic("spark")}<span class="lab"><b>Nouveautés · v${esc(APP_VERSION)}</b><small>Toutes les versions et ce qu'elles ont apporté.</small></span>${ic("arrow")}</button></div>
   <div class="group" style="margin-top:18px"><button class="set link" data-act="tab" data-tab="about">${ic("shield")}<span class="lab"><b>Mentions légales, confidentialité et sources</b><small>Qui édite l'appli, ce qui reste sur ton téléphone, ce qui en sort, et d'où viennent les données.</small></span>${ic("arrow", "s")}</button></div>
-  <p class="foot vfoot"><b>Plumage v${esc(APP_VERSION)}</b> · ${esc(vDate(NEWS[0].v))} · <button class="lnk" data-act="news">toutes les versions</button></p>
+  ${admHtml()}
+  <p class="foot vfoot"><b data-act="vtap">Plumage v${esc(APP_VERSION)}</b> · ${esc(vDate(NEWS[0].v))} · <button class="lnk" data-act="news">toutes les versions</button></p>
   <p class="foot">Photos, sons et données : iNaturalist, Wikipédia, Wikimedia Commons et xeno-canto, avec l'auteur et la licence de chaque média. Ta progression reste sur cet appareil.</p>
 </section>`;
 
@@ -2258,7 +2293,7 @@ const ACT = {
   cloudrest: () => openCloudRestore(),
   cloudoff: () => cloudOff(),
   ccopy: () => { const c = cloudFmt(S.cloud?.code || ""); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(c).then(() => toast("Code copié."), () => toast("Sélectionne le code pour le copier.")); else toast("Sélectionne le code pour le copier."); },
-  ideas: () => openIdeas(),
+  ideas: () => { openIdeas(); ideaStatus().catch(() => {}); },
   idk: el => { IDEA.k = el.dataset.v; $$("[data-act=idk]").forEach(b => b.classList.toggle("on", b === el)); const t = $("#idtxt"); if (t) t.placeholder = IDEA.k === "bug" ? "Ce qui s'est passé, et sur quel écran…" : IDEA.k === "oiseau" ? "Quel oiseau, et qu'est-ce qui cloche (nom, photo, son, critère)…" : "Ton idée, en quelques mots…"; },
   duelgo: el => {
     let cfg;
@@ -2279,7 +2314,13 @@ const ACT = {
     save(); rerender();
   },
   bk: el => { const B = getB(); B.k = clamp(B.k + +el.dataset.d, 2, 6); save(); rerender(); },
-  ball: () => { const B = getB(); B.guilds = []; B.fams = []; save(); rerender(); },
+  ball: () => { const B = getB(); B.guilds = []; B.fams = []; B.tx = []; save(); rerender(); },
+  btx: () => openTaxPicker(),
+  btxdel: el => { const B = getB(); B.tx = (B.tx || []).filter(x => x.id !== +el.dataset.id); save(); rerender(); },
+  txtog: el => { const B = getB(), id = +el.dataset.id, i = B.tx.findIndex(x => x.id === id); if (i >= 0) B.tx.splice(i, 1); else B.tx.push({ id, n: el.dataset.n, r: el.dataset.r }); el.classList.toggle("on", i < 0); save(); },
+  txdone: () => { closeLayer(); if (VIEW === "builder") rerender(); },
+  grp: () => openGroupPicker(),
+  grpset: el => { const id = +el.dataset.id; closeLayer(); if (id !== ROOT()) { setGroup(id); OTD = null; toast(GRP().n + " : c'est parti !"); } go("home"); },
   bguild: el => { const B = getB(), g = el.dataset.g, i = B.guilds.indexOf(g); if (i >= 0) B.guilds.splice(i, 1); else B.guilds.push(g); save(); rerender(); },
   bfam: () => openFamPicker(),
   bfamdel: el => { const B = getB(); B.fams = B.fams.filter(x => x !== +el.dataset.id); save(); rerender(); },
@@ -2290,6 +2331,10 @@ const ACT = {
   cfilt: el => { CARNET.f = el.dataset.f; $$("[data-act=cfilt]").forEach(b => b.classList.toggle("on", b === el)); $("#cgrid").innerHTML = carnetGrid(); },
   set: el => { const k = el.dataset.k; S.set[k] = k === "goal" ? +el.dataset.v : el.dataset.v; save(); $$(`[data-act=set][data-k=${k}]`).forEach(b => b.classList.toggle("on", b === el)); },
   setk: el => { S.set.k = clamp(S.set.k + +el.dataset.d, 2, 6); save(); rerender(); },
+  vtap: () => { const n = Date.now(); ADM.taps = n - (ADM.t || 0) < 2500 ? (ADM.taps || 0) + 1 : 1; ADM.t = n; if (ADM.taps >= 5 && !S.adm) { ADM.ask = true; ADM.taps = 0; rerender(); setTimeout(() => $("#admpw")?.focus(), 50); } },
+  admgo: () => admLogin(),
+  admout: () => { delete S.adm; S.set.share = false; save(true); ADM.ask = false; toast("Mode admin fermé."); rerender(); },
+  admexp: el => admExport(el),
   toggle: el => {
     const k = el.dataset.k; S.set[k] = !S.set[k]; save();
     $$(`[data-act=toggle][data-k=${k}]`).forEach(b => { b.classList.toggle("on", S.set[k]); b.setAttribute("aria-checked", S.set[k] ? "true" : "false"); });
@@ -2321,6 +2366,10 @@ const ACT = {
   },
   prad: el => { if (!PMAP) return; PMAP._r = +el.dataset.r; $$("[data-act=prad]").forEach(b => b.classList.toggle("on", b === el)); drawPick(); },
   pmapok: () => { const m = PMAP; if (!m || !m._c) return; const z = { k: "pt", lat: +m._c.lat.toFixed(3), lng: +((((m._c.lng + 540) % 360) - 180).toFixed(3)), r: m._r, name: `Point choisi · ${m._r} km` }; const cb = PCB; closeLayer(); if (cb) cb(z); },
+  resetpath: el => {
+    if (el.dataset.armed) { try { if (S.paths) delete S.paths.grand; S.gv = 3; save(true); } catch (e) { /* rien */ } GV.tour = -1; GV.ch = -1; toast("Parcours remis à zéro."); go("grand"); return; }
+    el.dataset.armed = "1"; el.innerHTML = ic("replay") + "Confirmer ?"; setTimeout(() => { if (el.isConnected) { delete el.dataset.armed; el.innerHTML = ic("replay") + "Recommencer"; } }, 4000);
+  },
   reset: el => {
     if (el.dataset.armed) { try { localStorage.removeItem(KEY); purgeCache(0); } catch (e) { /* rien */ } S = defaults(); save(true); toast("Tout est remis à zéro."); go("home"); return; }
     el.dataset.armed = "1"; el.innerHTML = ic("trash") + "Confirmer ?"; setTimeout(() => { if (el.isConnected) { delete el.dataset.armed; el.innerHTML = ic("trash") + "Effacer"; } }, 4000);
@@ -2463,7 +2512,7 @@ function tapRipple(e) {
 }
 
 /* ---------- Transitions : chaque changement d'écran a son mouvement ---------- */
-const TABS = ["home", "carnet", "progress", "settings"];
+const TABS = ["home", "carnet", "profil", "progress", "settings"];
 function trKind(a, b) {
   const i = TABS.indexOf(a === "about" ? "settings" : a), j = TABS.indexOf(b === "about" ? "settings" : b);
   if (a === b) return b === "quiz" ? "next" : "none";

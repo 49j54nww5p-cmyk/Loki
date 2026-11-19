@@ -18,7 +18,7 @@ function openIdeas(k) {
     <button class="btn primary wide" type="submit" style="margin-top:12px">${ic("arrow")}Envoyer</button>
   </form>
   <p class="muted note">Partent avec ton message : son type, la version de l'appli (v${esc(APP_VERSION)}) et ce que tu mets dans « Pour te répondre ». Rien d'autre.</p>
-  ${mine.length ? `<div class="sec">${ic("check")}Tes derniers envois</div><div class="idmine">${mine.map(x => `<div><b>${esc((IDK.find(k => k[0] === x.k) || IDK[0])[1])}</b><span>${esc(clip(x.txt, 90))}</span><small>${esc(ago(x.t))}${x.sent ? "" : " · en attente d'envoi"}</small></div>`).join("")}</div>` : ""}
+  ${mine.length ? `<div class="sec">${ic("check")}Tes derniers envois</div><div class="idmine">${mine.map(x => `<div><b>${esc((IDK.find(k => k[0] === x.k) || IDK[0])[1])}</b><span>${esc(clip(x.txt, 90))}</span><small>${esc(ago(x.t))}${x.sent ? "" : " · en attente d'envoi"}</small>${x.st ? `<em class="idst ${x.st === "corrigé" || x.st === "fait" ? "ok" : ""}">${esc(x.st)}${x.r ? " : " + esc(clip(x.r, 120)) : ""}</em>` : ""}</div>`).join("")}</div>` : ""}
   <div style="height:18px"></div></div></div>`, "ideal");
 }
 async function ideaSend() {
@@ -37,9 +37,23 @@ async function ideaFlush() {
   if (!netOn()) return false;
   let all = true;
   for (const it of (S.ideas || []).filter(x => !x.sent)) {
-    try { await netReq("PUT", "ideas/" + it.id, { k: it.k, txt: it.txt, c: it.c || "", v: it.v, t: it.t }); it.sent = true; }
-    catch (e) { all = false; break; }
+    try {
+      const u = netLocal() ? myUid() : (await fbToken(), (S.fb && S.fb.uid) || "");
+      await netReq("PUT", "ideas/" + it.id, { k: it.k, txt: it.txt, c: it.c || "", v: it.v, t: it.t, u });
+      it.sent = true;
+    }
+    catch (e) { if (e && (e.status === 401 || e.status === 403)) { it.sent = true; continue; } all = false; break; }   /* déjà arrivé (envoi répété) */
   }
   save();
   return all;
+}
+
+/* Où en est mon message ? (lu, corrigé, à l'étude…) : on relit le statut de mes envois en ouvrant la boîte */
+async function ideaStatus() {
+  if (!netOn()) return;
+  let ch = false;
+  for (const it of (S.ideas || []).filter(x => x.sent).slice(0, 5)) {
+    try { const d = await netReq("GET", "ideas/" + it.id); if (d && (d.st || "") !== (it.st || "")) { it.st = d.st || ""; it.r = d.r || ""; ch = true; } } catch (e) { /* pas encore lu */ }
+  }
+  if (ch) { save(); if ($("#layer") && !$("#layer").hidden && $(".ideap")) openIdeas(IDEA.k); }
 }

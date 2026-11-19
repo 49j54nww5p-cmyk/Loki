@@ -206,7 +206,7 @@ function defiStart(t = 1) {
 }
 
 function cosmHtml() {
-  const L = level().n, row = it => {
+  const L = level(S.xp, 3).n, row = it => {
     const own = cosOwn(it.k), on = own && cosOn(it), lock = it.lv && L < it.lv;
     const vis = it.g === "frame" ? `<span class="sframe ${it.k}" style="--sw:${it.sw}"><b>${L}</b></span>` : `<span class="sic">${ic(it.ic)}</span>`;
     const btn = own ? `<button class="sbuy ghost" data-act="cosuse" data-k="${it.k}">${on ? (it.g === "fx" ? "Activé" : "Actif") : (it.g === "snd" ? "Choisir" : "Activer")}</button>`
@@ -224,7 +224,7 @@ function cosmHtml() {
 }
 function cosBuy(k) {
   const it = COSM.find(c => c.k === k);
-  if (!it || cosOwn(k) || (it.lv && level().n < it.lv)) return false;
+  if (!it || cosOwn(k) || (it.lv && level(S.xp, 3).n < it.lv)) return false;
   if (S.plumes < it.p) { toast("Pas assez de plumes"); return false; }
   S.plumes -= it.p; S.cos.push(k); cosUse(k, true); save(true);
   const y = window.scrollY; go("shop"); window.scrollTo(0, y);

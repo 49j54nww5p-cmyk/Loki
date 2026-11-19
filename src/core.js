@@ -225,15 +225,42 @@ function memo(key, fn) {
   return p;
 }
 
+/* ---------- Groupes : les oiseaux (développés) et les autres taxons (quiz simple) ---------- */
+const GROUPS = [
+  { id: 3, k: "aves", n: "Oiseaux", one: "Oiseau", ic: "bird", c: "#FFCE00" },
+  { id: 47126, k: "plantae", n: "Plantes", one: "Plante", ic: "leaf", c: "#5FD068" },
+  { id: 47158, k: "insecta", n: "Insectes", one: "Insecte", ic: "bug", c: "#FF9A3C" },
+  { id: 47170, k: "fungi", n: "Champignons", one: "Champignon", ic: "mush", c: "#C8A27A" },
+  { id: 40151, k: "mammalia", n: "Mammifères", one: "Mammifère", ic: "paw", c: "#E9B872" },
+  { id: 26036, k: "reptilia", n: "Reptiles", one: "Reptile", ic: "lizard", c: "#9BD45F" },
+  { id: 20978, k: "amphibia", n: "Amphibiens", one: "Amphibien", ic: "frog", c: "#3BE59D" },
+  { id: 47178, k: "actinopterygii", n: "Poissons", one: "Poisson", ic: "fish", c: "#3D9BFF" },
+  { id: 47119, k: "arachnida", n: "Araignées et cie", one: "Arachnide", ic: "spider", c: "#B18CFF" },
+  { id: 47115, k: "mollusca", n: "Mollusques", one: "Mollusque", ic: "shell", c: "#FF8FB1" }
+];
+const ROOT = () => +(S.set.grp || 3);
+const GRP = () => GROUPS.find(g => g.id === ROOT()) || GROUPS[0];
+const isBirds = () => ROOT() === 3;
+const inGrp = r => +((r && r.g) || 3) === ROOT();
+/* Zone : celle des oiseaux, ou une zone à part pour les autres groupes (monde par défaut) */
+const curZone = () => isBirds() ? S.set.zone : (S.set.gzone || null);
+function setGroup(id) {
+  if (+id === ROOT()) return;
+  S.set.grp = +id; save(true);
+  TAXO.fam = new Map(); TAXO.ord = new Map(); TAXO.famByName = new Map(); TAXO.ready = null; TAXO.ok = false; LEXP = null;
+  ensureNames(+id).then(() => { if (typeof VIEW !== "undefined" && VIEW === "home" && typeof rerender === "function") rerender(); }).catch(() => {});
+}
+
 /* ---------- Taxonomie ---------- */
 const TAXO = { fam: new Map(), ord: new Map(), famByName: new Map(), ready: null, ok: false };
 const famFr = n => n.replace(/idae$/, "idés");
 function loadTaxo() {
   if (TAXO.ready) return TAXO.ready;
-  TAXO.ready = cached("taxo3", 30 * DAY, async () => {
+  const R = ROOT();
+  TAXO.ready = cached(R === 3 ? "taxo3" : "taxo3:" + R, 30 * DAY, async () => {
     const [o, f] = await Promise.all([
-      inat("/taxa", { taxon_id: 3, rank: "order", per_page: 200, locale: "fr" }),
-      inat("/taxa", { taxon_id: 3, rank: "family", per_page: 500, locale: "fr" })
+      inat("/taxa", { taxon_id: R, rank: "order", per_page: 200, locale: "fr", ...(R === 3 ? {} : { order_by: "observations_count", order: "desc" }) }),
+      inat("/taxa", { taxon_id: R, rank: "family", per_page: 500, locale: "fr", ...(R === 3 ? {} : { order_by: "observations_count", order: "desc" }) })
     ]);
     const ords = new Set(o.results.map(t => t.id));
     return {
@@ -260,7 +287,7 @@ function mini(t) {
   if (!t) return null;
   const dp = t.default_photo;
   const anc = t.ancestor_ids || [];
-  const i3 = anc.indexOf(3);
+  const i3 = anc.indexOf(ROOT());
   const m = {
     id: t.id, sci: t.name, fr: cap(t.preferred_common_name || ""), rank: t.rank,
     a: (i3 >= 0 ? anc.slice(i3 + 1) : anc).filter(x => x !== t.id),
@@ -325,7 +352,7 @@ function seasonMonths() { const m = new Date().getMonth() + 1; return [((m + 10)
 /* ---------- Groupes d'espèces (pools) ---------- */
 async function getPool(p) {
   await loadTaxo().catch(() => {});
-  const params = { taxon_id: p.taxa && p.taxa.length ? p.taxa.join(",") : 3, quality_grade: "research", locale: "fr", preferred_place_id: 6753, ...zoneParams(p.zone) };
+  const params = { taxon_id: p.taxa && p.taxa.length ? p.taxa.join(",") : ROOT(), quality_grade: "research", locale: "fr", preferred_place_id: 6753, ...zoneParams(p.zone) };
   if (p.freq === "season") params.month = seasonMonths().join(",");
   if (p.freq === "rare") params.order = "asc";
   if (p.freq === "exotic") params.introduced = "true";
@@ -342,8 +369,8 @@ async function getPool(p) {
   });
   list = (list || []).map(t => { t.f = fam(t); t.o = ord(t); return t; });
   if (p.freq === "lifers") {
-    const mine = await cached("mine:" + S.set.inat, DAY, async () => {
-      const d = await inat("/observations/species_counts", { taxon_id: 3, user_login: S.set.inat, per_page: 500 });
+    const mine = await cached("mine:" + S.set.inat + (isBirds() ? "" : ":" + ROOT()), DAY, async () => {
+      const d = await inat("/observations/species_counts", { taxon_id: ROOT(), user_login: S.set.inat, per_page: 500 });
       return (d.results || []).map(r => r.taxon?.id).filter(Boolean);
     });
     const seen = new Set(mine || []);
@@ -358,7 +385,7 @@ async function getPool(p) {
 
 /* ---------- Sorties : espèces attendues ---------- */
 async function tripSpecies(zone, month, recent) {
-  const base = { taxon_id: 3, quality_grade: "research", locale: "fr", preferred_place_id: 6753, per_page: 200, ...zoneParams(zone) };
+  const base = { taxon_id: ROOT(), quality_grade: "research", locale: "fr", preferred_place_id: 6753, per_page: 200, ...zoneParams(zone) };
   const key = "trip:" + qs({ ...base, m: month, r: recent ? 1 : 0, d: recent ? dayKey() : "" });
   const list = await cached(key, recent ? DAY / 2 : 7 * DAY, async () => {
     const conv = d => (d.results || []).filter(r => r.taxon && r.taxon.rank === "species").map(r => ({ ...mini(r.taxon), c: r.count }));
@@ -375,14 +402,14 @@ async function tripSpecies(zone, month, recent) {
 const LEX = new Map();
 function lexAdd(t) {
   if (!t || !t.id || !t.sci) return;
-  if (!LEX.has(t.id)) LEX.set(t.id, { id: t.id, sci: t.sci, fr: t.fr || "", img: t.img?.sq || t.img || "", f: t.f || 0, n: norm((t.fr || "") + " " + t.sci) });
+  if (!LEX.has(t.id)) LEX.set(t.id, { id: t.id, sci: t.sci, fr: t.fr || "", img: t.img?.sq || t.img || "", f: t.f || 0, g: +(t.g || ROOT()), n: norm((t.fr || "") + " " + t.sci) });
 }
 /* Espèce dont le nom tapé correspond (à une faute près) */
 function lexExact(v) {
   const a = norm(v);
   if (a.length < 4) return null;
   let best = null, bd = 9;
-  for (const e of LEX.values()) for (const n of [norm(e.fr), norm(e.sci)]) {
+  for (const e of LEX.values()) if (e.g === ROOT()) for (const n of [norm(e.fr), norm(e.sci)]) {
     if (!n) continue;
     const d = n === a ? 0 : Math.abs(n.length - a.length) > 2 ? 9 : lev(a, n);
     if (d < bd && d <= (n.length <= 7 ? 0 : 1)) { bd = d; best = e; }
@@ -393,17 +420,18 @@ function lexExact(v) {
 }
 let LEXP = null;
 function loadLexicon() {
-  for (const [id, r] of Object.entries(S.sp)) lexAdd({ id: +id, sci: r.sci, fr: r.fr, img: r.img, f: r.f });
+  for (const [id, r] of Object.entries(S.sp)) lexAdd({ id: +id, sci: r.sci, fr: r.fr, img: r.img, f: r.f, g: r.g || 3 });
   if (LEXP) return LEXP;
-  LEXP = cached("lex1", 30 * DAY, async () => {
+  const R = ROOT();
+  LEXP = cached(R === 3 ? "lex1" : "lex1:" + R, 30 * DAY, async () => {
     const out = [];
     for (const page of [1, 2]) {
-      const d = await inat("/observations/species_counts", { taxon_id: 3, place_id: 6753, locale: "fr", preferred_place_id: 6753, per_page: 500, page });
+      const d = await inat("/observations/species_counts", { taxon_id: R, ...(R === 3 ? { place_id: 6753 } : {}), locale: "fr", preferred_place_id: 6753, per_page: 500, page });
       for (const r of d.results || []) if (r.taxon && r.taxon.rank === "species") out.push([r.taxon.id, r.taxon.name, cap(r.taxon.preferred_common_name || ""), r.taxon.default_photo?.square_url || ""]);
       if ((d.results || []).length < 500) break;
     }
     return out;
-  }).then(list => { for (const [id, sci, fr, img] of list || []) lexAdd({ id, sci, fr, img }); return true; })
+  }).then(list => { for (const [id, sci, fr, img] of list || []) lexAdd({ id, sci, fr, img, g: R }); return true; })
     .catch(() => { LEXP = null; return false; });
   return LEXP;
 }
@@ -412,6 +440,7 @@ function lexSearch(qs_, n = 8) {
   if (!toks.length) return [];
   const res = [];
   for (const e of LEX.values()) {
+    if (e.g !== ROOT()) continue;
     const words = e.n.split(" ");
     let score = 0, ok = true;
     for (const tk of toks) {
@@ -424,7 +453,7 @@ function lexSearch(qs_, n = 8) {
   return res.sort((a, b) => b[0] - a[0]).slice(0, n).map(x => x[1]);
 }
 async function lexRemote(q) {
-  const d = await inat("/taxa/autocomplete", { q, taxon_id: 3, rank: "species", per_page: 8, locale: "fr", preferred_place_id: 6753 });
+  const d = await inat("/taxa/autocomplete", { q, taxon_id: ROOT(), rank: "species", per_page: 8, locale: "fr", preferred_place_id: 6753 });
   const out = (d.results || []).filter(r => r.rank === "species").map(r => mini(r));
   out.forEach(lexAdd);
   return out;
@@ -435,12 +464,12 @@ const FIELD = { ids: new Set(), who: "" };
 async function loadField() {
   const who = S.set.inat;
   if (!who) { FIELD.ids = new Set(); FIELD.who = ""; return FIELD.ids; }
-  if (FIELD.who === who) return FIELD.ids;
-  const list = await cached("mine:" + who, DAY, async () => {
-    const d = await inat("/observations/species_counts", { taxon_id: 3, user_login: who, per_page: 500 });
+  if (FIELD.who === who + ROOT()) return FIELD.ids;
+  const list = await cached("mine:" + who + (isBirds() ? "" : ":" + ROOT()), DAY, async () => {
+    const d = await inat("/observations/species_counts", { taxon_id: ROOT(), user_login: who, per_page: 500 });
     return (d.results || []).map(r => r.taxon?.id).filter(Boolean);
   });
-  FIELD.ids = new Set(list || []); FIELD.who = who;
+  FIELD.ids = new Set(list || []); FIELD.who = who + ROOT();
   return FIELD.ids;
 }
 function ago(t) {
@@ -758,7 +787,7 @@ async function resolveTaxon(sci, fr) {
     for (const q of [sci, fr].filter(Boolean)) {
       try {
         const d = await inat("/taxa/autocomplete", { q, per_page: 5, locale: "fr", preferred_place_id: 6753 });
-        const r = (d.results || []).find(x => x.rank === "species" && (x.iconic_taxon_name === "Aves" || (x.ancestor_ids || []).includes(3)));
+        const r = (d.results || []).find(x => x.rank === "species" && (x.ancestor_ids || []).includes(ROOT()));
         if (r) return mini(r);
       } catch (e) { /* suivant */ }
     }
@@ -780,7 +809,7 @@ function preload(url) {
 const INTERVALS = [0, 1, 2, 4, 8, 16, 32];
 function rec(t) {
   let r = S.sp[t.id];
-  if (!r) r = S.sp[t.id] = { fr: t.fr || "", sci: t.sci, f: fam(t) || 0, o: ord(t) || 0, img: t.img?.sq || "", md: t.img?.md || "", n: 0, ok: 0, box: {}, due: {}, conf: {}, first: dayKey() };
+  if (!r) r = S.sp[t.id] = { ...(isBirds() ? {} : { g: ROOT() }), fr: t.fr || "", sci: t.sci, f: fam(t) || 0, o: ord(t) || 0, img: t.img?.sq || "", md: t.img?.md || "", n: 0, ok: 0, box: {}, due: {}, conf: {}, first: dayKey() };
   else {
     if (t.fr && !r.fr) r.fr = t.fr;
     if (t.img?.md && !r.md) { r.md = t.img.md; r.img = t.img.sq; }
@@ -839,19 +868,69 @@ function srsUpdate(r, mod, ok, soft) {
 }
 function dueList() {
   const t = todayNum(), out = [];
-  for (const [id, r] of Object.entries(S.sp)) for (const [mod, d] of Object.entries(r.due || {})) if (d <= t) out.push({ id: +id, mod, d, box: r.box?.[mod] ?? 0 });
+  for (const [id, r] of Object.entries(S.sp)) if (inGrp(r)) for (const [mod, d] of Object.entries(r.due || {})) if (d <= t) out.push({ id: +id, mod, d, box: r.box?.[mod] ?? 0 });
   return out.sort((a, b) => a.d - b.d || a.box - b.box);
 }
 const lvlXp = n => 60 * (n - 1) * n;
-function level(xp = S.xp) {
+/* XP par groupe : S.gxp[groupe] ; S.xp reste le total (classement, boutique).
+   Première fois : l'XP déjà gagnée hors oiseaux est retrouvée dans l'historique des parties. */
+function gxpMap() {
+  if (S.gxp && typeof S.gxp === "object") return S.gxp;
+  const m = {};
+  for (const h of S.hist || []) { const g = +((h.cfg && h.cfg.grp) || 3); if (g !== 3) m[g] = (m[g] || 0) + Math.max(0, +h.xp || 0); }
+  const other = Object.values(m).reduce((a, b) => a + b, 0);
+  m[3] = Math.max(0, (S.xp || 0) - other);
+  return (S.gxp = m);
+}
+const gxp = (g = ROOT()) => Math.max(0, +gxpMap()[g] || 0);
+/* Paliers de 10 niveaux, propres à chaque groupe */
+const GTIERS = {
+  47126: ["Graine", "Germe", "Pousse", "Plantule", "Bouton", "Fleur", "Fruit", "Herboriste", "Botaniste", "Légende"],
+  47158: ["Œuf", "Larve", "Chenille", "Chrysalide", "Imago", "Butineur", "Chasseur d'insectes", "Entomologiste", "Naturaliste", "Légende"],
+  47170: ["Spore", "Mycélium", "Primordium", "Pied", "Chapeau", "Cueilleur", "Chercheur de cèpes", "Mycologue", "Mycologue chevronné", "Légende"],
+  40151: ["Nouveau-né", "Petit", "Jeune", "Subadulte", "Adulte", "Pisteur", "Affûteur", "Mammalogiste", "Traqueur", "Légende"],
+  26036: ["Œuf", "Nouveau-né", "Juvénile", "Première mue", "Adulte", "Lézardeur", "Chercheur de reptiles", "Herpétologue", "Charmeur de serpents", "Légende"],
+  20978: ["Œuf", "Têtard", "Têtard à pattes", "Métamorphe", "Juvénile", "Adulte", "Écouteur de mares", "Batrachologue", "Herpétologue", "Légende"],
+  47178: ["Œuf", "Larve", "Alevin", "Juvénile", "Adulte", "Pêcheur", "Plongeur", "Ichtyologue", "Ichtyologue chevronné", "Légende"],
+  47119: ["Œuf", "Cocon", "Jeune", "Première mue", "Subadulte", "Adulte", "Tisseur", "Arachnologue", "Maître des toiles", "Légende"],
+  47115: ["Œuf", "Larve", "Juvénile", "Petite coquille", "Adulte", "Ramasseur de coquillages", "Conchyliologue", "Malacologue", "Malacologue chevronné", "Légende"]
+};
+const tiersOf = g => +g === 3 ? TIERS : (GTIERS[g] || TIERS);
+/* 100 noms de niveau : les oiseaux écrits à la main ; pour les autres groupes, 100 espèces du groupe
+   (des plus communes aux plus rares en France), récupérées une fois sur iNaturalist et gardées */
+const namesOf = g => +g === 3 ? NIV : ((S.gnames && Array.isArray(S.gnames[g]) && S.gnames[g].length >= 100) ? S.gnames[g] : null);
+const titreOf = g => +g === 3 ? (S.set && S.set.titre) : ((S.set && S.set.gtitre) || {})[g];
+let GNAMEP = {};
+function ensureNames(g = ROOT()) {
+  g = +g;
+  if (g === 3 || namesOf(g) || GNAMEP[g]) return GNAMEP[g] || Promise.resolve(true);
+  GNAMEP[g] = (async () => {
+    const seen = new Set(), list = [];
+    for (const page of [1, 2]) {
+      const d = await inat("/observations/species_counts", { taxon_id: g, place_id: 6753, locale: "fr", preferred_place_id: 6753, per_page: 500, page });
+      for (const r of d.results || []) { const n = cap(r.taxon?.preferred_common_name || ""); if (r.taxon?.rank === "species" && n && !seen.has(n.toLowerCase())) { seen.add(n.toLowerCase()); list.push(n); } }
+      if ((d.results || []).length < 500 || list.length >= 400) break;
+    }
+    if (list.length < 100) throw new Error("NAMES");
+    const out = Array.from({ length: 100 }, (_, k) => list[Math.round(k * (list.length - 1) / 99)]);
+    (S.gnames = S.gnames || {})[g] = out; save();
+    return true;
+  })().catch(e => { delete GNAMEP[g]; throw e; });
+  return GNAMEP[g];
+}
+function level(xp, g = ROOT()) {
+  if (xp === undefined) xp = gxp(g);
   let n = 1;
   while (xp >= lvlXp(n + 1)) n++;
-  const a = lvlXp(n), b = lvlXp(n + 1);
-  const bird = NIV[Math.min(n, 100) - 1], tier = TIERS[Math.min(Math.floor((n - 1) / 10), 9)];
-  const t = S.set && S.set.titre, title = typeof t === "string" && t && n >= 100 ? t : (Number.isInteger(t) && t >= 1 && t <= Math.min(n, 100) ? NIV[t - 1] : bird);
+  const a = lvlXp(n), b = lvlXp(n + 1), names = namesOf(g), T = tiersOf(g);
+  const tier = T[Math.min(Math.floor((n - 1) / 10), 9)];
+  const bird = names ? names[Math.min(n, 100) - 1] : (GROUPS.find(x => x.id === +g) || GROUPS[0]).n;
+  const t = titreOf(g), title = typeof t === "string" && t && n >= 100 ? t : (names && Number.isInteger(t) && t >= 1 && t <= Math.min(n, 100) ? names[t - 1] : bird);
   return { n, rank: tier + " · " + title, tier, bird, title, cur: xp - a, need: b - a, p: (xp - a) / (b - a) };
 }
-function addXp(n) { S.xp += n; today().xp += n; }
+/* La pastille d'XP de l'accueil : l'icône et l'XP du groupe en cours ; on la touche pour voir tous les groupes */
+function xpPill() { const G = GRP(); return `<button class="pill xp gx" data-act="xpall" title="XP par groupe" style="--gc:${G.c}">${ic(G.ic)}<span>${fmt(gxp())}</span></button>`; }
+function addXp(n) { S.xp += n; today().xp += n; const m = gxpMap(), g = ROOT(); m[g] = (+m[g] || 0) + n; }
 function liveStreak() {
   const st = S.streak;
   if (!st.last) return 0;

@@ -124,15 +124,15 @@ async function topFetch() {
 function topRowsHtml(list) {
   const me = S.uid;
   if (!list.length) return `<div class="empty">${ic("trophy")}<b>Personne pour l'instant</b><p>Active le classement ci-dessus : tu seras le premier !</p></div>`;
-  return `<ol class="toplist">${list.map((r, i) => { const L = level(r.xp); return `<li class="${r.uid === me ? "me" : ""} ${i < 3 ? "p" + (i + 1) : ""}"><span class="rk">${i < 3 ? ic("trophy") : i + 1}</span><span class="nm"><b>${esc(r.n)}${r.uid === me ? " <small>(toi)</small>" : ""}</b><small>Niveau ${L.n} · ${esc(L.rank)}</small></span><span class="xp">${fmt(r.xp)}<small>XP</small></span></li>`; }).join("")}</ol>`;
+  return `<ol class="toplist">${list.map((r, i) => { const L = level(r.xp, 3); return `<li class="${r.uid === me ? "me" : ""} ${i < 3 ? "p" + (i + 1) : ""}"><span class="rk">${i < 3 ? ic("trophy") : i + 1}</span><span class="nm"><b>${esc(r.n)}${r.uid === me ? " <small>(toi)</small>" : ""}</b><small>Niveau ${L.n} · ${esc(L.rank)}</small></span><span class="xp">${fmt(r.xp)}<small>XP</small></span></li>`; }).join("")}</ol>`;
 }
 function topViewHtml() {
   const on = !!S.set.topOn, nm = esc(S.set.pseudo || "");
   return `<section class="view top">
-  <div class="head"><button class="icon-btn" data-act="tab" data-tab="progress" aria-label="Retour">${ic("back")}</button><h1 class="h1" style="flex:1">Classement</h1></div>
+  <div class="head"><button class="icon-btn" data-act="tab" data-tab="progress" aria-label="Retour">${ic("back")}</button><h1 class="h1" style="flex:1">Classement</h1><button class="btn ghost sm" data-act="amis">${ic("duel")}Amis</button></div>
   ${netOn() ? "" : `<div class="notice"><span class="ic">${ic("info")}</span><span class="tx"><b>Bientôt en ligne</b><small>Le classement s'allume dès que le serveur de l'appli est branché.</small></span></div>`}
   <div class="card topme">
-    <div class="tmrow"><span class="lvb">${level().n}</span><span class="tx"><b>${fmt(S.xp)} XP</b><small>${esc(level().rank)}</small></span></div>
+    <div class="tmrow"><span class="lvb">${level(S.xp, 3).n}</span><span class="tx"><b>${fmt(S.xp)} XP</b><small>${esc(level(S.xp, 3).rank)} · tous groupes</small></span></div>
     <label class="fld"><span>Ton pseudo</span><input id="pseudo" type="text" maxlength="16" autocomplete="nickname" placeholder="ex. Piaf33" value="${nm}"></label>
     <div class="tmrow sw"><span class="tx"><b>Apparaître dans le classement</b><small>Seuls ton pseudo et ton XP sont publiés.</small></span><button class="switch ${on ? "on" : ""}" data-act="topon" role="switch" aria-checked="${on}" aria-label="Apparaître dans le classement"></button></div>
   </div>
@@ -165,7 +165,7 @@ function liveScores(room, upto) {
 function liveReset() {
   if (LIVE.stop) LIVE.stop();
   clearTimeout(LIVE.tmr); clearInterval(LIVE.ping); clearInterval(LIVE.chk);
-  Object.assign(LIVE, { st: "lobby", code: "", role: "", room: null, stop: null, i: -1, t0: 0, ans: {}, tmr: 0, ping: 0, chk: 0, seen: 0, otherA: 0, shown: -1, rev: -1, err: "", xpDone: false, rm: 0, sig: "" });
+  Object.assign(LIVE, { st: "lobby", code: "", role: "", room: null, stop: null, i: -1, t0: 0, ans: {}, tmr: 0, ping: 0, chk: 0, seen: 0, otherA: 0, shown: -1, rev: -1, err: "", xpDone: false, rm: 0, sig: "", invited: "" });
 }
 function livePseudo() {
   const inp = $("#lpseudo"), v = cleanName(inp ? inp.value : S.set.pseudo);
@@ -190,7 +190,7 @@ async function liveCreate() {
   liveReset();
   const T = +(S.set.liveT || 10), code = rid(5, LCODE);
   try {
-    await netReq("PUT", "duels/" + code, { t: Date.now(), v: 1, st: "wait", T, N: 10, host: { n, a: Date.now() } });
+    await netReq("PUT", "duels/" + code, { t: Date.now(), v: 1, st: "wait", T, N: 10, g: ROOT(), gn: GRP().n, host: { n, a: Date.now() } });
     Object.assign(LIVE, { code, role: "host", st: "wait", T });
     LIVE.stop = netListen("duels/" + code, liveOnRoom);
     liveStartPresence();
@@ -226,7 +226,7 @@ async function liveLeave() {
 }
 /* L'hôte prépare les questions : photos d'espèces communes de sa zone, 4 choix */
 async function liveDeck(N) {
-  const ses = newSession({ kind: "quiz", zone: S.set.zone, freq: "common", size: 120, stim: ["photo"], target: "species", format: "qcm", k: 4, diff: S.set.diff || "moyen", len: N + 6, names: "both", timer: 0 });
+  const ses = newSession({ kind: "quiz", grp: ROOT(), zone: curZone(), freq: "common", size: 120, stim: ["photo"], target: "species", format: "qcm", k: 4, diff: S.set.diff || "moyen", len: N + 6, names: "both", timer: 0 });
   await prepare(ses);
   const out = [];
   for (let g = 0; g < N + 6 && out.length < N; g++) {
@@ -413,8 +413,11 @@ function liveViewHtml() {
   <label class="fld"><span>Ton pseudo</span><input id="lpseudo" type="text" maxlength="16" autocomplete="nickname" placeholder="ex. Piaf33" value="${esc(S.set.pseudo || "")}"></label>
   <div class="sec">${ic("play")}Créer une partie</div>
   <div class="card lbox"><div class="lrow"><span class="lab">Chrono par question</span><div class="seg">${[5, 10, 15].map(v => `<button class="${+(S.set.liveT || 10) === v ? "on" : ""}" data-act="liveT" data-v="${v}">${v} s</button>`).join("")}</div></div>
-    <p class="muted" style="font-size:13px;margin:8px 0 12px">10 photos d'oiseaux communs de ta zone (${esc(zoneLabel(S.set.zone))}), 4 choix.</p>
-    <button class="btn primary wide" data-act="lcreate">${ic("bolt")}Créer et inviter</button></div>
+    <div class="lrow" style="margin-top:10px"><span class="lab">Groupe</span></div>
+    <div class="lgrp">${GROUPS.map(g => `<button class="${g.id === ROOT() ? "on" : ""}" data-act="lgrp" data-id="${g.id}" style="--gc:${g.c}">${ic(g.ic)}${esc(g.n)}</button>`).join("")}</div>
+    <p class="muted" style="font-size:13px;margin:8px 0 12px">10 photos ${isBirds() ? "d'oiseaux communs" : "de " + esc(GRP().n.toLowerCase()) + " parmi les plus observés"} (${esc(zoneLabel(curZone()))}), 4 choix.</p>
+    <button class="btn primary wide" data-act="lcreate">${ic("bolt")}Créer et inviter</button>
+    ${(S.amis || []).length ? `<div class="lrow" style="margin-top:14px"><span class="lab">Ou défie un ami directement</span></div><div class="lfr">${S.amis.slice(0, 12).map(a => `<button data-act="lfriend" data-u="${esc(a.u)}"><span class="av">${esc((a.n || "?").slice(0, 1).toUpperCase())}${typeof AMI !== "undefined" && AMI.list ? `<i class="dot ${(AMI.list.find(r => r.u === a.u) || {}).on ? "on" : ""}"></i>` : ""}</span>${esc(a.n || "Ami")}</button>`).join("")}</div>` : ""}</div>
   <div class="sec">${ic("arrow")}Rejoindre</div>
   <form class="card lbox ljoin" id="ljoin" autocomplete="off"><input id="lcode" type="text" inputmode="text" autocapitalize="characters" maxlength="5" placeholder="CODE" value="${jc}" aria-label="Code de la partie"><button class="btn primary" type="submit">${ic("check")}Rejoindre</button></form>
   <p class="muted note">Pendant un duel, la partie (pseudos, questions, réponses) passe par le serveur de l'appli et elle est effacée à la fin.</p>
@@ -426,12 +429,12 @@ function liveViewHtml() {
   <div class="lcard">
     <span class="eyebrow">Code de la partie</span><div class="lcode">${esc(LIVE.code)}</div>
     <div class="lplayers"><div class="pl me"><span class="av">${esc((my?.n || "?").slice(0, 1).toUpperCase())}</span><b>${esc(my?.n || "")}</b><small>toi</small></div><span class="vs">VS</span>
-      <div class="pl ${o ? "" : "wait"}"><span class="av">${o ? esc(o.n.slice(0, 1).toUpperCase()) : `<i class="dotp"></i>`}</span><b>${o ? esc(o.n) : "En attente…"}</b><small>${o ? "prêt" : "partage le code"}</small></div></div>
+      <div class="pl ${o ? "" : "wait"}"><span class="av">${o ? esc(o.n.slice(0, 1).toUpperCase()) : `<i class="dotp"></i>`}</span><b>${o ? esc(o.n) : LIVE.invited ? esc(LIVE.invited) : "En attente…"}</b><small>${o ? "prêt" : LIVE.invited ? "invitation envoyée…" : "partage le code"}</small></div></div>
     ${LIVE.err ? `<p class="lerr">${esc(LIVE.err)}</p>` : ""}
     ${LIVE.st === "prep" ? `<div class="lprep"><div class="spin"></div><b>${me === "host" ? "Je prépare les questions…" : esc(r?.host?.n || "") + " prépare les questions…"}</b></div>`
       : me === "host" ? (both ? `<button class="btn primary wide" data-act="llaunch">${ic("play")}C'est parti !</button>` : `<button class="btn ghost wide" data-act="lshare">${ic("arrow")}Inviter un ami</button>`)
       : `<p class="muted">En attente que ${esc(r?.host?.n || "l'hôte")} lance la partie…</p>`}
-    <p class="muted note">Chrono : ${r?.T || LIVE.T} s par question.</p>
+    <p class="muted note">${r?.gn ? esc(r.gn) + " · " : ""}Chrono : ${r?.T || LIVE.T} s par question.</p>
   </div></section>`;
   }
   if (LIVE.st === "q") {
@@ -443,7 +446,7 @@ function liveViewHtml() {
     <span style="width:44px"></span></header>
   <div class="timer"><i id="ltbar"></i></div>
   <div class="lwarn" id="lwarn" hidden>${ic("wave", "xs")}${esc(o?.n || "L'adversaire")} ne répond plus…</div>
-  <div class="stage"><figure class="shot" id="lshot"><img class="main" id="limg" alt="Oiseau à identifier" draggable="false"><span class="ret tl"></span><span class="ret tr"></span><span class="ret bl"></span><span class="ret br"></span><div class="spinner"><div class="spin"></div></div><figcaption class="credit">${esc(q.a || "")}</figcaption></figure></div>
+  <div class="stage"><figure class="shot" id="lshot"><img class="main" id="limg" alt="Espèce à identifier" draggable="false"><span class="ret tl"></span><span class="ret tr"></span><span class="ret bl"></span><span class="ret br"></span><div class="spinner"><div class="spin"></div></div><figcaption class="credit">${esc(q.a || "")}</figcaption></figure></div>
   <div class="prompt"><div class="q">${ic("frame")}<span>Quelle espèce ?</span></div><span class="lwait" id="lwait"></span></div>
   <div class="answers" id="lans">${q.c.map(([k, fr, sci], j) => `<button class="choice" data-act="lpick" data-k="${esc(k)}"><span class="k">${j + 1}</span><span class="lbl"><b>${esc(fr)}</b>${sci && sci !== fr ? `<span class="latin">${esc(sci)}</span>` : ""}</span></button>`).join("")}</div>
   <div class="lres" id="lres" hidden></div>
@@ -470,6 +473,60 @@ function liveViewHtml() {
    À chaque fin de partie, au plus une fois par minute : niveau, XP, meilleure série,
    nombre de parties, première et dernière visite, version. Coupé par « Compter ma visite ». */
 let USR_T = 0;
+/* Chaque réponse part dans mine/<ton identifiant>/log : seul ton compte admin peut lire. Silencieux hors ligne. */
+async function logRec(r) {
+  if (!S.set.share || !netOn() || netLocal()) return;
+  const rec = { ...r, t: Date.now() };
+  try { await fbToken(); await netReq("POST", `mine/${S.fb?.uid || myUid()}/log`, rec); } catch (e) { /* hors ligne : tant pis */ }
+}
+/* ---------- Mode admin caché : 5 touches sur la version dans Réglages, puis le mot de passe ----------
+   Le mot de passe est vérifié par Firebase (compte admin@plumage.app) ; l'appli ne garde que le jeton. */
+const ADM = { taps: 0, t: 0, ask: false, busy: false, err: "" };
+async function admTok() {
+  const a = S.adm; if (!a) throw new Error("admin");
+  if (a.token && a.exp > Date.now() + 60000) return a.token;
+  const r = await fetch(`https://securetoken.googleapis.com/v1/token?key=${FB_KEY}`, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: "grant_type=refresh_token&refresh_token=" + encodeURIComponent(a.refresh) });
+  const j = await r.json(); if (!r.ok) throw new Error("session");
+  S.adm = { token: j.id_token, refresh: j.refresh_token, exp: Date.now() + (+j.expires_in || 3600) * 1000 }; save();
+  return S.adm.token;
+}
+async function admLogin() {
+  const pw = ($("#admpw") || {}).value || ""; if (!pw || ADM.busy) return;
+  ADM.busy = true; ADM.err = "";
+  try {
+    const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FB_KEY}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: "admin@plumage.app", password: pw, returnSecureToken: true }) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(/PASSWORD|CREDENTIAL|NOT_FOUND/.test(j.error?.message || "") ? "Mot de passe incorrect." : /OPERATION_NOT_ALLOWED|CONFIGURATION/.test(j.error?.message || "") ? "Active « E-mail/Mot de passe » dans la console Firebase." : "Connexion impossible.");
+    S.adm = { token: j.idToken, refresh: j.refreshToken, exp: Date.now() + (+j.expiresIn || 3600) * 1000 }; save(true);
+    ADM.ask = false; toast("Mode admin activé.");
+  } catch (e) { ADM.err = e.message === "Failed to fetch" ? "Pas de réseau." : e.message; }
+  ADM.busy = false; rerender();
+}
+async function admExport(el) {
+  if (el) el.disabled = true;
+  try {
+    const tok = await admTok();
+    const r = await fetch(`${netBase()}/mine.json?auth=${encodeURIComponent(tok)}`, { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status === 401 ? "Règles Firebase non publiées." : "Erreur " + r.status);
+    const m = (await r.json()) || {};
+    const rows = Object.entries(m).flatMap(([uid, v]) => Object.values((v && v.log) || {}).map(x => ({ uid, ...x }))).sort((a, b) => a.t - b.t);
+    if (!rows.length) { toast("Aucune réponse reçue pour l'instant."); return; }
+    const name = `plumage-reponses-${new Date().toISOString().slice(0, 10)}.json`;
+    const file = new File([JSON.stringify({ n: rows.length, at: Date.now(), rows })], name, { type: "application/json" });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) await navigator.share({ files: [file], title: "Mes réponses Plumage" }).catch(() => {});
+    else { const a = document.createElement("a"); a.href = URL.createObjectURL(file); a.download = name; a.click(); }
+    toast(fmt(rows.length) + " réponses exportées.");
+  } catch (e) { toast(e.message === "admin" || e.message === "session" ? "Session admin expirée : reconnecte-toi." : e.message); }
+  finally { if (el) el.disabled = false; }
+}
+function admHtml() {
+  if (S.adm) return `<div class="sec" style="margin-top:18px">${ic("shield")}Admin</div><div class="group">
+    <div class="set"><span class="lab"><b>Partager mes réponses avec Claude</b><small>Chaque réponse de ce téléphone part vers une base que seul l'admin lit.</small></span>${`<button class="switch ${S.set.share ? "on" : ""}" data-act="toggle" data-k="share" role="switch" aria-checked="${S.set.share ? "true" : "false"}" aria-label="Partager"></button>`}</div>
+    <div class="set"><span class="lab"><b>Exporter pour Claude</b><small>Toutes les réponses reçues, en un fichier à m'envoyer.</small></span><button class="btn ghost" data-act="admexp">${ic("down")}Exporter</button></div>
+    <div class="set"><span class="lab"><b>Quitter le mode admin</b><small>Coupe aussi le partage.</small></span><button class="btn ghost" data-act="admout">Quitter</button></div></div>`;
+  if (!ADM.ask) return "";
+  return `<div class="sec" style="margin-top:18px">${ic("shield")}Admin</div><div class="group"><div class="set"><span class="lab"><b>Code admin</b>${ADM.err ? `<small style="color:var(--bad,#e66)">${esc(ADM.err)}</small>` : ""}</span><input type="password" id="admpw" autocomplete="current-password" placeholder="mot de passe" aria-label="Code admin"><button class="btn ghost" data-act="admgo">OK</button></div></div>`;
+}
 async function userPing() {
   if (!netOn() || netLocal() || S.set.stats === false) return;
   const now = Date.now();
@@ -480,7 +537,7 @@ async function userPing() {
   try {
     await fbToken();
     if (!S.uid) return;
-    await netReq("PUT", "users/" + S.uid, { lv: level().n, xp: S.xp | 0, best: (S.streak && S.streak.best) | 0, n: S.ustat.n, last: now, first: S.ustat.first || now, v: typeof APP_VERSION !== "undefined" ? String(APP_VERSION) : "" });
+    await netReq("PUT", "users/" + S.uid, { lv: level(S.xp, 3).n, xp: S.xp | 0, best: (S.streak && S.streak.best) | 0, n: S.ustat.n, last: now, first: S.ustat.first || now, v: typeof APP_VERSION !== "undefined" ? String(APP_VERSION) : "" });
   } catch (e) { /* rien */ }
 }
 if (typeof endSession === "function") {

@@ -140,6 +140,7 @@ async function handle(route) {
     const map = { "/x/unb.ttf": "unbounded/Unbounded[wght].ttf", "/x/fig.ttf": "figtree/Figtree[wght].ttf", "/x/isi.ttf": "instrumentserif/InstrumentSerif-Italic.ttf", "/x/isr.ttf": "instrumentserif/InstrumentSerif-Regular.ttf" };
     const f = map[p];
     if (!f) return route.fulfill({ status: 404, body: "" });
+    if (!fs.existsSync(path.join(GF, f))) return route.fulfill({ status: 404, body: "" });   /* polices de test absentes (dépôt cloné) */
     return route.fulfill({ status: 200, contentType: "font/ttf", headers: { "access-control-allow-origin": "*" }, body: fs.readFileSync(path.join(GF, f)) });
   }
   if (host === "static.inaturalist.org") {

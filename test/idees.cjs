@@ -23,7 +23,7 @@ const { handle } = require("./mock.cjs");
   await p.evaluate(() => ideaFlush());
   const db = await p.evaluate(() => JSON.parse(localStorage.getItem("plumage.netlocal") || "{}").ideas || {});
   const row = Object.values(db)[0];
-  if (Object.keys(db).length !== 1 || Object.keys(row).sort().join() !== "c,k,t,txt,v" || !(await p.evaluate(() => S.ideas[0].sent))) fail("envoi " + JSON.stringify(db));
+  if (Object.keys(db).length !== 1 || Object.keys(row).sort().join() !== "c,k,t,txt,u,v" || !(await p.evaluate(() => S.ideas[0].sent))) fail("envoi " + JSON.stringify(db));
   // 3) message trop court refusé, panneau des derniers envois
   await p.click("[data-act=ideas]"); await p.waitForSelector("#ideaf .btn");
   await p.fill("#idtxt", "a"); await p.click("#ideaf button[type=submit]");

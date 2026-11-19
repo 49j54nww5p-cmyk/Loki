@@ -6,8 +6,8 @@ const sharp = require("sharp");
 const ROOT = __dirname, SRC = path.join(ROOT, "src"), DIST = process.env.OUT ? path.resolve(process.env.OUT) : path.join(ROOT, "dist");
 fs.mkdirSync(DIST, { recursive: true });
 
-const css = fs.readFileSync(path.join(SRC, "styles.css"), "utf8") + "\n/* ==== look.css : refonte v3 ==== */\n" + fs.readFileSync(path.join(SRC, "look.css"), "utf8") + "\n/* ==== stories.css : v4 ==== */\n" + fs.readFileSync(path.join(SRC, "stories.css"), "utf8") + "\n/* ==== tabs.css ==== */\n" + fs.readFileSync(path.join(SRC, "tabs.css"), "utf8") + "\n/* ==== autres.css ==== */\n" + fs.readFileSync(path.join(SRC, "autres.css"), "utf8") + "\n/* ==== grand.css ==== */\n" + fs.readFileSync(path.join(SRC, "grand.css"), "utf8") + "\n/* ==== anim.css ==== */\n" + fs.readFileSync(path.join(SRC, "anim.css"), "utf8") + "\n/* ==== boutique.css ==== */\n" + fs.readFileSync(path.join(SRC, "boutique.css"), "utf8") + "\n/* ==== niveaux.css ==== */\n" + fs.readFileSync(path.join(SRC, "niveaux.css"), "utf8") + "\n/* ==== voix.css ==== */\n" + fs.readFileSync(path.join(SRC, "voix.css"), "utf8") + "\n/* ==== video.css ==== */\n" + fs.readFileSync(path.join(SRC, "video.css"), "utf8") + "\n/* ==== pc.css ==== */\n" + fs.readFileSync(path.join(SRC, "pc.css"), "utf8");
-const js = ["data.js", "core.js", "engine.js", "hand.js", "sosies.js", "net.js", "partage.js", "defi.js", "parcours.js", "grand.js", "terrain.js", "cloud.js", "semaine.js", "idees.js", "ui.js", "boutique.js", "niveaux.js", "voix.js", "video.js", "stats.js", "anim.js"].map(f => `/* ---- ${f} ---- */\n` + fs.readFileSync(path.join(SRC, f), "utf8")).join("\n");
+const css = fs.readFileSync(path.join(SRC, "styles.css"), "utf8") + "\n/* ==== look.css : refonte v3 ==== */\n" + fs.readFileSync(path.join(SRC, "look.css"), "utf8") + "\n/* ==== stories.css : v4 ==== */\n" + fs.readFileSync(path.join(SRC, "stories.css"), "utf8") + "\n/* ==== tabs.css ==== */\n" + fs.readFileSync(path.join(SRC, "tabs.css"), "utf8") + "\n/* ==== autres.css ==== */\n" + fs.readFileSync(path.join(SRC, "autres.css"), "utf8") + "\n/* ==== grand.css ==== */\n" + fs.readFileSync(path.join(SRC, "grand.css"), "utf8") + "\n/* ==== anim.css ==== */\n" + fs.readFileSync(path.join(SRC, "anim.css"), "utf8") + "\n/* ==== boutique.css ==== */\n" + fs.readFileSync(path.join(SRC, "boutique.css"), "utf8") + "\n/* ==== niveaux.css ==== */\n" + fs.readFileSync(path.join(SRC, "niveaux.css"), "utf8") + "\n/* ==== voix.css ==== */\n" + fs.readFileSync(path.join(SRC, "voix.css"), "utf8") + "\n/* ==== video.css ==== */\n" + fs.readFileSync(path.join(SRC, "video.css"), "utf8") + "\n/* ==== pc.css ==== */\n" + fs.readFileSync(path.join(SRC, "pc.css"), "utf8") + "\n/* ==== groupes.css ==== */\n" + fs.readFileSync(path.join(SRC, "groupes.css"), "utf8") + "\n/* ==== amis.css ==== */\n" + fs.readFileSync(path.join(SRC, "amis.css"), "utf8");
+const js = ["data.js", "core.js", "engine.js", "hand.js", "sosies.js", "net.js", "partage.js", "defi.js", "parcours.js", "grand.js", "terrain.js", "cloud.js", "semaine.js", "idees.js", "ui.js", "boutique.js", "niveaux.js", "voix.js", "video.js", "stats.js", "anim.js", "groupes.js", "amis.js"].map(f => `/* ---- ${f} ---- */\n` + fs.readFileSync(path.join(SRC, f), "utf8")).join("\n");
 const html = fs.readFileSync(path.join(SRC, "shell.html"), "utf8")
   .replace("/*__CSS__*/", () => css)
   .replace("/*__JS__*/", () => js);
@@ -18,11 +18,14 @@ const copyDir = (from, to) => { fs.mkdirSync(to, { recursive: true }); for (cons
 copyDir(path.join(ROOT, "assets"), DIST);
 
 const bird = "M3 15.5c1.8.2 3.3-.3 4.6-1.4 1.5-1.3 2.6-3.7 5.6-4.4 2.4-.6 4.3.2 5.4 1.4l2.9-.3-2.3 1.9c0 3.7-3 6.8-7.3 6.8-2.7 0-4.9-1-6.5-2.6L3 15.5zM16.5 11.3a.85.85 0 1 0 0 1.7.85.85 0 0 0 0-1.7z";
-/* Icône : l'oiseau à l'encre sur l'orange de l'appli */
+/* Icône : la plume à l'encre sur le jaune de l'appli */
 const icon = rx => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
 <defs><clipPath id="c"><rect width="512" height="512" rx="${rx}"/></clipPath></defs>
 <g clip-path="url(#c)"><rect width="512" height="512" fill="#FFCE00"/>
-<path transform="translate(40 2) scale(18)" fill="#0B0B0B" fill-rule="evenodd" d="${bird}"/></g></svg>`;
+<g transform="rotate(32 256 256)">
+<path fill="#0B0B0B" d="M262 56 C300 96 324 160 322 230 L300 236 L322 252 C318 300 304 346 284 380 L266 380 L246 370 C222 340 206 300 200 260 L228 246 L198 236 C196 168 218 104 262 56 Z"/>
+<path d="M262 76 C268 180 266 300 258 470" stroke="#FFCE00" stroke-width="10" fill="none" stroke-linecap="round"/>
+<path d="M258 470 L262 392" stroke="#0B0B0B" stroke-width="12" stroke-linecap="round"/></g></g></svg>`;
 fs.writeFileSync(path.join(DIST, "icon.svg"), icon(112));
 
 const manifest = {
@@ -39,7 +42,7 @@ fs.writeFileSync(path.join(DIST, "manifest.webmanifest"), JSON.stringify(manifes
 /* Service worker : coquille de l'appli en cache (s'ouvre sans réseau), photos du pack terrain hors ligne */
 const walk = (d, base = "") => fs.readdirSync(d).flatMap(f => { const a = path.join(d, f), r = base + f; return fs.statSync(a).isDirectory() ? walk(a, r + "/") : [r]; });
 const shell = ["./", "index.html", "manifest.webmanifest", "icon.svg", "icon-180.png", "icon-192.png", "icon-512.png", ...walk(path.join(ROOT, "assets")).filter(f => !/\.txt$|\.md$/i.test(f))];
-const ver = require("crypto").createHash("sha1").update(html + JSON.stringify(shell)).digest("hex").slice(0, 10);
+const ver = require("crypto").createHash("sha1").update(html + JSON.stringify(shell) + icon(0)).digest("hex").slice(0, 10);
 fs.writeFileSync(path.join(DIST, "sw.js"), fs.readFileSync(path.join(SRC, "sw.js"), "utf8").replace("__VERSION__", ver).replace("/*__SHELL__*/[]", JSON.stringify(shell)));
 
 (async () => {

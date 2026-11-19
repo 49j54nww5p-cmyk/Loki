@@ -20,7 +20,7 @@ const MODES = [
 
 function photoStim() { return S.set.photo === "field" ? ["field"] : S.set.photo === "mix" ? ["photo", "field"] : ["photo"]; }
 function baseCfg() {
-  return { kind: "quiz", zone: S.set.zone, freq: "common", size: 120, target: "species", names: S.set.names, format: S.set.fmt || "qcm", k: S.set.k, diff: S.set.diff, len: 10, timer: 0 };
+  return { kind: "quiz", grp: ROOT(), zone: curZone(), freq: "common", size: 120, target: "species", names: S.set.names, format: S.set.fmt || "qcm", k: S.set.k, diff: S.set.diff, len: 10, timer: 0 };
 }
 function modeCfg(k) {
   const b = baseCfg();
@@ -35,9 +35,9 @@ function modeCfg(k) {
     default: return null;
   }
 }
-const dailyCfg = () => ({ kind: "serie", format: S.set.fmt || "qcm", title: "Série du jour", icon: "spark", zone: S.set.zone, len: 12, names: S.set.names, diff: S.set.diff, k: S.set.k });
-const miniCfg = () => ({ kind: "mini", format: S.set.fmt || "qcm", title: "Mini-série", icon: "bolt", zone: S.set.zone, len: 3, names: S.set.names, diff: S.set.diff, k: S.set.k });
-const reviewCfg = () => ({ kind: "review", format: S.set.fmt || "qcm", title: "Révisions", icon: "replay", zone: S.set.zone, names: S.set.names, diff: S.set.diff, k: S.set.k });
+const dailyCfg = () => ({ kind: "serie", grp: ROOT(), format: S.set.fmt || "qcm", title: "Série du jour", icon: "spark", zone: curZone(), len: 12, names: S.set.names, diff: S.set.diff, k: S.set.k });
+const miniCfg = () => ({ kind: "mini", grp: ROOT(), format: S.set.fmt || "qcm", title: "Mini-série", icon: "bolt", zone: curZone(), len: 3, names: S.set.names, diff: S.set.diff, k: S.set.k });
+const reviewCfg = () => ({ kind: "review", grp: ROOT(), format: S.set.fmt || "qcm", title: "Révisions", icon: "replay", zone: curZone(), names: S.set.names, diff: S.set.diff, k: S.set.k });
 const duelCfg = pair => ({ kind: "duel", title: "Duel", icon: "duel", zone: S.set.zone, pair, len: 8, names: S.set.names, k: 2 });
 
 function newSession(cfg) {
@@ -52,6 +52,10 @@ async function startSession(cfg) {
   unlockAudio();
   closeLayer();
   sndStop();
+  /* une partie garde son groupe (rejouer, favoris) : on y rebascule si besoin */
+  /* sans groupe noté : ancienne partie, donc oiseaux */
+  const g = +(cfg.grp || 3);
+  if (g !== ROOT()) setGroup(g);
   const ses = SES = newSession(cfg);
   go("loading", { title: cfg.title, icon: cfg.icon });
   try {
@@ -159,6 +163,7 @@ function planSerie(ses, len) {
 }
 function planMini(ses) {
   const P = ses.pool.list.slice(0, 80), a = shuffle(P);
+  if (!isBirds()) return [{ t: a[0], stim: "photo" }, { t: a[1], stim: "field" }, { t: a[2], stim: "la" }];
   return [{ t: a[0], stim: "photo" }, { t: a[1], stim: "son", format: "tiles", k: 4 }, { t: a[2], stim: "fr" }];
 }
 function planReview(ses) {
@@ -593,6 +598,7 @@ function settle(res) {
         if (pk || su) r.od = pushU(r.od, todayNum(), 8);
       }
       logAttempt(q.t.id, ok, q.stim === "field" ? "f" : mod === "son" ? "s" : mod === "nom" ? "n" : "p", pk || (su ? sndKey(su) : 0));
+      logRec({ sp: q.t.sci || q.t.id, lv: q.level, st: q.stim || "photo", ok: ok ? 1 : 0, ms: Math.min(ms, 600000), hu: (q.hintsUsed || 0) > 0 ? 1 : 0, ph: pk || 0, ch: !ok && res.chosen?.t ? (res.chosen.t.sci || res.chosen.t.id) : null, pn: S.paths?.grand ? 1 : 0 });
     }
     else { const f = fam(q.t); if (f) { const s = S.fam[f] || (S.fam[f] = { n: 0, ok: 0 }); s.n++; if (ok) s.ok++; } }
     bump(q.level === "family" ? "fam" : q.level === "genus" ? "genre" : q.level === "order" ? "ordre" : mod, ok);

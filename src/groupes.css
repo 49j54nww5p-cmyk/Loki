@@ -1,0 +1,35 @@
+/* Sélecteur de groupe (accueil, en haut à gauche) */
+.hud .gsw{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:2px;width:42px;height:42px;padding:0;border-radius:999px;border:1.5px solid color-mix(in srgb,var(--gc) 55%,transparent);background:color-mix(in srgb,var(--gc) 14%,transparent);color:var(--gc);cursor:pointer}
+.hud .gsw .i{width:22px;height:22px}
+.hud .gsw .i.xs{width:12px;height:12px;opacity:.8;transform:rotate(90deg)}
+.grplist{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grpit{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:4px 10px;text-align:left;padding:12px;border-radius:16px;border:1.5px solid var(--line-2,rgba(255,255,255,.12));background:var(--card,#161616);color:inherit;cursor:pointer}
+.grpit .gi{grid-row:span 2;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--gc) 18%,transparent);color:var(--gc)}
+.grpit .gi .i{width:24px;height:24px}
+.grpit b{font-weight:700;font-size:15px}
+.grpit small{grid-column:2;color:var(--muted,#999);font-size:12px}
+.grpit>.i.s{grid-row:1;grid-column:3;color:var(--gc)}
+.grpit.on{border-color:var(--gc);background:color-mix(in srgb,var(--gc) 10%,var(--card,#161616))}
+.ghome .gz{margin:14px 0 4px}
+.ghome .gz .row{flex-wrap:wrap}
+.gnote{font-size:13px;margin:14px 2px 0}
+.lgrp{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.lgrp button{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:999px;border:1.5px solid var(--line-2,rgba(255,255,255,.12));background:none;color:inherit;font:600 13px/1 var(--f-ui,system-ui);cursor:pointer}
+.lgrp button .i{width:16px;height:16px;color:var(--gc)}
+.lgrp button.on{border-color:var(--gc);background:color-mix(in srgb,var(--gc) 14%,transparent)}
+/* XP par groupe */
+.hud .pill.xp.gx .i{color:var(--gc)}
+.xplist{display:flex;flex-direction:column;gap:8px}
+.xprow{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;text-align:left;padding:10px 12px;border-radius:16px;border:1.5px solid var(--line-2,rgba(255,255,255,.12));background:var(--card,#161616);color:inherit;cursor:pointer}
+.xprow .gi{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--gc) 18%,transparent);color:var(--gc)}
+.xprow .gi .i{width:24px;height:24px}
+.xprow .tx{min-width:0;display:flex;flex-direction:column;gap:2px}
+.xprow .tx b{font-weight:700;font-size:15px}
+.xprow .tx small{color:var(--muted,#999);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.xprow .xb{display:block;height:4px;border-radius:4px;background:var(--line-2,rgba(255,255,255,.1));overflow:hidden;margin-top:4px}
+.xprow .xb i{display:block;height:100%;background:var(--gc)}
+.xprow .xv{font:800 18px/1 var(--f-display,system-ui);font-variant-numeric:tabular-nums;text-align:right}
+.xprow .xv small{display:block;font:600 11px/1.4 var(--f-ui,system-ui);color:var(--muted,#999)}
+.xprow.on{border-color:var(--gc);background:color-mix(in srgb,var(--gc) 10%,var(--card,#161616))}
+.xptot{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding:12px 4px 0;border-top:1px solid var(--line-2,rgba(255,255,255,.1));font-size:14px}
+.xptot b{font-size:16px}

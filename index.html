@@ -2850,6 +2850,22 @@ body.voxon .view.quiz{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
 .lgrp button{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:999px;border:1.5px solid var(--line-2,rgba(255,255,255,.12));background:none;color:inherit;font:600 13px/1 var(--f-ui,system-ui);cursor:pointer}
 .lgrp button .i{width:16px;height:16px;color:var(--gc)}
 .lgrp button.on{border-color:var(--gc);background:color-mix(in srgb,var(--gc) 14%,transparent)}
+/* XP par groupe */
+.hud .pill.xp.gx .i{color:var(--gc)}
+.xplist{display:flex;flex-direction:column;gap:8px}
+.xprow{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;text-align:left;padding:10px 12px;border-radius:16px;border:1.5px solid var(--line-2,rgba(255,255,255,.12));background:var(--card,#161616);color:inherit;cursor:pointer}
+.xprow .gi{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--gc) 18%,transparent);color:var(--gc)}
+.xprow .gi .i{width:24px;height:24px}
+.xprow .tx{min-width:0;display:flex;flex-direction:column;gap:2px}
+.xprow .tx b{font-weight:700;font-size:15px}
+.xprow .tx small{color:var(--muted,#999);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.xprow .xb{display:block;height:4px;border-radius:4px;background:var(--line-2,rgba(255,255,255,.1));overflow:hidden;margin-top:4px}
+.xprow .xb i{display:block;height:100%;background:var(--gc)}
+.xprow .xv{font:800 18px/1 var(--f-display,system-ui);font-variant-numeric:tabular-nums;text-align:right}
+.xprow .xv small{display:block;font:600 11px/1.4 var(--f-ui,system-ui);color:var(--muted,#999)}
+.xprow.on{border-color:var(--gc);background:color-mix(in srgb,var(--gc) 10%,var(--card,#161616))}
+.xptot{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding:12px 4px 0;border-top:1px solid var(--line-2,rgba(255,255,255,.1));font-size:14px}
+.xptot b{font-size:16px}
 
 </style>
 </head>
@@ -3848,6 +3864,7 @@ function setGroup(id) {
   if (+id === ROOT()) return;
   S.set.grp = +id; save(true);
   TAXO.fam = new Map(); TAXO.ord = new Map(); TAXO.famByName = new Map(); TAXO.ready = null; TAXO.ok = false; LEXP = null;
+  ensureNames(+id).then(() => { if (typeof VIEW !== "undefined" && VIEW === "home" && typeof rerender === "function") rerender(); }).catch(() => {});
 }
 
 /* ---------- Taxonomie ---------- */
@@ -4471,15 +4488,65 @@ function dueList() {
   return out.sort((a, b) => a.d - b.d || a.box - b.box);
 }
 const lvlXp = n => 60 * (n - 1) * n;
-function level(xp = S.xp) {
+/* XP par groupe : S.gxp[groupe] ; S.xp reste le total (classement, boutique).
+   Première fois : l'XP déjà gagnée hors oiseaux est retrouvée dans l'historique des parties. */
+function gxpMap() {
+  if (S.gxp && typeof S.gxp === "object") return S.gxp;
+  const m = {};
+  for (const h of S.hist || []) { const g = +((h.cfg && h.cfg.grp) || 3); if (g !== 3) m[g] = (m[g] || 0) + Math.max(0, +h.xp || 0); }
+  const other = Object.values(m).reduce((a, b) => a + b, 0);
+  m[3] = Math.max(0, (S.xp || 0) - other);
+  return (S.gxp = m);
+}
+const gxp = (g = ROOT()) => Math.max(0, +gxpMap()[g] || 0);
+/* Paliers de 10 niveaux, propres à chaque groupe */
+const GTIERS = {
+  47126: ["Graine", "Germe", "Pousse", "Plantule", "Bouton", "Fleur", "Fruit", "Herboriste", "Botaniste", "Légende"],
+  47158: ["Œuf", "Larve", "Chenille", "Chrysalide", "Imago", "Butineur", "Chasseur d'insectes", "Entomologiste", "Naturaliste", "Légende"],
+  47170: ["Spore", "Mycélium", "Primordium", "Pied", "Chapeau", "Cueilleur", "Chercheur de cèpes", "Mycologue", "Mycologue chevronné", "Légende"],
+  40151: ["Nouveau-né", "Petit", "Jeune", "Subadulte", "Adulte", "Pisteur", "Affûteur", "Mammalogiste", "Traqueur", "Légende"],
+  26036: ["Œuf", "Nouveau-né", "Juvénile", "Première mue", "Adulte", "Lézardeur", "Chercheur de reptiles", "Herpétologue", "Charmeur de serpents", "Légende"],
+  20978: ["Œuf", "Têtard", "Têtard à pattes", "Métamorphe", "Juvénile", "Adulte", "Écouteur de mares", "Batrachologue", "Herpétologue", "Légende"],
+  47178: ["Œuf", "Larve", "Alevin", "Juvénile", "Adulte", "Pêcheur", "Plongeur", "Ichtyologue", "Ichtyologue chevronné", "Légende"],
+  47119: ["Œuf", "Cocon", "Jeune", "Première mue", "Subadulte", "Adulte", "Tisseur", "Arachnologue", "Maître des toiles", "Légende"],
+  47115: ["Œuf", "Larve", "Juvénile", "Petite coquille", "Adulte", "Ramasseur de coquillages", "Conchyliologue", "Malacologue", "Malacologue chevronné", "Légende"]
+};
+const tiersOf = g => +g === 3 ? TIERS : (GTIERS[g] || TIERS);
+/* 100 noms de niveau : les oiseaux écrits à la main ; pour les autres groupes, 100 espèces du groupe
+   (des plus communes aux plus rares en France), récupérées une fois sur iNaturalist et gardées */
+const namesOf = g => +g === 3 ? NIV : ((S.gnames && Array.isArray(S.gnames[g]) && S.gnames[g].length >= 100) ? S.gnames[g] : null);
+const titreOf = g => +g === 3 ? (S.set && S.set.titre) : ((S.set && S.set.gtitre) || {})[g];
+let GNAMEP = {};
+function ensureNames(g = ROOT()) {
+  g = +g;
+  if (g === 3 || namesOf(g) || GNAMEP[g]) return GNAMEP[g] || Promise.resolve(true);
+  GNAMEP[g] = (async () => {
+    const seen = new Set(), list = [];
+    for (const page of [1, 2]) {
+      const d = await inat("/observations/species_counts", { taxon_id: g, place_id: 6753, locale: "fr", preferred_place_id: 6753, per_page: 500, page });
+      for (const r of d.results || []) { const n = cap(r.taxon?.preferred_common_name || ""); if (r.taxon?.rank === "species" && n && !seen.has(n.toLowerCase())) { seen.add(n.toLowerCase()); list.push(n); } }
+      if ((d.results || []).length < 500 || list.length >= 400) break;
+    }
+    if (list.length < 100) throw new Error("NAMES");
+    const out = Array.from({ length: 100 }, (_, k) => list[Math.round(k * (list.length - 1) / 99)]);
+    (S.gnames = S.gnames || {})[g] = out; save();
+    return true;
+  })().catch(e => { delete GNAMEP[g]; throw e; });
+  return GNAMEP[g];
+}
+function level(xp, g = ROOT()) {
+  if (xp === undefined) xp = gxp(g);
   let n = 1;
   while (xp >= lvlXp(n + 1)) n++;
-  const a = lvlXp(n), b = lvlXp(n + 1);
-  const bird = NIV[Math.min(n, 100) - 1], tier = TIERS[Math.min(Math.floor((n - 1) / 10), 9)];
-  const t = S.set && S.set.titre, title = typeof t === "string" && t && n >= 100 ? t : (Number.isInteger(t) && t >= 1 && t <= Math.min(n, 100) ? NIV[t - 1] : bird);
+  const a = lvlXp(n), b = lvlXp(n + 1), names = namesOf(g), T = tiersOf(g);
+  const tier = T[Math.min(Math.floor((n - 1) / 10), 9)];
+  const bird = names ? names[Math.min(n, 100) - 1] : (GROUPS.find(x => x.id === +g) || GROUPS[0]).n;
+  const t = titreOf(g), title = typeof t === "string" && t && n >= 100 ? t : (names && Number.isInteger(t) && t >= 1 && t <= Math.min(n, 100) ? names[t - 1] : bird);
   return { n, rank: tier + " · " + title, tier, bird, title, cur: xp - a, need: b - a, p: (xp - a) / (b - a) };
 }
-function addXp(n) { S.xp += n; today().xp += n; }
+/* La pastille d'XP de l'accueil : l'icône et l'XP du groupe en cours ; on la touche pour voir tous les groupes */
+function xpPill() { const G = GRP(); return `<button class="pill xp gx" data-act="xpall" title="XP par groupe" style="--gc:${G.c}">${ic(G.ic)}<span>${fmt(gxp())}</span></button>`; }
+function addXp(n) { S.xp += n; today().xp += n; const m = gxpMap(), g = ROOT(); m[g] = (+m[g] || 0) + n; }
 function liveStreak() {
   const st = S.streak;
   if (!st.last) return 0;
@@ -7050,7 +7117,7 @@ async function topFetch() {
 function topRowsHtml(list) {
   const me = S.uid;
   if (!list.length) return `<div class="empty">${ic("trophy")}<b>Personne pour l'instant</b><p>Active le classement ci-dessus : tu seras le premier !</p></div>`;
-  return `<ol class="toplist">${list.map((r, i) => { const L = level(r.xp); return `<li class="${r.uid === me ? "me" : ""} ${i < 3 ? "p" + (i + 1) : ""}"><span class="rk">${i < 3 ? ic("trophy") : i + 1}</span><span class="nm"><b>${esc(r.n)}${r.uid === me ? " <small>(toi)</small>" : ""}</b><small>Niveau ${L.n} · ${esc(L.rank)}</small></span><span class="xp">${fmt(r.xp)}<small>XP</small></span></li>`; }).join("")}</ol>`;
+  return `<ol class="toplist">${list.map((r, i) => { const L = level(r.xp, 3); return `<li class="${r.uid === me ? "me" : ""} ${i < 3 ? "p" + (i + 1) : ""}"><span class="rk">${i < 3 ? ic("trophy") : i + 1}</span><span class="nm"><b>${esc(r.n)}${r.uid === me ? " <small>(toi)</small>" : ""}</b><small>Niveau ${L.n} · ${esc(L.rank)}</small></span><span class="xp">${fmt(r.xp)}<small>XP</small></span></li>`; }).join("")}</ol>`;
 }
 function topViewHtml() {
   const on = !!S.set.topOn, nm = esc(S.set.pseudo || "");
@@ -7058,7 +7125,7 @@ function topViewHtml() {
   <div class="head"><button class="icon-btn" data-act="tab" data-tab="progress" aria-label="Retour">${ic("back")}</button><h1 class="h1" style="flex:1">Classement</h1></div>
   ${netOn() ? "" : `<div class="notice"><span class="ic">${ic("info")}</span><span class="tx"><b>Bientôt en ligne</b><small>Le classement s'allume dès que le serveur de l'appli est branché.</small></span></div>`}
   <div class="card topme">
-    <div class="tmrow"><span class="lvb">${level().n}</span><span class="tx"><b>${fmt(S.xp)} XP</b><small>${esc(level().rank)}</small></span></div>
+    <div class="tmrow"><span class="lvb">${level(S.xp, 3).n}</span><span class="tx"><b>${fmt(S.xp)} XP</b><small>${esc(level(S.xp, 3).rank)} · tous groupes</small></span></div>
     <label class="fld"><span>Ton pseudo</span><input id="pseudo" type="text" maxlength="16" autocomplete="nickname" placeholder="ex. Piaf33" value="${nm}"></label>
     <div class="tmrow sw"><span class="tx"><b>Apparaître dans le classement</b><small>Seuls ton pseudo et ton XP sont publiés.</small></span><button class="switch ${on ? "on" : ""}" data-act="topon" role="switch" aria-checked="${on}" aria-label="Apparaître dans le classement"></button></div>
   </div>
@@ -7462,7 +7529,7 @@ async function userPing() {
   try {
     await fbToken();
     if (!S.uid) return;
-    await netReq("PUT", "users/" + S.uid, { lv: level().n, xp: S.xp | 0, best: (S.streak && S.streak.best) | 0, n: S.ustat.n, last: now, first: S.ustat.first || now, v: typeof APP_VERSION !== "undefined" ? String(APP_VERSION) : "" });
+    await netReq("PUT", "users/" + S.uid, { lv: level(S.xp, 3).n, xp: S.xp | 0, best: (S.streak && S.streak.best) | 0, n: S.ustat.n, last: now, first: S.ustat.first || now, v: typeof APP_VERSION !== "undefined" ? String(APP_VERSION) : "" });
   } catch (e) { /* rien */ }
 }
 if (typeof endSession === "function") {
@@ -8910,7 +8977,7 @@ VIEWS.home = () => {
     ${INTRO.brand ? `<div class="brand" id="brand"><span class="mark">${ic("bird")}</span><span class="bname">Plumage</span></div>` : ""}
     <button class="hlvl ${INTRO.brand ? "wait" : ""}" id="hlvl" data-act="tab" data-tab="progress" aria-label="Niveau ${L.n}, ${esc(L.rank)}"><span class="badge">${L.n}</span><span class="meta"><b>${esc(L.rank)}</b><span class="bar"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span></span></button>
     <div class="pill flame ${st ? "" : "cold"} ${hot ? "hot" : ""}" title="Jours d'affilée">${ic("flame")}<span>${st}</span></div>
-    <button class="pill xp" data-act="tab" data-tab="top" title="Classement">${ic("spark")}<span>${fmt(S.xp)}</span></button>
+    ${xpPill()}
   </header>
   <div class="story ${done ? "done" : ""}">
     <button class="story-ph" id="otd" data-act="otd" aria-label="Oiseau du jour" disabled><img alt=""></button>
@@ -9769,6 +9836,10 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-19.2", n: "5.2", items: [
+    { ic: "spark", t: "Une XP par groupe", d: "L'XP en haut montre celle du groupe en cours, avec son icône. Touche-la pour voir l'XP de chaque groupe. Le classement garde le total." },
+    { ic: "trophy", t: "Des niveaux pour chaque groupe", d: "Chaque groupe a ses 100 niveaux, nommés d'après ses propres espèces, et ses paliers (Graine, Têtard, Spore…). Ta progression d'oiseaux ne change pas." }
+  ] },
   { v: "2026-11-19.1", n: "5.1", items: [
     { ic: "duel", t: "Duel en direct pour tous les groupes", d: "Plantes, insectes, champignons… : choisis le groupe avant de créer la partie, ton ami voit lequel en rejoignant. Aussi dans les sessions de chaque groupe." }
   ] },
@@ -10282,7 +10353,7 @@ VIEWS.progress = () => {
   <div class="head"><h1 class="ptitle">Progrès</h1></div>
   <div class="psum">
     <div class="psh"><div class="lring"><small>Niveau</small><b>${L.n}</b></div>
-      <div class="pst"><h2>${esc(L.rank)}</h2><p>${fmt(S.xp)} XP · encore ${fmt(L.need - L.cur)} pour le niveau ${L.n + 1}</p><span class="lbar"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span></div></div>
+      <div class="pst"><h2>${esc(L.rank)}</h2><p>${fmt(gxp())} XP ${esc(GRP().n.toLowerCase())} · encore ${fmt(L.need - L.cur)} pour le niveau ${L.n + 1}</p><span class="lbar"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span></div></div>
     <div class="pnums">
       <div><b>${ic("flame")}${st}</b><small>jour${st > 1 ? "s" : ""} d'affilée</small></div>
       <div><b>${recs.length}</b><small>espèce${recs.length > 1 ? "s" : ""}</small></div>
@@ -11503,7 +11574,7 @@ function defiStart(t = 1) {
 }
 
 function cosmHtml() {
-  const L = level().n, row = it => {
+  const L = level(S.xp, 3).n, row = it => {
     const own = cosOwn(it.k), on = own && cosOn(it), lock = it.lv && L < it.lv;
     const vis = it.g === "frame" ? `<span class="sframe ${it.k}" style="--sw:${it.sw}"><b>${L}</b></span>` : `<span class="sic">${ic(it.ic)}</span>`;
     const btn = own ? `<button class="sbuy ghost" data-act="cosuse" data-k="${it.k}">${on ? (it.g === "fx" ? "Activé" : "Actif") : (it.g === "snd" ? "Choisir" : "Activer")}</button>`
@@ -11521,7 +11592,7 @@ function cosmHtml() {
 }
 function cosBuy(k) {
   const it = COSM.find(c => c.k === k);
-  if (!it || cosOwn(k) || (it.lv && level().n < it.lv)) return false;
+  if (!it || cosOwn(k) || (it.lv && level(S.xp, 3).n < it.lv)) return false;
   if (S.plumes < it.p) { toast("Pas assez de plumes"); return false; }
   S.plumes -= it.p; S.cos.push(k); cosUse(k, true); save(true);
   const y = window.scrollY; go("shop"); window.scrollTo(0, y);
@@ -11556,12 +11627,15 @@ function titreSetHtml() {
   <div class="group"><div class="set"><span class="lvb">${L.n}</span><span class="lab"><b>${esc(L.title)}</b><small>Palier ${esc(L.tier)} · ${fmt(L.cur)} / ${fmt(L.need)} XP vers le niveau ${L.n + 1}</small></span><button class="btn ghost" data-act="titre">Changer</button></div></div>`;
 }
 function openTitre() {
-  const L = level(), max = Math.min(L.n, 100), cur = Number.isInteger(S.set.titre) ? S.set.titre : max;
-  const rows = NIV.map((b, i) => { const n = i + 1, ok = n <= max; return `<li data-n="${n}" class="${ok ? "" : "lk"}${n === cur ? " on" : ""}"><span class="wn">${n}</span><span class="wb">${ok ? esc(b) : "???"}</span>${n % 10 === 1 ? `<small>${esc(TIERS[(n - 1) / 10])}</small>` : ""}</li>`; }).join("");
+  const g = ROOT(), NAMES = namesOf(g);
+  if (!NAMES) { toast("Les titres de ce groupe arrivent (réseau)…"); ensureNames(g).then(() => openTitre()).catch(() => toast("Titres indisponibles hors ligne.")); return; }
+  const T = tiersOf(g), t0 = titreOf(g);
+  const L = level(), max = Math.min(L.n, 100), cur = Number.isInteger(t0) ? t0 : max;
+  const rows = NAMES.map((b, i) => { const n = i + 1, ok = n <= max; return `<li data-n="${n}" class="${ok ? "" : "lk"}${n === cur ? " on" : ""}"><span class="wn">${n}</span><span class="wb">${ok ? esc(b) : "???"}</span>${n % 10 === 1 ? `<small>${esc(T[(n - 1) / 10])}</small>` : ""}</li>`; }).join("");
   openLayer(`<div class="panel titp" role="dialog" aria-label="Choisir mon titre"><button class="icon-btn close" data-act="close" aria-label="Fermer">${ic("x")}</button>
-  <div class="in" style="padding-top:22px"><h2>Mon titre</h2><p class="muted">Fais tourner la roue : tu peux porter le nom de n'importe quel oiseau déjà atteint.</p>
+  <div class="in" style="padding-top:22px"><h2>Mon titre</h2><p class="muted">Fais tourner la roue : tu peux porter le nom de n'importe quel${g === 3 ? " oiseau" : "le espèce"} déjà atteint${g === 3 ? "" : "e"}.</p>
   <div class="wheel"><ul id="wheel">${rows}</ul><div class="wsel"></div></div>
-  ${L.n >= 100 ? `<label class="fld"><span>Titre libre (niveau 100 atteint)</span><input id="titrelib" maxlength="24" value="${typeof S.set.titre === "string" ? esc(S.set.titre) : ""}" placeholder="ex. Roi du Bassin"></label>` : `<p class="muted" style="font-size:13px">Au niveau 100, tu pourras écrire ton propre titre.</p>`}
+  ${L.n >= 100 ? `<label class="fld"><span>Titre libre (niveau 100 atteint)</span><input id="titrelib" maxlength="24" value="${typeof t0 === "string" ? esc(t0) : ""}" placeholder="ex. Roi du Bassin"></label>` : `<p class="muted" style="font-size:13px">Au niveau 100, tu pourras écrire ton propre titre.</p>`}
   <button class="btn primary wide" data-act="titreok" style="margin:12px 0 22px">Garder ce titre</button></div></div>`, "titl");
   const w = $("#wheel"), it = w && w.querySelector(`li[data-n="${cur}"]`);
   if (it) w.scrollTop = it.offsetTop - w.clientHeight / 2 + it.offsetHeight / 2;
@@ -11577,9 +11651,10 @@ ACT.titre = () => openTitre();
 ACT.titreok = () => {
   const lib = $("#titrelib"), v = lib ? cleanName(lib.value).slice(0, 24) : "";
   const on = $("#wheel li.on"), n = on ? +on.dataset.n : 0, max = Math.min(level().n, 100);
-  if (v) S.set.titre = v;
-  else if (n >= 1 && n <= max) S.set.titre = n;
-  else { toast("Cet oiseau n'est pas encore atteint."); return; }
+  const g = ROOT(), setT = x => { if (g === 3) S.set.titre = x; else (S.set.gtitre = S.set.gtitre || {})[g] = x; };
+  if (v) setT(v);
+  else if (n >= 1 && n <= max) setT(n);
+  else { toast("Ce titre n'est pas encore atteint."); return; }
   save(); closeLayer(); rerender(); toast("Titre : " + level().title);
 };
 
@@ -12052,7 +12127,7 @@ VIEWS.home = (...a) => {
   <header class="hud">${grpBtn()}
     <button class="hlvl" id="hlvl" data-act="tab" data-tab="progress" aria-label="Niveau ${L.n}, ${esc(L.rank)}"><span class="badge">${L.n}</span><span class="meta"><b>${esc(L.rank)}</b><span class="bar"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span></span></button>
     <div class="pill flame ${st ? "" : "cold"}" title="Jours d'affilée">${ic("flame")}<span>${st}</span></div>
-    <button class="pill xp" data-act="tab" data-tab="top" title="Classement">${ic("spark")}<span>${fmt(S.xp)}</span></button>
+    ${xpPill()}
   </header>
   <div class="story">
     <button class="story-ph" id="otd" data-act="otd" aria-label="${esc(G.one)} du jour" disabled><img alt=""></button>
@@ -12077,6 +12152,21 @@ VIEWS.home = (...a) => {
 };
 /* Le premier affichage de l'accueil a lieu avant le chargement de ce fichier : on y glisse le sélecteur */
 (() => { const h = document.querySelector(".view.home .hud"); if (h && !h.querySelector(".gsw")) h.insertAdjacentHTML("afterbegin", grpBtn()); })();
+
+/* ---------- XP par groupe : le panneau ouvert en touchant l'XP de l'accueil ---------- */
+function openXpPanel() {
+  const rows = GROUPS.map(g => ({ g, xp: gxp(g.id), L: level(undefined, g.id) })).sort((a, b) => b.xp - a.xp || (a.g.id === 3 ? -1 : 1));
+  openLayer(`<div class="panel"><button class="icon-btn close" data-act="close" aria-label="Fermer">${ic("x")}</button><div class="in" style="padding-top:22px">
+    <h2>Ton XP</h2><p class="muted" style="margin:6px 0 14px;font-size:14px">Chaque groupe a son XP, ses niveaux et ses titres. Touche un groupe pour y aller.</p>
+    <div class="xplist">${rows.map(({ g, xp, L }) => `<button class="xprow ${g.id === ROOT() ? "on" : ""}" data-act="grpset" data-id="${g.id}" style="--gc:${g.c}"><span class="gi">${ic(g.ic)}</span><span class="tx"><b>${esc(g.n)}</b><small>${xp ? `Niveau ${L.n} · ${esc(L.rank)}` : "Pas encore joué"}</small>${xp ? `<span class="xb"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span>` : ""}</span><span class="xv">${fmt(xp)}<small>XP</small></span></button>`).join("")}</div>
+    <div class="xptot"><span>Total, tous groupes</span><b>${fmt(S.xp)} XP</b></div>
+    <button class="btn ghost wide" data-act="xptop" style="margin:10px 0 22px">${ic("trophy")}Classement</button></div></div>`);
+  GROUPS.forEach(g => { if (g.id !== 3 && gxp(g.id) > 0 && !namesOf(g.id)) ensureNames(g.id).catch(() => {}); });
+}
+ACT.xpall = () => openXpPanel();
+ACT.xptop = () => { closeLayer(); SES = null; go("top"); };
+/* Au démarrage dans un groupe sans noms de niveau : on les récupère */
+if (!isBirds() && !namesOf(ROOT())) ensureNames().then(() => { if (VIEW === "home") rerender(); }).catch(() => {});
 
 </script>
 </body>

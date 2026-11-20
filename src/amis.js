@@ -25,13 +25,15 @@ async function amiCode() {
 }
 /* Mon profil public : publié quand j'ouvre les amis, puis à chaque fin de partie (au plus toutes les 15 s) */
 let PROFT = 0;
+/* Le cadre de maîtrise porté, tel que les amis le voient */
+function phOut() { const p = typeof myPh === "function" ? myPh() : null; return p && p.u ? { pu: p.u, pr: p.r, ps: String(p.s).slice(0, 60) } : { pu: "", pr: 0, ps: "" }; }
 async function profPush(force) {
   if (!netOn() || !S.amiC || !cleanName(S.set.pseudo)) return;
   if (!force && Date.now() - PROFT < 15000) return;
   PROFT = Date.now();
   const g = {};
   for (const [k, v] of Object.entries(gxpMap())) if (+v > 0) g[k] = Math.round(+v);
-  try { await netReq("PUT", "prof/" + (await amiUid()), { n: cleanName(S.set.pseudo), xp: Math.round(S.xp || 0), g, c: S.amiC, t: Date.now(), on: Date.now(), e: +S.set.emb || 0, f: +S.set.pfr || 0 }); }
+  try { await netReq("PUT", "prof/" + (await amiUid()), { n: cleanName(S.set.pseudo), xp: Math.round(S.xp || 0), g, c: S.amiC, t: Date.now(), on: Date.now(), e: +S.set.emb || 0, f: +S.set.pfr || 0, ...phOut() }); }
   catch (e) { /* hors ligne : on réessaiera */ }
 }
 const topPushAmi = topPush;
@@ -71,7 +73,7 @@ async function amiLoad() {
   AMI.list = ids.map((u, i) => {
     const p = profs[i], a = (S.amis || []).find(x => x.u === u);
     if (p && a && p.n && a.n !== cleanName(p.n)) a.n = cleanName(p.n);
-    return { u, me: u === me, n: cleanName(p && p.n) || (a && a.n) || "?", xp: Math.max(0, Math.round(+(p && p.xp) || 0)), g: (p && p.g) || {}, t: Math.max(+(p && p.t) || 0, +(p && p.on) || 0), on: u === me || Date.now() - (+(p && p.on) || 0) < 150000, ok: !!p, e: u === me ? +S.set.emb || 0 : +(p && p.e) || 0, f: u === me ? +S.set.pfr || 0 : +(p && p.f) || 0 };
+    return { u, me: u === me, n: cleanName(p && p.n) || (a && a.n) || "?", xp: Math.max(0, Math.round(+(p && p.xp) || 0)), g: (p && p.g) || {}, t: Math.max(+(p && p.t) || 0, +(p && p.on) || 0), on: u === me || Date.now() - (+(p && p.on) || 0) < 150000, ok: !!p, e: u === me ? +S.set.emb || 0 : +(p && p.e) || 0, f: u === me ? +S.set.pfr || 0 : +(p && p.f) || 0, ...(u === me ? phOut() : { pu: p && p.pu, pr: p && p.pr, ps: p && p.ps }) };
   });
   const rq = await netReq("GET", "fq/" + me).catch(() => null);
   AMI.req = Object.entries(rq || {}).filter(([u, v]) => v && !(S.amis || []).some(a => a.u === u)).map(([u, v]) => ({ u, n: cleanName(v.n) || "?", c: amiFmt(v.c), t: +v.t || 0 }));
@@ -83,7 +85,7 @@ function amiRowHtml(r) {
   const L = level(r.xp, 3), gs = Object.entries(r.g || {}).map(([g, x]) => [+g, +x]).filter(([, x]) => x > 0).sort((a, b) => b[1] - a[1]);
   const open = AMI.open === r.u;
   return `<li class="ami ${r.me ? "me" : ""} ${open ? "open" : ""}">
-    <button class="amih" data-act="amiopen" data-u="${esc(r.u)}"><span class="av avx">${typeof avatarHtml === "function" ? avatarHtml({ n: r.n, e: r.e, f: r.f }) : esc(r.n.slice(0, 1).toUpperCase())}<i class="dot ${r.on ? "on" : ""}" title="${r.on ? "En ligne" : "Hors ligne"}"></i></span>
+    <button class="amih" data-act="amiopen" data-u="${esc(r.u)}"><span class="av avx">${typeof avatarHtml === "function" ? avatarHtml({ n: r.n, e: r.e, f: r.f, pu: r.pu, pr: r.pr, ps: r.ps }) : esc(r.n.slice(0, 1).toUpperCase())}<i class="dot ${r.on ? "on" : ""}" title="${r.on ? "En ligne" : "Hors ligne"}"></i></span>
       <span class="tx"><b>${esc(r.n)}${r.me ? " <small>(toi)</small>" : ""}</b><small>${r.ok ? `Niveau ${L.n} · ${esc(L.tier)}${r.me ? "" : r.on ? " · en ligne" : r.t ? " · vu " + esc(ago(r.t)) : ""}` : "Profil pas encore publié"}</small>
       <span class="agrp">${gs.slice(0, 5).map(([g, x]) => { const G = GROUPS.find(y => y.id === g); return G ? `<span style="--gc:${G.c}" title="${esc(G.n)}">${ic(G.ic)}${level(x, g).n}</span>` : ""; }).join("")}</span></span>
       <span class="xv">${fmt(r.xp)}<small>XP</small></span></button>
@@ -160,6 +162,9 @@ ACT.amis = () => { closeLayer(); SES = null; AMI.list = null; AMI.scroll = true;
 function navMe() {
   const b = $("#navav"); if (!b) return;
   const E = S.set.emb && typeof grpOf === "function" ? grpOf(S.set.emb) : null;
+  const P = typeof myPh === "function" ? myPh() : null;
+  if (P && P.u) { b.innerHTML = ""; b.style.background = `center/cover url('${P.u}')`; b.dataset.r = P.r; return; }
+  delete b.dataset.r;
   b.innerHTML = E ? ic(E.ic) : navInitial();
   b.style.background = E ? E.c : "";
 }

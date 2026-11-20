@@ -1022,6 +1022,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-20.3", n: "5.10", items: [
+    { ic: "star", t: "Cadres de maîtrise", d: "Chaque espèce maîtrisée (3 étoiles) te donne un cadre avec sa photo, gratuit. L'anneau dépend de sa rareté en France : commune, peu commune, rare ou légendaire. À choisir dans la Boutique, tes amis le voient." }
+  ] },
   { v: "2026-11-20.2", n: "5.9", items: [
     { ic: "user", t: "Personnalise ton profil", d: "L'idée de Nohan : dans la Boutique, achète l'emblème et le cadre de chaque groupe (niveau 5 et 15 dans le groupe). Ils s'affichent sur ton bouton Profil et chez tes amis." }
   ] },

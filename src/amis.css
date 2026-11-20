@@ -82,3 +82,28 @@
 .pfav.pfx>.pav>.pin{background:var(--gold,#FFCE00);color:#000}
 .pfav.pfx>.pav.fr>.pin{inset:4px}
 .nav .navme .nme .i{color:#000}
+/* Cadres de maîtrise : photo de l'espèce, anneau de rareté */
+.pav.ph .pin{background-size:cover;background-position:center;background-color:#222}
+.pav.ph.r0{background:conic-gradient(#8C8C8C,#E6E6E6,#8C8C8C,#C9C9C9,#8C8C8C)}
+.pav.ph.r1{background:conic-gradient(#1F9E6A,#7BE3B4,#1F9E6A,#3BC5FF,#1F9E6A)}
+.pav.ph.r2{background:conic-gradient(#2F6BFF,#B08CFF,#2F6BFF,#7FD8FF,#2F6BFF)}
+.pav.ph.r3{background:conic-gradient(from var(--ra,0deg),#FFCE00,#FF7A3C,#FFF3B0,#FF5FA2,#FFCE00);animation:rspin 4s linear infinite;box-shadow:0 0 14px #FFCE0066}
+.pav.ph.r2,.pav.ph.r3{padding:0}
+.pav.ph.r2 .pin,.pav.ph.r3 .pin{inset:3px}
+@property --ra{syntax:"<angle>";inherits:false;initial-value:0deg}
+@keyframes rspin{to{--ra:360deg}}
+@media (prefers-reduced-motion:reduce){.pav.ph.r3{animation:none}}
+.mcgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+.mcad{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px 10px;border-radius:var(--r-lg,20px);background:var(--card,#1A1A1A);border:1.5px solid transparent;color:inherit;font:inherit;min-width:0;cursor:pointer}
+.mcad.on{border-color:var(--acc,#FFCE00)}
+.mcad>.pav{width:64px;height:64px}
+.mcad b{font-size:12.5px;line-height:1.2;text-align:center;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-width:100%}
+.mcad .rt{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:#2A2A2A;color:#BDBDBD}
+.mcad .rt.r1{color:#7BE3B4}.mcad .rt.r2{color:#B9A4FF}.mcad .rt.r3{color:#000;background:linear-gradient(90deg,#FFCE00,#FF9A5C)}
+.mcoff{margin-top:10px;width:100%}
+.mcempty{display:flex;align-items:center;gap:12px;padding:14px;border-radius:var(--r-lg,20px)}
+.mcempty p{margin:0;font-size:13px;color:var(--muted,#AAA)}
+#navav[data-r="3"]{box-shadow:0 0 0 3px #FFCE00,0 0 14px #FFCE0088}
+#navav[data-r="2"]{box-shadow:0 0 0 3px #8C7BFF}
+#navav[data-r="1"]{box-shadow:0 0 0 3px #3BC59A}
+#navav[data-r="0"]{box-shadow:0 0 0 3px #CFCFCF}

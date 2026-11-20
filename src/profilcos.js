@@ -25,11 +25,13 @@ const gLevel = id => level(undefined, +id).n;
 
 /* L'avatar : initiale ou emblème, avec ou sans cadre (pour moi ou pour un ami) */
 function avatarHtml(o, cls = "") {
+  const u = okImg(o.pu);
+  if (u) { const k = Math.max(0, Math.min(3, +o.pr || 0)); return `<span class="pav fr ph r${k} ${cls}" title="${esc(o.ps || "")}"><span class="pin" style="background-image:url('${u}')"></span></span>`; }
   const E = o.e ? grpOf(o.e) : null, F = o.f ? grpOf(o.f) : null;
   const inner = E ? ic(E.ic) : (o.n ? esc(String(o.n).slice(0, 1).toUpperCase()) : ic("user"));
   return `<span class="pav ${F ? "fr" : ""} ${cls}"${F ? ` style="background:${PFRAME[F.id]}"` : ""}><span class="pin"${E ? ` style="background:color-mix(in srgb, ${E.c} 22%, #121212);color:${E.c}"` : ""}>${inner}</span></span>`;
 }
-const myAvatar = cls => avatarHtml({ n: cleanName(S.set.pseudo), e: S.set.emb, f: S.set.pfr }, cls);
+function myAvatar(cls) { const p = myPh(); return avatarHtml({ n: cleanName(S.set.pseudo), e: S.set.emb, f: S.set.pfr, pu: p && p.u, pr: p && p.r, ps: p && p.s }, cls); }
 
 /* La section de la boutique */
 function pcosHtml() {
@@ -72,3 +74,73 @@ function pcosUse(k, force) {
 }
 ACT.pcosbuy = el => pcosBuy(el.dataset.k);
 ACT.pcosuse = el => { pcosUse(el.dataset.k); save(true); const y = window.scrollY; go("shop"); window.scrollTo(0, y); };
+
+/* ============================================================
+   Cadres de maîtrise : chaque espèce maîtrisée (3 étoiles) donne un cadre avec
+   sa photo. L'anneau dit sa rareté en France (observations iNaturalist).
+   ============================================================ */
+S.rar = S.rar && typeof S.rar === "object" ? S.rar : {};
+const RTIERS = [
+  { k: 3, n: "Légendaire", max: 300 },
+  { k: 2, n: "Rare", max: 2000 },
+  { k: 1, n: "Peu commune", max: 15000 },
+  { k: 0, n: "Commune", max: Infinity }
+];
+const rTier = c => c == null ? null : RTIERS.find(t => c < t.max);
+const okImg = u => typeof u === "string" && /^https:\/\/(inaturalist-open-data\.s3\.amazonaws\.com|static\.inaturalist\.org)\/photos\/[\w\/.-]+$/.test(u) ? u : "";
+const mastersList = () => Object.entries(S.sp).filter(([, r]) => stars(r) === 3 && r.img).map(([id, r]) => ({ id: +id, r, c: S.rar[id] ? S.rar[id].c : null }));
+let RARP = null;
+/* Va chercher le nombre d'observations en France des espèces maîtrisées (rafraîchi chaque semaine) */
+function rarLoad() {
+  const old = Date.now() - 7 * 864e5;
+  const ids = mastersList().filter(m => !S.rar[m.id] || S.rar[m.id].t < old).map(m => m.id);
+  if (!ids.length || RARP) return RARP || Promise.resolve(false);
+  RARP = (async () => {
+    for (let i = 0; i < ids.length; i += 30) {
+      const ch = ids.slice(i, i + 30);
+      try {
+        const d = await inat("/observations/species_counts", { taxon_id: ch.join(","), place_id: 6753, verifiable: "true", per_page: 200 });
+        const got = new Map((d.results || []).map(x => [x.taxon && x.taxon.id, x.count]));
+        for (const id of ch) S.rar[id] = { c: got.get(id) || 0, t: Date.now() };
+      } catch (e) { break; }
+    }
+    save(); RARP = null; return true;
+  })();
+  return RARP;
+}
+function myPh() {
+  const id = +S.set.pph, r = id && S.sp[id];
+  if (!r || stars(r) !== 3 || !r.img) return null;
+  const t = rTier(S.rar[id] ? S.rar[id].c : null);
+  return { u: okImg(r.img), s: r.fr || r.sci, r: t ? t.k : 0 };
+}
+function mcadHtml() {
+  const L = mastersList().sort((a, b) => (a.c ?? 1e9) - (b.c ?? 1e9));
+  const on = +S.set.pph;
+  const rare = L.filter(m => m.c != null && m.c < 2000).length;
+  if (!L.length) return `<h2 class="ssec">Cadres de maîtrise</h2>
+  <div class="mcempty glass">${avatarHtml({ pu: "", n: "?" }, "sm")}<p>Maîtrise une espèce (3 étoiles) pour gagner un cadre avec sa photo. Plus l'espèce est rare en France, plus le cadre brille.</p></div>`;
+  return `<h2 class="ssec">Cadres de maîtrise</h2>
+  <p class="muted" style="margin:-4px 2px 10px;font-size:13px">Une espèce maîtrisée, un cadre avec sa photo. Plus elle est rare en France, plus il brille${rare ? ` · tu en as ${rare} rare${rare > 1 ? "s" : ""}` : ""}.</p>
+  <div class="mcgrid">${L.map(m => {
+    const t = rTier(m.c);
+    return `<button class="mcad ${on === m.id ? "on" : ""}" data-act="mcaduse" data-id="${m.id}">${avatarHtml({ pu: m.r.img, pr: t ? t.k : 0, ps: m.r.fr || m.r.sci })}<b>${esc(m.r.fr || m.r.sci)}</b><small class="rt r${t ? t.k : 0}">${t ? t.n : "…"}</small></button>`;
+  }).join("")}</div>
+  ${on ? `<button class="sbuy ghost mcoff" data-act="mcadoff">Retirer le cadre de maîtrise</button>` : ""}`;
+}
+const shopViewPc = VIEWS.shop;
+VIEWS.shop = (...a) => shopViewPc(...a).replace('<h2 class="ssec">Ton profil</h2>', mcadHtml() + '<h2 class="ssec">Ton profil</h2>');
+function mcadRefresh() {
+  const y = window.scrollY;
+  if (VIEW === "shop") { go("shop"); window.scrollTo(0, y); }
+}
+const goPc = go;
+go = function (v, ...a) { const r = goPc(v, ...a); if (v === "shop") rarLoad().then(ch => { if (ch) mcadRefresh(); }); return r; };
+ACT.mcaduse = el => {
+  const id = +el.dataset.id; S.set.pph = +S.set.pph === id ? 0 : id; save(true);
+  if (typeof navMe === "function") navMe();
+  if (typeof profPush === "function") profPush(true).catch(() => {});
+  const r = S.sp[id]; mcadRefresh();
+  if (S.set.pph) toast(`Cadre ${r ? (r.fr || r.sci) : ""} porté`);
+};
+ACT.mcadoff = () => { S.set.pph = 0; save(true); if (typeof navMe === "function") navMe(); if (typeof profPush === "function") profPush(true).catch(() => {}); mcadRefresh(); };

@@ -53,7 +53,10 @@ function floatXp(n) {
   setTimeout(() => el.remove(), 1200);
 }
 let FXID = 0;
-function stopFx() { FXID++; const cv = $("#fx"); if (cv) cv.getContext("2d").clearRect(0, 0, cv.width, cv.height); }
+/* Effacer tout le canevas, quelle que soit la taille de l'écran entre-temps (barre de Safari qui apparaît, rotation…) */
+function fxClear(cv) { if (!cv) return; const g = cv.getContext("2d"); g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height); g.restore(); }
+function stopFx() { FXID++; fxClear($("#fx")); }
+document.addEventListener("visibilitychange", () => { if (document.visibilityState !== "visible") stopFx(); });
 function confetti(n = 90) {
   if (VIEW !== "result" && VIEW !== "quiz" && VIEW !== "live" && VIEW !== "defi") return;
   if (S.set.calm || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
@@ -65,20 +68,21 @@ function confetti(n = 90) {
   const cols = ["#1FD1F2", "#3D7BFF", "#14B8A6", "#FF8B3D", "#FFCB5C", "#FF6FA3"];
   const P = Array.from({ length: n }, () => ({ x: innerWidth / 2 + (Math.random() - .5) * 120, y: innerHeight * .38, vx: (Math.random() - .5) * 10, vy: -Math.random() * 12 - 4, r: Math.random() * 6, vr: (Math.random() - .5) * .35, w: 4 + Math.random() * 5, h: 9 + Math.random() * 12, c: pick(cols) }));
   let last = performance.now();
+  const t0 = last, H = innerHeight;
   const frame = t => {
     const dt = Math.min(34, t - last) / 16; last = t;
-    g.clearRect(0, 0, innerWidth, innerHeight);
+    fxClear(cv);
     let alive = 0;
     for (const p of P) {
       p.vy += .3 * dt; p.vx *= .992; p.x += p.vx * dt; p.y += p.vy * dt; p.r += p.vr * dt;
-      if (p.y < innerHeight + 30) alive++;
+      if (p.y < H + 30) alive++;
       g.save(); g.translate(p.x, p.y); g.rotate(p.r); g.fillStyle = p.c;
       g.beginPath(); g.ellipse(0, 0, p.w / 2, p.h / 2, 0, 0, Math.PI * 2); g.fill();
       g.fillStyle = "rgba(255,255,255,.35)"; g.fillRect(-.5, -p.h / 2, 1, p.h);
       g.restore();
     }
-    if (id !== FXID) { g.clearRect(0, 0, innerWidth, innerHeight); return; }
-    if (alive) requestAnimationFrame(frame); else g.clearRect(0, 0, innerWidth, innerHeight);
+    if (id !== FXID) { fxClear(cv); return; }
+    if (alive && t - t0 < 5000) requestAnimationFrame(frame); else fxClear(cv);   /* 5 s au plus, puis tout s'efface */
   };
   requestAnimationFrame(frame);
 }
@@ -1018,6 +1022,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-20.1", n: "5.8", items: [
+    { ic: "check", t: "Confettis corrigés", d: "Ils pouvaient rester figés à l'écran pendant toute la partie sur iPhone (merci Nohan !). Ils s'effacent maintenant toujours." }
+  ] },
   { v: "2026-11-19.7", n: "5.7", items: [
     { ic: "bolt", t: "Invitations de duel plus fiables", d: "Les défis entre amis arrivent même après une heure d'appli ouverte, après un passage en arrière-plan ou un duel mal quitté. Sur iPhone, un lien ami ouvert dans Safari te donne le code à entrer dans l'appli." }
   ] },

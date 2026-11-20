@@ -1022,6 +1022,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-20.2", n: "5.9", items: [
+    { ic: "user", t: "Personnalise ton profil", d: "L'idée de Nohan : dans la Boutique, achète l'emblème et le cadre de chaque groupe (niveau 5 et 15 dans le groupe). Ils s'affichent sur ton bouton Profil et chez tes amis." }
+  ] },
   { v: "2026-11-20.1", n: "5.8", items: [
     { ic: "check", t: "Confettis corrigés", d: "Ils pouvaient rester figés à l'écran pendant toute la partie sur iPhone (merci Nohan !). Ils s'effacent maintenant toujours." }
   ] },

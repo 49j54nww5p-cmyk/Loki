@@ -2941,6 +2941,19 @@ body.voxon .view.quiz{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
 .dot.on{background:#3BE59D}
 .lfr .dot{width:9px;height:9px;right:-2px;bottom:-2px;box-shadow:0 0 0 2px var(--bg,#0B0B0B)}
 .nav:has(.navme.on) .navind{opacity:0}
+/* Avatars personnalisés (emblème + cadre) */
+.pav{position:relative;display:block;width:100%;height:100%;border-radius:50%;box-sizing:border-box}
+.pav .pin{position:absolute;inset:0;display:grid;place-items:center;border-radius:50%;background:inherit;color:inherit;font:inherit}
+.pav.fr .pin{inset:3px;background:#141414;color:#F4F2EC}
+.pav .pin .i{width:58%;height:auto;aspect-ratio:1}
+.pav.sm{flex:none;width:46px;height:46px;font:800 18px/1 var(--f-ui,system-ui)}
+.pav.sm .pin{background:#1E1E1E;color:#F4F2EC}
+.ami .av.avx{background:none;padding:0;overflow:visible}
+.ami .av.avx>.pav>.pin{background:var(--card-3,#262626)}
+.pfav.pfx{background:none;padding:0}
+.pfav.pfx>.pav>.pin{background:var(--gold,#FFCE00);color:#000}
+.pfav.pfx>.pav.fr>.pin{inset:4px}
+.nav .navme .nme .i{color:#000}
 
 </style>
 </head>
@@ -9939,6 +9952,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-20.2", n: "5.9", items: [
+    { ic: "user", t: "Personnalise ton profil", d: "L'idée de Nohan : dans la Boutique, achète l'emblème et le cadre de chaque groupe (niveau 5 et 15 dans le groupe). Ils s'affichent sur ton bouton Profil et chez tes amis." }
+  ] },
   { v: "2026-11-20.1", n: "5.8", items: [
     { ic: "check", t: "Confettis corrigés", d: "Ils pouvaient rester figés à l'écran pendant toute la partie sur iPhone (merci Nohan !). Ils s'effacent maintenant toujours." }
   ] },
@@ -12329,7 +12345,7 @@ async function profPush(force) {
   PROFT = Date.now();
   const g = {};
   for (const [k, v] of Object.entries(gxpMap())) if (+v > 0) g[k] = Math.round(+v);
-  try { await netReq("PUT", "prof/" + (await amiUid()), { n: cleanName(S.set.pseudo), xp: Math.round(S.xp || 0), g, c: S.amiC, t: Date.now(), on: Date.now() }); }
+  try { await netReq("PUT", "prof/" + (await amiUid()), { n: cleanName(S.set.pseudo), xp: Math.round(S.xp || 0), g, c: S.amiC, t: Date.now(), on: Date.now(), e: +S.set.emb || 0, f: +S.set.pfr || 0 }); }
   catch (e) { /* hors ligne : on réessaiera */ }
 }
 const topPushAmi = topPush;
@@ -12369,7 +12385,7 @@ async function amiLoad() {
   AMI.list = ids.map((u, i) => {
     const p = profs[i], a = (S.amis || []).find(x => x.u === u);
     if (p && a && p.n && a.n !== cleanName(p.n)) a.n = cleanName(p.n);
-    return { u, me: u === me, n: cleanName(p && p.n) || (a && a.n) || "?", xp: Math.max(0, Math.round(+(p && p.xp) || 0)), g: (p && p.g) || {}, t: Math.max(+(p && p.t) || 0, +(p && p.on) || 0), on: u === me || Date.now() - (+(p && p.on) || 0) < 150000, ok: !!p };
+    return { u, me: u === me, n: cleanName(p && p.n) || (a && a.n) || "?", xp: Math.max(0, Math.round(+(p && p.xp) || 0)), g: (p && p.g) || {}, t: Math.max(+(p && p.t) || 0, +(p && p.on) || 0), on: u === me || Date.now() - (+(p && p.on) || 0) < 150000, ok: !!p, e: u === me ? +S.set.emb || 0 : +(p && p.e) || 0, f: u === me ? +S.set.pfr || 0 : +(p && p.f) || 0 };
   });
   const rq = await netReq("GET", "fq/" + me).catch(() => null);
   AMI.req = Object.entries(rq || {}).filter(([u, v]) => v && !(S.amis || []).some(a => a.u === u)).map(([u, v]) => ({ u, n: cleanName(v.n) || "?", c: amiFmt(v.c), t: +v.t || 0 }));
@@ -12381,7 +12397,7 @@ function amiRowHtml(r) {
   const L = level(r.xp, 3), gs = Object.entries(r.g || {}).map(([g, x]) => [+g, +x]).filter(([, x]) => x > 0).sort((a, b) => b[1] - a[1]);
   const open = AMI.open === r.u;
   return `<li class="ami ${r.me ? "me" : ""} ${open ? "open" : ""}">
-    <button class="amih" data-act="amiopen" data-u="${esc(r.u)}"><span class="av">${esc(r.n.slice(0, 1).toUpperCase())}<i class="dot ${r.on ? "on" : ""}" title="${r.on ? "En ligne" : "Hors ligne"}"></i></span>
+    <button class="amih" data-act="amiopen" data-u="${esc(r.u)}"><span class="av avx">${typeof avatarHtml === "function" ? avatarHtml({ n: r.n, e: r.e, f: r.f }) : esc(r.n.slice(0, 1).toUpperCase())}<i class="dot ${r.on ? "on" : ""}" title="${r.on ? "En ligne" : "Hors ligne"}"></i></span>
       <span class="tx"><b>${esc(r.n)}${r.me ? " <small>(toi)</small>" : ""}</b><small>${r.ok ? `Niveau ${L.n} · ${esc(L.tier)}${r.me ? "" : r.on ? " · en ligne" : r.t ? " · vu " + esc(ago(r.t)) : ""}` : "Profil pas encore publié"}</small>
       <span class="agrp">${gs.slice(0, 5).map(([g, x]) => { const G = GROUPS.find(y => y.id === g); return G ? `<span style="--gc:${G.c}" title="${esc(G.n)}">${ic(G.ic)}${level(x, g).n}</span>` : ""; }).join("")}</span></span>
       <span class="xv">${fmt(r.xp)}<small>XP</small></span></button>
@@ -12414,7 +12430,7 @@ function profilHtml() {
   const played = groups.filter(x => x.xp > 0), rest = groups.filter(x => !x.xp);
   const grow = x => `<button class="xprow ${x.g.id === ROOT() ? "on" : ""}" data-act="grpset" data-id="${x.g.id}" style="--gc:${x.g.c}"><span class="gi">${ic(x.g.ic)}</span><span class="tx"><b>${esc(x.g.n)}</b><small>Niveau ${x.L.n} · ${esc(x.L.rank)}</small><span class="xb"><i style="width:${(x.L.p * 100).toFixed(1)}%"></i></span><small>${x.sp} espèce${x.sp > 1 ? "s" : ""} rencontrée${x.sp > 1 ? "s" : ""}</small></span><span class="xv">${fmt(x.xp)}<small>XP</small></span></button>`;
   return `<section class="view profil">
-  <div class="pfhead"><span class="pfav">${nm ? esc(nm.slice(0, 1).toUpperCase()) : ic("user")}</span>
+  <div class="pfhead"><span class="pfav pfx">${typeof myAvatar === "function" ? myAvatar() : (nm ? esc(nm.slice(0, 1).toUpperCase()) : ic("user"))}</span>
     <div class="pfid"><h1>${nm ? esc(nm) : "Ton profil"}</h1><small>Naturaliste depuis ${esc(since)}${S.amiC ? " · code ami " + esc(S.amiC) : ""}</small></div></div>
   <div class="card pflvl"><div class="pfl"><span class="lvb">${L.n}</span><span class="tx"><b>Niveau global ${L.n}</b><small>${fmt(S.xp)} XP, tous groupes · encore ${fmt(L.need - L.cur)} pour le niveau ${L.n + 1}</small></span></div><span class="lbar"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span></div>
   <div class="pfstats">
@@ -12455,7 +12471,12 @@ MOUNT.profil = () => { navMe(); if (AMI.scroll) setTimeout(() => $("#pfamis")?.s
 VIEWS.amis = VIEWS.profil; MOUNT.amis = MOUNT.profil;
 ACT.amis = () => { closeLayer(); SES = null; AMI.list = null; AMI.scroll = true; go("profil"); };
 /* L'initiale du pseudo dans le bouton rond */
-function navMe() { const b = $("#navav"); if (b) b.innerHTML = navInitial(); }
+function navMe() {
+  const b = $("#navav"); if (!b) return;
+  const E = S.set.emb && typeof grpOf === "function" ? grpOf(S.set.emb) : null;
+  b.innerHTML = E ? ic(E.ic) : navInitial();
+  b.style.background = E ? E.c : "";
+}
 document.addEventListener("change", e => { if (e.target && e.target.id === "apseudo") { const v = cleanName(e.target.value); if (v && v !== S.set.pseudo) { S.set.pseudo = v; save(); navMe(); profPush(true).catch(() => {}); } } });
 navMe();
 ACT.amiopen = el => { AMI.open = AMI.open === el.dataset.u ? "" : el.dataset.u; $("#amilist").innerHTML = `<ol class="amilist">${AMI.list.slice().sort((a, b) => b.xp - a.xp).map(amiRowHtml).join("")}</ol>`; };
@@ -12592,6 +12613,82 @@ setTimeout(presencePing, 3000);
 
 ACT.amicopyp = () => copyText(AMI.pending || "", "Code copié ! Colle-le dans l'appli.");
 ACT.amihere = () => { closeLayer(); AMI.list = null; AMI.scroll = true; go("profil"); setTimeout(() => { const i = $("#amiin"); if (i) { i.value = AMI.pending || ""; if (cleanName(S.set.pseudo)) $("#amiadd")?.requestSubmit(); else { toast("Choisis un pseudo, puis touche Ajouter."); $("#apseudo")?.focus(); } } }, 400); };
+
+/* ---- profilcos.js ---- */
+/* ============================================================
+   Plumage — personnaliser son profil (idée de Nohan)
+   Emblèmes et cadres de profil, un par groupe : ils se débloquent avec le niveau
+   dans le groupe, s'achètent en plumes, et se voient sur le profil, le bouton
+   Profil et chez les amis.
+   ============================================================ */
+S.pcos = Array.isArray(S.pcos) ? S.pcos : [];
+const EMB_P = 150, EMB_LV = 5, PFR_P = 400, PFR_LV = 15;
+/* Motif de chaque cadre, dans la couleur du groupe */
+const PFRAME = {
+  3: "repeating-conic-gradient(#FFCE00 0 12deg, #7A5A00 12deg 24deg)",
+  47126: "repeating-conic-gradient(#5FD068 0 18deg, #1E5A26 18deg 22deg, #9BE37F 22deg 36deg)",
+  47158: "repeating-conic-gradient(#FF9A3C 0 20deg, #3A2208 20deg 30deg)",
+  47170: "radial-gradient(circle at 30% 30%, #E8D3B5 0 12%, transparent 13%), radial-gradient(circle at 70% 65%, #E8D3B5 0 10%, transparent 11%), conic-gradient(#C8A27A, #7A5532, #C8A27A)",
+  40151: "repeating-conic-gradient(#E9B872 0 25deg, #6E4F22 25deg 32deg)",
+  26036: "repeating-conic-gradient(#9BD45F 0 10deg, #3E6219 10deg 14deg, #C3EB8F 14deg 20deg)",
+  20978: "conic-gradient(#3BE59D, #13774D, #3BE59D, #9DF5CC, #3BE59D)",
+  47178: "repeating-radial-gradient(circle, #3D9BFF 0 3px, #1C5BA6 3px 6px)",
+  47119: "repeating-conic-gradient(#B18CFF 0 4deg, #241A3A 4deg 45deg)",
+  47115: "repeating-radial-gradient(circle, #FF8FB1 0 2px, #A83C63 2px 5px, #FFD3E2 5px 7px)"
+};
+const pcosOwn = k => S.pcos.includes(k);
+const grpOf = id => GROUPS.find(g => g.id === +id);
+const gLevel = id => level(undefined, +id).n;
+
+/* L'avatar : initiale ou emblème, avec ou sans cadre (pour moi ou pour un ami) */
+function avatarHtml(o, cls = "") {
+  const E = o.e ? grpOf(o.e) : null, F = o.f ? grpOf(o.f) : null;
+  const inner = E ? ic(E.ic) : (o.n ? esc(String(o.n).slice(0, 1).toUpperCase()) : ic("user"));
+  return `<span class="pav ${F ? "fr" : ""} ${cls}"${F ? ` style="background:${PFRAME[F.id]}"` : ""}><span class="pin"${E ? ` style="background:color-mix(in srgb, ${E.c} 22%, #121212);color:${E.c}"` : ""}>${inner}</span></span>`;
+}
+const myAvatar = cls => avatarHtml({ n: cleanName(S.set.pseudo), e: S.set.emb, f: S.set.pfr }, cls);
+
+/* La section de la boutique */
+function pcosHtml() {
+  const row = (g, kind) => {
+    const k = kind + ":" + g.id, own = pcosOwn(k), lv = kind === "emb" ? EMB_LV : PFR_LV, p = kind === "emb" ? EMB_P : PFR_P;
+    const on = own && (kind === "emb" ? +S.set.emb === g.id : +S.set.pfr === g.id), lock = gLevel(g.id) < lv;
+    const vis = kind === "emb" ? `<span class="pav sm"><span class="pin" style="background:color-mix(in srgb, ${g.c} 22%, #121212);color:${g.c}">${ic(g.ic)}</span></span>`
+      : `<span class="pav sm fr" style="background:${PFRAME[g.id]}"><span class="pin">${esc((cleanName(S.set.pseudo) || "?").slice(0, 1).toUpperCase())}</span></span>`;
+    const btn = own ? `<button class="sbuy ghost" data-act="pcosuse" data-k="${k}">${on ? "Porté" : "Porter"}</button>`
+      : lock ? `<button class="sbuy" disabled>${ic("lock", "xs")}Niv. ${lv}</button>`
+      : `<button class="sbuy" data-act="pcosbuy" data-k="${k}" ${S.plumes < p ? "disabled" : ""}>${ic("feather", "xs")}${p}</button>`;
+    return `<div class="sitem glass ${on ? "on" : ""}" data-k="${k}">${vis}<div class="stx"><b>${kind === "emb" ? "Emblème" : "Cadre"} ${esc(g.n.toLowerCase())}</b><small>${lock && !own ? `Niveau ${lv} en ${esc(g.n.toLowerCase())} (tu es niv. ${gLevel(g.id)})` : kind === "emb" ? "Remplace ton initiale, partout" : "Autour de ton profil, vu par tes amis"}</small></div>${btn}</div>`;
+  };
+  /* les groupes où on a le plus d'XP d'abord */
+  const G = GROUPS.slice().sort((a, b) => gxp(b.id) - gxp(a.id));
+  return `<h2 class="ssec">Ton profil</h2>
+  <p class="muted" style="margin:-4px 2px 10px;font-size:13px">Emblèmes et cadres de chaque groupe : monte de niveau dans le groupe pour les débloquer. Tes amis les voient.</p>
+  <div class="sgrid">${G.map(g => row(g, "emb")).join("")}</div>
+  <div class="sgrid" style="margin-top:10px">${G.map(g => row(g, "pfr")).join("")}</div>`;
+}
+const shopViewBase = VIEWS.shop;
+VIEWS.shop = (...a) => shopViewBase(...a).replace('<h2 class="ssec">Défis experts</h2>', pcosHtml() + '<h2 class="ssec">Défis experts</h2>');
+
+function pcosBuy(k) {
+  const [kind, id] = k.split(":"), g = grpOf(id); if (!g || pcosOwn(k)) return;
+  const p = kind === "emb" ? EMB_P : PFR_P, lv = kind === "emb" ? EMB_LV : PFR_LV;
+  if (gLevel(g.id) < lv) { toast(`Niveau ${lv} en ${g.n.toLowerCase()} d'abord`); return; }
+  if (S.plumes < p) { toast("Pas assez de plumes"); return; }
+  S.plumes -= p; S.pcos.push(k); pcosUse(k, true); save(true);
+  const y = window.scrollY; go("shop"); window.scrollTo(0, y);
+  document.querySelector(`.sitem[data-k="${k}"]`)?.classList.add("pop");
+  toast(`${kind === "emb" ? "Emblème" : "Cadre"} ${g.n.toLowerCase()} : acheté et porté`);
+}
+function pcosUse(k, force) {
+  const [kind, id] = k.split(":"); if (!pcosOwn(k)) return;
+  const key = kind === "emb" ? "emb" : "pfr";
+  S.set[key] = +S.set[key] === +id && !force ? 0 : +id;
+  if (typeof navMe === "function") navMe();
+  if (typeof profPush === "function") profPush(true).catch(() => {});
+}
+ACT.pcosbuy = el => pcosBuy(el.dataset.k);
+ACT.pcosuse = el => { pcosUse(el.dataset.k); save(true); const y = window.scrollY; go("shop"); window.scrollTo(0, y); };
 
 </script>
 </body>

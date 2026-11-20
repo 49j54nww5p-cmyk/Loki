@@ -31,7 +31,7 @@ async function profPush(force) {
   PROFT = Date.now();
   const g = {};
   for (const [k, v] of Object.entries(gxpMap())) if (+v > 0) g[k] = Math.round(+v);
-  try { await netReq("PUT", "prof/" + (await amiUid()), { n: cleanName(S.set.pseudo), xp: Math.round(S.xp || 0), g, c: S.amiC, t: Date.now(), on: Date.now() }); }
+  try { await netReq("PUT", "prof/" + (await amiUid()), { n: cleanName(S.set.pseudo), xp: Math.round(S.xp || 0), g, c: S.amiC, t: Date.now(), on: Date.now(), e: +S.set.emb || 0, f: +S.set.pfr || 0 }); }
   catch (e) { /* hors ligne : on réessaiera */ }
 }
 const topPushAmi = topPush;
@@ -71,7 +71,7 @@ async function amiLoad() {
   AMI.list = ids.map((u, i) => {
     const p = profs[i], a = (S.amis || []).find(x => x.u === u);
     if (p && a && p.n && a.n !== cleanName(p.n)) a.n = cleanName(p.n);
-    return { u, me: u === me, n: cleanName(p && p.n) || (a && a.n) || "?", xp: Math.max(0, Math.round(+(p && p.xp) || 0)), g: (p && p.g) || {}, t: Math.max(+(p && p.t) || 0, +(p && p.on) || 0), on: u === me || Date.now() - (+(p && p.on) || 0) < 150000, ok: !!p };
+    return { u, me: u === me, n: cleanName(p && p.n) || (a && a.n) || "?", xp: Math.max(0, Math.round(+(p && p.xp) || 0)), g: (p && p.g) || {}, t: Math.max(+(p && p.t) || 0, +(p && p.on) || 0), on: u === me || Date.now() - (+(p && p.on) || 0) < 150000, ok: !!p, e: u === me ? +S.set.emb || 0 : +(p && p.e) || 0, f: u === me ? +S.set.pfr || 0 : +(p && p.f) || 0 };
   });
   const rq = await netReq("GET", "fq/" + me).catch(() => null);
   AMI.req = Object.entries(rq || {}).filter(([u, v]) => v && !(S.amis || []).some(a => a.u === u)).map(([u, v]) => ({ u, n: cleanName(v.n) || "?", c: amiFmt(v.c), t: +v.t || 0 }));
@@ -83,7 +83,7 @@ function amiRowHtml(r) {
   const L = level(r.xp, 3), gs = Object.entries(r.g || {}).map(([g, x]) => [+g, +x]).filter(([, x]) => x > 0).sort((a, b) => b[1] - a[1]);
   const open = AMI.open === r.u;
   return `<li class="ami ${r.me ? "me" : ""} ${open ? "open" : ""}">
-    <button class="amih" data-act="amiopen" data-u="${esc(r.u)}"><span class="av">${esc(r.n.slice(0, 1).toUpperCase())}<i class="dot ${r.on ? "on" : ""}" title="${r.on ? "En ligne" : "Hors ligne"}"></i></span>
+    <button class="amih" data-act="amiopen" data-u="${esc(r.u)}"><span class="av avx">${typeof avatarHtml === "function" ? avatarHtml({ n: r.n, e: r.e, f: r.f }) : esc(r.n.slice(0, 1).toUpperCase())}<i class="dot ${r.on ? "on" : ""}" title="${r.on ? "En ligne" : "Hors ligne"}"></i></span>
       <span class="tx"><b>${esc(r.n)}${r.me ? " <small>(toi)</small>" : ""}</b><small>${r.ok ? `Niveau ${L.n} · ${esc(L.tier)}${r.me ? "" : r.on ? " · en ligne" : r.t ? " · vu " + esc(ago(r.t)) : ""}` : "Profil pas encore publié"}</small>
       <span class="agrp">${gs.slice(0, 5).map(([g, x]) => { const G = GROUPS.find(y => y.id === g); return G ? `<span style="--gc:${G.c}" title="${esc(G.n)}">${ic(G.ic)}${level(x, g).n}</span>` : ""; }).join("")}</span></span>
       <span class="xv">${fmt(r.xp)}<small>XP</small></span></button>
@@ -116,7 +116,7 @@ function profilHtml() {
   const played = groups.filter(x => x.xp > 0), rest = groups.filter(x => !x.xp);
   const grow = x => `<button class="xprow ${x.g.id === ROOT() ? "on" : ""}" data-act="grpset" data-id="${x.g.id}" style="--gc:${x.g.c}"><span class="gi">${ic(x.g.ic)}</span><span class="tx"><b>${esc(x.g.n)}</b><small>Niveau ${x.L.n} · ${esc(x.L.rank)}</small><span class="xb"><i style="width:${(x.L.p * 100).toFixed(1)}%"></i></span><small>${x.sp} espèce${x.sp > 1 ? "s" : ""} rencontrée${x.sp > 1 ? "s" : ""}</small></span><span class="xv">${fmt(x.xp)}<small>XP</small></span></button>`;
   return `<section class="view profil">
-  <div class="pfhead"><span class="pfav">${nm ? esc(nm.slice(0, 1).toUpperCase()) : ic("user")}</span>
+  <div class="pfhead"><span class="pfav pfx">${typeof myAvatar === "function" ? myAvatar() : (nm ? esc(nm.slice(0, 1).toUpperCase()) : ic("user"))}</span>
     <div class="pfid"><h1>${nm ? esc(nm) : "Ton profil"}</h1><small>Naturaliste depuis ${esc(since)}${S.amiC ? " · code ami " + esc(S.amiC) : ""}</small></div></div>
   <div class="card pflvl"><div class="pfl"><span class="lvb">${L.n}</span><span class="tx"><b>Niveau global ${L.n}</b><small>${fmt(S.xp)} XP, tous groupes · encore ${fmt(L.need - L.cur)} pour le niveau ${L.n + 1}</small></span></div><span class="lbar"><i style="width:${(L.p * 100).toFixed(1)}%"></i></span></div>
   <div class="pfstats">
@@ -157,7 +157,12 @@ MOUNT.profil = () => { navMe(); if (AMI.scroll) setTimeout(() => $("#pfamis")?.s
 VIEWS.amis = VIEWS.profil; MOUNT.amis = MOUNT.profil;
 ACT.amis = () => { closeLayer(); SES = null; AMI.list = null; AMI.scroll = true; go("profil"); };
 /* L'initiale du pseudo dans le bouton rond */
-function navMe() { const b = $("#navav"); if (b) b.innerHTML = navInitial(); }
+function navMe() {
+  const b = $("#navav"); if (!b) return;
+  const E = S.set.emb && typeof grpOf === "function" ? grpOf(S.set.emb) : null;
+  b.innerHTML = E ? ic(E.ic) : navInitial();
+  b.style.background = E ? E.c : "";
+}
 document.addEventListener("change", e => { if (e.target && e.target.id === "apseudo") { const v = cleanName(e.target.value); if (v && v !== S.set.pseudo) { S.set.pseudo = v; save(); navMe(); profPush(true).catch(() => {}); } } });
 navMe();
 ACT.amiopen = el => { AMI.open = AMI.open === el.dataset.u ? "" : el.dataset.u; $("#amilist").innerHTML = `<ol class="amilist">${AMI.list.slice().sort((a, b) => b.xp - a.xp).map(amiRowHtml).join("")}</ol>`; };

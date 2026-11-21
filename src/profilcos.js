@@ -144,3 +144,5 @@ ACT.mcaduse = el => {
   if (S.set.pph) toast(`Cadre ${r ? (r.fr || r.sci) : ""} porté`);
 };
 ACT.mcadoff = () => { S.set.pph = 0; save(true); if (typeof navMe === "function") navMe(); if (typeof profPush === "function") profPush(true).catch(() => {}); mcadRefresh(); };
+/* L'emblème ou le cadre porté dans le bouton Profil, au démarrage (ici, une fois grpOf et okImg définis) */
+navMe();

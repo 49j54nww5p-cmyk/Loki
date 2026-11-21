@@ -1022,6 +1022,9 @@ const TOUR = [
 ];
 /* Numéro de version : 2.x = mises à jour d'octobre 2026 ; chaque mise en ligne ajoute une ligne en haut */
 const NEWS = [
+  { v: "2026-11-21.1", n: "5.12", items: [
+    { ic: "user", t: "Profil réparé", d: "Avec un emblème ou un cadre de maîtrise porté, l'appli plantait au démarrage : le bouton Profil ne répondait plus et l'emblème disparaissait. C'est corrigé, tes achats sont intacts. Merci pour le signalement !" }
+  ] },
   { v: "2026-11-20.4", n: "5.11", items: [
     { ic: "zoom", t: "Taille des autres espèces", d: "Hors oiseaux, la comparaison de taille après une erreur n'affiche plus des silhouettes d'oiseaux : deux barres à la même échelle. Merci pour le signalement !" }
   ] },

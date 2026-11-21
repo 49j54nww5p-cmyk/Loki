@@ -169,7 +169,7 @@ function navMe() {
   b.style.background = E ? E.c : "";
 }
 document.addEventListener("change", e => { if (e.target && e.target.id === "apseudo") { const v = cleanName(e.target.value); if (v && v !== S.set.pseudo) { S.set.pseudo = v; save(); navMe(); profPush(true).catch(() => {}); } } });
-navMe();
+/* premier affichage : appelé à la fin de profilcos.js (grpOf, okImg n'existent pas encore ici) */
 ACT.amiopen = el => { AMI.open = AMI.open === el.dataset.u ? "" : el.dataset.u; $("#amilist").innerHTML = `<ol class="amilist">${AMI.list.slice().sort((a, b) => b.xp - a.xp).map(amiRowHtml).join("")}</ol>`; };
 ACT.amidel = el => {
   if (!el.dataset.armed) { el.dataset.armed = "1"; el.innerHTML = ic("trash") + "Confirmer ?"; setTimeout(() => { if (el.isConnected) { delete el.dataset.armed; el.innerHTML = ic("trash") + "Retirer de mes amis"; } }, 4000); return; }
